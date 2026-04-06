@@ -5264,6 +5264,72 @@ Example format:
                 ]));
             }
         })();
+
+        // ===========================
+        // Firebase 클라우드 동기화
+        // ===========================
+        const FIREBASE_DB = 'https://finder-30aa6-default-rtdb.firebaseio.com';
+        const SYNC_KEYS = [
+            'current_channel',
+            'my_channel_profile', 'bench_kr_channels', 'bench_foreign_channels',
+            '역사_channel_profile', '역사_bench_kr', '역사_bench_foreign',
+            'jp_channel_profile', 'jp_bench_kr', 'jp_bench_foreign',
+            '심리학_channel_profile', '심리학_bench_kr', '심리학_bench_foreign',
+            'youtube_api_keys', 'active_api_key_idx',
+            'folders',
+        ];
+
+        // localStorage → Firebase 업로드
+        async function cloudSave() {
+            const data = {};
+            SYNC_KEYS.forEach(k => {
+                const v = localStorage.getItem(k);
+                if (v !== null) data[k] = v;
+            });
+            try {
+                await fetch(`${FIREBASE_DB}/settings.json`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data),
+                });
+            } catch(e) { console.warn('클라우드 저장 실패:', e); }
+        }
+
+        // Firebase → localStorage 다운로드
+        async function cloudLoad() {
+            try {
+                const res = await fetch(`${FIREBASE_DB}/settings.json`);
+                const data = await res.json();
+                if (!data) return false;
+                let changed = false;
+                Object.entries(data).forEach(([k, v]) => {
+                    if (localStorage.getItem(k) !== v) {
+                        localStorage.setItem(k, v);
+                        changed = true;
+                    }
+                });
+                return changed;
+            } catch(e) {
+                console.warn('클라우드 로드 실패:', e);
+                return false;
+            }
+        }
+
+        // 페이지 로드 시 클라우드에서 동기화
+        (async function initCloudSync() {
+            const changed = await cloudLoad();
+            if (changed) location.reload();
+        })();
+
+        // localStorage 변경 감지 → 자동 클라우드 저장
+        const _origSetItem = localStorage.setItem.bind(localStorage);
+        localStorage.setItem = function(key, value) {
+            _origSetItem(key, value);
+            if (SYNC_KEYS.includes(key)) {
+                clearTimeout(window._cloudSaveTimer);
+                window._cloudSaveTimer = setTimeout(cloudSave, 2000);
+            }
+        };
     </script>
 </body>
 </html>
