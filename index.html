@@ -2626,7 +2626,7 @@ ${introPrompts}`;
             try {
                 const prompt = `유튜브 썸네일 텍스트를 10개 생성해주세요.\n\n영상 내용: ${content}\n\n${keywords ? '★ 필수 키워드 (반드시 포함): ' + keywords + '\n위 키워드 중 최소 1개는 모든 텍스트에 반드시 들어가야 합니다.\n\n' : ''}길이: ${length}\n${examples ? '참고 예시: ' + examples : ''}\n\n규칙:\n- 각 텍스트는 2줄로 구성 (줄1: 큰 글씨, 줄2: 보조 텍스트)\n- 클릭을 유도하는 자극적이고 호기심을 끄는 문구\n- 숫자, 물음표, 느낌표 적극 활용\n- 10~20자 내외로 짧고 임팩트 있게\n${keywords ? '- ★ 필수 키워드(' + keywords + ')를 자연스럽게 포함할 것\n' : ''}\n형식:\n1.\n"줄1 텍스트"\n"줄2 텍스트"\n\n2.\n"줄1 텍스트"\n"줄2 텍스트"\n\n... (10개까지)`;
 
-                const data = await callGemini(prompt, { maxTokens: 4096, temperature: 0.7, model: 'gemini-2.5-flash' });
+                const data = await callGemini(prompt, { maxTokens: 4096, temperature: 0.7 });
 
                 // 결과 파싱 (번호. "줄1" "줄2" 형식)
                 const raw = data.text || '';
