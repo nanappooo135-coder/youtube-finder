@@ -1207,10 +1207,8 @@
             <button class="process-btn inactive" id="procBtn_visual" onclick="switchProcess('visual')">시각화</button>
         </div>
 
-        <!-- ===== 프로세스 1: 주제찾기 ===== -->
-        <div id="process-topic">
-
-        <!-- 채널 선택기 (중위) -->
+        <!-- 채널 선택기 + 설정 (공통) -->
+        <!-- 채널 선택기 -->
         <div class="channel-nav">
             <button class="ch-btn active" onclick="switchChannel('경제')" id="chBtn_경제">경제 🇰🇷</button>
             <button class="ch-btn" onclick="switchChannel('역사')" id="chBtn_역사">역사 🇰🇷</button>
@@ -1297,8 +1295,8 @@
             </div>
         </div>
 
-        <!-- 비슷한 채널 영상 찾기 (메인) -->
-        <div>
+        <!-- 비슷한 채널 영상 찾기 (주제찾기 전용) -->
+        <div id="topic-content">
 
             <!-- 검색 조건 (공통) -->
             <div class="section">
@@ -1442,9 +1440,8 @@
             </div>
 
             <div id="recommendApiUsage" class="api-usage"></div>
-        </div>
 
-        </div><!-- /process-topic -->
+        </div><!-- /topic-content -->
 
         <!-- ===== 프로세스 2: 썸네일 작업 ===== -->
         <div id="process-thumbnail" style="display:none;">
@@ -2391,7 +2388,9 @@
             document.querySelectorAll('.process-btn').forEach(btn => {
                 btn.classList.toggle('inactive', btn.id !== `procBtn_${proc}`);
             });
-            document.getElementById('process-topic').style.display = proc === 'topic' ? '' : 'none';
+            // 주제찾기 전용 콘텐츠 (영상 추천, 벤치마크 등)
+            document.getElementById('topic-content').style.display = proc === 'topic' ? '' : 'none';
+            // 각 탭 고유 콘텐츠
             document.getElementById('process-thumbnail').style.display = proc === 'thumbnail' ? '' : 'none';
             document.getElementById('process-thumbtext').style.display = proc === 'thumbtext' ? '' : 'none';
             document.getElementById('process-visual').style.display = proc === 'visual' ? '' : 'none';
