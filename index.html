@@ -1210,19 +1210,16 @@
         <!-- ===== 프로세스 1: 주제찾기 ===== -->
         <div id="process-topic">
 
-        <!-- 주제찾기 전용 콘텐츠 -->
-        <div id="topic-content">
-
         <!-- 채널 선택기 -->
-        <div class="channel-nav">
+        <div class="channel-nav topic-only">
             <button class="ch-btn active" onclick="switchChannel('경제')" id="chBtn_경제">경제 🇰🇷</button>
             <button class="ch-btn" onclick="switchChannel('역사')" id="chBtn_역사">역사 🇰🇷</button>
             <button class="ch-btn" onclick="switchChannel('일본경제')" id="chBtn_일본경제">일본경제 🇯🇵</button>
             <button class="ch-btn" onclick="switchChannel('심리학')" id="chBtn_심리학">심리학 🇰🇷</button>
         </div>
 
-        <!-- API 키 섹션 (공통) -->
-        <div class="section">
+        <!-- API 키 섹션 -->
+        <div class="section topic-only">
             <div class="section-title" onclick="toggleSection(this)">
                 🔑 API 키 설정 (처음 한 번만)
                 <span class="arrow">&#9660;</span>
@@ -1267,8 +1264,8 @@
             </div>
         </div>
 
-        <!-- 키워드 설정 (공통) -->
-        <div class="section">
+        <!-- 키워드 설정 -->
+        <div class="section topic-only">
             <div class="section-title" onclick="toggleSection(this)">
                 ⚙️ 키워드 설정 (처음 한 번만)
                 <span class="arrow">&#9660;</span>
@@ -1300,8 +1297,9 @@
         </div>
 
         <!-- 비슷한 채널 영상 찾기 -->
+        <div class="topic-only">
 
-            <!-- 검색 조건 (공통) -->
+            <!-- 검색 조건 -->
             <div class="section">
                 <div class="section-title">비슷한 채널 영상 추천</div>
                 <div class="section-content">
@@ -1444,7 +1442,7 @@
 
             <div id="recommendApiUsage" class="api-usage"></div>
 
-        </div><!-- /topic-content -->
+        </div><!-- /topic-only 영상추천 영역 -->
 
         <!-- ===== 프로세스 2: 썸네일 작업 ===== -->
         <div id="process-thumbnail" style="display:none;">
@@ -2393,8 +2391,10 @@
             document.querySelectorAll('.process-btn').forEach(btn => {
                 btn.classList.toggle('inactive', btn.id !== `procBtn_${proc}`);
             });
-            // 주제찾기 전용 콘텐츠만 토글 (채널/설정은 process-topic 안에 항상 표시)
-            document.getElementById('topic-content').style.display = proc === 'topic' ? '' : 'none';
+            // 주제찾기 전용 요소 토글 (topic-only 클래스)
+            document.querySelectorAll('.topic-only').forEach(el => {
+                el.style.display = proc === 'topic' ? '' : 'none';
+            });
             // 각 탭 고유 콘텐츠 (process-topic 밖)
             document.getElementById('process-thumbnail').style.display = proc === 'thumbnail' ? '' : 'none';
             document.getElementById('process-thumbtext').style.display = proc === 'thumbtext' ? '' : 'none';
