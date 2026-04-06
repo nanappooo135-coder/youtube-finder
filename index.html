@@ -3601,14 +3601,16 @@ Example format:
             let sceneDesc = scene || topic;
 
             // 한글 감지 시 영문 변환
-            const hasKorean = /[가-힣]/.test(sceneDesc);
-            if (hasKorean) {
+            if (/[가-힣]/.test(sceneDesc)) {
                 try {
                     const transResult = await callGemini(
-                        `Translate the following Korean scene description to English for an AI image generation prompt. Output ONLY the English translation, nothing else. Keep all visual details, compositions, and moods exactly as described.\n\n${sceneDesc}`,
-                        { maxTokens: 1024, temperature: 0.1 }
+                        `You are a translator for AI image generation prompts. Translate the Korean text below into vivid, detailed English. Keep all visual details exactly: left/right/center composition, subjects, expressions, colors, moods. Output ONLY the English translation.\n\nKorean:\n${sceneDesc}`,
+                        { maxTokens: 2048, temperature: 0.1 }
                     );
-                    sceneDesc = transResult.text.trim();
+                    const translated = (transResult.text || '').trim();
+                    if (translated.length > 10) {
+                        sceneDesc = translated;
+                    }
                 } catch(e) { console.warn('번역 실패, 원문 사용:', e); }
             }
 
