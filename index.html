@@ -3507,7 +3507,7 @@ Example format:
         }
 
         // 프롬프트 생성
-        function generateTbPrompt() {
+        async function generateTbPrompt() {
             const topic = document.getElementById('tbTopic').value.trim();
             const scene = document.getElementById('tbScene').value.trim();
             if (!topic && !scene) { alert('영상 주제 또는 장면 묘사를 입력해주세요'); return; }
@@ -3598,7 +3598,19 @@ Example format:
                 magazine: 'Visual style inspired by premium magazine covers — sophisticated editorial layout, polished and high-fashion feel.'
             };
 
-            const sceneDesc = scene || topic;
+            let sceneDesc = scene || topic;
+
+            // 한글 감지 시 영문 변환
+            const hasKorean = /[가-힣]/.test(sceneDesc);
+            if (hasKorean) {
+                try {
+                    const transResult = await callGemini(
+                        `Translate the following Korean scene description to English for an AI image generation prompt. Output ONLY the English translation, nothing else. Keep all visual details, compositions, and moods exactly as described.\n\n${sceneDesc}`,
+                        { maxTokens: 1024, temperature: 0.1 }
+                    );
+                    sceneDesc = transResult.text.trim();
+                } catch(e) { console.warn('번역 실패, 원문 사용:', e); }
+            }
 
             // 변형 3개 생성 — 앵글/구도/감정 톤을 살짝 변주
             const angleAlts = { eye:'low', low:'eye', high:'wide', closeup:'eye', wide:'high', dutch:'low' };
