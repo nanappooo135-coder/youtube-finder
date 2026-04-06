@@ -1904,7 +1904,7 @@
                     <div class="section-content">
                         <div id="vsResults"></div>
                         <div style="display:flex;gap:8px;margin-top:12px;">
-                            <button class="search-btn" onclick="copyAllVisualPrompts()" style="flex:1;">전체 복사</button>
+                            <button class="search-btn" onclick="copyAllVisualPrompts(this)" style="flex:1;">전체 복사</button>
                             <button class="search-btn" id="vsVideoBtn" onclick="generateVideoPrompts()" style="flex:1;background:#fd7e14;border-color:#fd7e14;">도입부 동영상 프롬프트</button>
                         </div>
                         <div id="vsUsage" class="fc-usage"></div>
@@ -1918,7 +1918,7 @@
                     <div class="section-title">도입부 동영상 프롬프트 (Grok용)</div>
                     <div class="section-content">
                         <div id="vsVideoResults" class="fc-result"></div>
-                        <button class="search-btn" onclick="copyVideoPrompts()" style="margin-top:12px;">전체 복사</button>
+                        <button class="search-btn" onclick="copyVideoPrompts(this)" style="margin-top:12px;">전체 복사</button>
                         <div id="vsVideoUsage" class="fc-usage"></div>
                     </div>
                 </div>
@@ -2662,19 +2662,15 @@ ${introPrompts}`;
             }
         }
 
-        function copyVideoPrompts() {
+        function copyVideoPrompts(btn) {
             navigator.clipboard.writeText(window._videoRaw || '').then(() => {
-                const btn = event.target;
-                btn.textContent = '복사됨!';
-                setTimeout(() => { btn.textContent = '전체 복사'; }, 1500);
+                if (btn) { btn.textContent = '복사됨!'; setTimeout(() => { btn.textContent = '전체 복사'; }, 1500); }
             });
         }
 
-        function copyAllVisualPrompts() {
+        function copyAllVisualPrompts(btn) {
             navigator.clipboard.writeText(window._visualRaw || '').then(() => {
-                const btn = event.target;
-                btn.textContent = '복사됨!';
-                setTimeout(() => { btn.textContent = '전체 복사'; }, 1500);
+                if (btn) { btn.textContent = '복사됨!'; setTimeout(() => { btn.textContent = '전체 복사'; }, 1500); }
             });
         }
 
