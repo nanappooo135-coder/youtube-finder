@@ -1201,6 +1201,7 @@
             <button class="process-btn" id="procBtn_topic" onclick="switchProcess('topic')">주제찾기</button>
             <button class="process-btn inactive" id="procBtn_thumbnail" onclick="switchProcess('thumbnail')">썸네일 작업</button>
             <button class="process-btn inactive" id="procBtn_thumbtext" onclick="switchProcess('thumbtext')">썸네일 텍스트</button>
+            <button class="process-btn inactive" id="procBtn_title" onclick="switchProcess('title')">썸네일 제목</button>
             <button class="process-btn inactive" id="procBtn_review" onclick="switchProcess('review')">대본 검수</button>
             <button class="process-btn inactive" id="procBtn_factcheck" onclick="switchProcess('factcheck')">팩트검증</button>
             <button class="process-btn inactive" id="procBtn_visual" onclick="switchProcess('visual')">시각화 프롬프트</button>
@@ -1916,6 +1917,56 @@
 
         </div><!-- /process-visual -->
 
+        <!-- ===== 프로세스: 썸네일 제목 ===== -->
+        <div id="process-title" style="display:none;">
+            <div class="section">
+                <div class="section-title">썸네일 제목 만들기</div>
+                <div class="section-content">
+                    <p style="font-size:0.85rem;color:#888;margin-bottom:12px;">
+                        대본을 넣으면 클릭률 높은 유튜브 제목 10개 + SEO 최적화 설명란을 만들어줘요.
+                    </p>
+
+                    <div class="input-group">
+                        <label>대본 전체 붙여넣기</label>
+                        <textarea id="titleScript" rows="8" placeholder="대본 전체를 붙여넣으세요" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;resize:vertical;font-family:inherit;line-height:1.6;"></textarea>
+                        <p id="titleCharCount" style="font-size:0.8rem;color:#888;margin-top:4px;text-align:right;">0자</p>
+                    </div>
+
+                    <div class="input-group">
+                        <label>필수 키워드 <span style="color:#888;font-weight:400;">(쉼표로 구분)</span></label>
+                        <input type="text" id="titleKeywords" placeholder="예: 이란, 붕괴, 정전폭탄" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;">
+                    </div>
+
+                    <button id="titleBtn" onclick="generateTitles()" style="width:100%;padding:14px;background:#dc3545;color:white;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;margin-top:8px;">
+                        제목 + 설명란 생성
+                    </button>
+                    <p id="titleUsage" style="font-size:0.8rem;color:#888;margin-top:6px;text-align:right;"></p>
+                </div>
+            </div>
+
+            <!-- 제목 결과 -->
+            <div id="titleResultSection" style="display:none;">
+                <div class="section">
+                    <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
+                        제목 후보 10개
+                        <button onclick="copyTitles()" style="padding:6px 16px;background:#dc3545;color:white;border:none;border-radius:8px;font-size:0.85rem;cursor:pointer;">전체 복사</button>
+                    </div>
+                    <div class="section-content" id="titleResults" style="line-height:1.8;"></div>
+                </div>
+            </div>
+
+            <!-- 설명란 결과 -->
+            <div id="descResultSection" style="display:none;">
+                <div class="section">
+                    <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
+                        노출 최적화 설명란
+                        <button onclick="copyDesc()" style="padding:6px 16px;background:#dc3545;color:white;border:none;border-radius:8px;font-size:0.85rem;cursor:pointer;">복사</button>
+                    </div>
+                    <div class="section-content" id="descResult" style="white-space:pre-wrap;line-height:1.8;font-size:0.9rem;"></div>
+                </div>
+            </div>
+        </div><!-- /process-title -->
+
         <!-- ===== 프로세스: 대본 검수 ===== -->
         <div id="process-review" style="display:none;">
 
@@ -2334,6 +2385,7 @@
             document.getElementById('process-visual').style.display = proc === 'visual' ? '' : 'none';
             document.getElementById('process-review').style.display = proc === 'review' ? '' : 'none';
             document.getElementById('process-factcheck').style.display = proc === 'factcheck' ? '' : 'none';
+            document.getElementById('process-title').style.display = proc === 'title' ? '' : 'none';
 
             if (proc === 'thumbtext') checkFcServer('ttServerStatus');
             if (proc === 'visual') checkFcServer('vsServerStatus');
@@ -2673,6 +2725,143 @@ ${introPrompts}`;
                 btn.disabled = false;
                 btn.innerHTML = '텍스트 10개 생성';
             }
+        }
+
+        // ===========================
+        // 썸네일 제목 + 설명란 생성
+        // ===========================
+        document.addEventListener('input', (e) => {
+            if (e.target.id === 'titleScript') {
+                document.getElementById('titleCharCount').textContent = `${e.target.value.length.toLocaleString()}자`;
+            }
+        });
+
+        async function generateTitles() {
+            const script = document.getElementById('titleScript').value.trim();
+            const keywords = document.getElementById('titleKeywords').value.trim();
+            if (!script) { alert('대본을 붙여넣어주세요'); return; }
+
+            const btn = document.getElementById('titleBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner"></div> 생성 중... (30초~1분)';
+            document.getElementById('titleResultSection').style.display = 'none';
+            document.getElementById('descResultSection').style.display = 'none';
+
+            try {
+                const prompt = `유튜브 영상의 제목과 설명란을 만들어주세요.
+
+# 대본
+${script}
+
+${keywords ? '# 필수 키워드 (제목에 반드시 포함)\n' + keywords + '\n' : ''}
+
+# 작업 1: 제목 10개
+
+규칙:
+- 클릭률(CTR)이 높은 유튜브 제목
+- 호기심, 충격, 긴장감을 유발하는 문구
+- 30~50자 내외
+- 핵심 내용을 암시하되 다 보여주지 않기
+- 숫자, 물음표 등 활용
+${keywords ? '- 필수 키워드(' + keywords + ')를 자연스럽게 포함\n' : ''}
+형식:
+1. 제목
+2. 제목
+... (10개)
+
+# 작업 2: 노출 최적화 설명란
+
+규칙:
+- 유튜브 검색 SEO에 최적화
+- 첫 2줄이 가장 중요 (미리보기에 노출됨) — 호기심 유발 + 핵심 키워드
+- 영상 내용 요약 (3~5줄)
+- 관련 키워드 자연스럽게 포함
+- 해시태그 5~10개
+- 전체 500자 내외
+
+===TITLES===
+(제목 10개)
+
+===DESCRIPTION===
+(설명란)`;
+
+                const data = await callGemini(prompt, { maxTokens: 4096, temperature: 0.5 });
+                const result = data.text || '';
+
+                // 파싱
+                let titlesRaw = result;
+                let descRaw = '';
+
+                if (result.includes('===DESCRIPTION===')) {
+                    const parts = result.split('===DESCRIPTION===');
+                    titlesRaw = parts[0];
+                    descRaw = parts[1].trim();
+                }
+                if (titlesRaw.includes('===TITLES===')) {
+                    titlesRaw = titlesRaw.split('===TITLES===')[1];
+                }
+
+                // 제목 파싱
+                const titleLines = titlesRaw.trim().split('\n').filter(l => l.trim());
+                const titles = [];
+                for (const line of titleLines) {
+                    const m = line.match(/^\d+[\.\)]\s*(.+)/);
+                    if (m) titles.push(m[1].trim().replace(/^[""]|[""]$/g, ''));
+                }
+
+                // 제목 카드 렌더링
+                if (titles.length > 0) {
+                    window._generatedTitles = titles;
+                    const html = titles.map((t, i) => `
+                        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;margin-bottom:6px;background:#f8f9fa;border-radius:10px;cursor:pointer;border:2px solid #e0e0e0;transition:all 0.15s;"
+                             onmouseover="this.style.borderColor='#dc3545'" onmouseout="this.style.borderColor='#e0e0e0'"
+                             onclick="navigator.clipboard.writeText('${escapeHtml(t).replace(/'/g,"\\'")}').then(()=>{this.querySelector('.copy-btn').textContent='복사됨!';setTimeout(()=>this.querySelector('.copy-btn').textContent='복사',1500)})">
+                            <span style="font-weight:900;color:#dc3545;font-size:1.1rem;min-width:24px;">${i+1}</span>
+                            <span style="flex:1;font-size:0.95rem;">${escapeHtml(t)}</span>
+                            <button class="copy-btn" onclick="event.stopPropagation()" style="padding:4px 12px;background:#dc3545;color:white;border:none;border-radius:6px;font-size:0.8rem;cursor:pointer;">복사</button>
+                        </div>
+                    `).join('');
+                    document.getElementById('titleResults').innerHTML = html;
+                    document.getElementById('titleResultSection').style.display = '';
+                }
+
+                // 설명란 렌더링
+                if (descRaw) {
+                    window._generatedDesc = descRaw;
+                    document.getElementById('descResult').textContent = descRaw;
+                    document.getElementById('descResultSection').style.display = '';
+                }
+
+                if (data.usage) {
+                    document.getElementById('titleUsage').textContent =
+                        `${data.usage.model} · 토큰: ${(data.usage.input_tokens + data.usage.output_tokens).toLocaleString()} (무료)`;
+                }
+
+                document.getElementById('titleResultSection').scrollIntoView({ behavior: 'smooth' });
+
+            } catch(e) {
+                alert(`오류: ${e.message}`);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '제목 + 설명란 생성';
+            }
+        }
+
+        function copyTitles() {
+            const text = (window._generatedTitles || []).map((t,i) => `${i+1}. ${t}`).join('\n');
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = event.target;
+                btn.textContent = '복사됨!';
+                setTimeout(() => { btn.textContent = '전체 복사'; }, 1500);
+            });
+        }
+
+        function copyDesc() {
+            navigator.clipboard.writeText(window._generatedDesc || '').then(() => {
+                const btn = event.target;
+                btn.textContent = '복사됨!';
+                setTimeout(() => { btn.textContent = '복사'; }, 1500);
+            });
         }
 
         // 서브텍스트 생성
