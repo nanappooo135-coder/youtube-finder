@@ -2164,6 +2164,20 @@
                 tone:  '정보전달',
                 genreLabel: '경제 / 재테크 (JP)',
                 toneLabel:  '정보전달형'
+            },
+            '심리학': {
+                label: '심리학 🇰🇷',
+                profileKey:      '심리학_channel_profile',
+                krBenchKey:      '심리학_bench_kr',
+                foreignBenchKey: '심리학_bench_foreign',
+                benchCacheKey:   '심리학_bench_cache',
+                regionCode:      'KR',
+                relevanceLanguage: 'ko',
+                newsHl: 'ko', newsGl: 'KR', newsCeid: 'KR:ko',
+                genre: '심리학',
+                tone:  '스토리텔링',
+                genreLabel: '심리학',
+                toneLabel:  '스토리텔링형'
             }
         };
 
@@ -5180,6 +5194,10 @@ Example format:
                 'jp_channel_profile',
                 'jp_bench_kr',
                 'jp_bench_foreign',
+                // 심리학
+                '심리학_channel_profile',
+                '심리학_bench_kr',
+                '심리학_bench_foreign',
             ];
             const data = {};
             EXPORT_KEYS.forEach(k => {
@@ -5211,6 +5229,41 @@ Example format:
             reader.readAsText(file);
             event.target.value = '';
         }
+
+        // 심리학 채널 기본 데이터 초기화
+        (function initPsychDefaults() {
+            if (!localStorage.getItem('심리학_channel_profile')) {
+                localStorage.setItem('심리학_channel_profile', JSON.stringify({
+                    genre: '심리학', tone: '스토리텔링', keywords: '심리학', desc: '심리학을 쉽고 재밌게 풀이하는 채널'
+                }));
+            }
+            if (!localStorage.getItem('심리학_bench_kr')) {
+                localStorage.setItem('심리학_bench_kr', JSON.stringify([
+                    {"id":"UCONTlrUj5pVn7LammlleLJg","title":"놀면서 배우는 심리학","thumbnail":"https://yt3.ggpht.com/J0zZYgheeB8o4o0AKe9_WyTC0-gsXSeRGHeqB2jMcH3yyq4_yNgSqAjRw-S7YQkRf1Q7-yGmNQ=s88-c-k-c0x00ffffff-no-rj"},
+                    {"id":"UCTNts6HwMp-FOwisu81uuew","title":"심리학자 차희연","thumbnail":"https://yt3.ggpht.com/0yBuEt8NNQo7YbCwQfSU1LE2CpCQaCnHdxyVMyF7juo4SuGHpFEfMtizBFLOe_9tTXF_44mo=s88-c-k-c0x00ffffff-no-rj"},
+                    {"id":"UCaJkv4faBajjsDGq2YPJN0A","title":"심리학 고양이","thumbnail":"https://yt3.ggpht.com/mEFcaeCsuhybGNIEgtCwHhv3z8CPZrzQlwHHcd5mqOWktuJ7L_C-YxkfVVf17RrHp3Dq1o8cXg=s88-c-k-c0x00ffffff-no-rj"},
+                    {"id":"UCgpwML6hw_FJkAc7xrv4BXA","title":"한눈에 심리학","thumbnail":"https://yt3.ggpht.com/W8o-Tdawpc7H7cLD7qF0vl5k30vG8p80o11bsntZkstV8hngaqTU2LXRdJme3p1HBeNtuSY6xQE=s88-c-k-c0x00ffffff-no-rj"},
+                    {"id":"UCidDkfy3URC9eEfu8mVXcKA","title":"친절한심리학","thumbnail":"https://yt3.ggpht.com/FqI54nojL5KyDsckZo7ZFdcWZ_D7BC62t98s-J7pwFq86fQhHaCSdSZ3BMELP2ZXRq4R4yyyMw=s88-c-k-c0x00ffffff-no-rj"},
+                    {"id":"UCitWd937oEliS7hDpgV1VuQ","title":"일상심리학","thumbnail":"https://yt3.ggpht.com/Ddh26AYlaLwl2VaXvf_3K5TB2lFWQ_VHyQniDWoiUDmluYFhUDQGaN3Z4MJGb5uIw2e6qErDj7k=s88-c-k-c0x00ffffff-no-rj"},
+                    {"id":"UCTmMK5Gx95eTUcIrc-8FWQw","title":"내일은 심리학","thumbnail":"https://yt3.ggpht.com/GIDK54QIIP4-OsLMLXN-63hLbedrRJqJrGmFp2S-Gr0T9635auQYOQcOzWrZWItxiIY8iQF0oQ=s88-c-k-c0x00ffffff-no-rj"},
+                    {"id":"UCH1vudPey53cxkXyugPVoVQ","title":"토닥교수의 심리학","thumbnail":"https://yt3.ggpht.com/Nd2G0w7oZ5vhxM6-m71GfHAgTAEcbhbcshg2cDgfk3TdYp4CxNY22oDVKDND_nxOo0gpCC5Z=s88-c-k-c0x00ffffff-no-rj"},
+                    {"id":"UCUl_9-qY9iJ_OiM_oZTqUAg","title":"쓸모있는 심리학","thumbnail":"https://yt3.ggpht.com/2yMU09x7FU4HyGAEMNY2xndXwwIdy3B08T1h-YHnLOJLedBHKTj4duxIGkZQ2dOhyksL2VwbJg=s88-c-k-c0x00ffffff-no-rj"},
+                    {"id":"UCfsCQoqEY6fBR_pGYGkfWiA","title":"욕망의 심리학","thumbnail":"https://yt3.ggpht.com/qCqeAmUtDQfhO697VBV3Jz72niPib4WKsxzyO5XtWp98IDM9zmUdrzlKDOMRwMfI01AqTawGVw=s88-c-k-c0x00ffffff-no-rj"},
+                    {"id":"UCA-Oc-OgafSUB8lM1yJWmRg","title":"다크심리학","thumbnail":"https://yt3.ggpht.com/KFYX9ixqiL1m-1AHjYpOIUxc27ercBXIpw3oSUXnNbONUniiI3PhEw9FkO0LBS4-3yjsCEAAMw=s88-c-k-c0x00ffffff-no-rj"},
+                    {"id":"UCNTGv5tBhqxIN3jAHbhumeQ","title":"심리툰 Psych2Go Korea","thumbnail":"https://yt3.ggpht.com/ytc/AIdro_kmS9ZQecVW2HNvMvkKgf1UyVb5cgh98GCkL_P5vnbOdA=s88-c-k-c0x00ffffff-no-rj"},
+                    {"id":"UC0byV7SMA-MjzByM5fZR1EA","title":"범죄심리 연구소","thumbnail":"https://yt3.ggpht.com/-1y-hEfEkD66W0XORYIvm9I1SwdrK2ScZ8i0xfQCSHf94m_tZHRc9hVZ_2k8HENT05K1mnA1=s88-c-k-c0x00ffffff-no-rj"},
+                    {"id":"UCEcOnlZgQ_D5q7TIMCauwsA","title":"끌리는 심리학","thumbnail":"https://yt3.ggpht.com/EeRhfh5gsInXSER-s_3525M77LhBBRvnu_6HZeMyqv7EgQpqX7Zm3pqHELLAEOXyM0eL6uCwfw=s88-c-k-c0x00ffffff-no-rj"},
+                    {"id":"UC5FrwbjA_vjmU9nGbjpbwyg","title":"멘탈케어 힐링 심리학","thumbnail":"https://yt3.ggpht.com/ytc/AIdro_lPvJw65kiRa3MVGi-OLDzlyzhvHKNrKYEJNc8xAUeuE98=s88-c-k-c0x00ffffff-no-rj"}
+                ]));
+            }
+            if (!localStorage.getItem('심리학_bench_foreign')) {
+                localStorage.setItem('심리학_bench_foreign', JSON.stringify([
+                    {"id":"UCir93b_ftqInEaDpsWYbo_g","title":"Practical Psychology","thumbnail":"https://yt3.ggpht.com/C-POj_q22w8Zux8FCpDUq_RhP9ct0cyAj4r-nfuNgALqSAWdImYv0qCzG6uOmYwSF5UKQ72_aNg=s88-c-k-c0x00ffffff-no-rj"},
+                    {"id":"UCHacVMLp7bHDC7e4eoPi9Dw","title":"Psychology Simplified","thumbnail":"https://yt3.ggpht.com/OH4Rp7vkCrXpoYRey0KMp79-qqVt0OLLdaxU5eQEK1tPHNzcpmVudpTooYKOFEVTCU4dHuJWwA=s88-c-k-c0x00ffffff-no-rj"},
+                    {"id":"UC6Unpcb3T4QijIBs8hPfeyA","title":"Psych Explained","thumbnail":"https://yt3.ggpht.com/4qrB36y3JDZgG68TlUyUCmcVFq4-tswsEhQusz-VwYfEoRfGmDzY4brs_jgz8qhr3KfJRSzL=s88-c-k-c0x00ffffff-no-rj"}
+                ]));
+            }
+        })();
     </script>
 </body>
 </html>
