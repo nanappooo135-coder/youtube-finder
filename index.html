@@ -1251,6 +1251,17 @@
                         </div>
                     </label>
                 </div>
+
+                <!-- Gemini API 키 설정 -->
+                <div style="margin-top:16px;padding-top:16px;border-top:1px solid #e0e0e0;">
+                    <label style="font-weight:700;font-size:0.9rem;">🤖 Gemini API 키 <span style="color:#888;font-weight:400;">(검수·제목·텍스트 등에 사용)</span></label>
+                    <div style="display:flex;gap:8px;margin-top:8px;">
+                        <input type="password" id="geminiKeyInput" placeholder="Gemini API 키 입력" value="" style="flex:1;padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:0.85rem;">
+                        <button onclick="saveGeminiKey()" style="padding:10px 20px;background:#dc3545;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;">저장</button>
+                    </div>
+                    <p id="geminiKeyStatus" style="font-size:0.8rem;color:#888;margin-top:4px;"></p>
+                </div>
+                </div>
             </div>
         </div>
 
@@ -1920,7 +1931,7 @@
         <!-- ===== 프로세스: 썸네일 제목 ===== -->
         <div id="process-title" style="display:none;">
             <div class="section">
-                <div class="section-title">썸네일 제목 만들기</div>
+                <div class="section-title">영상 제목 만들기</div>
                 <div class="section-content">
                     <p style="font-size:0.85rem;color:#888;margin-bottom:12px;">
                         대본을 넣으면 클릭률 높은 유튜브 제목 10개 + SEO 최적화 설명란을 만들어줘요.
@@ -2287,9 +2298,10 @@
         // ===========================
         // Gemini API 직접 호출 (서버 불필요)
         // ===========================
-        const GEMINI_API_KEYS = [
-            'AIzaSyDJz5leQuHOOnnUbltVNLJJHRKUb4KQXQA',
-        ];
+        const GEMINI_API_KEYS = (function() {
+            const stored = localStorage.getItem('gemini_api_key');
+            return stored ? [stored] : [];
+        })();
         let _geminiKeyIdx = 0;
         let _geminiCalls = 0;
 
@@ -5402,6 +5414,26 @@ Example format:
             URL.revokeObjectURL(a.href);
         }
 
+        // Gemini API 키 저장/로드
+        function saveGeminiKey() {
+            const key = document.getElementById('geminiKeyInput').value.trim();
+            if (!key) { alert('키를 입력해주세요'); return; }
+            localStorage.setItem('gemini_api_key', key);
+            // 런타임에도 반영
+            GEMINI_API_KEYS.length = 0;
+            GEMINI_API_KEYS.push(key);
+            document.getElementById('geminiKeyStatus').textContent = '✅ 저장됨';
+            document.getElementById('geminiKeyStatus').style.color = '#28a745';
+        }
+        (function initGeminiKeyUI() {
+            const saved = localStorage.getItem('gemini_api_key');
+            if (saved) {
+                document.getElementById('geminiKeyInput').value = saved;
+                document.getElementById('geminiKeyStatus').textContent = '✅ 키 등록됨';
+                document.getElementById('geminiKeyStatus').style.color = '#28a745';
+            }
+        })();
+
         function importSettings(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -5466,6 +5498,7 @@ Example format:
             'jp_channel_profile', 'jp_bench_kr', 'jp_bench_foreign',
             '심리학_channel_profile', '심리학_bench_kr', '심리학_bench_foreign',
             'youtube_api_keys', 'active_api_key_idx',
+            'gemini_api_key',
             'folders',
         ];
 
