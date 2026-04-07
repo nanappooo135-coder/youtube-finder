@@ -2892,9 +2892,11 @@ ${introPrompts}`;
                     return reading;
                 });
 
-                // 2) 년도 패턴: 1965년
-                converted = converted.replace(/(\d{3,4})년/g, (m, y) => {
-                    const reading = numberToKorean(parseInt(y)) + '년';
+                // 2) 년도 패턴: 1965년, 3,000년
+                converted = converted.replace(/(\d[\d,，]*)년/g, (m, y) => {
+                    const v = toNum(y);
+                    if (isNaN(v) || v < 100) return m; // 2자리 이하는 TTS가 잘 읽음
+                    const reading = numberToKorean(v) + '년';
                     changes.push({ from: m, to: reading });
                     return reading;
                 });
@@ -2945,9 +2947,11 @@ ${introPrompts}`;
                     return reading;
                 });
 
-                // 2) 년도: 1965年
-                converted = converted.replace(/(\d{3,4})年/g, (m, y) => {
-                    const reading = numberToJapanese(parseInt(y)) + 'ねん';
+                // 2) 년도: 1965年, 3,000年
+                converted = converted.replace(/(\d[\d,，]*)年/g, (m, y) => {
+                    const v = toNum(y);
+                    if (isNaN(v) || v < 100) return m;
+                    const reading = numberToJapanese(v) + 'ねん';
                     changes.push({ from: m, to: reading });
                     return reading;
                 });
