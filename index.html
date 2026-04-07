@@ -2768,6 +2768,7 @@ ${introPrompts}`;
         const KO_SUB    = ['','십','백','천'];
 
         function numberToKorean(n) {
+            if (isNaN(n) || !isFinite(n)) return String(n);
             if (n === 0) return '영';
             if (n < 0) return '마이너스 ' + numberToKorean(-n);
             const str = String(n);
@@ -2832,6 +2833,7 @@ ${introPrompts}`;
         }
 
         function numberToJapanese(n) {
+            if (isNaN(n) || !isFinite(n)) return String(n);
             if (n === 0) return 'ゼロ';
             if (n < 0) return 'マイナス' + numberToJapanese(-n);
             const str = String(n);
@@ -2898,7 +2900,7 @@ ${introPrompts}`;
                 });
 
                 // 3) 화폐 패턴: 165,500원 / 100달러 / 50만원 등
-                converted = converted.replace(/([\d,，]+)(만|억|조)?\s*(원|달러|엔|유로|위안|파운드|불)/g, (m, num, unit, currency) => {
+                converted = converted.replace(/(\d[\d,，]*)(만|억|조)?\s*(원|달러|엔|유로|위안|파운드|불)/g, (m, num, unit, currency) => {
                     let val = toNum(num);
                     if (unit === '만') val *= 10000;
                     else if (unit === '억') val *= 100000000;
@@ -2916,7 +2918,7 @@ ${introPrompts}`;
                 });
 
                 // 5) 단위 붙은 숫자: 100명, 500개, 30km 등
-                converted = converted.replace(/([\d,，]+)\s*(명|개|건|곳|번|배|위|등|대|채|척|기|톤|km|m|kg|g|cm|mm|리터|L)/g, (m, num, unit) => {
+                converted = converted.replace(/(\d[\d,，]*)\s*(명|개|건|곳|번|배|위|등|대|채|척|기|톤|km|m|kg|g|cm|mm|리터|L)/g, (m, num, unit) => {
                     const v = toNum(num);
                     if (v < 100) return m; // 2자리 이하는 보통 잘 읽음
                     const reading = numberToKorean(v) + unit;
@@ -2925,7 +2927,7 @@ ${introPrompts}`;
                 });
 
                 // 6) 남은 3자리+ 숫자 (콤마 포함)
-                converted = converted.replace(/([\d,，]{4,})/g, (m) => {
+                converted = converted.replace(/(\d[\d,，]{3,})/g, (m) => {
                     const v = toNum(m);
                     if (isNaN(v)) return m;
                     const reading = numberToKorean(v);
@@ -2951,7 +2953,7 @@ ${introPrompts}`;
                 });
 
                 // 3) 화폐: 165,500円 / 100ドル 등
-                converted = converted.replace(/([\d,，]+)(万|億|兆)?\s*(円|ドル|ユーロ|ウォン|元|ポンド)/g, (m, num, unit, currency) => {
+                converted = converted.replace(/(\d[\d,，]*)(万|億|兆)?\s*(円|ドル|ユーロ|ウォン|元|ポンド)/g, (m, num, unit, currency) => {
                     let val = toNum(num);
                     if (unit === '万') val *= 10000;
                     else if (unit === '億') val *= 100000000;
@@ -2970,7 +2972,7 @@ ${introPrompts}`;
                 });
 
                 // 5) 단위 붙은 숫자: 100人, 500個 등
-                converted = converted.replace(/([\d,，]+)\s*(人|個|件|回|番|倍|位|台|隻|機|トン|km|m|kg|g|cm|mm|リットル|L)/g, (m, num, unit) => {
+                converted = converted.replace(/(\d[\d,，]*)\s*(人|個|件|回|番|倍|位|台|隻|機|トン|km|m|kg|g|cm|mm|リットル|L)/g, (m, num, unit) => {
                     const v = toNum(num);
                     if (v < 100) return m;
                     const reading = numberToJapanese(v) + unit;
@@ -2979,7 +2981,7 @@ ${introPrompts}`;
                 });
 
                 // 6) 남은 3자리+ 숫자
-                converted = converted.replace(/([\d,，]{4,})/g, (m) => {
+                converted = converted.replace(/(\d[\d,，]{3,})/g, (m) => {
                     const v = toNum(m);
                     if (isNaN(v)) return m;
                     const reading = numberToJapanese(v);
