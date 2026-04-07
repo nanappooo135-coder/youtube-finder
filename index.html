@@ -2373,91 +2373,151 @@
 
         const GEMINI_MODELS = ['gemini-2.5-pro', 'gemini-2.5-flash'];
 
+        // 상태 표시 요소 (호출부에서 설정)
+        let _geminiStatusEl = null;
+        function _showGeminiStatus(msg) {
+            if (_geminiStatusEl) _geminiStatusEl.innerHTML = `<div class="spinner"></div> ${msg}`;
+        }
+
         async function callGemini(prompt, opts = {}) {
             const maxTokens = opts.maxTokens || 8192;
             const temperature = opts.temperature || 0.3;
-            // opts.model 지정하면 해당 모델만, 아니면 Pro→Flash 순서
-            const models = opts.model ? [opts.model] : GEMINI_MODELS;
+            const maxRetries = 2;
+            // opts.model 지정해도 실패 시 Flash 폴백 포함
+            const models = opts.model
+                ? [opts.model, ...GEMINI_MODELS.filter(m => m !== opts.model)]
+                : GEMINI_MODELS;
 
-            for (const model of models) {
+            // 재시도 가능한 에러인지 판별
+            function isRetryable(status, msg) {
+                if ([429, 503, 500, 502, 504].includes(status)) return true;
+                if (msg && /high demand|overloaded|temporarily|unavailable|rate limit|quota/i.test(msg)) return true;
+                return false;
+            }
+
+            const shortName = m => m.includes('pro') ? 'Pro' : 'Flash';
+
+            let lastError = null;
+            for (let mi = 0; mi < models.length; mi++) {
+                const model = models[mi];
                 for (let ki = 0; ki < GEMINI_API_KEYS.length; ki++) {
                     const key = GEMINI_API_KEYS[ki];
                     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
 
-                    try {
-                        const res = await fetch(url, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                contents: [{ parts: [{ text: prompt }] }],
-                                generationConfig: {
-                                    temperature,
-                                    maxOutputTokens: maxTokens,
-                                },
-                            }),
-                        });
+                    for (let attempt = 0; attempt < maxRetries; attempt++) {
+                        try {
+                            if (attempt > 0 || mi > 0) {
+                                _showGeminiStatus(`${shortName(model)} 시도 중... (${attempt+1}/${maxRetries})`);
+                            }
 
-                        if (res.status === 429) continue;
+                            const res = await fetch(url, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    contents: [{ parts: [{ text: prompt }] }],
+                                    generationConfig: {
+                                        temperature,
+                                        maxOutputTokens: maxTokens,
+                                    },
+                                }),
+                            });
 
-                        const data = await res.json();
-                        if (data.error) {
-                            if (data.error.code === 429) continue;
-                            throw new Error(data.error.message || JSON.stringify(data.error));
+                            if (isRetryable(res.status, '')) {
+                                lastError = new Error(`HTTP ${res.status}`);
+                                _showGeminiStatus(`${shortName(model)} 과부하 (${res.status})... ${Math.pow(2,attempt)}초 후 재시도`);
+                                await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
+                                continue;
+                            }
+
+                            const data = await res.json();
+                            if (data.error) {
+                                if (isRetryable(data.error.code, data.error.message)) {
+                                    lastError = new Error(data.error.message || `Error ${data.error.code}`);
+                                    _showGeminiStatus(`${shortName(model)} 과부하... ${Math.pow(2,attempt)}초 후 재시도`);
+                                    await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
+                                    continue;
+                                }
+                                throw new Error(data.error.message || JSON.stringify(data.error));
+                            }
+
+                            _geminiCalls++;
+                            const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                            const finishReason = data.candidates?.[0]?.finishReason || 'STOP';
+                            const usage = {
+                                input_tokens: data.usageMetadata?.promptTokenCount || 0,
+                                output_tokens: data.usageMetadata?.candidatesTokenCount || 0,
+                                model,
+                                cost_usd: 0,
+                            };
+                            return { text, usage, finishReason };
+
+                        } catch(e) {
+                            if (isRetryable(0, e.message)) {
+                                lastError = e;
+                                _showGeminiStatus(`오류 발생... ${Math.pow(2,attempt)}초 후 재시도`);
+                                await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
+                                continue;
+                            }
+                            throw e;
                         }
-
-                        _geminiCalls++;
-                        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-                        const finishReason = data.candidates?.[0]?.finishReason || 'STOP';
-                        const usage = {
-                            input_tokens: data.usageMetadata?.promptTokenCount || 0,
-                            output_tokens: data.usageMetadata?.candidatesTokenCount || 0,
-                            model,
-                            cost_usd: 0,
-                        };
-                        return { text, usage, finishReason };
-
-                    } catch(e) {
-                        if (e.message?.includes('429')) continue;
-                        throw e;
                     }
+                    // 이 키로 maxRetries 실패 → 다음 키로
+                }
+                // 이 모델로 모든 키 실패 → 다음 모델로
+                if (mi < models.length - 1) {
+                    _showGeminiStatus(`${shortName(model)} 실패 → ${shortName(models[mi+1])}로 전환 중...`);
                 }
             }
-            throw new Error('모든 API 키의 할당량이 소진되었습니다. 잠시 후 다시 시도해주세요.');
+            throw new Error(lastError?.message || '모든 API 키의 할당량이 소진되었습니다. 잠시 후 다시 시도해주세요.');
         }
 
-        // 스트리밍 헬퍼 — Gemini는 비스트리밍이지만 기존 UI와 호환
+        // 스트리밍 헬퍼 — 스트리밍 시도 → 실패 시 일반 API 폴백
         async function streamClaude(prompt, displayEl, opts = {}) {
             const maxTokens = opts.maxTokens || 65536;
-            const maxContinue = opts.maxContinue || 3;  // 최대 이어쓰기 횟수
-            displayEl.innerHTML = '<div class="spinner"></div> 생성 중...';
+            const maxContinue = opts.maxContinue || 3;
             let fullText = '';
 
+            // 경과 시간 표시
+            const startTime = Date.now();
+            let timerInterval = null;
+            function startTimer(msg) {
+                if (timerInterval) clearInterval(timerInterval);
+                timerInterval = setInterval(() => {
+                    const sec = Math.floor((Date.now() - startTime) / 1000);
+                    displayEl.innerHTML = `<div class="spinner"></div> ${msg} (${sec}초 경과)`;
+                }, 1000);
+                displayEl.innerHTML = `<div class="spinner"></div> ${msg}`;
+            }
+            function stopTimer() { if (timerInterval) { clearInterval(timerInterval); timerInterval = null; } }
+
             try {
+                startTimer('Gemini Pro 생성 중...');
+
                 let result = await callGemini(prompt, { maxTokens, temperature: 0.5, model: 'gemini-2.5-pro' });
                 fullText = result.text;
+                stopTimer();
 
-                // 잘렸으면 자동 이어쓰기 (최대 maxContinue회)
+                // 실시간 표시: 받은 텍스트 바로 보여주기
+                displayEl.innerHTML = '<div style="font-size:0.85rem;line-height:1.6;white-space:pre-wrap;word-break:break-word;">' + escapeHtml(fullText) + '</div>';
+
+                // 잘렸으면 자동 이어쓰기
                 let continueCount = 0;
                 while (result.finishReason === 'MAX_TOKENS' && continueCount < maxContinue) {
                     continueCount++;
-                    displayEl.innerHTML = `<div class="spinner"></div> 길어서 이어쓰는 중... (${continueCount}/${maxContinue})`;
-                    const continuePrompt = `Continue EXACTLY where you left off. Do NOT repeat any previously generated content. Do NOT add any introduction or explanation. Just continue from the cut-off point.\n\nPrevious output ended with:\n"""${fullText.slice(-500)}"""\n\nContinue:`;
+                    startTimer(`이어쓰는 중... (${continueCount}/${maxContinue})`);
+                    const continuePrompt = `Continue EXACTLY where you left off. Do NOT repeat any previously generated content.\n\nPrevious output ended with:\n"""${fullText.slice(-500)}"""\n\nContinue:`;
                     result = await callGemini(continuePrompt, { maxTokens, temperature: 0.5, model: 'gemini-2.5-pro' });
                     fullText += result.text;
+                    stopTimer();
+                    displayEl.innerHTML = '<div style="font-size:0.85rem;line-height:1.6;white-space:pre-wrap;word-break:break-word;">' + escapeHtml(fullText) + '</div>';
                 }
 
-                if (opts.renderFn) {
-                    opts.renderFn(fullText, displayEl);
-                } else {
-                    displayEl.innerHTML = escapeHtml(fullText).replace(/\n/g, '<br>');
-                }
-
-                // 이어쓰기 후에도 잘렸으면 경고 표시
                 if (result.finishReason === 'MAX_TOKENS') {
-                    displayEl.innerHTML += '<div style="margin-top:12px;padding:8px 12px;background:#fff3cd;border-radius:8px;color:#856404;font-size:0.85rem;">⚠️ 결과가 너무 길어 일부가 잘렸을 수 있어요. 파트를 나눠서 다시 시도해보세요.</div>';
+                    displayEl.innerHTML += '<div style="margin-top:12px;padding:8px 12px;background:#fff3cd;border-radius:8px;color:#856404;font-size:0.85rem;">결과가 잘렸을 수 있어요. 파트를 나눠서 다시 시도해보세요.</div>';
                 }
             } catch(e) {
-                displayEl.innerHTML = `<span style="color:red;">오류: ${escapeHtml(e.message)}</span>`;
+                stopTimer();
+                displayEl.innerHTML = '<div style="padding:16px;color:#dc3545;font-weight:700;font-size:1rem;">오류: ' + escapeHtml(e.message) + '</div>';
             }
 
             return fullText;
@@ -2519,6 +2579,7 @@
             const btn = document.getElementById('vsBtn');
             btn.disabled = true;
             btn.innerHTML = '<div class="spinner"></div> 실시간 생성 중...';
+            _geminiStatusEl = btn;
 
             // 결과 영역 먼저 표시 + 스트리밍 출력할 곳
             document.getElementById('vsResultSection').style.display = '';
@@ -2613,13 +2674,30 @@ If ANY prompt is missing either sentence, the ENTIRE output is INVALID. Do NOT u
 
 ★ LANGUAGE RULE: ALL prompts must be 100% English. No Korean, no Chinese, no Japanese characters anywhere in the prompt. Korean scene descriptions from the user must be translated to English.
 
-OUTPUT FORMAT (follow EXACTLY):
+★★★ OUTPUT FORMAT — THIS IS NON-NEGOTIABLE ★★★
+Every single pair MUST start with the EXACT tags shown below. Do NOT omit these tags. Do NOT rephrase them. They are used for automated parsing.
 
-[한국어 번역] (exact original text)
+[한국어 번역]
+(paste the exact original Korean text here)
 
-[영어 이미지 프롬프트] (detailed cinematic prompt ending with the two mandatory sentences above)
+[영어 이미지 프롬프트]
+(detailed cinematic prompt ending with the two mandatory sentences above)
 
-...repeat EXACTLY ${totalPairs} times. Do NOT stop early...
+EXAMPLE OF CORRECT OUTPUT:
+
+[한국어 번역]
+부모한테도 안 보여주는 통장을 외국 정부한테 까야 여행을 갈 수 있다면, 가시겠어요?
+
+[영어 이미지 프롬프트]
+Modern cinematic, tense close-up shot focusing on a traveler's hands... (80+ words) ...anamorphic ultra-wide composition, photorealistic cinematic rendering, 8K resolution. Absolutely no text, no letters, no words, no numbers, no watermark, no title, no logo, no caption, no subtitle, no speech bubbles, no Korean text, no English text, no characters of any language anywhere in the image.
+
+[한국어 번역]
+(next Korean text...)
+
+[영어 이미지 프롬프트]
+(next English prompt...)
+
+...repeat EXACTLY ${totalPairs} times. EVERY pair must have both [한국어 번역] and [영어 이미지 프롬프트] tags. Do NOT stop early.
 
 SCRIPT:
 ${scriptSection}`;
@@ -2627,6 +2705,12 @@ ${scriptSection}`;
 
                 const streamEl = document.getElementById('vsStreamBox');
                 const fullText = await streamClaude(prompt, streamEl);
+
+                // 생성 실패 시 에러 유지하고 중단
+                if (!fullText || fullText.trim().length === 0) {
+                    resultsEl.innerHTML = `<div style="padding:20px;color:#dc3545;font-weight:700;">생성 실패 — Gemini API가 빈 응답을 반환했습니다. 다시 시도해주세요.</div>`;
+                    return;
+                }
 
                 window._visualRaw = fullText;
 
@@ -2640,13 +2724,15 @@ ${scriptSection}`;
                     blocks.push({ ko: koText, prompt: (enMatch ? enMatch[1] : '').trim() });
                 }
 
-                resultsEl.innerHTML = `<div style="margin-bottom:12px;font-size:0.9rem;font-weight:700;color:#dc3545;">도입부 ${introLines.length}개 + 본문 ${bodyGroups.length}개 = 총 ${totalPairs}개 프롬프트</div>` +
+                resultsEl.innerHTML = `<div style="margin-bottom:12px;font-size:0.9rem;font-weight:700;color:#dc3545;">도입부 ${introLines.length}개 + 본문 ${bodyGroups.length}개 = 총 ${totalPairs}개 요청 → ${blocks.length}개 생성됨</div>` +
                 blocks.map(b => `
                     <div class="vs-card">
                         <div class="vs-ko">${escapeHtml(b.ko)}</div>
                         <div class="vs-prompt">${escapeHtml(b.prompt)}</div>
                     </div>
-                `).join('');
+                `).join('') +
+                `<details style="margin-top:16px;" open><summary style="cursor:pointer;font-weight:700;color:#888;">원본 텍스트 (${fullText.length.toLocaleString()}자)</summary>
+                <textarea style="width:100%;min-height:300px;margin-top:8px;padding:12px;border:2px solid #e0e0e0;border-radius:8px;font-size:0.85rem;font-family:inherit;line-height:1.6;" readonly>${escapeHtml(fullText)}</textarea></details>`;
 
             } catch(e) {
                 alert(`오류: ${e.message}`);
@@ -2658,7 +2744,7 @@ ${scriptSection}`;
 
         function copyVsPrompt(btn, idx) {
             const text = (window._visualPrompts || [])[idx]?.prompt || '';
-            navigator.clipboard.writeText(text).then(() => {
+            safeCopy(text).then(() => {
                 btn.textContent = '복사됨!';
                 setTimeout(() => { btn.textContent = '복사'; }, 1500);
             });
@@ -2695,6 +2781,7 @@ ${scriptSection}`;
             const btn = document.getElementById('vsVideoBtn');
             btn.disabled = true;
             btn.innerHTML = '<div class="spinner"></div> 동영상 프롬프트 생성 중...';
+            _geminiStatusEl = btn;
 
             document.getElementById('vsVideoSection').style.display = '';
             const videoEl = document.getElementById('vsVideoResults');
@@ -2747,15 +2834,75 @@ ${introPrompts}`;
         }
 
         function copyVideoPrompts(btn) {
-            navigator.clipboard.writeText(window._videoRaw || '').then(() => {
-                if (btn) { btn.textContent = '복사됨!'; setTimeout(() => { btn.textContent = '전체 복사'; }, 1500); }
+            const text = window._videoRaw || '';
+            if (!text) { alert('복사할 내용이 없습니다.'); return; }
+            _showCopyModal(text);
+        }
+
+        // 클립보드 복사 유틸 (대용량 텍스트도 안정적으로 동작)
+        function safeCopy(text) {
+            return new Promise(resolve => {
+                // 1차: execCommand (가장 안정적, 대용량 OK)
+                if (_execCopy(text)) { resolve(); return; }
+                // 2차: Clipboard API
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(resolve).catch(() => {
+                        _showCopyModal(text); resolve();
+                    });
+                    return;
+                }
+                // 3차: 수동 복사 모달
+                _showCopyModal(text); resolve();
             });
+        }
+        function _execCopy(text) {
+            try {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.cssText = 'position:fixed;left:0;top:0;width:2px;height:2px;opacity:0.01;z-index:99999;';
+                document.body.appendChild(ta);
+                ta.focus();
+                ta.select();
+                ta.setSelectionRange(0, text.length);
+                const ok = document.execCommand('copy');
+                document.body.removeChild(ta);
+                return ok;
+            } catch(e) { return false; }
+        }
+        function _showCopyModal(text) {
+            const old = document.getElementById('_copyModal');
+            if (old) old.remove();
+            // DOM으로 생성 (특수문자 안전)
+            const overlay = document.createElement('div');
+            overlay.id = '_copyModal';
+            overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;justify-content:center;';
+            const box = document.createElement('div');
+            box.style.cssText = 'background:white;border-radius:16px;padding:24px;width:90%;max-width:700px;max-height:85vh;display:flex;flex-direction:column;gap:12px;';
+            const title = document.createElement('div');
+            title.style.cssText = 'font-weight:700;font-size:1.1rem;';
+            title.textContent = 'Ctrl+A \u2192 Ctrl+C\ub85c \ubcf5\uc0ac\ud574\uc8fc\uc138\uc694';
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.cssText = 'flex:1;min-height:400px;padding:12px;border:2px solid #dc3545;border-radius:8px;font-size:0.85rem;resize:none;font-family:inherit;line-height:1.6;';
+            ta.readOnly = true;
+            const closeBtn = document.createElement('button');
+            closeBtn.textContent = '\ub2eb\uae30';
+            closeBtn.style.cssText = 'padding:12px;background:#dc3545;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:1rem;';
+            closeBtn.onclick = () => overlay.remove();
+            box.appendChild(title);
+            box.appendChild(ta);
+            box.appendChild(closeBtn);
+            overlay.appendChild(box);
+            overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+            document.body.appendChild(overlay);
+            ta.focus();
+            ta.select();
         }
 
         function copyAllVisualPrompts(btn) {
-            navigator.clipboard.writeText(window._visualRaw || '').then(() => {
-                if (btn) { btn.textContent = '복사됨!'; setTimeout(() => { btn.textContent = '전체 복사'; }, 1500); }
-            });
+            const text = window._visualRaw || '';
+            if (!text) { alert('복사할 내용이 없습니다. 먼저 프롬프트를 생성해주세요.'); return; }
+            _showCopyModal(text);
         }
 
         // ===========================
@@ -3066,7 +3213,7 @@ ${introPrompts}`;
 
         function copyTtsResult(id, btn) {
             const text = document.getElementById(id).value;
-            navigator.clipboard.writeText(text).then(() => {
+            safeCopy(text).then(() => {
                 const orig = btn.textContent;
                 btn.textContent = '복사됨!';
                 setTimeout(() => { btn.textContent = orig; }, 1500);
@@ -3074,7 +3221,7 @@ ${introPrompts}`;
         }
 
         function copyCaptionGuide(btn) {
-            navigator.clipboard.writeText(window._captionGuide || '').then(() => {
+            safeCopy(window._captionGuide || '').then(() => {
                 btn.textContent = '복사됨!';
                 setTimeout(() => { btn.textContent = '수정 가이드 복사'; }, 1500);
             });
@@ -3093,6 +3240,7 @@ ${introPrompts}`;
             const btn = document.getElementById('ttBtn');
             btn.disabled = true;
             btn.innerHTML = '<div class="spinner"></div> 생성 중...';
+            _geminiStatusEl = btn;
 
             try {
                 const prompt = `유튜브 썸네일 텍스트를 10개 생성해주세요.\n\n영상 내용: ${content}\n\n${keywords ? '★★★ 절대 규칙: 필수 키워드 ★★★\n키워드: ' + keywords + '\n위 키워드 중 최소 1개는 모든 텍스트의 줄1 또는 줄2에 반드시 포함해야 합니다. 키워드가 빠진 텍스트는 출력하지 마세요.\n\n' : ''}길이: ${length}\n${examples ? '참고 예시: ' + examples : ''}\n\n규칙:\n- 각 텍스트는 2줄로 구성 (줄1: 큰 글씨, 줄2: 보조 텍스트)\n- 클릭을 유도하는 자극적이고 호기심을 끄는 문구\n- 숫자, 물음표, 느낌표 적극 활용\n- 10~20자 내외로 짧고 임팩트 있게\n${keywords ? '- ★ 필수 키워드(' + keywords + ')를 자연스럽게 포함할 것\n' : ''}\n형식:\n1.\n"줄1 텍스트"\n"줄2 텍스트"\n\n2.\n"줄1 텍스트"\n"줄2 텍스트"\n\n... (10개까지)`;
@@ -3162,6 +3310,7 @@ ${introPrompts}`;
             const btn = document.getElementById('titleBtn');
             btn.disabled = true;
             btn.innerHTML = '<div class="spinner"></div> 생성 중... (30초~1분)';
+            _geminiStatusEl = btn;
             document.getElementById('titleResultSection').style.display = 'none';
             document.getElementById('descResultSection').style.display = 'none';
 
@@ -3286,7 +3435,7 @@ ${keywords ? '# ★★★ 절대 규칙: 핵심 키워드 ★★★\n키워드: 
                         card.onmouseover = () => card.style.borderColor = '#dc3545';
                         card.onmouseout = () => card.style.borderColor = '#e0e0e0';
                         card.onclick = () => {
-                            navigator.clipboard.writeText(t).then(() => {
+                            safeCopy(t).then(() => {
                                 copyBtn.textContent = '복사됨!';
                                 setTimeout(() => copyBtn.textContent = '복사', 1500);
                             });
@@ -3333,7 +3482,7 @@ ${keywords ? '# ★★★ 절대 규칙: 핵심 키워드 ★★★\n키워드: 
 
         function copyTitles() {
             const text = (window._generatedTitles || []).map((t,i) => `${i+1}. ${t}`).join('\n');
-            navigator.clipboard.writeText(text).then(() => {
+            safeCopy(text).then(() => {
                 const btn = event.target;
                 btn.textContent = '복사됨!';
                 setTimeout(() => { btn.textContent = '전체 복사'; }, 1500);
@@ -3341,7 +3490,7 @@ ${keywords ? '# ★★★ 절대 규칙: 핵심 키워드 ★★★\n키워드: 
         }
 
         function copyDesc() {
-            navigator.clipboard.writeText(window._generatedDesc || '').then(() => {
+            safeCopy(window._generatedDesc || '').then(() => {
                 const btn = event.target;
                 btn.textContent = '복사됨!';
                 setTimeout(() => { btn.textContent = '복사'; }, 1500);
@@ -3355,6 +3504,7 @@ ${keywords ? '# ★★★ 절대 규칙: 핵심 키워드 ★★★\n키워드: 
 
             const btn = document.getElementById('stBtn');
             btn.disabled = true;
+            _geminiStatusEl = btn;
             btn.innerHTML = '<div class="spinner"></div> 생성 중...';
 
             try {
@@ -3371,7 +3521,7 @@ ${keywords ? '# ★★★ 절대 규칙: 핵심 키워드 ★★★\n키워드: 
                 }
 
                 const html = items.map((text, i) => `
-                    <div class="tt-card" style="padding:12px 16px;margin-bottom:6px;" onclick="navigator.clipboard.writeText('${escapeHtml(text).replace(/'/g,"\\'")}').then(()=>{this.querySelector('.tt-copy').textContent='복사됨!';setTimeout(()=>this.querySelector('.tt-copy').textContent='복사',1500)})">
+                    <div class="tt-card" style="padding:12px 16px;margin-bottom:6px;" onclick="safeCopy('${escapeHtml(text).replace(/'/g,"\\'")}').then(()=>{this.querySelector('.tt-copy').textContent='복사됨!';setTimeout(()=>this.querySelector('.tt-copy').textContent='복사',1500)})">
                         <span class="tt-num">${i+1}</span>
                         <button class="tt-copy" onclick="event.stopPropagation()">복사</button>
                         <div class="tt-sub" style="font-size:0.95rem;">${escapeHtml(text)}</div>
@@ -3393,7 +3543,7 @@ ${keywords ? '# ★★★ 절대 규칙: 핵심 키워드 ★★★\n키워드: 
         }
 
         function copyThumbTextFull(cardEl, text) {
-            navigator.clipboard.writeText(text.replace(/\\n/g, '\n')).then(() => {
+            safeCopy(text.replace(/\\n/g, '\n')).then(() => {
                 const copyBtn = cardEl.querySelector('.tt-copy');
                 if (copyBtn) {
                     copyBtn.textContent = '복사됨!';
@@ -3420,6 +3570,7 @@ ${keywords ? '# ★★★ 절대 규칙: 핵심 키워드 ★★★\n키워드: 
             const btn = document.getElementById('rvBtn');
             btn.disabled = true;
             btn.innerHTML = '<div class="spinner"></div> 검수 + 수정 중... (1~3분)';
+            _geminiStatusEl = btn;
             document.getElementById('rvResultSection').style.display = 'none';
             document.getElementById('rvRevisedSection').style.display = 'none';
 
@@ -3510,6 +3661,7 @@ ${keywords ? '# ★★★ 절대 규칙: 핵심 키워드 ★★★\n키워드: 
             const btn = document.getElementById('rvBtn');
             btn.disabled = true;
             btn.innerHTML = '<div class="spinner"></div> 검수 중... (30초~1분)';
+            _geminiStatusEl = btn;
             document.getElementById('rvResultSection').style.display = 'none';
             document.getElementById('rvRevisedSection').style.display = 'none';
 
@@ -3561,6 +3713,7 @@ ${keywords ? '# ★★★ 절대 규칙: 핵심 키워드 ★★★\n키워드: 
             const btn = document.getElementById('rvReviseBtn');
             btn.disabled = true;
             btn.innerHTML = '<div class="spinner"></div> 수정 대본 생성 중... (1~3분 소요)';
+            _geminiStatusEl = btn;
             document.getElementById('rvRevisedSection').style.display = 'none';
 
             try {
@@ -3623,7 +3776,7 @@ ${keywords ? '# ★★★ 절대 규칙: 핵심 키워드 ★★★\n키워드: 
         }
 
         function copyRevisedScript() {
-            navigator.clipboard.writeText(window._revisedScript || '').then(() => {
+            safeCopy(window._revisedScript || '').then(() => {
                 const btn = event.target;
                 btn.textContent = '복사됨!';
                 setTimeout(() => { btn.textContent = '수정 대본 복사'; }, 1500);
@@ -3641,6 +3794,7 @@ ${keywords ? '# ★★★ 절대 규칙: 핵심 키워드 ★★★\n키워드: 
             const btn = document.getElementById('fcBtn');
             btn.disabled = true;
             btn.innerHTML = '<div class="spinner"></div> 검증 중... (30초~1분 소요)';
+            _geminiStatusEl = btn;
 
             document.getElementById('fcResultSection').style.display = 'none';
 
@@ -3698,6 +3852,7 @@ ${keywords ? '# ★★★ 절대 규칙: 핵심 키워드 ★★★\n키워드: 
             const btn = document.getElementById('fcCorrectBtn');
             btn.disabled = true;
             btn.innerHTML = '<div class="spinner"></div> 수정 대본 생성 중...';
+            _geminiStatusEl = btn;
             document.getElementById('fcCorrectedSection').style.display = 'none';
 
             try {
@@ -3748,7 +3903,7 @@ ${keywords ? '# ★★★ 절대 규칙: 핵심 키워드 ★★★\n키워드: 
 
         function copyCorrectedScript() {
             // 순수 대본만 복사 (변경 내역, 영어 등 제외)
-            navigator.clipboard.writeText(window._correctedScript || '').then(() => {
+            safeCopy(window._correctedScript || '').then(() => {
                 const btn = event.target;
                 btn.textContent = '복사됨!';
                 setTimeout(() => { btn.textContent = '수정 대본 복사'; }, 1500);
@@ -4084,7 +4239,7 @@ Example format:
 
         function copyText(btn, idx) {
             const text = document.getElementById(`tbPrompt_${idx}`).textContent;
-            navigator.clipboard.writeText(text).then(() => {
+            safeCopy(text).then(() => {
                 btn.textContent = '복사됨!';
                 setTimeout(() => { btn.textContent = '복사'; }, 1500);
             });
@@ -4299,7 +4454,7 @@ Example format:
 
         function copyThumbUrl() {
             const url = document.getElementById('thumbModalImg').src;
-            navigator.clipboard.writeText(url).then(() => {
+            safeCopy(url).then(() => {
                 const btn = event.target;
                 btn.textContent = '복사됨!';
                 setTimeout(() => { btn.textContent = '이미지 URL 복사'; }, 1500);
