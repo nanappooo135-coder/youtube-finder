@@ -1205,6 +1205,7 @@
             <button class="process-btn inactive" id="procBtn_review" onclick="switchProcess('review')">검수</button>
             <button class="process-btn inactive" id="procBtn_factcheck" onclick="switchProcess('factcheck')">팩트검증</button>
             <button class="process-btn inactive" id="procBtn_visual" onclick="switchProcess('visual')">시각화</button>
+            <button class="process-btn inactive" id="procBtn_tts" onclick="switchProcess('tts')">TTS변환</button>
         </div>
 
         <!-- ===== 프로세스 1: 주제찾기 ===== -->
@@ -1930,6 +1931,59 @@
 
         </div><!-- /process-visual -->
 
+        <!-- ===== 프로세스: TTS 변환 ===== -->
+        <div id="process-tts" style="display:none;">
+            <div class="section">
+                <div class="section-title">TTS 숫자 변환</div>
+                <div class="section-content">
+                    <p style="font-size:0.85rem;color:#888;margin-bottom:12px;">
+                        대본의 숫자를 읽기 텍스트로 변환해요. TTS용(음성)과 자막용(원본) 두 벌로 나옵니다.
+                    </p>
+
+                    <div class="input-group">
+                        <label>대본 붙여넣기</label>
+                        <textarea id="ttsInput" rows="10" placeholder="대본을 붙여넣으세요. 숫자가 포함된 부분이 자동으로 변환됩니다." style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;resize:vertical;font-family:inherit;line-height:1.6;"></textarea>
+                        <p id="ttsCharCount" style="font-size:0.8rem;color:#888;margin-top:4px;text-align:right;">0자</p>
+                    </div>
+
+                    <div class="input-group">
+                        <label>언어</label>
+                        <div style="display:flex;gap:8px;">
+                            <button class="tb-opt selected" data-val="ko" onclick="toggleTbOpt(this,'ttsLang',1)" style="flex:1;padding:10px;border:2px solid #dc3545;border-radius:10px;background:#dc3545;color:white;font-weight:700;cursor:pointer;" id="ttsLangKo">한국어</button>
+                            <button class="tb-opt" data-val="ja" onclick="toggleTbOpt(this,'ttsLang',1)" style="flex:1;padding:10px;border:2px solid #e0e0e0;border-radius:10px;background:white;color:#333;font-weight:700;cursor:pointer;" id="ttsLangJa">日本語</button>
+                        </div>
+                        <div id="ttsLang" style="display:none;" data-selected="ko"></div>
+                    </div>
+
+                    <button id="ttsBtn" onclick="convertTtsNumbers()" style="width:100%;padding:14px;background:#dc3545;color:white;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;margin-top:8px;">
+                        변환하기
+                    </button>
+                </div>
+            </div>
+
+            <!-- TTS 변환 결과 -->
+            <div id="ttsResultSection" style="display:none;">
+                <div class="section">
+                    <div class="section-title">변환 결과</div>
+                    <div class="section-content">
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                            <div>
+                                <div style="font-weight:700;margin-bottom:8px;font-size:0.9rem;">🔊 TTS용 (숫자→읽기)</div>
+                                <textarea id="ttsOutput" rows="12" readonly style="width:100%;padding:12px;border:2px solid #28a745;border-radius:10px;font-size:0.9rem;resize:vertical;font-family:inherit;line-height:1.6;background:#f8fff8;"></textarea>
+                                <button class="search-btn" onclick="copyTtsResult('ttsOutput', this)" style="width:100%;margin-top:8px;">TTS용 복사</button>
+                            </div>
+                            <div>
+                                <div style="font-weight:700;margin-bottom:8px;font-size:0.9rem;">📋 자막용 (원본)</div>
+                                <textarea id="ttsOriginal" rows="12" readonly style="width:100%;padding:12px;border:2px solid #007bff;border-radius:10px;font-size:0.9rem;resize:vertical;font-family:inherit;line-height:1.6;background:#f8f9ff;"></textarea>
+                                <button class="search-btn" onclick="copyTtsResult('ttsOriginal', this)" style="width:100%;margin-top:8px;background:#007bff;border-color:#007bff;">자막용 복사</button>
+                            </div>
+                        </div>
+                        <div id="ttsChangeLog" style="margin-top:16px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div><!-- /process-tts -->
+
         <!-- ===== 프로세스: 썸네일 제목 ===== -->
         <div id="process-title" style="display:none;">
             <div class="section">
@@ -2353,13 +2407,14 @@
 
                         _geminiCalls++;
                         const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                        const finishReason = data.candidates?.[0]?.finishReason || 'STOP';
                         const usage = {
                             input_tokens: data.usageMetadata?.promptTokenCount || 0,
                             output_tokens: data.usageMetadata?.candidatesTokenCount || 0,
                             model,
                             cost_usd: 0,
                         };
-                        return { text, usage };
+                        return { text, usage, finishReason };
 
                     } catch(e) {
                         if (e.message?.includes('429')) continue;
@@ -2372,17 +2427,34 @@
 
         // 스트리밍 헬퍼 — Gemini는 비스트리밍이지만 기존 UI와 호환
         async function streamClaude(prompt, displayEl, opts = {}) {
-            const maxTokens = opts.maxTokens || 16384;
+            const maxTokens = opts.maxTokens || 65536;
+            const maxContinue = opts.maxContinue || 3;  // 최대 이어쓰기 횟수
             displayEl.innerHTML = '<div class="spinner"></div> 생성 중...';
             let fullText = '';
 
             try {
-                const result = await callGemini(prompt, { maxTokens, temperature: 0.5, model: 'gemini-2.5-pro' });
+                let result = await callGemini(prompt, { maxTokens, temperature: 0.5, model: 'gemini-2.5-pro' });
                 fullText = result.text;
+
+                // 잘렸으면 자동 이어쓰기 (최대 maxContinue회)
+                let continueCount = 0;
+                while (result.finishReason === 'MAX_TOKENS' && continueCount < maxContinue) {
+                    continueCount++;
+                    displayEl.innerHTML = `<div class="spinner"></div> 길어서 이어쓰는 중... (${continueCount}/${maxContinue})`;
+                    const continuePrompt = `Continue EXACTLY where you left off. Do NOT repeat any previously generated content. Do NOT add any introduction or explanation. Just continue from the cut-off point.\n\nPrevious output ended with:\n"""${fullText.slice(-500)}"""\n\nContinue:`;
+                    result = await callGemini(continuePrompt, { maxTokens, temperature: 0.5, model: 'gemini-2.5-pro' });
+                    fullText += result.text;
+                }
+
                 if (opts.renderFn) {
                     opts.renderFn(fullText, displayEl);
                 } else {
                     displayEl.innerHTML = escapeHtml(fullText).replace(/\n/g, '<br>');
+                }
+
+                // 이어쓰기 후에도 잘렸으면 경고 표시
+                if (result.finishReason === 'MAX_TOKENS') {
+                    displayEl.innerHTML += '<div style="margin-top:12px;padding:8px 12px;background:#fff3cd;border-radius:8px;color:#856404;font-size:0.85rem;">⚠️ 결과가 너무 길어 일부가 잘렸을 수 있어요. 파트를 나눠서 다시 시도해보세요.</div>';
                 }
             } catch(e) {
                 displayEl.innerHTML = `<span style="color:red;">오류: ${escapeHtml(e.message)}</span>`;
@@ -2406,6 +2478,7 @@
             document.getElementById('process-review').style.display = proc === 'review' ? '' : 'none';
             document.getElementById('process-factcheck').style.display = proc === 'factcheck' ? '' : 'none';
             document.getElementById('process-title').style.display = proc === 'title' ? '' : 'none';
+            document.getElementById('process-tts').style.display = proc === 'tts' ? '' : 'none';
 
             if (proc === 'thumbtext') checkFcServer('ttServerStatus');
             if (proc === 'visual') checkFcServer('vsServerStatus');
@@ -2531,19 +2604,22 @@ KEY QUALITIES to match:
 - Specific color palettes named ("blood-red sunset", "deep crimson and dark steel-navy")
 - Atmospheric details ("haze hanging heavy", "fog clinging to surface")
 - Emotional/narrative weight ("the economic lifeline of the world held hostage")
-- Always end with: anamorphic ultra-wide composition, photorealistic cinematic rendering, 8K resolution
-- ★★★ ABSOLUTE RULE: Every prompt MUST end with this exact sentence: "Absolutely no text, no letters, no words, no numbers, no watermark, no title, no logo, no caption, no subtitle, no speech bubbles, no Korean text, no English text, no characters of any language anywhere in the image."
-- This text-ban rule overrides everything else. Even if the scene involves signs, banners, or screens — they must be blank or blurred.
+
+★★★ MANDATORY ENDING — EVERY prompt must end with EXACTLY these two sentences (copy-paste, do NOT shorten or rephrase):
+SENTENCE 1: "anamorphic ultra-wide composition, photorealistic cinematic rendering, 8K resolution."
+SENTENCE 2: "Absolutely no text, no letters, no words, no numbers, no watermark, no title, no logo, no caption, no subtitle, no speech bubbles, no Korean text, no English text, no characters of any language anywhere in the image."
+
+If ANY prompt is missing either sentence, the ENTIRE output is INVALID. Do NOT use shortcuts like "no text, no graphics". Copy the full sentences exactly.
 
 ★ LANGUAGE RULE: ALL prompts must be 100% English. No Korean, no Chinese, no Japanese characters anywhere in the prompt. Korean scene descriptions from the user must be translated to English.
 
-OUTPUT FORMAT:
+OUTPUT FORMAT (follow EXACTLY):
 
 [한국어 번역] (exact original text)
 
-[영어 이미지 프롬프트] (detailed cinematic prompt — 100% English only, no Korean characters)
+[영어 이미지 프롬프트] (detailed cinematic prompt ending with the two mandatory sentences above)
 
-...repeat EXACTLY ${totalPairs} times...
+...repeat EXACTLY ${totalPairs} times. Do NOT stop early...
 
 SCRIPT:
 ${scriptSection}`;
@@ -2679,6 +2755,322 @@ ${introPrompts}`;
         function copyAllVisualPrompts(btn) {
             navigator.clipboard.writeText(window._visualRaw || '').then(() => {
                 if (btn) { btn.textContent = '복사됨!'; setTimeout(() => { btn.textContent = '전체 복사'; }, 1500); }
+            });
+        }
+
+        // ===========================
+        // TTS 숫자 변환
+        // ===========================
+
+        // 한국어 숫자 읽기
+        const KO_DIGITS = ['영','일','이','삼','사','오','육','칠','팔','구'];
+        const KO_UNITS  = ['','만','억','조','경'];
+        const KO_SUB    = ['','십','백','천'];
+
+        function numberToKorean(n) {
+            if (n === 0) return '영';
+            if (n < 0) return '마이너스 ' + numberToKorean(-n);
+            const str = String(n);
+            const len = str.length;
+            let result = '';
+            // 4자리씩 묶기
+            const groups = [];
+            for (let i = len; i > 0; i -= 4) {
+                groups.unshift(str.slice(Math.max(0, i - 4), i));
+            }
+            for (let gi = 0; gi < groups.length; gi++) {
+                const unitIdx = groups.length - 1 - gi;
+                const g = groups[gi];
+                let groupStr = '';
+                for (let di = 0; di < g.length; di++) {
+                    const d = parseInt(g[di]);
+                    const subIdx = g.length - 1 - di;
+                    if (d === 0) continue;
+                    if (d === 1 && subIdx > 0) {
+                        groupStr += KO_SUB[subIdx];
+                    } else {
+                        groupStr += KO_DIGITS[d] + KO_SUB[subIdx];
+                    }
+                }
+                if (groupStr) {
+                    result += groupStr + (KO_UNITS[unitIdx] || '');
+                }
+            }
+            return result || '영';
+        }
+
+        // 한국어: 소수점 처리
+        function decimalToKorean(intPart, decPart) {
+            return numberToKorean(parseInt(intPart)) + ' 점 ' + decPart.split('').map(d => KO_DIGITS[parseInt(d)]).join(' ');
+        }
+
+        // 일본어 숫자 읽기
+        const JA_DIGITS = ['','いち','に','さん','よん','ご','ろく','なな','はち','きゅう'];
+        const JA_UNITS  = ['','まん','おく','ちょう','けい'];
+        const JA_SUB    = ['','じゅう','ひゃく','せん'];
+
+        // 일본어 음운 변화 (300→さんびゃく, 8000→はっせん 등)
+        function jaSubUnit(digit, subIdx) {
+            if (subIdx === 2) { // ひゃく
+                if (digit === 3) return 'さんびゃく';
+                if (digit === 6) return 'ろっぴゃく';
+                if (digit === 8) return 'はっぴゃく';
+                if (digit === 1) return 'ひゃく';
+                return JA_DIGITS[digit] + 'ひゃく';
+            }
+            if (subIdx === 3) { // せん
+                if (digit === 3) return 'さんぜん';
+                if (digit === 8) return 'はっせん';
+                if (digit === 1) return 'せん';
+                return JA_DIGITS[digit] + 'せん';
+            }
+            if (subIdx === 1) { // じゅう
+                if (digit === 1) return 'じゅう';
+                return JA_DIGITS[digit] + 'じゅう';
+            }
+            return JA_DIGITS[digit];
+        }
+
+        function numberToJapanese(n) {
+            if (n === 0) return 'ゼロ';
+            if (n < 0) return 'マイナス' + numberToJapanese(-n);
+            const str = String(n);
+            const len = str.length;
+            let result = '';
+            const groups = [];
+            for (let i = len; i > 0; i -= 4) {
+                groups.unshift(str.slice(Math.max(0, i - 4), i));
+            }
+            for (let gi = 0; gi < groups.length; gi++) {
+                const unitIdx = groups.length - 1 - gi;
+                const g = groups[gi];
+                let groupStr = '';
+                for (let di = 0; di < g.length; di++) {
+                    const d = parseInt(g[di]);
+                    const subIdx = g.length - 1 - di;
+                    if (d === 0) continue;
+                    groupStr += jaSubUnit(d, subIdx);
+                }
+                if (groupStr) {
+                    result += groupStr + (JA_UNITS[unitIdx] || '');
+                }
+            }
+            return result || 'ゼロ';
+        }
+
+        // 일본어: 소수점 처리
+        const JA_SINGLE = ['ゼロ','いち','に','さん','よん','ご','ろく','なな','はち','きゅう'];
+        function decimalToJapanese(intPart, decPart) {
+            return numberToJapanese(parseInt(intPart)) + 'てん' + decPart.split('').map(d => JA_SINGLE[parseInt(d)]).join('');
+        }
+
+        // 메인 변환 함수
+        function convertTtsNumbers() {
+            const input = document.getElementById('ttsInput').value;
+            if (!input.trim()) { alert('대본을 입력해주세요'); return; }
+
+            // 언어 감지: ttsLang 버튼 상태 확인
+            const langBtns = document.querySelectorAll('#ttsLang ~ div .tb-opt.selected, [onclick*="ttsLang"].selected, #ttsLangKo, #ttsLangJa');
+            let lang = 'ko';
+            const jaBtn = document.getElementById('ttsLangJa');
+            if (jaBtn && jaBtn.classList.contains('selected')) lang = 'ja';
+
+            const changes = [];
+            const toNum = (s) => parseInt(s.replace(/[,，]/g, ''));
+
+            let converted = input;
+
+            if (lang === 'ko') {
+                // 한국어 변환 패턴
+
+                // 1) 소수점 숫자 (3.5%, 12.7 등)
+                converted = converted.replace(/(\d{1,})[.](\d+)/g, (m, intP, decP) => {
+                    const reading = decimalToKorean(intP, decP);
+                    changes.push({ from: m, to: reading });
+                    return reading;
+                });
+
+                // 2) 년도 패턴: 1965년
+                converted = converted.replace(/(\d{3,4})년/g, (m, y) => {
+                    const reading = numberToKorean(parseInt(y)) + '년';
+                    changes.push({ from: m, to: reading });
+                    return reading;
+                });
+
+                // 3) 화폐 패턴: 165,500원 / 100달러 / 50만원 등
+                converted = converted.replace(/([\d,，]+)(만|억|조)?\s*(원|달러|엔|유로|위안|파운드|불)/g, (m, num, unit, currency) => {
+                    let val = toNum(num);
+                    if (unit === '만') val *= 10000;
+                    else if (unit === '억') val *= 100000000;
+                    else if (unit === '조') val *= 1000000000000;
+                    const reading = numberToKorean(val) + ' ' + currency;
+                    changes.push({ from: m, to: reading });
+                    return reading;
+                });
+
+                // 4) 퍼센트: 50% / 3.5%는 이미 소수점에서 처리됨
+                converted = converted.replace(/(\d[\d,，]*)%/g, (m, num) => {
+                    const reading = numberToKorean(toNum(num)) + '퍼센트';
+                    changes.push({ from: m, to: reading });
+                    return reading;
+                });
+
+                // 5) 단위 붙은 숫자: 100명, 500개, 30km 등
+                converted = converted.replace(/([\d,，]+)\s*(명|개|건|곳|번|배|위|등|대|채|척|기|톤|km|m|kg|g|cm|mm|리터|L)/g, (m, num, unit) => {
+                    const v = toNum(num);
+                    if (v < 100) return m; // 2자리 이하는 보통 잘 읽음
+                    const reading = numberToKorean(v) + unit;
+                    changes.push({ from: m, to: reading });
+                    return reading;
+                });
+
+                // 6) 남은 3자리+ 숫자 (콤마 포함)
+                converted = converted.replace(/([\d,，]{4,})/g, (m) => {
+                    const v = toNum(m);
+                    if (isNaN(v)) return m;
+                    const reading = numberToKorean(v);
+                    changes.push({ from: m, to: reading });
+                    return reading;
+                });
+
+            } else {
+                // 일본어 변환 패턴
+
+                // 1) 소수점 숫자
+                converted = converted.replace(/(\d{1,})[.](\d+)/g, (m, intP, decP) => {
+                    const reading = decimalToJapanese(intP, decP);
+                    changes.push({ from: m, to: reading });
+                    return reading;
+                });
+
+                // 2) 년도: 1965年
+                converted = converted.replace(/(\d{3,4})年/g, (m, y) => {
+                    const reading = numberToJapanese(parseInt(y)) + 'ねん';
+                    changes.push({ from: m, to: reading });
+                    return reading;
+                });
+
+                // 3) 화폐: 165,500円 / 100ドル 등
+                converted = converted.replace(/([\d,，]+)(万|億|兆)?\s*(円|ドル|ユーロ|ウォン|元|ポンド)/g, (m, num, unit, currency) => {
+                    let val = toNum(num);
+                    if (unit === '万') val *= 10000;
+                    else if (unit === '億') val *= 100000000;
+                    else if (unit === '兆') val *= 1000000000000;
+                    const currencyReading = { '円':'えん', 'ドル':'ドル', 'ユーロ':'ユーロ', 'ウォン':'ウォン', '元':'げん', 'ポンド':'ポンド' };
+                    const reading = numberToJapanese(val) + (currencyReading[currency] || currency);
+                    changes.push({ from: m, to: reading });
+                    return reading;
+                });
+
+                // 4) 퍼센트
+                converted = converted.replace(/(\d[\d,，]*)(%|パーセント)/g, (m, num) => {
+                    const reading = numberToJapanese(toNum(num)) + 'パーセント';
+                    changes.push({ from: m, to: reading });
+                    return reading;
+                });
+
+                // 5) 단위 붙은 숫자: 100人, 500個 등
+                converted = converted.replace(/([\d,，]+)\s*(人|個|件|回|番|倍|位|台|隻|機|トン|km|m|kg|g|cm|mm|リットル|L)/g, (m, num, unit) => {
+                    const v = toNum(num);
+                    if (v < 100) return m;
+                    const reading = numberToJapanese(v) + unit;
+                    changes.push({ from: m, to: reading });
+                    return reading;
+                });
+
+                // 6) 남은 3자리+ 숫자
+                converted = converted.replace(/([\d,，]{4,})/g, (m) => {
+                    const v = toNum(m);
+                    if (isNaN(v)) return m;
+                    const reading = numberToJapanese(v);
+                    changes.push({ from: m, to: reading });
+                    return reading;
+                });
+            }
+
+            // 결과 표시
+            document.getElementById('ttsResultSection').style.display = '';
+            document.getElementById('ttsOutput').value = converted;
+            document.getElementById('ttsOriginal').value = input;
+
+            // 변경 로그 + 자막 수정 가이드
+            const logEl = document.getElementById('ttsChangeLog');
+            if (changes.length > 0) {
+                // 중복 제거
+                const unique = [...new Map(changes.map(c => [c.from + c.to, c])).values()];
+
+                // 자막 수정 가이드: TTS에서 변환된 텍스트 → 캡컷에서 원본 숫자로 되돌릴 목록
+                const subtitleGuide = unique.map(c =>
+                    `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f0f0f0;">` +
+                    `<span style="color:#888;font-size:0.85rem;min-width:60px;">자막에서</span>` +
+                    `<span style="background:#fff3cd;padding:2px 8px;border-radius:4px;font-weight:600;">${escapeHtml(c.to)}</span>` +
+                    `<span style="color:#888;">→</span>` +
+                    `<span style="background:#d4edda;padding:2px 8px;border-radius:4px;font-weight:700;">${escapeHtml(c.from)}</span>` +
+                    `<span style="color:#888;font-size:0.85rem;">으로 수정</span>` +
+                    `</div>`
+                ).join('');
+
+                logEl.innerHTML =
+                    `<div style="margin-bottom:16px;">` +
+                    `<div style="font-weight:700;margin-bottom:8px;font-size:0.9rem;">변환 내역 (${unique.length}건)</div>` +
+                    '<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:4px 12px;font-size:0.85rem;">' +
+                    unique.map(c =>
+                        `<div style="text-align:right;color:#dc3545;font-weight:600;">${escapeHtml(c.from)}</div>` +
+                        `<div style="color:#888;">→</div>` +
+                        `<div style="color:#28a745;font-weight:600;">${escapeHtml(c.to)}</div>`
+                    ).join('') + '</div></div>' +
+                    `<div style="background:#f8f9fa;border:2px solid #dee2e6;border-radius:10px;padding:16px;">` +
+                    `<div style="font-weight:700;margin-bottom:8px;font-size:0.9rem;">📋 캡컷 자막 수정 가이드</div>` +
+                    `<p style="font-size:0.8rem;color:#888;margin-bottom:8px;">TTS용 대본으로 영상을 만든 후, 캡컷에서 아래 자막만 숫자로 바꿔주세요.</p>` +
+                    subtitleGuide +
+                    `<button class="search-btn" onclick="copyCaptionGuide(this)" style="width:100%;margin-top:12px;background:#6c757d;border-color:#6c757d;">수정 가이드 복사</button>` +
+                    `</div>`;
+
+                // 가이드 데이터 저장
+                window._captionGuide = unique.map(c => `${c.to} → ${c.from}`).join('\n');
+            } else {
+                logEl.innerHTML = '<div style="color:#888;font-size:0.85rem;">변환할 숫자가 없어요.</div>';
+            }
+
+            document.getElementById('ttsResultSection').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // TTS 언어 버튼 토글
+        document.addEventListener('click', (e) => {
+            if (e.target.id === 'ttsLangKo' || e.target.id === 'ttsLangJa') {
+                const ko = document.getElementById('ttsLangKo');
+                const ja = document.getElementById('ttsLangJa');
+                ko.classList.toggle('selected', e.target.id === 'ttsLangKo');
+                ja.classList.toggle('selected', e.target.id === 'ttsLangJa');
+                ko.style.background = e.target.id === 'ttsLangKo' ? '#dc3545' : 'white';
+                ko.style.color = e.target.id === 'ttsLangKo' ? 'white' : '#333';
+                ko.style.borderColor = e.target.id === 'ttsLangKo' ? '#dc3545' : '#e0e0e0';
+                ja.style.background = e.target.id === 'ttsLangJa' ? '#dc3545' : 'white';
+                ja.style.color = e.target.id === 'ttsLangJa' ? 'white' : '#333';
+                ja.style.borderColor = e.target.id === 'ttsLangJa' ? '#dc3545' : '#e0e0e0';
+            }
+        });
+
+        // TTS 글자수 표시
+        document.addEventListener('input', (e) => {
+            if (e.target.id === 'ttsInput') {
+                document.getElementById('ttsCharCount').textContent = `${e.target.value.length.toLocaleString()}자`;
+            }
+        });
+
+        function copyTtsResult(id, btn) {
+            const text = document.getElementById(id).value;
+            navigator.clipboard.writeText(text).then(() => {
+                const orig = btn.textContent;
+                btn.textContent = '복사됨!';
+                setTimeout(() => { btn.textContent = orig; }, 1500);
+            });
+        }
+
+        function copyCaptionGuide(btn) {
+            navigator.clipboard.writeText(window._captionGuide || '').then(() => {
+                btn.textContent = '복사됨!';
+                setTimeout(() => { btn.textContent = '수정 가이드 복사'; }, 1500);
             });
         }
 
@@ -4813,45 +5205,82 @@ Example format:
             '주식 투자':     ['주식 이야기', '투자 전략', '부자의 비밀', '주식 분석', '버블 붕괴', '시장 폭락'],
             '부동산':        ['부동산 이야기', '집값', '부동산 투자', '재개발', '부동산 붕괴'],
             '사회이슈 시사': ['사회 이슈', '시사 이야기', '뉴스 분석', '세상 이야기', '사회 붕괴'],
-            '역사 스토리':   ['역사 이야기', '비화', '역사 속 경제', '제국의 몰락', '역사 위기'],
+            '역사 스토리':   ['역사 이야기', '비화', '세계사 비화', '제국의 몰락', '역사 미스터리', '한국사 비화'],
+            '심리학':        ['심리학 실험', '인간 심리', '심리 분석', '심리학 이론', '사회심리', '심리 실험'],
             '자기계발 성공': ['성공 이야기', '부자 비밀', '자기계발', '인생 역전', '부자 되는 법']
+        };
+
+        // 장르별 확장 쿼리 (Q6~Q9) — 장르 섞임 방지
+        const GENRE_EXTRA_QUERIES = {
+            '경제': [
+                g => g + ' 공부',           // 경제 공부
+                p => (p.genre.split(' ')[1] || p.genre.split(' ')[0]) + ' 방법', // 재테크 방법
+                () => '돈 이야기',          // 넓은 범주
+                g => g + ' 뉴스'            // 경제 뉴스
+            ],
+            '역사': [
+                g => g + ' 다큐',           // 역사 다큐
+                () => '세계사 이야기',      // 세계사
+                () => '한국사 비화',        // 한국사
+                g => g + ' 인물'            // 역사 인물
+            ],
+            '심리학': [
+                g => g + ' 실험',           // 심리학 실험
+                () => '인간 심리 이야기',   // 인간 심리
+                () => '사회심리 실험',      // 사회심리
+                g => g + ' 다큐'            // 심리학 다큐
+            ],
+            '일본경제': [
+                () => '일본 경제 위기',     // 일본 경제
+                () => '일본 부동산',        // 일본 부동산
+                () => '잃어버린 30년',      // 넓은 범주
+                () => '일본 경제 뉴스'      // 일본 뉴스
+            ]
+        };
+
+        // 장르별 기본 단어 (사용자 고유 키워드 추출 시 제외)
+        const GENRE_BASE_WORDS = {
+            '경제':   ['경제학','경제','재테크','주식','투자','부동산'],
+            '역사':   ['역사','세계사','한국사','역사학','사학'],
+            '심리학': ['심리학','심리','정신','사회심리','인지'],
+            '일본경제': ['경제','일본경제','일본','재테크','투자']
         };
 
         function buildSearchQueries(profile, keywords) {
             const toneKws   = TONE_KEYWORDS[profile.tone] || [];
             const expandKws = GENRE_EXPAND[profile.genre] || [];
             const genreWord = profile.genre.split(' ')[0] || '';
+            const channel   = currentChannel; // '경제', '역사', '심리학', '일본경제'
 
-            // 공통 필터 키워드 제외하고 사용자 고유 키워드 추출
-            const baseWords = ['경제학','경제','재테크','주식','투자','부동산'];
+            // 장르별 기본 단어 제외 → 사용자 고유 키워드 추출
+            const baseWords = GENRE_BASE_WORDS[channel] || [];
             const userExtra = keywords.filter(k => !baseWords.includes(k));
 
             // Q1: 장르 + 핵심 키워드 (정확)
             const q1 = [genreWord, keywords[0]].filter(Boolean).join(' ');
 
-            // Q2: 장르 확장 - 해외/국가 경제
+            // Q2: 장르 확장
             const q2 = expandKws[0] || genreWord + ' 이야기';
 
-            // Q3: 사용자 고유 키워드 직접 조합 (몰락, 위기, 파산 등)
+            // Q3: 사용자 고유 키워드 직접 조합
             const q3 = userExtra.length >= 2
                 ? userExtra[0] + ' ' + userExtra[1]
-                : expandKws[2] || genreWord + ' 역사';
+                : expandKws[2] || genreWord + ' 이야기';
 
-            // Q4: 스타일 + 장르 확장 (이야기 국가 경제)
+            // Q4: 스타일 + 장르 확장
             const q4 = (toneKws[0] || '') + ' ' + (expandKws[1] || genreWord);
 
-            // Q5: 또 다른 확장 각도 (제국 몰락, 금융 붕괴 등)
+            // Q5: 또 다른 확장 각도
             const q5 = userExtra.length >= 4
                 ? userExtra[2] + ' ' + userExtra[3]
-                : expandKws[5] || genreWord + ' 붕괴';
-            // Q6: 경제 공부 스타일 (경제의 힘 계열)
-            const q6 = genreWord + ' 공부';
-            // Q7: 재테크 방법 스타일 (신사임당 계열)
-            const q7 = (profile.genre.split(' ')[1] || genreWord) + ' 방법';
-            // Q8: 돈 이야기 (가장 넓은 범주)
-            const q8 = '돈 이야기';
-            // Q9: 경제 뉴스 (시사/이슈 계열)
-            const q9 = genreWord + ' 뉴스';
+                : expandKws[5] || genreWord + ' 이야기';
+
+            // Q6~Q9: 장르별 전용 쿼리
+            const extraFns = GENRE_EXTRA_QUERIES[channel] || [];
+            const q6 = extraFns[0] ? extraFns[0](genreWord, profile) : genreWord + ' 이야기';
+            const q7 = extraFns[1] ? extraFns[1](profile)            : genreWord + ' 분석';
+            const q8 = extraFns[2] ? extraFns[2]()                   : genreWord + ' 스토리';
+            const q9 = extraFns[3] ? extraFns[3](genreWord)          : genreWord + ' 뉴스';
 
             return [q1, q2, q3.trim(), q4.trim(), q5, q6, q7, q8, q9].filter(Boolean);
         }
