@@ -2926,8 +2926,8 @@ ${introPrompts}`;
                     return reading;
                 });
 
-                // 6) 남은 3자리+ 숫자 (콤마 포함)
-                converted = converted.replace(/(\d[\d,，]{3,})/g, (m) => {
+                // 6) 남은 3자리+ 숫자 (콤마 포함, 단위 없는 것 포함)
+                converted = converted.replace(/(\d{3,}[\d,，]*|\d[\d,，]{3,})/g, (m) => {
                     const v = toNum(m);
                     if (isNaN(v)) return m;
                     const reading = numberToKorean(v);
@@ -2980,8 +2980,8 @@ ${introPrompts}`;
                     return reading;
                 });
 
-                // 6) 남은 3자리+ 숫자
-                converted = converted.replace(/(\d[\d,，]{3,})/g, (m) => {
+                // 6) 남은 3자리+ 숫자 (콤마 포함, 단위 없는 것 포함)
+                converted = converted.replace(/(\d{3,}[\d,，]*|\d[\d,，]{3,})/g, (m) => {
                     const v = toNum(m);
                     if (isNaN(v)) return m;
                     const reading = numberToJapanese(v);
