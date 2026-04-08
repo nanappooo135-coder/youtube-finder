@@ -5924,13 +5924,21 @@ Example format:
                     order: 'relevance', maxResults: 50
                 };
 
-                const searches = [query1, query2, query3, query4, query5]
-                    .filter(Boolean)
-                    .map(q => fetchYouTubeAPI('search', { key: apiKey, q, ...searchParams }));
+                // 각 쿼리당 페이지네이션으로 최대 100개 확보 (50+50)
+                async function searchWithPaging(q) {
+                    const r1 = await fetchYouTubeAPI('search', { key: apiKey, q, ...searchParams });
+                    const items = r1.items || [];
+                    if (r1.nextPageToken && period >= 90) {
+                        const r2 = await fetchYouTubeAPI('search', { key: apiKey, q, ...searchParams, pageToken: r1.nextPageToken });
+                        items.push(...(r2.items || []));
+                    }
+                    return items;
+                }
 
-                const searchResults = await Promise.all(searches);
+                const queries = [query1, query2, query3, query4, query5].filter(Boolean);
+                const searchResults = await Promise.all(queries.map(q => searchWithPaging(q)));
 
-                const allItems = searchResults.flatMap(r => r.items || []);
+                const allItems = searchResults.flat();
 
                 if (allItems.length === 0) {
                     showError('benchResults', '검색 결과가 없어요. 기간을 늘리거나 키워드를 확인해보세요.');
@@ -5943,8 +5951,10 @@ Example format:
                 if (krChannels.length > 0) {
                     progBar.style.width = '40%';
                     loadText.textContent = `등록 채널 ${krChannels.length}개 수집 중... (채널당 1 유닛)`;
+                    // 기간이 길수록 채널당 더 많이 수집
+                    const perChannel = period >= 180 ? 30 : period >= 90 ? 20 : 10;
                     const plResults = await Promise.all(
-                        krChannels.map(c => fetchChannelVideosViaPlaylist(c.id, c.title, publishedAfter, 10))
+                        krChannels.map(c => fetchChannelVideosViaPlaylist(c.id, c.title, publishedAfter, perChannel))
                     );
                     registeredItems.push(...plResults.flat());
                 }
@@ -5959,7 +5969,7 @@ Example format:
                 });
                 const validRegistered = dedupe(registeredItems);
                 const validSearch = dedupe(allItems);
-                const validItems = [...validRegistered, ...validSearch].slice(0, 200);
+                const validItems = [...validRegistered, ...validSearch].slice(0, 500);
 
                 const allVideoIds = validItems.map(i => i.id.videoId);
                 const allChannelIds = [...new Set(validItems.map(i => i.snippet.channelId))];
