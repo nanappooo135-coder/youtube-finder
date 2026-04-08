@@ -2388,7 +2388,7 @@
         async function callGemini(prompt, opts = {}) {
             const maxTokens = opts.maxTokens || 8192;
             const temperature = opts.temperature || 0.3;
-            const maxRetries = 4;
+            const maxRetries = 2;
             // opts.model 지정해도 실패 시 Flash 폴백 포함
             const models = opts.model
                 ? [opts.model, ...GEMINI_MODELS.filter(m => m !== opts.model)]
