@@ -2442,8 +2442,18 @@
                             }
 
                             _geminiCalls++;
-                            const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-                            const finishReason = data.candidates?.[0]?.finishReason || 'STOP';
+                            // 안전 필터 차단 감지
+                            if (!data.candidates || data.candidates.length === 0) {
+                                const blockReason = data.promptFeedback?.blockReason || '알 수 없음';
+                                throw new Error(`Gemini 안전 필터 차단 (${blockReason}). 대본 내용이 민감한 주제를 포함할 수 있습니다. 파트를 나눠서 다시 시도해보세요.`);
+                            }
+                            const candidate = data.candidates[0];
+                            if (candidate.finishReason === 'SAFETY') {
+                                const ratings = (candidate.safetyRatings || []).filter(r => r.blocked).map(r => r.category).join(', ');
+                                throw new Error(`Gemini 안전 필터 차단 (${ratings || 'SAFETY'}). 파트를 나눠서 다시 시도해보세요.`);
+                            }
+                            const text = candidate.content?.parts?.[0]?.text || '';
+                            const finishReason = candidate.finishReason || 'STOP';
                             const usage = {
                                 input_tokens: data.usageMetadata?.promptTokenCount || 0,
                                 output_tokens: data.usageMetadata?.candidatesTokenCount || 0,
