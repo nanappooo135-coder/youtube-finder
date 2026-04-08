@@ -2722,14 +2722,19 @@ ${scriptSection}`;
                     for (const line of lines) {
                         const trimmed = line.trim();
                         if (!trimmed) { tagged.push(''); continue; }
-                        // 영어 프롬프트 판별: 스타일 키워드로 시작
-                        const isEnPrompt = /^(Modern cinematic|Cinematic|Vintage|Documentary|Digital|A cinematic|An evocative|A stark|A dramatic|A wide|A tense|A haunt)/i.test(trimmed);
-                        // anamorphic 엔딩은 영어 프롬프트의 일부
-                        const isEnding = /^anamorphic ultra-wide/i.test(trimmed) || /^Absolutely no text/i.test(trimmed);
+                        // 영어 프롬프트 판별: 다양한 시작 패턴
+                        const isEnPrompt = /^(Modern|Cinematic|Vintage|Documentary|Digital|A cinematic|An evocative|A stark|A dramatic|A wide|A tense|A haunt|A grim|A low|A high|A sweeping|A close|A medium|A bird|A top|Aerial|Close-up|Wide shot|Establishing|Split|Montage|POV|Tracking|Slow|Fast|Dark|Bright|Warm|Cold|Muted|Desaturated|Sepia|Film|Shot on)/i.test(trimmed);
+                        // 영어 프롬프트 엔딩 줄
+                        const isEnContinue = /^(anamorphic|Absolutely no text|no letters|no words|photorealistic|8K resolution)/i.test(trimmed);
+                        // 한국어 포함 여부
+                        const hasKorean = /[\uAC00-\uD7AF]/.test(trimmed);
+
                         if (isEnPrompt && prevLang !== 'en') {
                             tagged.push('\n[영어 이미지 프롬프트]');
                             prevLang = 'en';
-                        } else if (!isEnPrompt && !isEnding && prevLang !== 'ko' && /[\uAC00-\uD7AF]/.test(trimmed)) {
+                        } else if (isEnContinue) {
+                            // 영어 엔딩줄은 그대로 (태그 안 붙임)
+                        } else if (!isEnPrompt && !isEnContinue && hasKorean && prevLang !== 'ko') {
                             tagged.push('\n[한국어 번역]');
                             prevLang = 'ko';
                         }
