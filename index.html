@@ -4665,12 +4665,9 @@ Example format:
                     }
                     throw new Error('오늘 API 할당량을 모두 소진했어요. 내일 오후 4~5시에 초기화돼요.');
                 }
-                // invalidFilters 등 비치명적 에러는 빈 결과로 처리 (throw 안 함)
-                if (reason === 'invalidFilters' || reason === 'badRequest') {
-                    console.warn(`[API SKIP] ${endpoint}: ${reason} — 빈 결과로 대체`);
-                    return { items: [] };
-                }
-                throw new Error(`${data.error.message} [${endpoint}?${Object.entries(paramLog).filter(([k])=>k!=='key').map(([k,v])=>k+'='+String(v).slice(0,30)).join('&')}]`);
+                // 할당량 외 모든 에러는 빈 결과로 처리 (throw 안 함)
+                console.warn(`[API SKIP] ${endpoint}: ${reason} — 빈 결과로 대체`);
+                return { items: [] };
             }
             return data;
         }
