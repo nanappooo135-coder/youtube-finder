@@ -3355,6 +3355,42 @@ gifAltKeyword 예:
 - 지도: "minimalist map" 명시
 - 특수 장면: "cinematic illustration", "realistic 3D render" 등 목적에 맞게
 
+### ⚠️ 이미지 안의 텍스트는 반드시 한글 (매우 중요)
+
+한국 유튜브 영상용이므로, **AI가 생성하는 이미지 안에 들어가는 모든 텍스트·라벨·수치 단위는 한글**이어야 합니다.
+영어 라벨로 된 차트가 나오면 시청자가 어색하게 느낍니다.
+
+**aiPrompt에 반드시 포함할 문구 (복사해서 붙여넣기)**:
+- "All labels and text in the image must be in Korean (한글)"
+- 차트: "labels in Korean (한글), percentages with % sign"
+- 지도: "country names and labels in Korean (한글)"
+- 인포그래픽: "all titles and captions in Korean (한글)"
+
+**좋은 예 (올바른 aiPrompt)**:
+
+차트:
+"""
+Donut chart showing Korea's oil import sources. '중동' slice highlighted at 70%. Other slices: '미국' 16%, '기타' 14%.
+All labels and text in Korean (한글). Clean data visualization, dark background, 16:9.
+"""
+
+지도:
+"""
+Minimalist map showing shipping route from '페르시아만' through '인도양' and '말라카 해협' to '울산항'.
+Arrow highlighted with '20~25일' label. All country and location names in Korean (한글). Dark background, 16:9.
+"""
+
+인포그래픽:
+"""
+3-column comparison infographic titled '국제 원유 3대 유종'. Columns: 'WTI (미국·경질)', '브렌트 (북해·중간)', '두바이 (중동·중질)'.
+Each column has an oil drop icon and key stats. All labels in Korean (한글). Dark background, 16:9.
+"""
+
+**나쁜 예 (절대 이렇게 쓰지 말 것)**:
+
+❌ "Chart showing 70% Middle East imports, Korea energy data" — 영어 라벨로 나옴
+❌ "Map with Persian Gulf to Ulsan route, 20-25 days" — 영어 지명 나옴
+
 **사용 비중 상한**: 전체의 **15~20%**. 억지로 채우지 말 것.
 
 ---
