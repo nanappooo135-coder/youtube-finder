@@ -1968,6 +1968,24 @@
                         <textarea id="jsonScript" rows="14" placeholder="대본 전체를 붙여넣으세요.&#10;&#10;예:&#10;지금 아프리카에 지도에는 없는데 대사관은 있고...&#10;&#10;소말릴란드라는 나라입니다. 30년 넘게..." style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;resize:vertical;font-family:inherit;line-height:1.6;"></textarea>
                     </div>
 
+                    <div class="input-group">
+                        <label>장면 묶음 길이 <span style="color:#888;font-weight:400;">(대본 길이에 따라 선택)</span></label>
+                        <div class="tb-options" id="jsonChunk">
+                            <button class="tb-opt" data-val="short" onclick="toggleTbOpt(this,'jsonChunk',1)">
+                                <div class="opt-title">짧게</div>
+                                <div class="opt-desc" style="font-size:0.72rem;color:#888;line-height:1.4;">1문장 = 1장면<br>3천자 이하용</div>
+                            </button>
+                            <button class="tb-opt selected" data-val="normal" onclick="toggleTbOpt(this,'jsonChunk',1)">
+                                <div class="opt-title">보통</div>
+                                <div class="opt-desc" style="font-size:0.72rem;color:#888;line-height:1.4;">1~2문장 = 1장면<br>5~8천자 추천</div>
+                            </button>
+                            <button class="tb-opt" data-val="long" onclick="toggleTbOpt(this,'jsonChunk',1)">
+                                <div class="opt-title">길게</div>
+                                <div class="opt-desc" style="font-size:0.72rem;color:#888;line-height:1.4;">2~3문장 = 1장면<br>8천자 이상용</div>
+                            </button>
+                        </div>
+                    </div>
+
                     <button id="jsonBtn" class="search-btn" onclick="generateSellpotJson()">
                         셀팟 JSON 생성
                     </button>
@@ -2959,9 +2977,34 @@ ${introPrompts}`;
         // ==================== 셀팟 JSON 생성 ====================
 
         // 셀팟 JSON 생성 프롬프트
-        function _buildSellpotJsonPrompt(script) {
+        function _buildSellpotJsonPrompt(script, chunkMode) {
+            const chunkRule = {
+                short: `**장면 분리 규칙: 짧게 모드**
+- 원칙: 한 문장 = 한 장면
+- 예외: 5단어 이하 짧은 문장은 다음 문장과 합침
+- 결과: 대본 문장 수 ≈ 장면 수 (가장 많은 장면 생성)`,
+                normal: `**장면 분리 규칙: 보통 모드 (추천)**
+- 원칙: **1~2문장을 하나의 장면으로 묶는다.**
+- 같은 시각적 주제·같은 배경이 어울리는 문장들은 묶는다.
+- 주제가 바뀌거나, 장면 전환이 필요한 임팩트 포인트에서는 분리한다.
+- 감정 전환, 반전, 새로운 정보, 핵심 숫자 등장 직전은 반드시 분리.
+- 결과: 대본 문장 수의 50~70% 수준의 장면 수.`,
+                long: `**장면 분리 규칙: 길게 모드**
+- 원칙: **2~3문장을 하나의 장면으로 묶는다.**
+- 호흡이 긴 나레이션을 한 배경에서 유지.
+- 단, 결정적 반전·충격 포인트는 반드시 분리.
+- 결과: 대본 문장 수의 35~50% 수준의 장면 수.`
+            }[chunkMode] || '';
+
             return `당신은 유튜브 영상 제작 파이프라인의 장면 구성 AI입니다.
-사용자가 나레이션 대본을 입력하면, 각 문장을 하나의 장면(scene)으로 분리하고 아래 JSON 형식으로 변환합니다.
+사용자가 나레이션 대본을 입력하면, 아래 규칙에 따라 장면(scene)으로 분리하고 JSON 형식으로 변환합니다.
+
+## ⚠️ 장면 분리 모드 (반드시 준수)
+
+${chunkRule}
+
+---
+
 
 ---
 
@@ -3171,15 +3214,13 @@ realSearchKeyword 예:
 
 ---
 
-## 장면 분리 규칙
+## 장면 분리 보조 규칙
+
+(위 "장면 분리 모드"가 최우선. 아래는 보조)
 
 1. 사용자가 번호를 매겨서 대본을 줄 경우 → 그 번호를 그대로 id로 사용
-2. 번호 없이 줄글로 줄 경우 → 문장 단위로 분리. 한 문장 = 한 장면이 원칙
-3. 단, 아래 경우는 합칠 수 있음:
-    - "~하죠. 틀렸습니다." 같은 착각→파괴 패턴은 하나로
-    - 목차 나열은 하나로
-    - 시나리오 설명 (A 또는 B 각각)은 하나로
-4. 너무 짧은 문장 (5단어 이하)은 다음 문장과 합치세요
+2. "~하죠. 틀렸습니다." 같은 착각→파괴 패턴은 하나로 묶을 것
+3. 목차 나열, 시나리오 설명(A 또는 B 각각)은 하나로 묶을 것
 
 ---
 
@@ -3284,11 +3325,13 @@ ${script}
             btn.textContent = '생성 중...';
             _geminiStatusEl = statusEl;
 
+            const chunkMode = document.querySelector('#jsonChunk .tb-opt.selected')?.dataset.val || 'normal';
+
             let usedModel = '';
             let text = '';
 
             try {
-                const prompt = _buildSellpotJsonPrompt(script);
+                const prompt = _buildSellpotJsonPrompt(script, chunkMode);
 
                 // 1차: Gemini Pro 시도 (무료)
                 _showGeminiStatus('Gemini Pro로 생성 중...');
