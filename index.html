@@ -3118,6 +3118,12 @@ ${chunkRule}
       "sceneDuration": 6.0,
       "transition": "fade|cut|slide|zoom",
       "bgmMood": "다큐|뉴스|밝음|테크|감성|에픽",
+      "overlays": [
+        { "type": "강조텍스트", "data": { "text": "70%" }, "duration": 1.0 }
+      ],
+      "freepikAsset": { "keyword": "war economy", "type": "icon|3D" },
+      "characterLayout": "1인 오른쪽|2인 대화|리액션 팝업|내레이터 코너|센터 포커스",
+      "characterAsset": "캐릭터 이름 (프리셋에 등록된 경우)",
       "textOverlay": "화면 텍스트",
       "textPosition": "center" | "top" | "bottom" | "top-left" | "top-right",
       "sfxPrompt": "ElevenLabs 효과음 프롬프트"
@@ -3139,10 +3145,14 @@ ${chunkRule}
 ### 조건부 필드
 
 - \"bgQuery\": bgSource가 "stock"이면 Pexels/Freepik 영문 검색어, "gif"이면 Klipy 한글+영문 혼합 검색어
-- \"bgQueryAlts\": bgSource가 "stock" 또는 "gif"일 때 추가. 1순위가 매칭 실패 시 사용할 **대체 검색어 2개 배열**. 같은 의미를 다른 키워드 조합으로.
+- \"bgQueryAlts\": bgSource가 "stock" 또는 "gif"일 때 추가. 1순위가 매칭 실패 시 사용할 **대체 검색어 2개 배열**.
 - \"sceneDuration\": 장면 재생 시간 (초 단위, 숫자). 자세한 규칙 아래 참조.
-- \"transition\": 다음 장면으로의 전환 효과. "fade" | "cut" | "slide" | "zoom" 중 하나. 생략 시 셀팟 기본값 사용.
-- \"bgmMood\": 해당 장면의 BGM 분위기. "다큐" | "뉴스" | "밝음" | "테크" | "감성" | "에픽" 중 하나. 섹션 단위로 지정 (매 장면마다 넣을 필요 없음).
+- \"transition\": 다음 장면으로의 전환 효과. "fade" | "cut" | "slide" | "zoom" 중 하나.
+- \"bgmMood\": 해당 장면의 BGM 분위기. "다큐" | "뉴스" | "밝음" | "테크" | "감성" | "에픽" 중 하나. 섹션 단위로 지정.
+- \"overlays\": 셀팟 오버레이 프리셋 **배열**. 한 장면에 1개 또는 여러 개 순차 표시 가능. 각 요소는 { type, data, duration } 형식. 자세한 규칙 아래 참조.
+- \"freepikAsset\": Freepik 아이콘/3D 에셋 검색어. { keyword, type } 형식. type은 "icon" 또는 "3D". 에셋이 정보 전달에 유용할 때만 추가.
+- \"characterLayout\": 캐릭터 배치 레이아웃. 12가지 프리셋 중 하나. 캐릭터 프리셋이 있는 경우에만 사용. (생략 가능)
+- \"characterAsset\": 사용할 캐릭터 프리셋 이름. characterLayout이 있을 때만 추가. (생략 가능)
 - \"aiPrompt\": bgSource가 "ai"일 때만 포함. 영문 프롬프트. 반드시 "dark background"와 "16:9" 포함
 - \"textOverlay\": 화면에 표시할 텍스트. 없으면 필드 자체를 생략
 - \"textPosition\": textOverlay가 있을 때만 포함
@@ -3821,6 +3831,159 @@ aiPrompt 작성 시 AI 스스로 자문:
 
 ---
 
+## overlays 배열 상세 규칙 (셀팟 프리셋 활용 — AI 이미지 대체)
+
+**⚠️ 매우 중요: 이 오버레이 시스템을 활용하면 AI 이미지를 많이 안 만들어도 됨. 우선적으로 overlays를 고려할 것.**
+
+### overlays 배열 구조
+
+배열 안에 **1개 또는 여러 개**를 넣을 수 있음. 여러 개면 **순차적으로** 표시됨.
+
+\`\`\`json
+"overlays": [
+  { "type": "강조텍스트", "data": { "text": "70%" }, "duration": 1.5 },
+  { "type": "강조텍스트", "data": { "text": "중동" }, "duration": 1.0 }
+]
+\`\`\`
+
+- **type**: 프리셋 이름 (아래 10가지 중 하나)
+- **data**: 프리셋에 필요한 데이터 객체
+- **duration**: 표시 시간 (초). 생략 시 셀팟 기본값
+
+### 사용 가능한 10가지 프리셋
+
+| type | 쓰는 경우 | data 예시 |
+|-------------|----------|-----------------|
+| **강조텍스트** | 핵심 숫자·키워드 강조 | `{ "text": "70%" }` |
+| **VS대결** | A vs B 비교 | `{ "left": "미국 70%", "right": "한국 15%" }` |
+| **증감수치** | 변화·전후 비교 | `{ "from": "10%", "to": "70%" }` |
+| **수치카드** | 숫자 + 설명 | `{ "number": "1조 6천억", "label": "연간 손실" }` |
+| **도넛차트** | 비율 시각화 | `{ "labels": ["중동","미국","기타"], "values": [70,16,14] }` |
+| **막대차트** | 순위·비교 | `{ "items": [{"name":"SK","value":84}, {"name":"GS","value":80}] }` |
+| **타임라인** | 시간 흐름 | `{ "events": [{"year":"1884","text":"보호령"}, {"year":"1960","text":"독립"}] }` |
+| **랭킹** | 순위 나열 | `{ "items": ["1위 인도","2위 한국","3위 한국"] }` |
+| **말풍선** | 인용·발언 | `{ "text": "35년을 기다렸다", "speaker": "바시르 고트" }` |
+| **지도라벨** | 지도 위 라벨 | `{ "location": "페르시아만", "label": "출발지" }` |
+
+### 언제 단일 / 언제 순차
+
+**단일 오버레이 (1개)**:
+- 숫자 하나 강조 ("70%")
+- 단순 정보 전달
+
+**순차 오버레이 (2~4개)**:
+- 여러 숫자 순서대로 (A%, B%, C%)
+- 빌드업 효과 ("1번…", "2번…", "3번…")
+- 점진적 강조 (놀람 → 충격 → 경악)
+- 타임라인 요소가 하나씩 등장
+
+### 예시
+
+**대본**: "중동이 70%예요"
+\`\`\`json
+{
+  "bgSource": "stock",
+  "bgQuery": "middle east oil tanker loading",
+  "overlays": [
+    { "type": "강조텍스트", "data": { "text": "70%" } }
+  ]
+}
+\`\`\`
+
+**대본**: "미국 70%, 한국 15%, 기타 15%" (순차 등장)
+\`\`\`json
+{
+  "bgSource": "stock",
+  "bgQuery": "world map shipping route",
+  "overlays": [
+    { "type": "강조텍스트", "data": { "text": "미국 70%" }, "duration": 1.2 },
+    { "type": "강조텍스트", "data": { "text": "한국 15%" }, "duration": 1.2 },
+    { "type": "강조텍스트", "data": { "text": "기타 15%" }, "duration": 1.2 }
+  ]
+}
+\`\`\`
+
+**대본**: "'35년을 기다렸다'"
+\`\`\`json
+{
+  "overlays": [
+    { "type": "말풍선", "data": { "text": "35년을 기다렸다", "speaker": "바시르 고트" } }
+  ]
+}
+\`\`\`
+
+### ⚠️ 원칙
+
+- 오버레이를 쓰면 bgSource는 **stock** (배경은 일반 영상)
+- AI 이미지는 오버레이로 불가능한 경우에만
+- 한 장면에 **최대 4개**까지 (너무 많으면 시청자 혼란)
+
+### 사용 비중 목표
+
+- **overlays 사용 장면**: 전체의 **20~30%** (핵심 정보 전달)
+- AI 이미지: **5~10%** (장면 연출 특수 상황만)
+
+---
+
+## freepikAsset 규칙 (아이콘/3D 에셋)
+
+Freepik에 아이콘·3D 에셋이 풍부해서 **stock 영상 위에 얹으면 정보 전달 효과↑**.
+
+### 사용 조건
+
+다음 경우에 freepikAsset 추가:
+- **추상 개념 시각화**: "경제 위기" → 경제 아이콘
+- **업종/분야 아이콘**: "전쟁" → 탱크·미사일 아이콘
+- **개념 3D 모델**: "금융" → 3D 동전·빌딩
+
+### 구조
+
+\`\`\`json
+"freepikAsset": {
+  "keyword": "war economy crisis",
+  "type": "icon"
+}
+\`\`\`
+
+- **keyword**: 영어 검색어 (3~5단어)
+- **type**: "icon" (2D 아이콘) 또는 "3D" (3D 모델)
+
+### 언제 안 써도 되나
+
+- stock 영상이 충분히 내용 전달하는 경우
+- overlays로 숫자/텍스트 강조만 해도 충분한 경우
+
+---
+
+## characterLayout 규칙 (캐릭터 배치)
+
+**주의**: 셀팟에 캐릭터 프리셋이 등록된 경우에만 사용. 일반적으로는 생략.
+
+### 12가지 레이아웃
+
+- **1인 오른쪽/왼쪽/중앙** — 단독 인물
+- **1인 오른쪽 + 큰 인포** — 인물 + 정보 카드
+- **2인 대화** — 두 사람 이야기
+- **2인 대결** — 두 사람 대립
+- **내레이터 코너** — 해설자 구석에
+- **리액션 팝업** — 반응 장면
+- **듀오 (좌+우)** — 좌우 배치
+- **센터 포커스** — 중앙 집중
+- **솔로** — 단독
+- **실루엣** — 그림자 처리
+- **와이드 (3개+)** — 3명 이상
+
+### 구조
+
+\`\`\`json
+"characterLayout": "2인 대화",
+"characterAsset": "트럼프, 네타냐후"
+\`\`\`
+
+캐릭터 프리셋 없으면 이 필드는 **생략**.
+
+---
+
 ## sceneDuration, transition, bgmMood 상세 규칙 (지식한입 스타일 리듬)
 
 ### sceneDuration (장면 길이, 초)
@@ -4137,8 +4300,15 @@ ${script}
                 // 효과음 장면
                 const sfxScenes = scenes.filter(s => s.sfxPrompt && s.sfxPrompt.trim());
 
-                if (aiScenes.length === 0 && sfxScenes.length === 0) {
-                    alert('AI 이미지나 효과음이 필요한 장면이 없습니다.');
+                // 추가 처리 대상 체크
+                const hasAnyAction = aiScenes.length > 0 || sfxScenes.length > 0
+                    || (window._sellpotLogoScenes && window._sellpotLogoScenes.length > 0)
+                    || scenes.some(s => Array.isArray(s.overlays) && s.overlays.length > 0)
+                    || scenes.some(s => s.freepikAsset && s.freepikAsset.keyword)
+                    || scenes.some(s => s.sceneDuration || s.transition || s.bgmMood);
+
+                if (!hasAnyAction) {
+                    alert('셀팟 AI에게 요청할 작업이 없습니다.');
                     return;
                 }
 
@@ -4178,6 +4348,43 @@ ${script}
                         }[position] || position;
                         text += `- 장면 ${s.id}: "${s.logoName}" 로고 → ${posKo}\n`;
                     });
+                    text += '\n';
+                }
+
+                // 오버레이 프리셋 지시
+                const overlayScenes = scenes.filter(s => Array.isArray(s.overlays) && s.overlays.length > 0);
+                if (overlayScenes.length > 0) {
+                    text += `## 5. 오버레이 프리셋 적용 (${overlayScenes.length}개) — JSON의 overlays 배열대로\n`;
+                    overlayScenes.forEach(s => {
+                        const types = s.overlays.map(o => o.type).join(' → ');
+                        text += `- 장면 ${s.id}: ${types}\n`;
+                    });
+                    text += '\n';
+                }
+
+                // Freepik 에셋
+                const freepikScenes = scenes.filter(s => s.freepikAsset && s.freepikAsset.keyword);
+                if (freepikScenes.length > 0) {
+                    text += `## 6. Freepik 에셋 검색·삽입 (${freepikScenes.length}개)\n`;
+                    freepikScenes.forEach(s => {
+                        const t = s.freepikAsset.type || 'icon';
+                        text += `- 장면 ${s.id}: "${s.freepikAsset.keyword}" (${t})\n`;
+                    });
+                    text += '\n';
+                }
+
+                // 장면 길이 / 전환 / BGM
+                const durationScenes = scenes.filter(s => s.sceneDuration);
+                const transitionScenes = scenes.filter(s => s.transition);
+                const bgmScenes = scenes.filter(s => s.bgmMood);
+                if (durationScenes.length > 0 || transitionScenes.length > 0 || bgmScenes.length > 0) {
+                    text += `## 7. 리듬 설정 (JSON의 필드대로)\n`;
+                    if (durationScenes.length > 0) text += `- 장면 길이(sceneDuration): ${durationScenes.length}개 장면에 지정됨\n`;
+                    if (transitionScenes.length > 0) text += `- 전환 효과(transition): ${transitionScenes.length}개 장면에 지정됨\n`;
+                    if (bgmScenes.length > 0) {
+                        const bgmList = bgmScenes.map(s => `장면${s.id}=${s.bgmMood}`).join(', ');
+                        text += `- BGM 전환(bgmMood): ${bgmList}\n`;
+                    }
                     text += '\n';
                 }
 
