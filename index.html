@@ -3376,23 +3376,38 @@ AI 이미지 생성기는 아래 단어가 있으면 **거부하거나 엉뚱한
 
 **❌ 쓰면 실패하는 단어 → ✅ 대체어**
 
-1. **실존 인물 이름** (정책 위반)
+1. **실존 인물 이름** — 3가지 처리 방법 중 선택
 
-   **⚠️ 가장 중요한 원칙**: 나레이션에 실존 인물 이름(네타냐후, 트럼프, 시아드 바레 등)이 등장하면 → **이 장면은 AI로 처리하지 말고 실사 이미지로 가라**.
-   → needRealImage: true + realSearchKeyword 추가 + bgSource는 "stock"으로 (사용자가 셀팟에서 실사 사진으로 교체)
+   **⚠️ 원칙**: narration과 textOverlay에는 실명(네타냐후, 트럼프 등) **그대로 써도 됨**. TTS·자막은 문제 없음.
+   문제는 **aiPrompt**에서 실명 쓰면 AI 이미지 생성기가 거부한다는 것.
 
-   **구분**:
-   - narration 텍스트: "네타냐후가 승인했다" — **그대로 둠** (TTS가 읽음, 문제 없음)
-   - textOverlay: "네타냐후 승인" — **그대로 둠** (화면 자막, 문제 없음)
-   - aiPrompt: "Netanyahu..." — **절대 금지** (AI가 거부함)
+   **3가지 해결법** (상황에 맞게 선택):
 
-   AI로 꼭 생성해야 한다면 일반 명사로:
-   - "Netanyahu" → "Israeli prime minister figure" 또는 "politician in formal suit"
-   - "Trump" → "American president figure"
-   - "Siad Barre" → "African dictator figure"
-   - "Khamenei" → "Iranian leader silhouette"
+   **방법 ① 실사 이미지 (권장, 진지한 정보 영상)**
+   - bgSource는 "stock"으로
+   - needRealImage: true + realSearchKeyword 추가
+   - 사용자가 구글에서 실제 사진 다운받아 셀팟에서 교체
+   - 예: "Netanyahu speech", "Trump press conference 2025"
 
-   **하지만 99%는 실사 이미지가 답이다. AI 이미지로 실존 인물 그리지 마라.**
+   **방법 ② 캐릭터 수동 삽입 (지식세포/풍자 스타일)**
+   - needCharacter: true + characterSequence 추가
+   - 사용자가 준비한 캐릭터 이미지 수동 삽입
+   - 예: characterSequence: ["네타냐후 캐릭터", "이란 국기", "💥"]
+
+   **방법 ③ AI 일러스트 (실사·캐릭터 다 없을 때 fallback)**
+   - bgSource: "ai"
+   - aiPrompt에서 **실명 대신 특징 묘사**
+   - 반드시 "illustration style" 또는 "cartoon style" 명시 (사실적 묘사 피함)
+   - 예시:
+     - "Netanyahu" → "illustration of Israeli politician with grey hair and beard in formal suit, minimalist character style"
+     - "Trump" → "cartoon illustration of American president figure with orange hair and red tie, stylized character"
+     - "Siad Barre" → "illustration of African military dictator in uniform with medals, stylized character style"
+   - 키워드: "no real person likeness", "stylized illustration", "character design"
+
+   **판단 기준**:
+   - 진지한 경제·역사·뉴스 채널 → **방법 ① (실사)**
+   - 풍자·재미·지식세포 스타일 → **방법 ② (캐릭터)**
+   - 둘 다 어려운 특수 상황 → **방법 ③ (AI 일러스트)**
 
 2. **기업·브랜드 이름** (로고 렌더링 불가)
    - "SK Energy", "삼성", "Samsung" → "major Korean refinery"
