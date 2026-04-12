@@ -3109,23 +3109,51 @@ realSearchKeyword 예:
 - 나쁜 예: "economy", "war" (너무 추상적)
 - **매우 중요**: 나레이션에 나오는 구체적인 사물·장소·인물을 그대로 영어로 검색어에 넣을 것. 예) "삼성전자 물류비 급증" → "samsung logistics warehouse container"
 
-### gif (Klipy GIF) — 감정, 반응, 비유 표현에 적극 사용
+### gif (Klipy GIF) — **단순 감정 표현에만 제한적으로 사용**
 
-- 비유적 표현: 도미노, 수도꼭지, 폭탄, 저울, 폭풍 등
-- 감정/반응: 놀람, 패닉, 무관심, 충격, 질식, 경고 등
-- 상징적 행동: 조준, 압착, 붕괴, 날아감 등
-- **검색어는 한글+영문 혼합, 핵심 키워드 3~5개 나열. 나레이션에 담긴 정확한 감정/비유를 잡아낼 것.**
-- 좋은 예: "도미노 연쇄 쓰러짐 chain reaction", "숨 막힘 헉 충격 질식 놀람"
-- 나쁜 예: "경제 위기" (GIF로 표현 안 됨)
+**⚠️ 중요: GIF는 Klipy 검색 결과가 부정확해서 엉뚱한 애니·밈이 나올 수 있음. 아래 **허용 케이스만** 사용하고 나머지는 전부 ai 또는 stock으로 돌릴 것.**
 
-### ai (AI 이미지 생성) — 데이터 시각화가 반드시 필요할 때만
+**GIF 허용 케이스 (단순 1차원 감정/반응만)**:
+- 놀람, 충격, 당황 (surprise, shock)
+- 궁금함, 의문, 생각 (curious, wonder, thinking)
+- 웃음, 슬픔, 지루함 (laugh, sad, bored)
+- 단순 질문 반응 (huh, what)
 
-- 차트 (라인, 바, 비교)
-- 지도 (지정학적 위치 표시)
-- 데이터 인포그래픽 (도넛 차트, 3열 카드 등)
-- 목차, 스케일 바 등 텍스트로 대체 불가능한 시각 자료
-- stock이나 gif로 표현 가능하면 ai를 쓰지 마세요
-- 전체 장면의 15% 이하로 제한
+**GIF 금지 케이스 (무조건 ai로 대체)**:
+- 비유 (도미노, 수도꼭지, 폭탄, 저울, 벽/장벽, 도미노)
+- 복잡한 개념 (반전, 뒤집힘, 구조, 시스템, 흐름)
+- 비즈니스/경제 개념 (거래, 무역, 협상, 투자)
+- 상징적 행동 (조준, 압착, 붕괴, 배신)
+- 추상적 반전 (unexpected twist, reversal)
+
+**검색어 규칙 (허용 케이스에 한함)**:
+- 한글+영문 혼합, 3~5단어
+- 일반 명사 위주, **"meme", "anime", "cartoon" 단어는 절대 쓰지 말 것** (밈 gif 배제)
+- 좋은 예: "놀람 충격 surprised shocked", "궁금 갸우뚱 wondering confused"
+- 나쁜 예: "경제 위기", "반전 뒤집기" (→ 이건 ai로 대체)
+
+### ai (AI 이미지 생성) — 데이터 시각화 + 복잡한 비유/개념
+
+**2가지 용도로 사용**:
+
+**1. 정보 전달용 (데이터 시각화)**:
+- 차트 (라인, 바, 파이, 비교)
+- 지도 (지정학적 위치, 항로, 경로 표시)
+- 데이터 인포그래픽 (도넛 차트, 3열 카드, 타임라인)
+- 목차, 스케일 바, 체크리스트
+
+**2. 개념 표현용 (GIF로 표현 불가한 비유/개념)**:
+- 비유 일러스트: "도미노 효과" → domino blocks falling in chain, "장벽" → wall barrier blocking path, "저울" → scale with imbalanced weights
+- 추상 개념: "뒤집힌 구조" → reversed flow diagram with crossed arrows, "반전" → split screen with opposing directions
+- 비즈니스 개념: "무역 구조" → trade flow infographic, "의존 관계" → dependency chain diagram
+
+**aiPrompt 작성 규칙**:
+- 영문으로 상세히 (컴포지션, 색상, 스타일, 분위기)
+- 반드시 "dark background"와 "16:9" 포함
+- 일러스트 스타일이면 "minimalist illustration", "flat design", "infographic style" 등 명시
+- 차트면 "bar chart", "pie chart", "line graph" 등 차트 타입 명시
+
+**사용 비중**: 전체의 30~40% 정도. 억지로 제한하지 말 것 — 비유·개념 많은 대본이면 비중이 올라가는 게 정상.
 
 ---
 
@@ -3218,15 +3246,58 @@ realSearchKeyword 예:
 
 ---
 
-## sfxPrompt 규칙
+## sfxPrompt 규칙 (ElevenLabs 사운드 이펙트 AI 생성용)
 
-- 영문 키워드, 3~6단어
-- 모든 장면에 넣지 마세요. 임팩트가 필요한 장면에만.
-- 데이터 충격: "deep bass boom impact"
-- 전환/경고: "buzzer wrong answer", "alarm warning beep"
-- 군사: "jet engine roar short", "heavy dramatic impact"
-- 비유: "domino falling click click", "clock ticking countdown"
-- 한 영상에서 동일한 sfxPrompt를 3회 이상 반복하지 마세요
+**중요**: 셀팟은 ElevenLabs AI로 효과음을 **생성**합니다 (라이브러리 검색 X). 따라서 구체적이고 묘사적인 프롬프트가 필요합니다.
+
+### 작성 원칙
+
+1. **영문 15~30단어**로 상세히 묘사 (너무 짧으면 결과 예측 불가)
+2. **지속시간 명시**: "0.5 second", "1 second", "2 seconds", "quick", "short", "brief"
+3. **텍스처/톤 명시**: "deep", "sharp", "metallic", "cinematic", "bright", "sub-bass", "muted"
+4. **용도 명시**: "for transition", "for impact moment", "for emphasizing a number", "for revealing a fact"
+5. **한 영상에서 동일한 sfxPrompt를 3회 이상 반복하지 말 것**
+6. **모든 장면에 넣지 말 것** — 임팩트가 필요한 장면에만. BGM 없는 영상이면 장면 30~50%에 배치.
+
+### 상황별 프롬프트 예시
+
+**숫자 강조**:
+- "Single sharp metallic ding bell, bright high tone, 0.5 second, for emphasizing a key number"
+
+**충격/폭로**:
+- "Deep cinematic boom impact sub-bass, 1 second, for revealing a shocking fact"
+- "Heavy dramatic thud hit, dark low frequency, 0.7 second, for emphasis"
+
+**빠른 전환**:
+- "Quick clean air whoosh transition sound, 0.5 second, for scene change"
+- "Short swoosh motion sound, crisp and bright, 0.4 second"
+
+**긴장 고조/이탈 방지**:
+- "Low tonal rumble riser building tension, 2 seconds, for suspense buildup"
+- "Slow rising drone hum, deep cinematic, 1.5 seconds"
+
+**반전/예상 뒤집기**:
+- "Record scratch stop sound sharp, 0.5 second, for unexpected reveal"
+- "Sudden reversed whoosh short, 0.6 second, for plot twist"
+
+**비유 (도미노, 장벽, 시계)**:
+- "Series of wooden domino blocks falling one after another in chain, quick tempo, 1.5 seconds"
+- "Hard impact of hitting an invisible wall, thud with reverb, 0.5 second"
+- "Quick clock tick tock tempo rising, 1 second, for urgency"
+
+**오답/경고**:
+- "Short low buzzer error tone, flat muted, 0.3 second, for wrong answer"
+- "Quick alert beep warning, high pitched, 0.3 second"
+
+**비행/이동**:
+- "Short whoosh of a jet engine passing by, cinematic roar, 1 second"
+
+### 나쁜 예 (절대 이렇게 쓰지 말 것)
+
+- ❌ "jet engine roar short" (너무 짧고 모호)
+- ❌ "dramatic impact" (톤·지속시간 미명시)
+- ❌ "mystery sound sting" (구체성 부족)
+- ❌ "whoosh" (한 단어만)
 
 ---
 
