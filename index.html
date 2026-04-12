@@ -3377,11 +3377,22 @@ AI 이미지 생성기는 아래 단어가 있으면 **거부하거나 엉뚱한
 **❌ 쓰면 실패하는 단어 → ✅ 대체어**
 
 1. **실존 인물 이름** (정책 위반)
-   - "Netanyahu" → "Israeli prime minister figure" 또는 "politician"
+
+   **⚠️ 가장 중요한 원칙**: 나레이션에 실존 인물 이름(네타냐후, 트럼프, 시아드 바레 등)이 등장하면 → **이 장면은 AI로 처리하지 말고 실사 이미지로 가라**.
+   → needRealImage: true + realSearchKeyword 추가 + bgSource는 "stock"으로 (사용자가 셀팟에서 실사 사진으로 교체)
+
+   **구분**:
+   - narration 텍스트: "네타냐후가 승인했다" — **그대로 둠** (TTS가 읽음, 문제 없음)
+   - textOverlay: "네타냐후 승인" — **그대로 둠** (화면 자막, 문제 없음)
+   - aiPrompt: "Netanyahu..." — **절대 금지** (AI가 거부함)
+
+   AI로 꼭 생성해야 한다면 일반 명사로:
+   - "Netanyahu" → "Israeli prime minister figure" 또는 "politician in formal suit"
    - "Trump" → "American president figure"
    - "Siad Barre" → "African dictator figure"
    - "Khamenei" → "Iranian leader silhouette"
-   - **규칙**: 실존 인물 이름이 필요하면 **needRealImage: true로 빼고 AI 쓰지 마라**. AI 쓸 거면 일반 명사로.
+
+   **하지만 99%는 실사 이미지가 답이다. AI 이미지로 실존 인물 그리지 마라.**
 
 2. **기업·브랜드 이름** (로고 렌더링 불가)
    - "SK Energy", "삼성", "Samsung" → "major Korean refinery"
