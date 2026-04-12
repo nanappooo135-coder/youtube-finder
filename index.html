@@ -3355,43 +3355,73 @@ gifAltKeyword 예:
 - 지도: "minimalist map" 명시
 - 특수 장면: "cinematic illustration", "realistic 3D render" 등 목적에 맞게
 
-### ⚠️ 이미지 안의 텍스트는 반드시 한글 (매우 중요)
+### ⚠️ 이미지 안의 텍스트 규칙 (매우 중요 — 2가지 케이스로 구분)
 
-한국 유튜브 영상용이므로, **AI가 생성하는 이미지 안에 들어가는 모든 텍스트·라벨·수치 단위는 한글**이어야 합니다.
-영어 라벨로 된 차트가 나오면 시청자가 어색하게 느낍니다.
+AI 이미지는 목적에 따라 **텍스트 규칙이 완전히 다릅니다**. 아래 구분 엄수.
 
-**aiPrompt에 반드시 포함할 문구 (복사해서 붙여넣기)**:
-- "All labels and text in the image must be in Korean (한글)"
+---
+
+#### 📊 케이스 A: 데이터·정보 시각화 (차트·지도·인포그래픽)
+
+**→ 한글 텍스트 반드시 필요**
+
+한국 유튜브 영상이므로 **모든 라벨·수치·지명·제목은 한글**이어야 함.
+
+**aiPrompt에 반드시 포함**:
+- "All labels and text in Korean (한글)"
 - 차트: "labels in Korean (한글), percentages with % sign"
-- 지도: "country names and labels in Korean (한글)"
+- 지도: "country names and locations in Korean (한글)"
 - 인포그래픽: "all titles and captions in Korean (한글)"
 
-**좋은 예 (올바른 aiPrompt)**:
+**좋은 예**:
 
 차트:
-"""
-Donut chart showing Korea's oil import sources. '중동' slice highlighted at 70%. Other slices: '미국' 16%, '기타' 14%.
-All labels and text in Korean (한글). Clean data visualization, dark background, 16:9.
-"""
+"Donut chart showing Korea's oil import sources. '중동' slice highlighted at 70%. Other slices: '미국' 16%, '기타' 14%. All labels in Korean (한글). Clean data visualization, dark background, 16:9."
 
 지도:
-"""
-Minimalist map showing shipping route from '페르시아만' through '인도양' and '말라카 해협' to '울산항'.
-Arrow highlighted with '20~25일' label. All country and location names in Korean (한글). Dark background, 16:9.
-"""
+"Minimalist map showing shipping route from '페르시아만' through '인도양' and '말라카 해협' to '울산항'. Label '20~25일' on arrow. All location names in Korean (한글). Dark background, 16:9."
 
-인포그래픽:
-"""
-3-column comparison infographic titled '국제 원유 3대 유종'. Columns: 'WTI (미국·경질)', '브렌트 (북해·중간)', '두바이 (중동·중질)'.
-Each column has an oil drop icon and key stats. All labels in Korean (한글). Dark background, 16:9.
-"""
+---
 
-**나쁜 예 (절대 이렇게 쓰지 말 것)**:
+#### 🎬 케이스 B: 장면·상황 연출 (스톡 대체용 특수 장면)
 
-❌ "Chart showing 70% Middle East imports, Korea energy data" — 영어 라벨로 나옴
-❌ "Map with Persian Gulf to Ulsan route, 20-25 days" — 영어 지명 나옴
+**→ 텍스트 절대 금지 (한글도 영어도 없어야 함)**
 
-**사용 비중 상한**: 전체의 **15~20%**. 억지로 채우지 말 것.
+장면 연출은 **영화·다큐 장면처럼** 텍스트 없이 시각만으로 전달해야 함. 텍스트 있으면 포스터처럼 어색해짐.
+
+**aiPrompt에 반드시 포함**:
+- "no text, no labels, no words anywhere in the image"
+- "purely visual scene, cinematic composition"
+
+**좋은 예**:
+
+역사 사건:
+"Cinematic illustration of a war-torn city at dawn, buildings destroyed, smoke rising, somber atmosphere. Realistic 3D render, dark background, 16:9. No text, no labels, no words anywhere in the image."
+
+상상 장면:
+"Cinematic underwater scene of ancient plankton sediment slowly transforming into dark oil deposits, millions of years passing, geological process. Dark atmospheric lighting, 16:9. No text, no letters, no words in the image."
+
+상징적 장면:
+"Symbolic scene of Soviet tanks redirecting their barrels from one side to another on a vast desert battlefield, betrayal moment, dramatic lighting, cinematic. Dark background, 16:9. Absolutely no text or labels."
+
+---
+
+#### 판단 기준
+
+aiPrompt 작성 시 AI 스스로 자문:
+1. **차트·지도·인포그래픽 생성 중인가?** → 한글 텍스트 넣기
+2. **장면·분위기·상황 연출 중인가?** → 텍스트 전혀 없이
+
+**헷갈리는 경우**: 시청자가 **"아 이거 정보구나"** 느끼면 A (한글 필요), **"아 이거 장면이구나"** 느끼면 B (텍스트 금지).
+
+---
+
+**나쁜 예 (절대 금지)**:
+- ❌ 차트에 영어 라벨 ("Middle East 70%")
+- ❌ 장면 연출인데 영어 텍스트 붙음 ("WAR 1988", "REVERSE")
+- ❌ 장면 연출인데 한글 텍스트 붙음 ("폭격", "배신")
+
+**사용 비중 상한**: 전체의 **15~20%**.
 
 ---
 
