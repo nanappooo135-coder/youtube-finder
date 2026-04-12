@@ -2015,6 +2015,18 @@
                         <button class="search-btn" onclick="copyRealImageList(this)" style="width:100%;background:#fd7e14;border-color:#fd7e14;">📋 실사 목록 텍스트 복사</button>
                     </div>
                 </div>
+
+                <div class="section" id="jsonGifAltSection" style="display:none;">
+                    <div class="section-title">3️⃣ GIF 교체 참고 목록 (Plan B)</div>
+                    <div class="section-content">
+                        <p style="font-size:0.85rem;color:#666;margin-bottom:12px;">
+                            AI 이미지가 마음에 안 드는 장면은 아래 키워드로 Klipy에서 GIF 검색해 교체할 수 있습니다.
+                            <strong style="color:#6f42c1;">선택 사항</strong>이므로 AI 이미지 만족스러우면 건너뛰세요.
+                        </p>
+                        <div id="jsonGifAltList" style="margin-bottom:12px;"></div>
+                        <button class="search-btn" onclick="copyGifAltList(this)" style="width:100%;background:#6f42c1;border-color:#6f42c1;">📋 GIF 목록 텍스트 복사</button>
+                    </div>
+                </div>
             </div>
 
         </div><!-- /process-json -->
@@ -3071,12 +3083,13 @@ ${chunkRule}
 - textStyle, textFont, textSize, textColor, textBg
 - infographicType, infographicData
 
-### 내부 전용 메타 필드 (실사 교체 안내용)
+### 내부 전용 메타 필드 (실사 교체 안내용 + GIF 교체 안내용)
 
-아래 두 필드는 **최종 셀팟 JSON에서는 제거될 것**이지만, AI가 장면 생성 시 판단 결과를 담아야 한다.
+아래 필드는 **최종 셀팟 JSON에서는 제거될 것**이지만, AI가 장면 생성 시 판단 결과를 담아야 한다.
 
 - \`needRealImage\`: true | false (기본 false, 생략 가능)
 - \`realSearchKeyword\`: 구글 검색용 구체 키워드 (needRealImage가 true일 때만)
+- \`gifAltKeyword\`: bgSource가 "ai"일 때, GIF로도 표현 가능한 비유·감정 장면이면 Klipy 검색용 대체 키워드 (한글+영문 혼합)
 
 아래 조건에 해당하는 장면만 needRealImage = true:
 1. **실존 인물 고유명사** (예: 네타냐후, 트럼프, 시아드 바레, 기드온 사르 등) — 거의 무조건 true
@@ -3095,6 +3108,22 @@ realSearchKeyword 예:
 - "Hargeisa bombing 1988 ruins"
 - "Siad Barre dictator photo"
 - "Berbera airport runway satellite"
+
+### gifAltKeyword 규칙 (AI 이미지의 GIF 대체 힌트)
+
+- **bgSource가 "ai"일 때만** 추가. stock/gif일 때는 넣지 말 것.
+- AI가 만든 이미지가 마음에 안 들 경우, 사용자가 직접 Klipy에서 GIF로 교체할 때 쓸 검색어.
+- 아래 조건일 때만 추가:
+  1. AI 프롬프트가 **비유/개념 일러스트**인 경우 (도미노, 장벽, 저울, 반전, 뒤집힘 등)
+  2. **감정/리액션**이 핵심인 장면
+- 차트/지도/데이터 인포그래픽은 GIF로 대체 불가하므로 gifAltKeyword 추가하지 말 것.
+
+gifAltKeyword 예:
+- "도미노 연쇄 domino chain reaction falling"
+- "장벽 막힘 wall barrier blocked"
+- "반전 뒤집기 reverse flip twist"
+- "저울 불균형 unbalanced scale tilt"
+- "화살표 교차 arrows crossing opposite"
 
 ---
 
@@ -3465,15 +3494,19 @@ ${script}
                 // 실사 필요 장면 별도 저장
                 const realScenes = jsonObj.scenes.filter(s => s.needRealImage === true);
 
-                // 셀팟에 넣을 JSON은 needRealImage/realSearchKeyword 제거 (깨끗하게)
+                // GIF 교체 가능 장면 (bgSource=ai + gifAltKeyword 존재)
+                const gifAltScenes = jsonObj.scenes.filter(s => s.bgSource === 'ai' && s.gifAltKeyword);
+
+                // 셀팟에 넣을 JSON은 내부 메타 필드 제거 (깨끗하게)
                 const cleanScenes = jsonObj.scenes.map(s => {
-                    const { needRealImage, realSearchKeyword, ...rest } = s;
+                    const { needRealImage, realSearchKeyword, gifAltKeyword, ...rest } = s;
                     return rest;
                 });
                 const cleanJson = { scenes: cleanScenes };
 
                 window._sellpotJsonData = JSON.stringify(cleanJson, null, 2);
                 window._sellpotRealScenes = realScenes;
+                window._sellpotGifAltScenes = gifAltScenes;
 
                 // 요약 표시
                 const counts = { stock: 0, gif: 0, ai: 0 };
@@ -3493,13 +3526,17 @@ ${script}
                     <span style="color:#0066cc;">📹 stock ${counts.stock}개 (${pct('stock')}%)</span> ·
                     <span style="color:#cc6600;">🎞️ gif ${counts.gif}개 (${pct('gif')}%)</span> ·
                     <span style="color:#990099;">🎨 ai ${counts.ai}개 (${pct('ai')}%)</span> ·
-                    <span style="color:#cc0000;">📷 실사 필요 ${realScenes.length}개</span>
+                    <span style="color:#cc0000;">📷 실사 필요 ${realScenes.length}개</span> ·
+                    <span style="color:#6f42c1;">🎞️ GIF 대체 가능 ${gifAltScenes.length}개</span>
                 `;
 
                 document.getElementById('jsonOutput').value = window._sellpotJsonData;
 
                 // 실사 목록 렌더링
                 _renderRealImageList(realScenes);
+
+                // GIF 교체 참고 목록 렌더링
+                _renderGifAltList(gifAltScenes);
 
                 document.getElementById('jsonResultSection').style.display = '';
                 statusEl.innerHTML = '<span style="color:#28a745;">✓ 생성 완료</span>';
@@ -3569,6 +3606,57 @@ ${script}
                 const summary = s.narration.length > 60 ? s.narration.substring(0, 60) + '...' : s.narration;
                 text += `장면 ${s.id}: ${summary}\n`;
                 text += `  검색어: ${s.realSearchKeyword || '(없음)'}\n\n`;
+            });
+            safeCopy(text).then(() => {
+                const orig = btn.textContent;
+                btn.textContent = '✓ 복사됨!';
+                setTimeout(() => btn.textContent = orig, 1500);
+            });
+        }
+
+        function _renderGifAltList(gifAltScenes) {
+            const sec = document.getElementById('jsonGifAltSection');
+            const list = document.getElementById('jsonGifAltList');
+            if (!gifAltScenes || gifAltScenes.length === 0) {
+                sec.style.display = 'none';
+                list.innerHTML = '';
+                return;
+            }
+            sec.style.display = '';
+            let html = '<div style="display:flex;flex-direction:column;gap:8px;">';
+            gifAltScenes.forEach(s => {
+                const summary = s.narration.length > 60 ? s.narration.substring(0, 60) + '...' : s.narration;
+                const kw = s.gifAltKeyword || '(키워드 없음)';
+                const klipyUrl = `https://klipy.com/search?q=${encodeURIComponent(kw)}`;
+                const giphyUrl = `https://giphy.com/search/${encodeURIComponent(kw)}`;
+                html += `
+                    <div style="padding:10px;background:#f5f0ff;border:1px solid #d0b8ff;border-radius:8px;">
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">
+                            <div style="flex:1;min-width:0;">
+                                <div style="font-weight:700;color:#6f42c1;font-size:0.85rem;margin-bottom:4px;">장면 ${s.id}</div>
+                                <div style="font-size:0.85rem;color:#333;margin-bottom:6px;">${_escapeHtml(summary)}</div>
+                                <div style="font-size:0.85rem;"><span style="color:#888;">🔍</span> <code style="background:#fff;padding:2px 6px;border-radius:4px;border:1px solid #d0b8ff;font-size:0.8rem;">${_escapeHtml(kw)}</code></div>
+                            </div>
+                            <div style="display:flex;gap:4px;flex-wrap:wrap;">
+                                <a href="${klipyUrl}" target="_blank" style="background:#6f42c1;color:white;padding:6px 10px;border-radius:6px;text-decoration:none;font-size:0.75rem;font-weight:700;white-space:nowrap;">Klipy ↗</a>
+                                <a href="${giphyUrl}" target="_blank" style="background:#9c27b0;color:white;padding:6px 10px;border-radius:6px;text-decoration:none;font-size:0.75rem;font-weight:700;white-space:nowrap;">Giphy ↗</a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            list.innerHTML = html;
+        }
+
+        function copyGifAltList(btn) {
+            const gifAltScenes = window._sellpotGifAltScenes || [];
+            if (gifAltScenes.length === 0) { alert('GIF 대체 가능 장면이 없습니다.'); return; }
+            let text = '# GIF 교체 참고 목록 (Plan B)\n\n';
+            gifAltScenes.forEach(s => {
+                const summary = s.narration.length > 60 ? s.narration.substring(0, 60) + '...' : s.narration;
+                text += `장면 ${s.id}: ${summary}\n`;
+                text += `  검색어: ${s.gifAltKeyword || '(없음)'}\n\n`;
             });
             safeCopy(text).then(() => {
                 const orig = btn.textContent;
