@@ -1964,11 +1964,23 @@
             <!-- 생성 결과 -->
             <div id="jsonResultSection" style="display:none;">
                 <div class="section">
-                    <div class="section-title">생성 결과 (셀팟에 붙여넣기)</div>
+                    <div class="section-title">1️⃣ 셀팟에 붙여넣을 JSON</div>
                     <div class="section-content">
                         <div id="jsonSummary" style="margin-bottom:12px;padding:12px;background:#f5f5f5;border-radius:8px;font-size:0.9rem;"></div>
-                        <button class="search-btn" onclick="copySellpotJson(this)" style="width:100%;margin-bottom:12px;font-size:1.05rem;padding:14px;">📋 JSON 전체 복사</button>
-                        <textarea id="jsonOutput" readonly style="width:100%;min-height:500px;padding:16px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.8rem;font-family:'Courier New',monospace;line-height:1.5;background:#1e1e1e;color:#d4d4d4;resize:vertical;" placeholder="여기에 JSON이 표시됩니다"></textarea>
+                        <button class="search-btn" onclick="copySellpotJson(this)" style="width:100%;margin-bottom:12px;font-size:1.05rem;padding:14px;">📋 JSON 전체 복사 (셀팟용)</button>
+                        <textarea id="jsonOutput" readonly style="width:100%;min-height:400px;padding:16px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.8rem;font-family:'Courier New',monospace;line-height:1.5;background:#1e1e1e;color:#d4d4d4;resize:vertical;" placeholder="여기에 JSON이 표시됩니다"></textarea>
+                    </div>
+                </div>
+
+                <div class="section" id="jsonRealSection" style="display:none;">
+                    <div class="section-title">2️⃣ 실사 이미지 교체 목록</div>
+                    <div class="section-content">
+                        <p style="font-size:0.85rem;color:#666;margin-bottom:12px;">
+                            셀팟에서 영상 생성 후, 아래 장면들만 구글에서 실제 사진으로 교체하세요.
+                            키워드 복사 → 구글 이미지 검색 → 다운 → 셀팟에서 해당 장면 배경 교체.
+                        </p>
+                        <div id="jsonRealList" style="margin-bottom:12px;"></div>
+                        <button class="search-btn" onclick="copyRealImageList(this)" style="width:100%;background:#fd7e14;border-color:#fd7e14;">📋 실사 목록 텍스트 복사</button>
                     </div>
                 </div>
             </div>
@@ -2986,6 +2998,31 @@ ${introPrompts}`;
 - textStyle, textFont, textSize, textColor, textBg
 - infographicType, infographicData
 
+### 내부 전용 메타 필드 (실사 교체 안내용)
+
+아래 두 필드는 **최종 셀팟 JSON에서는 제거될 것**이지만, AI가 장면 생성 시 판단 결과를 담아야 한다.
+
+- \`needRealImage\`: true | false (기본 false, 생략 가능)
+- \`realSearchKeyword\`: 구글 검색용 구체 키워드 (needRealImage가 true일 때만)
+
+아래 조건에 해당하는 장면만 needRealImage = true:
+1. **실존 인물 고유명사** (예: 네타냐후, 트럼프, 시아드 바레, 기드온 사르 등) — 거의 무조건 true
+2. **특정 역사적 사건의 자료사진** (예: 1988 하르게이사 폭격, 특정 기자회견)
+3. **특정 장소의 실제 지형·건물·위성사진** (예: 베르베라 활주로, 특정 항구)
+4. **특정 뉴스·공식 발표 화면** (신뢰도가 필요한 인용·통계)
+
+**선별 기준**:
+- 꼭 필요한 장면만 체크. 자료가 존재할 가능성이 높은 장면만.
+- 범용 장면(난민 일반, 도시 풍경 일반, 회의장 일반, 서류 일반 등)은 체크하지 말 것 — stock으로 충분.
+- 실존 인물이 나레이션에 고유명사로 등장하면 **거의 무조건** 체크.
+- 하지만 **억지로 채우지 말 것** — 실제로 사진이 존재할 것 같지 않은 장면은 넘어가기.
+
+realSearchKeyword 예:
+- "Netanyahu Gideon Saar Somaliland 2025"
+- "Hargeisa bombing 1988 ruins"
+- "Siad Barre dictator photo"
+- "Berbera airport runway satellite"
+
 ---
 
 ## bgSource 선택 기준
@@ -3158,7 +3195,18 @@ ${script}`;
                     throw new Error('scenes 배열이 없습니다.');
                 }
 
-                window._sellpotJsonData = JSON.stringify(jsonObj, null, 2);
+                // 실사 필요 장면 별도 저장
+                const realScenes = jsonObj.scenes.filter(s => s.needRealImage === true);
+
+                // 셀팟에 넣을 JSON은 needRealImage/realSearchKeyword 제거 (깨끗하게)
+                const cleanScenes = jsonObj.scenes.map(s => {
+                    const { needRealImage, realSearchKeyword, ...rest } = s;
+                    return rest;
+                });
+                const cleanJson = { scenes: cleanScenes };
+
+                window._sellpotJsonData = JSON.stringify(cleanJson, null, 2);
+                window._sellpotRealScenes = realScenes;
 
                 // 요약 표시
                 const counts = { stock: 0, gif: 0, ai: 0 };
@@ -3171,10 +3219,15 @@ ${script}`;
                     <strong>총 ${total}개 장면</strong> 생성 완료<br>
                     <span style="color:#0066cc;">📹 stock ${counts.stock}개 (${pct('stock')}%)</span> ·
                     <span style="color:#cc6600;">🎞️ gif ${counts.gif}개 (${pct('gif')}%)</span> ·
-                    <span style="color:#990099;">🎨 ai ${counts.ai}개 (${pct('ai')}%)</span>
+                    <span style="color:#990099;">🎨 ai ${counts.ai}개 (${pct('ai')}%)</span> ·
+                    <span style="color:#cc0000;">📷 실사 필요 ${realScenes.length}개</span>
                 `;
 
                 document.getElementById('jsonOutput').value = window._sellpotJsonData;
+
+                // 실사 목록 렌더링
+                _renderRealImageList(realScenes);
+
                 document.getElementById('jsonResultSection').style.display = '';
                 statusEl.innerHTML = '<span style="color:#28a745;">✓ 생성 완료</span>';
 
@@ -3194,6 +3247,57 @@ ${script}`;
         function copySellpotJson(btn) {
             if (!window._sellpotJsonData) { alert('먼저 JSON을 생성하세요.'); return; }
             safeCopy(window._sellpotJsonData).then(() => {
+                const orig = btn.textContent;
+                btn.textContent = '✓ 복사됨!';
+                setTimeout(() => btn.textContent = orig, 1500);
+            });
+        }
+
+        function _renderRealImageList(realScenes) {
+            const sec = document.getElementById('jsonRealSection');
+            const list = document.getElementById('jsonRealList');
+            if (!realScenes || realScenes.length === 0) {
+                sec.style.display = 'none';
+                list.innerHTML = '';
+                return;
+            }
+            sec.style.display = '';
+            let html = '<div style="display:flex;flex-direction:column;gap:8px;">';
+            realScenes.forEach(s => {
+                const summary = s.narration.length > 60 ? s.narration.substring(0, 60) + '...' : s.narration;
+                const kw = s.realSearchKeyword || '(키워드 없음)';
+                const searchUrl = `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(kw)}`;
+                html += `
+                    <div style="padding:10px;background:#fff8f0;border:1px solid #ffd699;border-radius:8px;">
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">
+                            <div style="flex:1;min-width:0;">
+                                <div style="font-weight:700;color:#d46b08;font-size:0.85rem;margin-bottom:4px;">장면 ${s.id}</div>
+                                <div style="font-size:0.85rem;color:#333;margin-bottom:6px;">${_escapeHtml(summary)}</div>
+                                <div style="font-size:0.85rem;"><span style="color:#888;">🔍</span> <code style="background:#fff;padding:2px 6px;border-radius:4px;border:1px solid #ffd699;font-size:0.8rem;">${_escapeHtml(kw)}</code></div>
+                            </div>
+                            <a href="${searchUrl}" target="_blank" style="background:#fd7e14;color:white;padding:6px 12px;border-radius:6px;text-decoration:none;font-size:0.8rem;font-weight:700;white-space:nowrap;">구글 검색 ↗</a>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            list.innerHTML = html;
+        }
+
+        function _escapeHtml(s) {
+            return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
+
+        function copyRealImageList(btn) {
+            const realScenes = window._sellpotRealScenes || [];
+            if (realScenes.length === 0) { alert('실사 필요 장면이 없습니다.'); return; }
+            let text = '# 실사 이미지 교체 목록\n\n';
+            realScenes.forEach(s => {
+                const summary = s.narration.length > 60 ? s.narration.substring(0, 60) + '...' : s.narration;
+                text += `장면 ${s.id}: ${summary}\n`;
+                text += `  검색어: ${s.realSearchKeyword || '(없음)'}\n\n`;
+            });
+            safeCopy(text).then(() => {
                 const orig = btn.textContent;
                 btn.textContent = '✓ 복사됨!';
                 setTimeout(() => btn.textContent = orig, 1500);
