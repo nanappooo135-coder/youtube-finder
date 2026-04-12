@@ -1945,32 +1945,13 @@
                 <div class="section-title">셀팟 JSON 생성</div>
                 <div class="section-content">
                     <p style="font-size:0.85rem;color:#888;margin-bottom:12px;">
-                        확정된 대본을 셀팟 스튜디오용 JSON 장면 파일로 변환합니다.
-                        각 장면마다 배경(스톡/GIF/AI), 텍스트 오버레이, 효과음을 자동 지정하고,
-                        실사 이미지가 꼭 필요한 장면만 별도 가이드로 뽑아줍니다.
+                        확정된 대본을 셀팟 프로그램에 붙여넣을 JSON 텍스트로 변환합니다.
+                        한 문장 = 한 장면 원칙. 배경(stock/ai/gif), 오버레이 텍스트, 효과음 자동 지정.
                     </p>
 
                     <div class="input-group">
-                        <label>대본 전체 <span style="color:#888;font-weight:400;">(script.txt 내용 붙여넣기)</span></label>
-                        <textarea id="jsonScript" rows="12" placeholder="확정된 대본 전체를 붙여넣으세요.&#10;&#10;예:&#10;지금 아프리카에 지도에는 없는데 대사관은 있고...&#10;&#10;소말릴란드라는 나라입니다. 30년 넘게..." style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;resize:vertical;font-family:inherit;line-height:1.6;"></textarea>
-                    </div>
-
-                    <div class="input-group">
-                        <label>장면 묶음 길이 <span style="color:#888;font-weight:400;">(한 장면에 포함할 대사 길이 기준)</span></label>
-                        <div class="tb-options" id="jsonChunk">
-                            <button class="tb-opt" data-val="short" onclick="toggleTbOpt(this,'jsonChunk',1)">
-                                <div class="opt-title">짧게</div>
-                                <div class="opt-desc" style="font-size:0.75rem;color:#888;">1문장 단위</div>
-                            </button>
-                            <button class="tb-opt selected" data-val="normal" onclick="toggleTbOpt(this,'jsonChunk',1)">
-                                <div class="opt-title">보통</div>
-                                <div class="opt-desc" style="font-size:0.75rem;color:#888;">1~2문장</div>
-                            </button>
-                            <button class="tb-opt" data-val="long" onclick="toggleTbOpt(this,'jsonChunk',1)">
-                                <div class="opt-title">길게</div>
-                                <div class="opt-desc" style="font-size:0.75rem;color:#888;">2~3문장</div>
-                            </button>
-                        </div>
+                        <label>대본 전체 <span style="color:#888;font-weight:400;">(script.txt 내용 그대로)</span></label>
+                        <textarea id="jsonScript" rows="14" placeholder="대본 전체를 붙여넣으세요.&#10;&#10;예:&#10;지금 아프리카에 지도에는 없는데 대사관은 있고...&#10;&#10;소말릴란드라는 나라입니다. 30년 넘게..." style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;resize:vertical;font-family:inherit;line-height:1.6;"></textarea>
                     </div>
 
                     <button id="jsonBtn" class="search-btn" onclick="generateSellpotJson()">
@@ -1983,25 +1964,11 @@
             <!-- 생성 결과 -->
             <div id="jsonResultSection" style="display:none;">
                 <div class="section">
-                    <div class="section-title">생성 결과</div>
+                    <div class="section-title">생성 결과 (셀팟에 붙여넣기)</div>
                     <div class="section-content">
                         <div id="jsonSummary" style="margin-bottom:12px;padding:12px;background:#f5f5f5;border-radius:8px;font-size:0.9rem;"></div>
-                        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
-                            <button class="search-btn" onclick="downloadSellpotJson()" style="flex:1;min-width:180px;">📥 sellpot-scenes.json 다운로드</button>
-                            <button class="search-btn" onclick="downloadRealImageGuide()" style="flex:1;min-width:180px;background:#fd7e14;border-color:#fd7e14;">📥 real-image-guide.md 다운로드</button>
-                        </div>
-                        <div style="display:flex;gap:8px;">
-                            <button class="search-btn" onclick="copySellpotJson(this)" style="flex:1;">JSON 복사</button>
-                            <button class="search-btn" onclick="copyRealImageGuide(this)" style="flex:1;background:#6c757d;border-color:#6c757d;">가이드 복사</button>
-                        </div>
-                        <details style="margin-top:16px;">
-                            <summary style="cursor:pointer;font-weight:700;font-size:0.9rem;color:#555;">미리보기 (JSON)</summary>
-                            <pre id="jsonPreview" style="margin-top:8px;padding:12px;background:#1e1e1e;color:#d4d4d4;border-radius:8px;font-size:0.75rem;max-height:400px;overflow:auto;white-space:pre-wrap;"></pre>
-                        </details>
-                        <details style="margin-top:8px;">
-                            <summary style="cursor:pointer;font-weight:700;font-size:0.9rem;color:#555;">미리보기 (실사 가이드)</summary>
-                            <pre id="jsonGuidePreview" style="margin-top:8px;padding:12px;background:#f8f9fa;color:#333;border-radius:8px;font-size:0.85rem;max-height:400px;overflow:auto;white-space:pre-wrap;"></pre>
-                        </details>
+                        <button class="search-btn" onclick="copySellpotJson(this)" style="width:100%;margin-bottom:12px;font-size:1.05rem;padding:14px;">📋 JSON 전체 복사</button>
+                        <textarea id="jsonOutput" readonly style="width:100%;min-height:500px;padding:16px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.8rem;font-family:'Courier New',monospace;line-height:1.5;background:#1e1e1e;color:#d4d4d4;resize:vertical;" placeholder="여기에 JSON이 표시됩니다"></textarea>
                     </div>
                 </div>
             </div>
@@ -2966,86 +2933,188 @@ ${introPrompts}`;
         // ==================== 셀팟 JSON 생성 ====================
 
         // 셀팟 JSON 생성 프롬프트
-        function _buildSellpotJsonPrompt(script, chunkMode) {
-            const chunkDesc = {
-                short: '각 장면은 1문장만 포함한다. 장면 수를 최대로 쪼갠다.',
-                normal: '각 장면은 1~2문장을 포함한다. 같은 시각적 주제면 2문장을 묶고, 주제가 바뀌면 분리한다.',
-                long: '각 장면은 2~3문장을 묶는다. 호흡이 긴 나레이션을 한 배경에 유지한다.'
-            }[chunkMode] || '각 장면은 1~2문장을 포함한다.';
+        function _buildSellpotJsonPrompt(script) {
+            return `당신은 유튜브 영상 제작 파이프라인의 장면 구성 AI입니다.
+사용자가 나레이션 대본을 입력하면, 각 문장을 하나의 장면(scene)으로 분리하고 아래 JSON 형식으로 변환합니다.
 
-            return `너는 유튜브 영상용 셀팟(Sellpot) 스튜디오 JSON 생성 전문가다. 아래 대본을 분석해서 셀팟에 바로 넣을 수 있는 JSON을 만든다.
+---
 
-## 출력 규칙 (매우 중요)
+## 출력 JSON 구조
 
-- 출력은 오직 JSON 하나만. 설명/주석/코드블록 마커(\`\`\`) 절대 금지.
-- 최상위 구조: { "scenes": [ ... ] }
-- 각 scene 객체의 필수 필드: id, narration, bgSource
-- 각 scene 객체의 선택 필드: bgQuery, aiPrompt, textOverlay, textPosition, sfxPrompt, needRealImage, realSearchKeyword
+\`\`\`json
+{
+  "scenes": [
+    {
+      "id": 1,
+      "narration": "나레이션 텍스트",
+      "bgSource": "stock" | "ai" | "gif",
+      "bgQuery": "Pexels 영문 검색어",
+      "aiPrompt": "AI 이미지 생성 프롬프트 (bgSource가 ai일 때만)",
+      "textOverlay": "화면 텍스트",
+      "textPosition": "center" | "top" | "bottom" | "top-left" | "top-right",
+      "sfxPrompt": "ElevenLabs 효과음 프롬프트"
+    }
+  ]
+}
+\`\`\`
 
-## 장면 분할 규칙
+---
 
-${chunkDesc}
+## 필드 규칙
 
-- 장면 id는 1부터 순서대로.
-- narration은 대본의 문장을 그대로 복사. 절대 요약/변형 금지.
-- 대본에 있는 모든 문장이 어느 장면엔가는 반드시 포함되어야 함 (누락 금지).
+### 필수 필드
 
-## bgSource 선택 기준 (중요)
+- \`id\`: 1부터 순차 증가
+- \`narration\`: 사용자가 입력한 나레이션 텍스트 그대로 (수정 금지)
+- \`bgSource\`: "stock", "ai", "gif" 중 하나
 
-3가지 중 하나:
-- "stock" — 실제 영상이 필요할 때 (화물선, 도시 거리, 공장, 회의장, 군중, 항구, 폐허 등 현실 장면)
-- "gif" — 감정·반응·개념 표현 (놀람, 반대, 질문, 도미노, 깨지는 유리 등)
-- "ai" — 실제 세계에 존재하지 않는 시각물 (지도, 인포그래픽, 상징적 합성 이미지, 타임라인, 비교 그래픽 등)
+### 조건부 필드
 
-## 필드별 작성 규칙
+- \`bgQuery\`: bgSource가 "stock"이면 Pexels 영문 검색어, "gif"이면 Klipy 한글+영문 혼합 검색어
+- \`aiPrompt\`: bgSource가 "ai"일 때만 포함. 영문 프롬프트. 반드시 "dark background"와 "16:9" 포함
+- \`textOverlay\`: 화면에 표시할 텍스트. 없으면 필드 자체를 생략
+- \`textPosition\`: textOverlay가 있을 때만 포함
+- \`sfxPrompt\`: 효과음이 필요한 장면에만 포함. 영문 키워드. 짧게.
 
-### bgQuery (stock, gif일 때 필수)
-- 영어 키워드 4~8단어
-- 셀팟이 Pexels/Freepik에서 이 키워드로 검색함
-- gif는 한글+영어 병기 가능 (예: "반대 저항 protest objection crowd")
+### 사용 금지 필드 (절대 포함하지 마세요)
 
-### aiPrompt (ai일 때 필수)
-- 영어로 작성된 상세한 이미지 생성 프롬프트
-- 구도, 색감, 분위기, 스타일을 구체적으로 명시
-- 끝에 "16:9" 추가
+- transition
+- durationSeconds
+- notes
+- solidColor
+- bgSource: "solid"
+- textStyle, textFont, textSize, textColor, textBg
+- infographicType, infographicData
 
-### textOverlay (선택)
-- 화면에 띄울 짧은 강조 텍스트 (한글, 1~15자 이내)
-- 숫자·핵심 키워드·인용구 등만. 모든 장면에 다 넣지 말 것 (과하면 시선 분산).
+---
 
-### textPosition
-- "top" | "center" | "bottom" 중 하나. textOverlay 있을 때만 추가.
+## bgSource 선택 기준
 
-### sfxPrompt (선택)
-- 효과음 설명 (영어). 감정 전환점, 충격, 강조 순간에만 선별적으로.
+### stock (Pexels 스톡 영상) — 기본값. 가장 많이 사용
 
-### needRealImage + realSearchKeyword (매우 중요 — 실사 필요 장면만)
+- 실제 장소, 사물, 풍경, 사람, 산업 현장
+- 전쟁, 군사, 경제, 도시, 자연, 공장, 주유소, 항구 등 실사 영상
+- **검색어는 반드시 영문, 3~6단어, 매우 구체적으로. 나레이션 핵심 명사·동사·장소·물체를 그대로 반영.**
+- 좋은 예: "gas station price sign close up", "military troops marching desert"
+- 나쁜 예: "economy", "war" (너무 추상적)
+- **매우 중요**: 나레이션에 나오는 구체적인 사물·장소·인물을 그대로 영어로 검색어에 넣을 것. 예) "삼성전자 물류비 급증" → "samsung logistics warehouse container"
 
-아래 조건에 해당하는 장면만 "needRealImage": true 와 "realSearchKeyword" 추가:
-1. **특정 실존 인물** (예: 네타냐후, 트럼프, 시아드 바레 등 고유명사로 등장하는 인물)
-2. **특정 역사적 사건의 자료사진** (예: 1988 하르게이사 폭격, 특정 연도의 특정 회의)
-3. **특정 장소의 실제 지형/건물** (예: 베르베라 활주로 위성사진, 특정 항구)
-4. **특정 통계·자료 화면** (예: 특정 뉴스 헤드라인, 공식 발표 장면 등 자료가 있어야 신뢰도가 사는 순간)
+### gif (Klipy GIF) — 감정, 반응, 비유 표현에 적극 사용
 
-**선별 기준 (중요)**:
-- 권장: 영상 전체에서 **7~12개 정도**. 꼭 필요한 장면이 많으면 이보다 더 많아도 OK.
-- 하지만 **억지로 채우지 말 것** — 자료가 존재하지 않을 게 뻔한 장면은 needRealImage 넣지 말기.
-- 범용적 장면(난민, 전쟁 폐허, 도시 풍경 일반, 회의장 일반, 서류 일반 등)은 needRealImage 금지 — 스톡/AI로 충분.
-- 실존 인물이 고유명사로 언급되면 거의 무조건 needRealImage 넣기 (인물 사진은 구글/위키미디어에 있음).
+- 비유적 표현: 도미노, 수도꼭지, 폭탄, 저울, 폭풍 등
+- 감정/반응: 놀람, 패닉, 무관심, 충격, 질식, 경고 등
+- 상징적 행동: 조준, 압착, 붕괴, 날아감 등
+- **검색어는 한글+영문 혼합, 핵심 키워드 3~5개 나열. 나레이션에 담긴 정확한 감정/비유를 잡아낼 것.**
+- 좋은 예: "도미노 연쇄 쓰러짐 chain reaction", "숨 막힘 헉 충격 질식 놀람"
+- 나쁜 예: "경제 위기" (GIF로 표현 안 됨)
 
-realSearchKeyword는 사용자가 구글에 바로 복붙할 수 있도록 구체적 영어/한글 키워드.
+### ai (AI 이미지 생성) — 데이터 시각화가 반드시 필요할 때만
+
+- 차트 (라인, 바, 비교)
+- 지도 (지정학적 위치 표시)
+- 데이터 인포그래픽 (도넛 차트, 3열 카드 등)
+- 목차, 스케일 바 등 텍스트로 대체 불가능한 시각 자료
+- stock이나 gif로 표현 가능하면 ai를 쓰지 마세요
+- 전체 장면의 15% 이하로 제한
+
+---
+
+## 검색어 정밀도 (매우 중요)
+
+**나레이션 내용과 bgQuery가 동떨어지면 절대 안 됩니다.** 다음 체크리스트를 반드시 지킬 것:
+
+1. 나레이션에 언급된 **구체적 명사**(장소, 물건, 국가, 기업, 숫자 등)를 bgQuery에 반영.
+2. "이스라엘이 승인했다" → bgQuery에 "Israel" 또는 "flag signing" 포함. 그냥 "politics"로 뭉개지 말 것.
+3. "홍해 후티 반군" → bgQuery에 "Red Sea", "ship attack" 같은 구체 단어 반영.
+4. "하르게이사 폭격" → 폭격 도시 느낌 (city ruins bombing, aerial destruction) 반영.
+5. gif의 경우: 나레이션이 유발하는 **정확한 감정**을 잡을 것. 그냥 "shock" 하나로 퉁치지 말고, 상황이 배신이면 "배신 뒤통수 betrayal", 무관심이면 "외면 관심없음 indifferent"로.
+
+---
+
+## textOverlay 스타일 규칙 (매우 중요)
+
+지식한입, 자산제곱 스타일을 따릅니다.
+
+### 원칙
+
+1. **1~5단어 이하.** 절대 문장으로 쓰지 마세요.
+2. **핵심 숫자 하나** 또는 **감정 키워드 하나**만.
+3. 설명은 나레이션이 합니다. 텍스트는 찍어주기만.
+4. 나레이션과 텍스트가 중복되면 안 됩니다. 나레이션의 핵심만 뽑으세요.
+
+### 좋은 예
+
+- "2,000원 돌파"
+- "-19.3%"
+- "$157"
+- "질식"
+- "무제한"
+- "장기전"
+- "x4"
+- "→ B"
+
+### 나쁜 예 (절대 이렇게 쓰지 마세요)
+
+- "석기시대 (Stone Age) — 최후통첩" → 너무 김
+- "도미노①유가 — $157.66" → 번호 + 설명 + 숫자 다 넣음
+- "에너지 비용↑ + 수출↓ = 양쪽 압박" → 공식처럼 씀
+- "301조: 상한선 없음 = 무제한" → 설명을 텍스트에 넣음
+- "ℓ당 2,000원 돌파" → 단위까지 넣을 필요 없음
+
+### textOverlay가 필요 없는 장면
+
+- gif가 감정/비유를 충분히 전달하는 경우
+- 나레이션이 짧고 배경 영상만으로 충분한 경우
+- 이런 경우 textOverlay 필드 자체를 생략하세요
+
+---
+
+## sfxPrompt 규칙
+
+- 영문 키워드, 3~6단어
+- 모든 장면에 넣지 마세요. 임팩트가 필요한 장면에만.
+- 데이터 충격: "deep bass boom impact"
+- 전환/경고: "buzzer wrong answer", "alarm warning beep"
+- 군사: "jet engine roar short", "heavy dramatic impact"
+- 비유: "domino falling click click", "clock ticking countdown"
+- 한 영상에서 동일한 sfxPrompt를 3회 이상 반복하지 마세요
+
+---
+
+## 장면 분리 규칙
+
+1. 사용자가 번호를 매겨서 대본을 줄 경우 → 그 번호를 그대로 id로 사용
+2. 번호 없이 줄글로 줄 경우 → 문장 단위로 분리. 한 문장 = 한 장면이 원칙
+3. 단, 아래 경우는 합칠 수 있음:
+    - "~하죠. 틀렸습니다." 같은 착각→파괴 패턴은 하나로
+    - 목차 나열은 하나로
+    - 시나리오 설명 (A 또는 B 각각)은 하나로
+4. 너무 짧은 문장 (5단어 이하)은 다음 문장과 합치세요
+
+---
+
+## 소스 비율 가이드
+
+- stock: 40~50%
+- gif: 30~35%
+- ai: 10~15% (데이터 시각화 필수인 경우만)
+
+---
+
+## 응답 형식
+
+- JSON만 출력하세요. 다른 설명 없이.
+- 한국어 나레이션은 그대로 유지, bgQuery/aiPrompt/sfxPrompt만 영문.
+- gif의 bgQuery만 한글+영문 혼합.
+
+---
 
 ## 대본
 
-${script}
-
-## 출력
-
-JSON만 출력. 다른 텍스트 일절 없이.`;
+${script}`;
         }
 
         window._sellpotJsonData = null;
-        window._sellpotGuideData = null;
 
         async function generateSellpotJson() {
             const script = document.getElementById('jsonScript').value.trim();
@@ -3058,8 +3127,6 @@ JSON만 출력. 다른 텍스트 일절 없이.`;
                 return;
             }
 
-            const chunkMode = document.querySelector('#jsonChunk .tb-opt.selected')?.dataset.val || 'normal';
-
             const btn = document.getElementById('jsonBtn');
             const statusEl = document.getElementById('jsonStatus');
             btn.disabled = true;
@@ -3068,7 +3135,7 @@ JSON만 출력. 다른 텍스트 일절 없이.`;
             _showGeminiStatus('대본 분석 중...');
 
             try {
-                const prompt = _buildSellpotJsonPrompt(script, chunkMode);
+                const prompt = _buildSellpotJsonPrompt(script);
                 const { text } = await callGemini(prompt, { maxTokens: 65536, temperature: 0.4 });
 
                 // JSON 파싱
@@ -3091,36 +3158,28 @@ JSON만 출력. 다른 텍스트 일절 없이.`;
                     throw new Error('scenes 배열이 없습니다.');
                 }
 
-                // 셀팟용 깨끗한 JSON (needRealImage / realSearchKeyword 제거)
-                const cleanScenes = jsonObj.scenes.map(s => {
-                    const { needRealImage, realSearchKeyword, ...rest } = s;
-                    return rest;
-                });
-                const cleanJson = { scenes: cleanScenes };
-
-                // 실사 필요 장면만 추출
-                const realImageScenes = jsonObj.scenes.filter(s => s.needRealImage);
-
-                window._sellpotJsonData = JSON.stringify(cleanJson, null, 2);
-                window._sellpotGuideData = _buildRealImageGuide(jsonObj.scenes, realImageScenes);
+                window._sellpotJsonData = JSON.stringify(jsonObj, null, 2);
 
                 // 요약 표시
                 const counts = { stock: 0, gif: 0, ai: 0 };
                 jsonObj.scenes.forEach(s => {
                     if (counts[s.bgSource] !== undefined) counts[s.bgSource]++;
                 });
+                const total = jsonObj.scenes.length;
+                const pct = k => total > 0 ? Math.round((counts[k] / total) * 100) : 0;
                 document.getElementById('jsonSummary').innerHTML = `
-                    <strong>총 ${jsonObj.scenes.length}개 장면</strong> 생성 완료<br>
-                    <span style="color:#0066cc;">📹 스톡 ${counts.stock}개</span> ·
-                    <span style="color:#cc6600;">🎞️ GIF ${counts.gif}개</span> ·
-                    <span style="color:#990099;">🎨 AI ${counts.ai}개</span> ·
-                    <span style="color:#cc0000;">📷 실사 필요 ${realImageScenes.length}개</span>
+                    <strong>총 ${total}개 장면</strong> 생성 완료<br>
+                    <span style="color:#0066cc;">📹 stock ${counts.stock}개 (${pct('stock')}%)</span> ·
+                    <span style="color:#cc6600;">🎞️ gif ${counts.gif}개 (${pct('gif')}%)</span> ·
+                    <span style="color:#990099;">🎨 ai ${counts.ai}개 (${pct('ai')}%)</span>
                 `;
 
-                document.getElementById('jsonPreview').textContent = window._sellpotJsonData;
-                document.getElementById('jsonGuidePreview').textContent = window._sellpotGuideData;
+                document.getElementById('jsonOutput').value = window._sellpotJsonData;
                 document.getElementById('jsonResultSection').style.display = '';
                 statusEl.innerHTML = '<span style="color:#28a745;">✓ 생성 완료</span>';
+
+                // 결과 섹션으로 스크롤
+                document.getElementById('jsonResultSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
             } catch (e) {
                 console.error(e);
@@ -3132,66 +3191,13 @@ JSON만 출력. 다른 텍스트 일절 없이.`;
             }
         }
 
-        function _buildRealImageGuide(allScenes, realScenes) {
-            let md = '# 실사 이미지 교체 가이드\n\n';
-            md += '셀팟에서 영상 생성 후, 아래 장면들만 골라서 실사 이미지로 교체.\n';
-            md += '구글/위키미디어에서 키워드 복사 → 검색 → 다운 → 셀팟에서 배경 교체.\n\n---\n\n';
-
-            if (realScenes.length === 0) {
-                md += '실사 이미지가 필요한 장면이 없습니다.\n';
-                return md;
-            }
-
-            md += '| 장면 ID | 대사 요약 | 구글 검색 키워드 |\n';
-            md += '|---------|-----------|------------------|\n';
-            realScenes.forEach(s => {
-                const summary = s.narration.length > 40 ? s.narration.substring(0, 40) + '...' : s.narration;
-                const keyword = s.realSearchKeyword || '(키워드 없음)';
-                md += `| ${s.id} | ${summary} | \`${keyword}\` |\n`;
-            });
-
-            md += `\n---\n\n총 ${realScenes.length}개 장면. 나머지 ${allScenes.length - realScenes.length}개는 셀팟 결과 그대로 사용.\n`;
-            return md;
-        }
-
-        function downloadSellpotJson() {
-            if (!window._sellpotJsonData) { alert('먼저 JSON을 생성하세요.'); return; }
-            _downloadFile('sellpot-scenes.json', window._sellpotJsonData, 'application/json');
-        }
-
-        function downloadRealImageGuide() {
-            if (!window._sellpotGuideData) { alert('먼저 JSON을 생성하세요.'); return; }
-            _downloadFile('real-image-guide.md', window._sellpotGuideData, 'text/markdown');
-        }
-
         function copySellpotJson(btn) {
             if (!window._sellpotJsonData) { alert('먼저 JSON을 생성하세요.'); return; }
             safeCopy(window._sellpotJsonData).then(() => {
                 const orig = btn.textContent;
-                btn.textContent = '✓ 복사됨';
+                btn.textContent = '✓ 복사됨!';
                 setTimeout(() => btn.textContent = orig, 1500);
             });
-        }
-
-        function copyRealImageGuide(btn) {
-            if (!window._sellpotGuideData) { alert('먼저 JSON을 생성하세요.'); return; }
-            safeCopy(window._sellpotGuideData).then(() => {
-                const orig = btn.textContent;
-                btn.textContent = '✓ 복사됨';
-                setTimeout(() => btn.textContent = orig, 1500);
-            });
-        }
-
-        function _downloadFile(filename, content, mime) {
-            const blob = new Blob([content], { type: mime });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
         }
 
         // 클립보드 복사 유틸 (대용량 텍스트도 안정적으로 동작)
