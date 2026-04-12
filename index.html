@@ -2040,6 +2040,19 @@
                         <button class="search-btn" onclick="copyCharacterList(this)" style="width:100%;background:#e83e8c;border-color:#e83e8c;">📋 캐릭터 목록 텍스트 복사</button>
                     </div>
                 </div>
+
+                <div class="section" id="jsonLogoSection" style="display:none;">
+                    <div class="section-title">5️⃣ 브랜드 로고 자동 삽입 목록 (Logo.dev)</div>
+                    <div class="section-content">
+                        <p style="font-size:0.85rem;color:#666;margin-bottom:12px;">
+                            기업명 등장 장면은 Logo.dev가 자동으로 로고를 찾아줍니다.
+                            <strong style="color:#0d6efd;">배경 영상은 그대로 두고, 로고만 코너에 작은 오버레이</strong>로 들어갑니다.
+                            셀팟 AI에게 아래 목록을 전달하세요.
+                        </p>
+                        <div id="jsonLogoList" style="margin-bottom:12px;"></div>
+                        <button class="search-btn" onclick="copyLogoList(this)" style="width:100%;background:#0d6efd;border-color:#0d6efd;">📋 로고 목록 셀팟 명령어 복사</button>
+                    </div>
+                </div>
             </div>
 
         </div><!-- /process-json -->
@@ -3165,6 +3178,51 @@ realSearchKeyword 예:
 - "Siad Barre dictator photo"
 - "Berbera airport runway satellite"
 
+### needLogo + logoName + logoPosition 규칙 (브랜드 로고 자동 삽입 안내)
+
+셀팟에 Logo.dev API가 연동돼 있어 **기업/브랜드 로고를 자동으로 찾아 배경 위에 작은 오버레이로** 삽입할 수 있다.
+
+**⚠️ 중요: 로고는 배경을 대체하지 않는다. 배경(stock/ai)은 그대로 두고, 로고만 코너에 작게 오버레이로 얹는 방식.**
+
+**needLogo: true로 표시할 조건**:
+- 나레이션에 **구체적 기업·브랜드 이름**이 등장
+- 예: "SK에너지", "삼성전자", "GS칼텍스", "아람코", "DP월드", "릴라이언스" 등
+
+**logoName 작성 규칙**:
+- 영문 기업명 (Logo.dev가 영문 기업명으로 검색)
+- 예: "SK Energy", "Samsung Electronics", "GS Caltex", "Aramco", "S-Oil", "HD Hyundai Oilbank"
+
+**logoPosition 작성 규칙**:
+- "top-right" (기본값, 우상단) — 가장 자연스러움
+- "top-left" (좌상단)
+- "bottom-right" (우하단)
+- "bottom-left" (좌하단)
+- **"center"나 중앙은 절대 쓰지 말 것** (스톡 영상 가림)
+- textOverlay와 겹치지 않는 위치를 선택
+
+**예시**:
+\`\`\`json
+{
+  "id": 55,
+  "narration": "SK에너지 울산이 하루 84만 배럴을 처리합니다",
+  "bgSource": "stock",
+  "bgQuery": "oil refinery complex aerial night industrial",
+  "textOverlay": "84만 배럴/일",
+  "textPosition": "center",
+  "needLogo": true,
+  "logoName": "SK Energy",
+  "logoPosition": "top-right"
+}
+\`\`\`
+
+**사용 원칙**:
+- **배경은 그대로 유지** (bgSource는 stock이나 ai로 정상 설정)
+- 로고는 코너에 **작은 오버레이**로만 추가
+- AI 이미지로 기업 로고 억지로 만들지 말 것 (정책 위반 + 품질 낮음) → 반드시 needLogo 사용
+- 한 영상에서 같은 기업이 여러 번 등장해도 매번 needLogo 추가 가능
+
+---
+
 ### needCharacter + characterSequence 규칙 (캐릭터 수동 삽입 안내)
 
 사용자가 셀팟에서 **직접 캐릭터 이미지를 순차 삽입**하는 방식이다. 지식세포 스타일에서 많이 씀.
@@ -3334,6 +3392,28 @@ gifAltKeyword 예:
 3. **정보 인포그래픽 (비교/흐름)** (필수)
    - 4사 규모 비교, 3종 원유 비교, 공급망 플로우
    - 예시: "SK·GS·S-Oil·현대 규모 비교"
+
+   **⚠️ 비교 장면은 무조건 Split Screen 스타일 (지식한입 스타일)**:
+   - 대본에 "A vs B", "이쪽은 ~, 반대로 ~", "한쪽은 ~, 다른 쪽은 ~" 패턴이 나오면 → split screen 화면으로 구성
+   - aiPrompt에 반드시 "split screen comparison" 또는 "side-by-side comparison" 포함
+   - 좌우 각각에 아이콘·라벨·숫자 배치
+
+   **좋은 예 (A vs B 패턴)**:
+
+   대본: "미국은 70%, 한국은 15%"
+   \`\`\`
+   "aiPrompt": "Split screen comparison infographic. Left side: USA flag icon with '70%' large label. Right side: Korea flag icon with '15%' large label. Middle vertical divider. All labels in Korean (한글). Dark background, 16:9."
+   \`\`\`
+
+   대본: "20일짜리 공급선과 60일짜리 공급선"
+   \`\`\`
+   "aiPrompt": "Split screen side-by-side comparison. Left panel: '20일' label with stable clock icon, calm ocean. Right panel: '60일' label with tense clock icon, stormy ocean. All labels in Korean (한글). Dark background, 16:9."
+   \`\`\`
+
+   대본: "가벼운 기름용 공장, 무거운 기름용 공장"
+   \`\`\`
+   "aiPrompt": "Side-by-side split screen comparison of two oil refineries. Left: 'Light Oil (가벼운 기름)' simple refinery. Right: 'Heavy Oil (무거운 기름)' complex upgrader refinery. All Korean labels. Dark background, 16:9."
+   \`\`\`
 
 4. **스톡으로 찾기 어려운 특수 장면 — 단, 실사로 먼저 시도 후 AI** (선별적 허용)
 
@@ -3899,9 +3979,12 @@ ${script}
                 // 캐릭터 수동 삽입 장면 (needCharacter=true + characterSequence 존재)
                 const characterScenes = jsonObj.scenes.filter(s => s.needCharacter === true && Array.isArray(s.characterSequence) && s.characterSequence.length > 0);
 
+                // 브랜드 로고 삽입 장면 (needLogo=true + logoName 존재)
+                const logoScenes = jsonObj.scenes.filter(s => s.needLogo === true && s.logoName);
+
                 // 셀팟에 넣을 JSON은 내부 메타 필드 제거 (깨끗하게)
                 const cleanScenes = jsonObj.scenes.map(s => {
-                    const { needRealImage, realSearchKeyword, gifAltKeyword, needCharacter, characterSequence, ...rest } = s;
+                    const { needRealImage, realSearchKeyword, gifAltKeyword, needCharacter, characterSequence, needLogo, logoName, logoPosition, ...rest } = s;
                     return rest;
                 });
                 const cleanJson = { scenes: cleanScenes };
@@ -3910,6 +3993,7 @@ ${script}
                 window._sellpotRealScenes = realScenes;
                 window._sellpotGifAltScenes = gifAltScenes;
                 window._sellpotCharacterScenes = characterScenes;
+                window._sellpotLogoScenes = logoScenes;
 
                 // 요약 표시
                 const counts = { stock: 0, gif: 0, ai: 0 };
@@ -3937,7 +4021,8 @@ ${script}
                     <span style="color:#990099;">🎨 ai ${counts.ai}개 (${pct('ai')}%)</span> ·
                     <span style="color:#cc0000;">📷 실사 필요 ${realScenes.length}개</span> ·
                     <span style="color:#6f42c1;">🎞️ GIF 대체 가능 ${gifAltScenes.length}개</span> ·
-                    <span style="color:#e83e8c;">🎭 캐릭터 삽입 ${characterScenes.length}개</span>
+                    <span style="color:#e83e8c;">🎭 캐릭터 삽입 ${characterScenes.length}개</span> ·
+                    <span style="color:#0d6efd;">🏢 브랜드 로고 ${logoScenes.length}개</span>
                 `;
 
                 document.getElementById('jsonOutput').value = window._sellpotJsonData;
@@ -3950,6 +4035,9 @@ ${script}
 
                 // 캐릭터 수동 삽입 목록 렌더링
                 _renderCharacterList(characterScenes);
+
+                // 브랜드 로고 목록 렌더링
+                _renderLogoList(logoScenes);
 
                 document.getElementById('jsonResultSection').style.display = '';
                 statusEl.innerHTML = '<span style="color:#28a745;">✓ 생성 완료</span>';
@@ -4017,6 +4105,23 @@ ${script}
                     text += `## 3. 효과음 생성 (${sfxScenes.length}개)\n`;
                     sfxScenes.forEach(s => {
                         text += `- 장면 ${s.id}: "${s.sfxPrompt}"\n`;
+                    });
+                    text += '\n';
+                }
+
+                // 브랜드 로고 삽입
+                const logoScenesForCmd = window._sellpotLogoScenes || [];
+                if (logoScenesForCmd.length > 0) {
+                    text += `## 4. 브랜드 로고 삽입 (${logoScenesForCmd.length}개) — Logo.dev 사용, 배경 영상 유지, 코너에 작게 오버레이\n`;
+                    logoScenesForCmd.forEach(s => {
+                        const position = s.logoPosition || 'top-right';
+                        const posKo = {
+                            'top-right': '우상단',
+                            'top-left': '좌상단',
+                            'bottom-right': '우하단',
+                            'bottom-left': '좌하단'
+                        }[position] || position;
+                        text += `- 장면 ${s.id}: "${s.logoName}" 로고 → ${posKo}\n`;
                     });
                     text += '\n';
                 }
@@ -4175,6 +4280,66 @@ ${script}
                 const seq = Array.isArray(s.characterSequence) ? s.characterSequence.join(' → ') : '';
                 text += `장면 ${s.id}: ${summary}\n`;
                 text += `  순서: ${seq || '(없음)'}\n\n`;
+            });
+            safeCopy(text).then(() => {
+                const orig = btn.textContent;
+                btn.textContent = '✓ 복사됨!';
+                setTimeout(() => btn.textContent = orig, 1500);
+            });
+        }
+
+        function _renderLogoList(logoScenes) {
+            const sec = document.getElementById('jsonLogoSection');
+            const list = document.getElementById('jsonLogoList');
+            if (!logoScenes || logoScenes.length === 0) {
+                sec.style.display = 'none';
+                list.innerHTML = '';
+                return;
+            }
+            sec.style.display = '';
+            let html = '<div style="display:flex;flex-direction:column;gap:8px;">';
+            logoScenes.forEach(s => {
+                const summary = s.narration.length > 60 ? s.narration.substring(0, 60) + '...' : s.narration;
+                const logoName = s.logoName || '(이름 없음)';
+                const position = s.logoPosition || 'top-right';
+                const posKo = {
+                    'top-right': '우상단',
+                    'top-left': '좌상단',
+                    'bottom-right': '우하단',
+                    'bottom-left': '좌하단'
+                }[position] || position;
+                html += `
+                    <div style="padding:10px;background:#e7f1ff;border:1px solid #9ec5fe;border-radius:8px;">
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">
+                            <div style="flex:1;min-width:0;">
+                                <div style="font-weight:700;color:#0d6efd;font-size:0.85rem;margin-bottom:4px;">🏢 장면 ${s.id}</div>
+                                <div style="font-size:0.85rem;color:#333;margin-bottom:6px;">${_escapeHtml(summary)}</div>
+                                <div style="font-size:0.85rem;"><span style="color:#888;">로고:</span> <code style="background:#fff;padding:2px 6px;border-radius:4px;border:1px solid #9ec5fe;font-size:0.8rem;font-weight:700;">${_escapeHtml(logoName)}</code></div>
+                            </div>
+                            <div style="background:#0d6efd;color:white;padding:6px 12px;border-radius:6px;font-size:0.8rem;font-weight:700;white-space:nowrap;">${posKo}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            list.innerHTML = html;
+        }
+
+        function copyLogoList(btn) {
+            const logoScenes = window._sellpotLogoScenes || [];
+            if (logoScenes.length === 0) { alert('로고 삽입 장면이 없습니다.'); return; }
+            let text = '# 셀팟 AI에게 요청\n';
+            text += '아래 장면들에 Logo.dev로 브랜드 로고를 가져와서 오버레이로 삽입해줘\n';
+            text += '(배경 영상은 그대로 두고, 로고만 작게 코너에 얹기)\n\n';
+            logoScenes.forEach(s => {
+                const position = s.logoPosition || 'top-right';
+                const posKo = {
+                    'top-right': '우상단',
+                    'top-left': '좌상단',
+                    'bottom-right': '우하단',
+                    'bottom-left': '좌하단'
+                }[position] || position;
+                text += `- 장면 ${s.id}: "${s.logoName}" 로고 → ${posKo}\n`;
             });
             safeCopy(text).then(() => {
                 const orig = btn.textContent;
