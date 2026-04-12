@@ -2997,7 +2997,7 @@ ${introPrompts}`;
             const id = modelId.toLowerCase();
             if (id.includes('pro')) return 'Gemini 2.5 Pro (무료)';
             if (id.includes('flash')) return 'Gemini 2.5 Flash (무료, Pro 대비 품질↓)';
-            if (id.includes('claude') && id.includes('sonnet')) return 'Claude Sonnet 4.5 (약 400원)';
+            if (id.includes('claude') && id.includes('sonnet')) return 'Claude Sonnet 4.6 (약 400원)';
             if (id.includes('claude') && id.includes('haiku')) return 'Claude Haiku 4.5 (약 130원)';
             if (id.includes('claude') && id.includes('opus')) return 'Claude Opus 4.6 (약 2000원)';
             return modelId;
@@ -3462,7 +3462,7 @@ ${script}
                         _showGeminiStatus('Gemini Pro 과부하 → Claude Sonnet으로 전환 중...');
                         const r = await callClaude(prompt, { maxTokens: 16384, temperature: 0.4 });
                         text = r.text;
-                        usedModel = 'Claude Sonnet 4.5 (약 400원 소모)';
+                        usedModel = 'Claude Sonnet 4.6 (약 400원 소모)';
                     }
                 } else {
                     _showGeminiStatus('Gemini로 생성 중... (Pro 우선, 실패 시 Flash)');
@@ -7067,7 +7067,7 @@ Example format:
             if (!CLAUDE_API_KEY) {
                 throw new Error('Claude API 키가 등록되지 않았습니다. 설정 탭에서 등록해주세요.');
             }
-            const model = opts.model || 'claude-sonnet-4-5-20250929';
+            const model = opts.model || 'claude-sonnet-4-6';
             const maxTokens = opts.maxTokens || 16384;
             const temperature = opts.temperature ?? 0.4;
 
