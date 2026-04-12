@@ -2027,6 +2027,18 @@
                         <button class="search-btn" onclick="copyGifAltList(this)" style="width:100%;background:#6f42c1;border-color:#6f42c1;">📋 GIF 목록 텍스트 복사</button>
                     </div>
                 </div>
+
+                <div class="section" id="jsonCharacterSection" style="display:none;">
+                    <div class="section-title">4️⃣ 캐릭터 수동 삽입 목록 (지식세포 스타일)</div>
+                    <div class="section-content">
+                        <p style="font-size:0.85rem;color:#666;margin-bottom:12px;">
+                            정치인·국가·풍자적 설명 장면은 캐릭터를 순서대로 삽입하면 재미가 배가됩니다.
+                            셀팟에 직접 캐릭터 이미지를 순서대로 올리세요. <strong style="color:#e83e8c;">선택 사항</strong>.
+                        </p>
+                        <div id="jsonCharacterList" style="margin-bottom:12px;"></div>
+                        <button class="search-btn" onclick="copyCharacterList(this)" style="width:100%;background:#e83e8c;border-color:#e83e8c;">📋 캐릭터 목록 텍스트 복사</button>
+                    </div>
+                </div>
             </div>
 
         </div><!-- /process-json -->
@@ -3150,6 +3162,48 @@ realSearchKeyword 예:
 - "Siad Barre dictator photo"
 - "Berbera airport runway satellite"
 
+### needCharacter + characterSequence 규칙 (캐릭터 수동 삽입 안내)
+
+사용자가 셀팟에서 **직접 캐릭터 이미지를 순차 삽입**하는 방식이다. 지식세포 스타일에서 많이 씀.
+
+**needCharacter: true로 표시할 조건 (아래 중 하나라도 해당하면 true)**:
+1. **특정 정치인/유명인 등장** (트럼프, 네타냐후, 푸틴, 시진핑, 바이든 등 고유명사)
+2. **국가 간 대립·동맹·전쟁** (국기 활용이 효과적인 순간)
+3. **여러 주체가 순차로 등장**하는 상황 (예: "A가 B에게 C를 선언")
+4. **풍자적/만화적 설명이 더 효과적인 순간** (진지한 스톡보다 캐릭터가 재미)
+
+**characterSequence 작성 규칙**:
+- 배열 형식. 화면에 **순서대로 나올 요소**를 적음.
+- 각 요소는 **짧은 한글 설명** (캐릭터명, 국기, 상징 등)
+- 이모지 섞어도 OK
+
+**characterSequence 예시**:
+
+대본: "트럼프가 이란과 전쟁을 선포합니다"
+\`\`\`json
+"needCharacter": true,
+"characterSequence": ["트럼프 캐릭터", "이란 국기", "하메네이 캐릭터", "💥 전쟁 이모티콘"]
+\`\`\`
+
+대본: "네타냐후와 기드온 사르가 손잡고 소말릴란드를 인정했습니다"
+\`\`\`json
+"needCharacter": true,
+"characterSequence": ["네타냐후 캐릭터", "기드온 사르 캐릭터", "🤝 악수", "소말릴란드 국기"]
+\`\`\`
+
+대본: "미국이 손짓해도 한국은 중동을 선택했다"
+\`\`\`json
+"needCharacter": true,
+"characterSequence": ["🇺🇸 미국 국기 + 손짓", "한국 캐릭터", "🙅 거절", "🇸🇦 사우디 국기"]
+\`\`\`
+
+**주의**:
+- 이 필드는 bgSource와 무관하게 추가 가능 (stock/gif/ai 어느 것이든). 셀팟에서 나중에 사용자가 수동으로 캐릭터를 덧씌우거나 교체함.
+- 일반 대본 나레이션(특정 인물/국가 없음)에는 넣지 말 것.
+- 한 영상에서 **최대 10~20개** 정도만. 너무 많으면 수동 작업 부담.
+
+---
+
 ### gifAltKeyword 규칙 (AI 이미지의 GIF 대체 힌트)
 
 - **bgSource가 "ai"일 때만** 추가. stock/gif일 때는 넣지 말 것.
@@ -3604,9 +3658,12 @@ ${script}
                 // GIF 교체 가능 장면 (bgSource=ai + gifAltKeyword 존재)
                 const gifAltScenes = jsonObj.scenes.filter(s => s.bgSource === 'ai' && s.gifAltKeyword);
 
+                // 캐릭터 수동 삽입 장면 (needCharacter=true + characterSequence 존재)
+                const characterScenes = jsonObj.scenes.filter(s => s.needCharacter === true && Array.isArray(s.characterSequence) && s.characterSequence.length > 0);
+
                 // 셀팟에 넣을 JSON은 내부 메타 필드 제거 (깨끗하게)
                 const cleanScenes = jsonObj.scenes.map(s => {
-                    const { needRealImage, realSearchKeyword, gifAltKeyword, ...rest } = s;
+                    const { needRealImage, realSearchKeyword, gifAltKeyword, needCharacter, characterSequence, ...rest } = s;
                     return rest;
                 });
                 const cleanJson = { scenes: cleanScenes };
@@ -3614,6 +3671,7 @@ ${script}
                 window._sellpotJsonData = JSON.stringify(cleanJson, null, 2);
                 window._sellpotRealScenes = realScenes;
                 window._sellpotGifAltScenes = gifAltScenes;
+                window._sellpotCharacterScenes = characterScenes;
 
                 // 요약 표시
                 const counts = { stock: 0, gif: 0, ai: 0 };
@@ -3640,7 +3698,8 @@ ${script}
                     <span style="color:#cc6600;">🎞️ gif ${counts.gif}개 (${pct('gif')}%)</span> ·
                     <span style="color:#990099;">🎨 ai ${counts.ai}개 (${pct('ai')}%)</span> ·
                     <span style="color:#cc0000;">📷 실사 필요 ${realScenes.length}개</span> ·
-                    <span style="color:#6f42c1;">🎞️ GIF 대체 가능 ${gifAltScenes.length}개</span>
+                    <span style="color:#6f42c1;">🎞️ GIF 대체 가능 ${gifAltScenes.length}개</span> ·
+                    <span style="color:#e83e8c;">🎭 캐릭터 삽입 ${characterScenes.length}개</span>
                 `;
 
                 document.getElementById('jsonOutput').value = window._sellpotJsonData;
@@ -3650,6 +3709,9 @@ ${script}
 
                 // GIF 교체 참고 목록 렌더링
                 _renderGifAltList(gifAltScenes);
+
+                // 캐릭터 수동 삽입 목록 렌더링
+                _renderCharacterList(characterScenes);
 
                 document.getElementById('jsonResultSection').style.display = '';
                 statusEl.innerHTML = '<span style="color:#28a745;">✓ 생성 완료</span>';
@@ -3770,6 +3832,54 @@ ${script}
                 const summary = s.narration.length > 60 ? s.narration.substring(0, 60) + '...' : s.narration;
                 text += `장면 ${s.id}: ${summary}\n`;
                 text += `  검색어: ${s.gifAltKeyword || '(없음)'}\n\n`;
+            });
+            safeCopy(text).then(() => {
+                const orig = btn.textContent;
+                btn.textContent = '✓ 복사됨!';
+                setTimeout(() => btn.textContent = orig, 1500);
+            });
+        }
+
+        function _renderCharacterList(characterScenes) {
+            const sec = document.getElementById('jsonCharacterSection');
+            const list = document.getElementById('jsonCharacterList');
+            if (!characterScenes || characterScenes.length === 0) {
+                sec.style.display = 'none';
+                list.innerHTML = '';
+                return;
+            }
+            sec.style.display = '';
+            let html = '<div style="display:flex;flex-direction:column;gap:8px;">';
+            characterScenes.forEach(s => {
+                const summary = s.narration.length > 60 ? s.narration.substring(0, 60) + '...' : s.narration;
+                const seq = Array.isArray(s.characterSequence) ? s.characterSequence : [];
+                const seqHtml = seq.map((ch, i) => {
+                    const arrow = i < seq.length - 1 ? '<span style="color:#aaa;margin:0 4px;">→</span>' : '';
+                    return `<span style="background:#fff;padding:4px 10px;border-radius:12px;border:1px solid #f5c2e0;font-size:0.82rem;color:#333;white-space:nowrap;">${_escapeHtml(ch)}</span>${arrow}`;
+                }).join('');
+                html += `
+                    <div style="padding:10px;background:#fff0f6;border:1px solid #f5c2e0;border-radius:8px;">
+                        <div style="font-weight:700;color:#d6336c;font-size:0.85rem;margin-bottom:6px;">🎭 장면 ${s.id}</div>
+                        <div style="font-size:0.85rem;color:#333;margin-bottom:8px;">${_escapeHtml(summary)}</div>
+                        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:0;">
+                            ${seqHtml}
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            list.innerHTML = html;
+        }
+
+        function copyCharacterList(btn) {
+            const characterScenes = window._sellpotCharacterScenes || [];
+            if (characterScenes.length === 0) { alert('캐릭터 삽입 장면이 없습니다.'); return; }
+            let text = '# 캐릭터 수동 삽입 목록\n\n';
+            characterScenes.forEach(s => {
+                const summary = s.narration.length > 60 ? s.narration.substring(0, 60) + '...' : s.narration;
+                const seq = Array.isArray(s.characterSequence) ? s.characterSequence.join(' → ') : '';
+                text += `장면 ${s.id}: ${summary}\n`;
+                text += `  순서: ${seq || '(없음)'}\n\n`;
             });
             safeCopy(text).then(() => {
                 const orig = btn.textContent;
