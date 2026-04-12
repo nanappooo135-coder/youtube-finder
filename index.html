@@ -2471,10 +2471,13 @@
             const maxTokens = opts.maxTokens || 8192;
             const temperature = opts.temperature || 0.3;
             const maxRetries = 2;
-            // opts.model 지정해도 실패 시 Flash 폴백 포함
-            const models = opts.model
-                ? [opts.model, ...GEMINI_MODELS.filter(m => m !== opts.model)]
-                : GEMINI_MODELS;
+            // opts.noFallback=true면 지정된 모델만 사용 (Flash 자동 전환 안 함)
+            // 기본값은 기존 동작 유지: Pro 실패 시 Flash로 폴백
+            const models = opts.noFallback && opts.model
+                ? [opts.model]
+                : (opts.model
+                    ? [opts.model, ...GEMINI_MODELS.filter(m => m !== opts.model)]
+                    : GEMINI_MODELS);
 
             // 재시도 가능한 에러인지 판별
             function isRetryable(status, msg) {
@@ -2976,6 +2979,19 @@ ${introPrompts}`;
 
         // ==================== 셀팟 JSON 생성 ====================
 
+        // 모델명을 사용자에게 보여주는 친근한 이름으로 변환
+        function _friendlyModelName(modelId) {
+            if (!modelId) return '알 수 없음';
+            const id = modelId.toLowerCase();
+            if (id.includes('pro')) return 'Gemini 2.5 Pro (무료)';
+            if (id.includes('flash')) return 'Gemini 2.5 Flash (무료, Pro 대비 품질↓)';
+            if (id.includes('claude') && id.includes('sonnet')) return 'Claude Sonnet 4.5 (약 400원)';
+            if (id.includes('claude') && id.includes('haiku')) return 'Claude Haiku 4.5 (약 130원)';
+            if (id.includes('claude') && id.includes('opus')) return 'Claude Opus 4.6 (약 2000원)';
+            return modelId;
+        }
+
+
         // 셀팟 JSON 생성 프롬프트
         function _buildSellpotJsonPrompt(script, chunkMode) {
             const chunkRule = {
@@ -3333,27 +3349,26 @@ ${script}
             try {
                 const prompt = _buildSellpotJsonPrompt(script, chunkMode);
 
-                // 1차: Gemini Pro 시도 (무료)
-                _showGeminiStatus('Gemini Pro로 생성 중...');
-                try {
-                    const r = await callGemini(prompt, { maxTokens: 65536, temperature: 0.4, model: 'gemini-2.5-pro' });
-                    text = r.text;
-                    usedModel = 'Gemini 2.5 Pro (무료)';
-                } catch (geminiErr) {
-                    console.warn('Gemini Pro 실패:', geminiErr.message);
-                    // 2차: Claude Sonnet 폴백 (유료)
-                    if (CLAUDE_API_KEY) {
+                // 1차: Gemini 시도 (무료) — callGemini는 Pro 실패 시 내부적으로 Flash로 자동 폴백함
+                // Claude 키가 있으면 Pro만 시도 후 실패하면 Claude로. 없으면 Pro→Flash 순서.
+                if (CLAUDE_API_KEY) {
+                    _showGeminiStatus('Gemini Pro로 생성 중...');
+                    try {
+                        const r = await callGemini(prompt, { maxTokens: 65536, temperature: 0.4, model: 'gemini-2.5-pro', noFallback: true });
+                        text = r.text;
+                        usedModel = _friendlyModelName(r.usage?.model || 'gemini-2.5-pro');
+                    } catch (geminiErr) {
+                        console.warn('Gemini Pro 실패:', geminiErr.message);
                         _showGeminiStatus('Gemini Pro 과부하 → Claude Sonnet으로 전환 중...');
                         const r = await callClaude(prompt, { maxTokens: 16384, temperature: 0.4 });
                         text = r.text;
-                        usedModel = `Claude Sonnet 4.5 (약 400원 소모)`;
-                    } else {
-                        // Claude 키 없으면 Gemini Flash로라도 시도
-                        _showGeminiStatus('Gemini Pro 실패 → Flash로 재시도 중...');
-                        const r = await callGemini(prompt, { maxTokens: 65536, temperature: 0.4, model: 'gemini-2.5-flash' });
-                        text = r.text;
-                        usedModel = 'Gemini 2.5 Flash (무료, Pro 대비 품질↓)';
+                        usedModel = 'Claude Sonnet 4.5 (약 400원 소모)';
                     }
+                } else {
+                    _showGeminiStatus('Gemini로 생성 중... (Pro 우선, 실패 시 Flash)');
+                    const r = await callGemini(prompt, { maxTokens: 65536, temperature: 0.4, model: 'gemini-2.5-pro' });
+                    text = r.text;
+                    usedModel = _friendlyModelName(r.usage?.model || 'gemini-2.5-pro');
                 }
 
                 // JSON 파싱
