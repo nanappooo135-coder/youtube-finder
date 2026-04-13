@@ -2041,6 +2041,30 @@
                     </div>
                 </div>
 
+                <div class="section" id="jsonOverlayUpgradeSection" style="display:none;">
+                    <div class="section-title">6️⃣ 오버레이 업그레이드 추천 (선택 사항)</div>
+                    <div class="section-content">
+                        <p style="font-size:0.85rem;color:#666;margin-bottom:12px;">
+                            기본은 헤드라인(자동 적용)이지만, 핵심 장면은 셀팟에서 <strong>직접 다른 오버레이 타입</strong>으로 바꾸면 더 화려해집니다.
+                            시간 여유 있는 장면만 업그레이드하세요. <strong style="color:#20c997;">선택 사항</strong>.
+                        </p>
+                        <div id="jsonOverlayUpgradeList" style="margin-bottom:12px;"></div>
+                        <button class="search-btn" onclick="copyOverlayUpgradeList(this)" style="width:100%;background:#20c997;border-color:#20c997;">📋 업그레이드 추천 목록 복사</button>
+                    </div>
+                </div>
+
+                <div class="section" id="jsonAiPromptsSection" style="display:none;">
+                    <div class="section-title">7️⃣ AI 이미지 프롬프트 모음 (젠스파크용)</div>
+                    <div class="section-content">
+                        <p style="font-size:0.85rem;color:#666;margin-bottom:12px;">
+                            AI 이미지가 필요한 장면들의 영문 프롬프트입니다.
+                            <strong style="color:#fd7e14;">젠스파크에 한 번에 붙여넣기</strong>해서 무료로 이미지 생성하세요.
+                        </p>
+                        <button class="search-btn" onclick="copyAiPromptsList(this)" style="width:100%;margin-bottom:12px;background:#fd7e14;border-color:#fd7e14;">📋 AI 프롬프트 전체 복사 (젠스파크용)</button>
+                        <textarea id="jsonAiPromptsOutput" readonly style="width:100%;min-height:200px;padding:12px;border:2px solid #e0e0e0;border-radius:8px;font-size:0.8rem;font-family:'Courier New',monospace;line-height:1.5;background:#1e1e1e;color:#d4d4d4;resize:vertical;"></textarea>
+                    </div>
+                </div>
+
                 <div class="section" id="jsonLogoSection" style="display:none;">
                     <div class="section-title">5️⃣ 브랜드 로고 자동 삽입 목록 (Logo.dev)</div>
                     <div class="section-content">
@@ -3117,7 +3141,6 @@ ${chunkRule}
       "aiPrompt": "AI 이미지 생성 프롬프트 (bgSource가 ai일 때만)",
       "sceneDuration": 6.0,
       "transition": "fade|cut|slide|zoom",
-      "bgmMood": "다큐|뉴스|밝음|테크|감성|에픽",
       "overlays": [
         { "type": "text_headline", "data": { "text": "70%" } }
       ],
@@ -3148,8 +3171,8 @@ ${chunkRule}
 - \"bgQueryAlts\": bgSource가 "stock" 또는 "gif"일 때 추가. 1순위가 매칭 실패 시 사용할 **대체 검색어 4개 배열**. 다양한 각도로 같은 장면을 표현할 것.
 - \"sceneDuration\": 장면 재생 시간 (초 단위, 숫자). 자세한 규칙 아래 참조.
 - \"transition\": 다음 장면으로의 전환 효과. "fade" | "cut" | "slide" | "zoom" 중 하나.
-- \"bgmMood\": 해당 장면의 BGM 분위기. "다큐" | "뉴스" | "밝음" | "테크" | "감성" | "에픽" 중 하나. 섹션 단위로 지정.
 - \"overlays\": 셀팟 오버레이 프리셋 **배열**. 한 장면에 1개 또는 여러 개 순차 표시 가능. 각 요소는 { type, data, duration } 형식. 자세한 규칙 아래 참조.
+- \"overlayUpgrade\": (선택) 사용자가 시간 여유 있을 때 셀팟에서 수동으로 업그레이드할 추천 오버레이 타입과 데이터. { type, data } 형식. 차트·VS대결·랭킹 같은 화려한 오버레이를 추천하고 싶을 때만 추가. 자세한 규칙 아래 참조.
 - \"freepikAsset\": Freepik 아이콘/3D 에셋 검색어. { keyword, type } 형식. type은 "icon" 또는 "3D". 에셋이 정보 전달에 유용할 때만 추가.
 - \"characterLayout\": 캐릭터 배치 레이아웃. 12가지 프리셋 중 하나. 캐릭터 프리셋이 있는 경우에만 사용. (생략 가능)
 - \"characterAsset\": 사용할 캐릭터 프리셋 이름. characterLayout이 있을 때만 추가. (생략 가능)
@@ -4069,6 +4092,56 @@ stock bgQuery 생성 후 자문:
 
 ---
 
+## overlayUpgrade 규칙 (선택 사항 — 수동 업그레이드 추천)
+
+기본 overlays는 text_headline으로 두지만, **시청자에게 임팩트 있는 핵심 장면**에는 더 화려한 오버레이를 추천할 수 있다.
+사용자가 시간 여유 있을 때 셀팟에서 직접 그 장면의 오버레이 타입을 바꿀 수 있도록 **별도 가이드**로 제공.
+
+### 추천 가능한 셀팟 오버레이 타입
+
+| 타입 | 쓰는 경우 | data 형식 |
+|------|----------|-----------|
+| **versus_stat** | 좌우 비교 (A vs B) | { "left": "...", "right": "..." } |
+| **single_stat_card** | 큰 숫자 + 라벨 | { "number": "...", "label": "..." } |
+| **stat_change** | 변화 (X → Y) | { "from": "...", "to": "...", "label": "..." } |
+| **pie_donut** | 비율 시각화 | { "labels": [...], "values": [...] } |
+| **ranking_list** | 순위 (3~5개) | { "items": [{ "rank": 1, "name": "...", "value": "..." }] } |
+
+### overlayUpgrade 작성 조건
+
+다음 경우에만 추가:
+- **핵심 데이터·통계 장면** (그냥 텍스트보다 차트로 보면 임팩트 큼)
+- **명확한 비교/변화/순위가 있는 장면**
+- **시청자가 한눈에 인지하면 좋은 정보**
+
+### 예시
+
+**대본**: "미국은 70%, 한국은 15%"
+\`\`\`json
+{
+  "narration": "미국은 70%, 한국은 15%",
+  "bgSource": "stock",
+  "bgQuery": "world map shipping route",
+  "overlays": [
+    { "type": "text_headline", "data": { "text": "미국 70% vs 한국 15%" } }
+  ],
+  "overlayUpgrade": {
+    "type": "versus_stat",
+    "data": { "left": "미국 70%", "right": "한국 15%" }
+  }
+}
+\`\`\`
+
+→ 자동 적용은 헤드라인 (자동화 100%)
+→ 수동 업그레이드 옵션은 versus_stat (별도 섹션에 표시)
+
+### 사용 비중
+
+- **overlayUpgrade**: 전체 장면의 **10~20%만** (정말 임팩트 큰 장면)
+- 너무 많이 추가하면 사용자 부담 → 핵심만 선별
+
+---
+
 ## freepikAsset 규칙 (아이콘/3D 에셋)
 
 Freepik에 아이콘·3D 에셋이 풍부해서 **stock 영상 위에 얹으면 정보 전달 효과↑**.
@@ -4357,7 +4430,7 @@ ${script}
 
                 // 셀팟에 넣을 JSON은 내부 메타 필드 제거 (깨끗하게)
                 const cleanScenes = jsonObj.scenes.map(s => {
-                    const { needRealImage, realSearchKeyword, gifAltKeyword, needCharacter, characterSequence, needLogo, logoName, logoPosition, ...rest } = s;
+                    const { needRealImage, realSearchKeyword, gifAltKeyword, needCharacter, characterSequence, needLogo, logoName, logoPosition, overlayUpgrade, ...rest } = s;
                     return rest;
                 });
                 const cleanJson = { scenes: cleanScenes };
@@ -4411,6 +4484,13 @@ ${script}
 
                 // 브랜드 로고 목록 렌더링
                 _renderLogoList(logoScenes);
+
+                // 오버레이 업그레이드 추천 (text_headline → 더 화려한 타입)
+                const overlayUpgradeScenes = jsonObj.scenes.filter(s => s.overlayUpgrade);
+                _renderOverlayUpgradeList(overlayUpgradeScenes);
+
+                // AI 이미지 프롬프트 모음 (젠스파크용)
+                _renderAiPromptsList(jsonObj.scenes);
 
                 document.getElementById('jsonResultSection').style.display = '';
                 statusEl.innerHTML = '<span style="color:#28a745;">✓ 생성 완료</span>';
@@ -4758,6 +4838,84 @@ ${script}
                 }[position] || position;
                 text += `- 장면 ${s.id}: "${s.logoName}" 로고 → ${posKo}\n`;
             });
+            safeCopy(text).then(() => {
+                const orig = btn.textContent;
+                btn.textContent = '✓ 복사됨!';
+                setTimeout(() => btn.textContent = orig, 1500);
+            });
+        }
+
+        // 6️⃣ 오버레이 업그레이드 추천 렌더링
+        function _renderOverlayUpgradeList(upgradeScenes) {
+            const sec = document.getElementById('jsonOverlayUpgradeSection');
+            const list = document.getElementById('jsonOverlayUpgradeList');
+            if (!upgradeScenes || upgradeScenes.length === 0) {
+                sec.style.display = 'none';
+                list.innerHTML = '';
+                return;
+            }
+            sec.style.display = '';
+            window._sellpotOverlayUpgrades = upgradeScenes;
+            let html = '<div style="display:flex;flex-direction:column;gap:8px;">';
+            upgradeScenes.forEach(s => {
+                const summary = s.narration.length > 60 ? s.narration.substring(0, 60) + '...' : s.narration;
+                const u = s.overlayUpgrade || {};
+                const recommendType = u.type || '';
+                const dataStr = u.data ? JSON.stringify(u.data, null, 2) : '';
+                html += `
+                    <div style="padding:10px;background:#e6fcf5;border:1px solid #63e6be;border-radius:8px;">
+                        <div style="font-weight:700;color:#0ca678;font-size:0.85rem;margin-bottom:4px;">📊 장면 ${s.id} → <code style="background:#fff;padding:2px 8px;border-radius:4px;">${_escapeHtml(recommendType)}</code></div>
+                        <div style="font-size:0.85rem;color:#333;margin-bottom:6px;">${_escapeHtml(summary)}</div>
+                        <pre style="background:#fff;padding:8px;border:1px solid #c3fae8;border-radius:4px;font-size:0.78rem;color:#555;margin:0;overflow:auto;">${_escapeHtml(dataStr)}</pre>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            list.innerHTML = html;
+        }
+
+        function copyOverlayUpgradeList(btn) {
+            const upgrades = window._sellpotOverlayUpgrades || [];
+            if (upgrades.length === 0) { alert('업그레이드 추천 장면이 없습니다.'); return; }
+            let text = '# 오버레이 업그레이드 추천 (선택 사항)\n';
+            text += '셀팟에서 해당 장면 클릭 → 오버레이 타입 변경 → 데이터 입력\n\n';
+            upgrades.forEach(s => {
+                const summary = s.narration.length > 60 ? s.narration.substring(0, 60) + '...' : s.narration;
+                const u = s.overlayUpgrade || {};
+                text += `장면 ${s.id}: ${summary}\n`;
+                text += `  추천 타입: ${u.type || ''}\n`;
+                if (u.data) text += `  데이터: ${JSON.stringify(u.data)}\n`;
+                text += '\n';
+            });
+            safeCopy(text).then(() => {
+                const orig = btn.textContent;
+                btn.textContent = '✓ 복사됨!';
+                setTimeout(() => btn.textContent = orig, 1500);
+            });
+        }
+
+        // 7️⃣ AI 이미지 프롬프트 모음 (젠스파크용)
+        function _renderAiPromptsList(allScenes) {
+            const sec = document.getElementById('jsonAiPromptsSection');
+            const out = document.getElementById('jsonAiPromptsOutput');
+            const aiScenes = (allScenes || []).filter(s => s.bgSource === 'ai' && s.aiPrompt);
+            if (aiScenes.length === 0) {
+                sec.style.display = 'none';
+                out.value = '';
+                return;
+            }
+            sec.style.display = '';
+            let text = '';
+            aiScenes.forEach(s => {
+                text += `${s.id}번 - ${s.aiPrompt}\n\n`;
+            });
+            out.value = text.trim();
+            window._sellpotAiPromptsText = out.value;
+        }
+
+        function copyAiPromptsList(btn) {
+            const text = window._sellpotAiPromptsText || '';
+            if (!text) { alert('AI 이미지 프롬프트가 없습니다.'); return; }
             safeCopy(text).then(() => {
                 const orig = btn.textContent;
                 btn.textContent = '✓ 복사됨!';
