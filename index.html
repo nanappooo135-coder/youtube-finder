@@ -2065,6 +2065,30 @@
                     </div>
                 </div>
 
+                <div class="section" id="jsonFreepikSection" style="display:none;">
+                    <div class="section-title">8️⃣ Freepik 검색어 추천 (셀팟 캐릭터 탭용)</div>
+                    <div class="section-content">
+                        <p style="font-size:0.85rem;color:#666;margin-bottom:12px;">
+                            국기·심볼·아이콘이 필요한 장면의 Freepik 검색어입니다.
+                            <strong style="color:#0dcaf0;">셀팟 캐릭터 탭 → Freepik 검색칸</strong>에 그대로 복붙하세요.
+                        </p>
+                        <div id="jsonFreepikList" style="margin-bottom:12px;"></div>
+                        <button class="search-btn" onclick="copyFreepikList(this)" style="width:100%;background:#0dcaf0;border-color:#0dcaf0;">📋 Freepik 검색어 전체 복사</button>
+                    </div>
+                </div>
+
+                <div class="section" id="jsonSfxSection" style="display:none;">
+                    <div class="section-title">9️⃣ 효과음 검색어 추천 (무료 사이트용)</div>
+                    <div class="section-content">
+                        <p style="font-size:0.85rem;color:#666;margin-bottom:12px;">
+                            임팩트 장면용 효과음 영문 키워드입니다.
+                            <strong style="color:#ffc107;">YouTube Audio Library, Freesound, Zapsplat</strong> 등 무료 사이트에 검색하세요.
+                        </p>
+                        <div id="jsonSfxList" style="margin-bottom:12px;"></div>
+                        <button class="search-btn" onclick="copySfxList(this)" style="width:100%;background:#ffc107;border-color:#ffc107;color:#000;">📋 효과음 검색어 전체 복사</button>
+                    </div>
+                </div>
+
                 <div class="section" id="jsonLogoSection" style="display:none;">
                     <div class="section-title">5️⃣ 브랜드 로고 자동 삽입 목록 (Logo.dev)</div>
                     <div class="section-content">
@@ -3173,6 +3197,8 @@ ${chunkRule}
 - \"transition\": 다음 장면으로의 전환 효과. "fade" | "cut" | "slide" | "zoom" 중 하나.
 - \"overlays\": 셀팟 오버레이 프리셋 **배열**. 한 장면에 1개 또는 여러 개 순차 표시 가능. 각 요소는 { type, data, duration } 형식. 자세한 규칙 아래 참조.
 - \"overlayUpgrade\": (선택) 사용자가 시간 여유 있을 때 셀팟에서 수동으로 업그레이드할 추천 오버레이 타입과 데이터. { type, data } 형식. 차트·VS대결·랭킹 같은 화려한 오버레이를 추천하고 싶을 때만 추가. 자세한 규칙 아래 참조.
+- \"freepikQueries\": (선택) 캐릭터·심볼·아이콘이 필요한 장면에 셀팟 캐릭터 탭의 Freepik 검색용 영문 키워드 배열. ["flag iran", "missile launch", "explosion fire"] 형식. 자세한 규칙 아래 참조.
+- \"sfxKeywords\": (선택) 임팩트가 필요한 장면에 무료 효과음 사이트(YouTube Audio Library, Freesound 등)에서 검색할 영문 키워드 배열. ["deep boom impact", "metallic ding"] 형식. 자세한 규칙 아래 참조.
 - \"freepikAsset\": Freepik 아이콘/3D 에셋 검색어. { keyword, type } 형식. type은 "icon" 또는 "3D". 에셋이 정보 전달에 유용할 때만 추가.
 - \"characterLayout\": 캐릭터 배치 레이아웃. 12가지 프리셋 중 하나. 캐릭터 프리셋이 있는 경우에만 사용. (생략 가능)
 - \"characterAsset\": 사용할 캐릭터 프리셋 이름. characterLayout이 있을 때만 추가. (생략 가능)
@@ -4142,6 +4168,115 @@ stock bgQuery 생성 후 자문:
 
 ---
 
+## freepikQueries 규칙 (Freepik 검색어 추천)
+
+대본에 캐릭터·국가·심볼·개념이 등장하면 셀팟 캐릭터 탭에서 바로 검색할 **영문 키워드** 미리 제공.
+
+### 사용 조건
+
+다음 경우에 freepikQueries 추가:
+- **국가 이름 등장** ("이란", "미국") → 국기 검색
+- **무기·도구 등장** ("미사일", "탱크", "화재") → 아이콘 검색
+- **상징적 행동 등장** ("협상", "전쟁", "충돌") → 심볼 검색
+
+### 형식
+
+\`\`\`json
+"freepikQueries": [
+  "flag iran",
+  "missile launch",
+  "explosion fire"
+]
+\`\`\`
+
+- 영문, 2~3단어
+- 한 장면당 2~5개 추천
+- 셀팟 캐릭터 탭 Freepik 검색칸에 그대로 복붙
+
+### 예시
+
+대본: "트럼프가 이란을 침공했다"
+\`\`\`json
+"freepikQueries": [
+  "flag iran",
+  "missile rocket launch",
+  "explosion fire war",
+  "politician suit"
+]
+\`\`\`
+
+대본: "한국과 미국이 협상했다"
+\`\`\`json
+"freepikQueries": [
+  "flag korea",
+  "flag usa",
+  "handshake agreement",
+  "diplomatic meeting"
+]
+\`\`\`
+
+### 사용 비중
+
+- 정치/역사/전쟁/외교 영상 → 많이 등장 (30~40% 장면)
+- 일반 정보 영상 → 적게 등장 (5~10%)
+- 캐릭터/심볼 필요 없으면 생략
+
+---
+
+## sfxKeywords 규칙 (무료 효과음 검색어 추천)
+
+ElevenLabs 효과음 생성(유료) 대신 **무료 사이트에서 다운받을 영문 키워드** 미리 제공.
+
+### 사용 조건
+
+다음 경우에 sfxKeywords 추가:
+- **충격·반전 순간** → boom, drop, impact
+- **숫자·통계 강조** → ding, ka-ching, metallic
+- **전환 순간** → whoosh, swoosh, transition
+- **긴장 고조** → riser, drone, suspense
+- **상황 종료/실패** → buzzer, error, fail
+
+### 형식
+
+\`\`\`json
+"sfxKeywords": [
+  "deep boom impact",
+  "cinematic hit dramatic"
+]
+\`\`\`
+
+- 영문 2~4단어
+- 한 장면당 1~3개
+- YouTube Audio Library, Freesound, Zapsplat 등에 그대로 검색
+
+### 예시
+
+대본: "1조 6천억이 빠진다는 건"
+\`\`\`json
+"sfxKeywords": [
+  "deep boom sub-bass impact",
+  "cinematic hit dramatic",
+  "stinger sharp drop"
+]
+\`\`\`
+
+대본: "(반전) 알고 보니 정반대였다"
+\`\`\`json
+"sfxKeywords": [
+  "record scratch stop",
+  "swoosh reverse",
+  "dramatic sting reveal"
+]
+\`\`\`
+
+### 사용 비중
+
+- **임팩트 필요한 장면만**: 전체의 20~30%
+- Hook, 반전, 결정적 순간에 집중
+- 모든 장면에 넣지 말 것 (남발하면 효과 ↓)
+
+---
+
 ## freepikAsset 규칙 (아이콘/3D 에셋)
 
 Freepik에 아이콘·3D 에셋이 풍부해서 **stock 영상 위에 얹으면 정보 전달 효과↑**.
@@ -4430,7 +4565,7 @@ ${script}
 
                 // 셀팟에 넣을 JSON은 내부 메타 필드 제거 (깨끗하게)
                 const cleanScenes = jsonObj.scenes.map(s => {
-                    const { needRealImage, realSearchKeyword, gifAltKeyword, needCharacter, characterSequence, needLogo, logoName, logoPosition, overlayUpgrade, ...rest } = s;
+                    const { needRealImage, realSearchKeyword, gifAltKeyword, needCharacter, characterSequence, needLogo, logoName, logoPosition, overlayUpgrade, freepikQueries, sfxKeywords, ...rest } = s;
                     return rest;
                 });
                 const cleanJson = { scenes: cleanScenes };
@@ -4491,6 +4626,14 @@ ${script}
 
                 // AI 이미지 프롬프트 모음 (젠스파크용)
                 _renderAiPromptsList(jsonObj.scenes);
+
+                // Freepik 검색어 추천
+                const freepikScenes = jsonObj.scenes.filter(s => Array.isArray(s.freepikQueries) && s.freepikQueries.length > 0);
+                _renderFreepikList(freepikScenes);
+
+                // 효과음 검색어 추천
+                const sfxScenes = jsonObj.scenes.filter(s => Array.isArray(s.sfxKeywords) && s.sfxKeywords.length > 0);
+                _renderSfxList(sfxScenes);
 
                 document.getElementById('jsonResultSection').style.display = '';
                 statusEl.innerHTML = '<span style="color:#28a745;">✓ 생성 완료</span>';
@@ -4916,6 +5059,100 @@ ${script}
         function copyAiPromptsList(btn) {
             const text = window._sellpotAiPromptsText || '';
             if (!text) { alert('AI 이미지 프롬프트가 없습니다.'); return; }
+            safeCopy(text).then(() => {
+                const orig = btn.textContent;
+                btn.textContent = '✓ 복사됨!';
+                setTimeout(() => btn.textContent = orig, 1500);
+            });
+        }
+
+        // 8️⃣ Freepik 검색어 추천
+        function _renderFreepikList(freepikScenes) {
+            const sec = document.getElementById('jsonFreepikSection');
+            const list = document.getElementById('jsonFreepikList');
+            if (!freepikScenes || freepikScenes.length === 0) {
+                sec.style.display = 'none';
+                list.innerHTML = '';
+                return;
+            }
+            sec.style.display = '';
+            window._sellpotFreepikScenes = freepikScenes;
+            let html = '<div style="display:flex;flex-direction:column;gap:8px;">';
+            freepikScenes.forEach(s => {
+                const summary = s.narration.length > 50 ? s.narration.substring(0, 50) + '...' : s.narration;
+                const queries = s.freepikQueries || [];
+                const chips = queries.map(q => `<code style="background:#fff;padding:3px 8px;border-radius:4px;border:1px solid #9eeaf9;font-size:0.78rem;margin-right:4px;display:inline-block;margin-bottom:3px;">${_escapeHtml(q)}</code>`).join('');
+                html += `
+                    <div style="padding:10px;background:#e7f9fd;border:1px solid #9eeaf9;border-radius:8px;">
+                        <div style="font-weight:700;color:#0997b9;font-size:0.85rem;margin-bottom:4px;">🎨 장면 ${s.id}</div>
+                        <div style="font-size:0.85rem;color:#333;margin-bottom:6px;">${_escapeHtml(summary)}</div>
+                        <div>${chips}</div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            list.innerHTML = html;
+        }
+
+        function copyFreepikList(btn) {
+            const scenes = window._sellpotFreepikScenes || [];
+            if (scenes.length === 0) { alert('Freepik 검색어가 없습니다.'); return; }
+            let text = '# Freepik 검색어 (셀팟 캐릭터 탭 → Freepik 검색칸)\n\n';
+            scenes.forEach(s => {
+                const summary = s.narration.length > 50 ? s.narration.substring(0, 50) + '...' : s.narration;
+                text += `장면 ${s.id}: ${summary}\n`;
+                (s.freepikQueries || []).forEach(q => {
+                    text += `  - ${q}\n`;
+                });
+                text += '\n';
+            });
+            safeCopy(text).then(() => {
+                const orig = btn.textContent;
+                btn.textContent = '✓ 복사됨!';
+                setTimeout(() => btn.textContent = orig, 1500);
+            });
+        }
+
+        // 9️⃣ 효과음 검색어 추천
+        function _renderSfxList(sfxScenes) {
+            const sec = document.getElementById('jsonSfxSection');
+            const list = document.getElementById('jsonSfxList');
+            if (!sfxScenes || sfxScenes.length === 0) {
+                sec.style.display = 'none';
+                list.innerHTML = '';
+                return;
+            }
+            sec.style.display = '';
+            window._sellpotSfxScenes = sfxScenes;
+            let html = '<div style="display:flex;flex-direction:column;gap:8px;">';
+            sfxScenes.forEach(s => {
+                const summary = s.narration.length > 50 ? s.narration.substring(0, 50) + '...' : s.narration;
+                const keywords = s.sfxKeywords || [];
+                const chips = keywords.map(k => `<code style="background:#fff;padding:3px 8px;border-radius:4px;border:1px solid #ffe69c;font-size:0.78rem;margin-right:4px;display:inline-block;margin-bottom:3px;">${_escapeHtml(k)}</code>`).join('');
+                html += `
+                    <div style="padding:10px;background:#fff8e1;border:1px solid #ffe69c;border-radius:8px;">
+                        <div style="font-weight:700;color:#cc9a06;font-size:0.85rem;margin-bottom:4px;">🔊 장면 ${s.id}</div>
+                        <div style="font-size:0.85rem;color:#333;margin-bottom:6px;">${_escapeHtml(summary)}</div>
+                        <div>${chips}</div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            list.innerHTML = html;
+        }
+
+        function copySfxList(btn) {
+            const scenes = window._sellpotSfxScenes || [];
+            if (scenes.length === 0) { alert('효과음 검색어가 없습니다.'); return; }
+            let text = '# 효과음 검색어 (YouTube Audio Library, Freesound, Zapsplat 등)\n\n';
+            scenes.forEach(s => {
+                const summary = s.narration.length > 50 ? s.narration.substring(0, 50) + '...' : s.narration;
+                text += `장면 ${s.id}: ${summary}\n`;
+                (s.sfxKeywords || []).forEach(k => {
+                    text += `  - ${k}\n`;
+                });
+                text += '\n';
+            });
             safeCopy(text).then(() => {
                 const orig = btn.textContent;
                 btn.textContent = '✓ 복사됨!';
