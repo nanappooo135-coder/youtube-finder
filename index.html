@@ -3145,7 +3145,7 @@ ${chunkRule}
 ### 조건부 필드
 
 - \"bgQuery\": bgSource가 "stock"이면 Pexels/Freepik 영문 검색어, "gif"이면 Klipy 한글+영문 혼합 검색어
-- \"bgQueryAlts\": bgSource가 "stock" 또는 "gif"일 때 추가. 1순위가 매칭 실패 시 사용할 **대체 검색어 2개 배열**.
+- \"bgQueryAlts\": bgSource가 "stock" 또는 "gif"일 때 추가. 1순위가 매칭 실패 시 사용할 **대체 검색어 4개 배열**. 다양한 각도로 같은 장면을 표현할 것.
 - \"sceneDuration\": 장면 재생 시간 (초 단위, 숫자). 자세한 규칙 아래 참조.
 - \"transition\": 다음 장면으로의 전환 효과. "fade" | "cut" | "slide" | "zoom" 중 하나.
 - \"bgmMood\": 해당 장면의 BGM 분위기. "다큐" | "뉴스" | "밝음" | "테크" | "감성" | "에픽" 중 하나. 섹션 단위로 지정.
@@ -3351,11 +3351,65 @@ gifAltKeyword 예:
 - "business", "industry" (너무 일반)
 - "conflict", "crisis" (검색 불가)
 
-### gif (Klipy GIF) — **순수 감정 리액션에만 제한적 사용 (20~25%)**
+### gif (Klipy GIF) — **순수 감정 리액션에만 제한적 사용 (10~20%)**
 
-**⚠️ 중요: GIF는 Klipy 매칭 불안정해서 엉뚱한 애니/밈이 나올 확률 있음. 비유·개념은 gif 말고 stock으로 돌릴 것 (stock에 도미노·저울·장벽 등 영상 있음).**
+#### ⚠️ GIF 매칭 성공률 올리는 핵심 전략
 
-**GIF 허용 (순수 감정/리액션만)**:
+GIF DB(Klipy/Giphy)는 Pexels보다 작고 태그가 지저분해서 매칭이 까다로움.
+**아래 3가지 규칙을 반드시 따를 것**:
+
+##### 규칙 1: 영문 표준 리액션 단어만 사용
+
+Klipy/Giphy는 영문 태그 위주로 잘 정돈돼 있음. **한글 의존도 줄이고 영문 감정어 중심으로**:
+
+**매칭 잘 되는 영문 감정어 (사용 권장)**:
+- surprised, shocked, amazed, wow
+- confused, thinking, wondering, puzzled
+- laughing, happy, smile, excited
+- sad, crying, disappointed
+- angry, frustrated, annoyed
+- nodding, agree, yes
+- shake head, no, reject
+- shrug, meh, whatever
+- clapping, applause, celebrate
+- thumbs up, thumbs down
+- facepalm, embarrassed
+- worried, nervous, anxious
+- tired, exhausted, sleepy
+
+##### 규칙 2: bgQuery에 한글+영문 + 구체 행동 함께
+
+\`\`\`
+좋은 예:
+"놀람 surprised shocked jaw drop reaction"
+"궁금 confused wondering puzzled face"
+"끄덕임 nodding agreement yes head"
+
+나쁜 예:
+"경제 위기 reaction" → 너무 구체적 상황, DB에 없음
+"배신의 아픔" → 애매한 감정, 매칭 실패
+\`\`\`
+
+##### 규칙 3: bgQueryAlts 4개 대체어 제공 (필수)
+
+GIF는 매칭 확률 낮아서 **최소 4개 대체 키워드** 필수.
+각 대체는 **같은 감정의 다른 표현**:
+
+\`\`\`json
+"bgQuery": "갸우뚱 confused wondering puzzled face",
+"bgQueryAlts": [
+  "의문 question mark thinking reaction",
+  "의심 suspicious doubtful hmm",
+  "모르겠다 no idea shrug clueless",
+  "어리둥절 bewildered head scratch"
+]
+\`\`\`
+
+#### GIF 허용 (순수 감정/리액션만)
+
+**⚠️ 중요: GIF는 Klipy 매칭 불안정해서 엉뚱한 애니/밈이 나올 확률 있음. 비유·개념은 gif 말고 stock으로 돌릴 것.**
+
+**GIF 허용 케이스**:
 
 1. **놀람·충격·당황**
    - "어!" "대박" "놀라워" "충격"
@@ -3615,12 +3669,85 @@ aiPrompt 작성 시 AI 스스로 자문:
 
 **사용자가 검색 결과를 손볼 필요 없어야 한다. 나레이션 내용과 bgQuery가 한 방에 딱 맞아떨어져야 한다.**
 
-### stock 검색어 작성 절차 (반드시 이 순서대로)
+### stock 검색어 작성 절차 (매칭률 90% 달성 3단계)
 
-1. 나레이션에서 **시각적으로 찍을 수 있는 핵심 명사·동사** 2~4개를 추출한다.
-   - 장소 (도시, 국가, 시설) / 사물 (화물선, 탱크, 컨테이너, 서류) / 주체 (soldier, diplomat, worker) / 행위 (marching, signing, loading, protesting)
-2. 이 단어들을 **구체적 영어 3~6단어**로 조합한다.
-3. Pexels에서 이 키워드로 검색했을 때 **실제로 그런 영상이 나올 법한지** 스스로 판단한다. 안 나올 거 같으면 더 범용적인 어휘로 바꾼다.
+#### ⚠️ 1단계: 필수 3요소 강제 (bgQuery)
+
+**모든 stock bgQuery는 아래 3가지를 반드시 포함해야 함**:
+
+1. **구체적 주체** — 사람/사물/장소 (concept 아님)
+2. **행동** — 동사 (ing 형태 또는 명사+상태)
+3. **구도/시점** — close up / aerial / wide shot / macro
+
+**좋은 예 (3요소 다 있음)**:
+- "stock trader panicked looking at red chart close up"
+   → 주체(trader) + 행동(panicked looking) + 구도(close up)
+- "worker in hard hat monitoring refinery control panel"
+   → 주체(worker) + 행동(monitoring) + 구도(암시된 실내)
+- "oil tanker navigating narrow strait aerial view"
+   → 주체(tanker) + 행동(navigating) + 구도(aerial)
+
+**나쁜 예 (구체성 부족)**:
+- ❌ "economic crisis" — 주체·행동·구도 전혀 없음
+- ❌ "oil refinery" — 사물만 있음, 행동·구도 없음
+- ❌ "city street" — 구도 없음
+
+#### ⚠️ 2단계: 추상 개념 → 시각 은유 변환
+
+대본에 추상 개념이 나오면 **시각적 은유로 변환** 후 검색어 작성:
+
+| 추상 개념 | 시각 은유 (검색어로 가능) |
+|-----------|--------------------------|
+| 경제 위기 | 주식차트 하락, 주유소 가격 상승, 트레이더 패닉 |
+| 정치 긴장 | 기자회견 마이크, 국기, 외교관 악수 |
+| 역사적 변화 | 흑백 사진, 옛 서류, 오래된 시계 |
+| 기술 발전 | 반도체 칩, 공장 로봇, 코드 스크롤 |
+| 무역 갈등 | 컨테이너선, 항구, 세관 게이트 |
+| 사회 분열 | 군중 시위, 경찰 라인, 깨진 거울 |
+| 환경 파괴 | 공장 굴뚝 연기, 오염된 바다, 죽은 나무 |
+
+**예시**:
+- 나레이션 "경제가 흔들렸다"
+  → 은유: 주식시장 하락
+  → bgQuery: "stock market crash trader panicked red numbers close up"
+
+- 나레이션 "역사적 전환점"
+  → 은유: 오래된 서류·지도
+  → bgQuery: "vintage historical document world map candle light close up"
+
+#### ⚠️ 3단계: bgQueryAlts 4개 작성 (매우 중요)
+
+bgQuery 1개만 넣지 말고, **매칭 실패 대비 대체 검색어 4개** 배열로 제공.
+
+**4개 작성 전략**:
+1. 1순위: 가장 구체적 (이상적 매칭)
+2. 2순위: 다른 주체/각도 (같은 상황, 다른 시점)
+3. 3순위: 범용 어휘 (실패 확률 낮음)
+4. 4순위: 분위기 전달 (매칭 최후 보루)
+
+**좋은 예**:
+\`\`\`json
+"bgQuery": "stock trader panicked looking at red crashing chart close up",
+"bgQueryAlts": [
+  "financial crisis businessman stressed computer screen",
+  "wall street trading floor chaos workers shouting",
+  "economic recession newspaper headlines red",
+  "office worker anxious monitor warning close up"
+]
+\`\`\`
+
+각 대체어는 **같은 메시지**를 **다른 구체 장면**으로 표현.
+
+#### 검증 체크리스트
+
+stock bgQuery 생성 후 자문:
+- [ ] 구체 주체(사람/사물) 있는가?
+- [ ] 행동/상태(동사) 있는가?
+- [ ] 구도(close up/aerial 등) 있는가?
+- [ ] Pexels/Freepik에서 이 영상이 실제로 나올까?
+- [ ] bgQueryAlts 4개 작성했는가?
+
+5개 모두 YES여야 완성.
 
 **좋은 예**:
 - 나레이션 "이스라엘이 네타냐후 총리와 외무장관이 공동 선언문에 서명" → "politicians signing document press conference podium"
