@@ -4711,11 +4711,11 @@ ${script}
                         if (!Array.isArray(s.mapLabels)) s.mapLabels = [];
                     }
                 });
-                // 스타일 prefix 자동 삽입 (일관된 수채화·일러스트 지도 — 사실적 위성사진 금지)
-                const MAP_STYLE_PREFIX = 'Stylized hand-illustrated watercolor map, bold distinct colors (pink/red land, blue water), painterly texture, clean cartographic illustration style, NOT photo-realistic, NOT satellite imagery, NOT 3D render, clear readable labels, cinematic composition, dark atmospheric background, 16:9. ';
+                // 스타일 prefix 자동 삽입 (Paper Cut / Collage — 다큐멘터리 톤)
+                const MAP_STYLE_PREFIX = 'Paper cut collage illustration style, layered paper textures with torn edges and subtle shadows between layers, documentary aesthetic, muted sophisticated color palette (deep navy, warm earth tones, aged paper), clean cartographic composition, NOT photo-realistic, NOT watercolor, NOT childish cartoon, NOT 3D render, clear readable labels, cinematic 16:9. ';
                 jsonObj.scenes.forEach(s => {
                     if (s.isMapScene !== true || typeof s.aiPrompt !== 'string') return;
-                    if (!s.aiPrompt.startsWith('Stylized hand-illustrated watercolor')) {
+                    if (!s.aiPrompt.startsWith('Paper cut collage')) {
                         s.aiPrompt = MAP_STYLE_PREFIX + s.aiPrompt;
                     }
                 });
