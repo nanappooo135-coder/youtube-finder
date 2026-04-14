@@ -3594,68 +3594,86 @@ GIF는 매칭 확률 낮아서 **최소 4개 대체 키워드** 필수.
 - "그렇구나" → "끄덕임 이해 nodding understand"
 - "왜?" → "의문 why question mark"
 
-### ai (AI 이미지 생성) — **차트·지도 + 스톡으로 어려운 특수 장면 (10~20%)**
+### ai (AI 이미지 생성) — **극도로 제한적 사용 (전체의 5~10%만)**
 
-**원칙: 비유는 stock으로, 감정은 gif로. AI는 아래 경우만.**
+**⚠️ 절대 원칙: 스톡·GIF·Freepik·실사로 가능한 것은 절대 AI 쓰지 말 것.**
 
-**AI 허용 (아래 4가지)**:
+실전 검증된 사실:
+- AI 이미지는 셀팟 크레딧 소모 + 렌더 시간 증가 + 유튜브 정책 위험
+- 스톡 영상이 압도적으로 빠르고 퀄리티 안정적
+- **"이거 찍을 수 있는 거 아닌가?" 자문 필수**
 
-1. **데이터 차트** (필수)
-   - 퍼센트 비교, 시간별 추이, 바/도넛/라인차트
-   - 예시: "85% → 59% → 70% 변화", "세계 1위 29%"
+**AI 허용 조건 (아래 5가지만)**:
 
-2. **지도 (경로/위치 표시)** (필수)
-   - 항로, 지정학적 위치, 분포
-   - 예시: "페르시아만 → 울산항 경로", "호르무즈 해협"
+1. **촬영 불가능한 과거 재현**
+   - "중동 땅이 오래전 얕은 바다였을 때" (고대 지질학)
+   - "1960년대 중동 석유 처음 발견 당시"
+   - "플랑크톤이 수백만 년에 걸쳐 석유가 되는 과정"
+   - 판단: "카메라가 타임머신 아니라 못 찍는가?" YES → AI
 
-3. **정보 인포그래픽 (비교/흐름)** (필수)
-   - 4사 규모 비교, 3종 원유 비교, 공급망 플로우
-   - 예시: "SK·GS·S-Oil·현대 규모 비교"
+2. **물리적으로 관찰 불가능한 현상**
+   - "원유 속 황 분자 구조"
+   - "파이프 속 원유가 흐르는 내부 시각화"
+   - "지층 단면도 (지하 수천 미터)"
+   - 판단: "인간 눈으로 볼 수 없는 스케일인가?" YES → AI
 
-   **⚠️ 비교 장면은 무조건 Split Screen 스타일 (지식한입 스타일)**:
-   - 대본에 "A vs B", "이쪽은 ~, 반대로 ~", "한쪽은 ~, 다른 쪽은 ~" 패턴이 나오면 → split screen 화면으로 구성
-   - aiPrompt에 반드시 "split screen comparison" 또는 "side-by-side comparison" 포함
-   - 좌우 각각에 아이콘·라벨·숫자 배치
+3. **은유·상징 장면**
+   - "돈이 증발하는 모습"
+   - "구조적 천장에 머리 부딪히기"
+   - "4단 레이싱카가 자전거 도로 달리기" (기술 락인 비유)
+   - 판단: "추상 개념을 시각화해야 하는가?" YES → AI (단, 뻔한 비유는 stock으로 — "악수·저울·도미노" 다 stock 있음)
 
-   **좋은 예 (A vs B 패턴)**:
+4. **지도·경로 시각화** (**반드시 Paper Cut / Collage 스타일**)
+   - 항로, 지정학적 위치, 국가 간 관계
+   - 예: "페르시아만 → 울산 항로", "한국 → LA 수출"
+   - aiPrompt에 Paper Cut 스타일 prefix 자동 삽입됨 (코드가 처리)
+   - 판단: "경로·거리를 보여줘야 하는가?" YES → AI 지도 (isMapScene: true)
 
-   대본: "미국은 70%, 한국은 15%"
-   \`\`\`
-   "aiPrompt": "Split screen comparison infographic. Left side: USA flag icon with '70%' large label. Right side: Korea flag icon with '15%' large label. Middle vertical divider. All labels in Korean (한글). Dark background, 16:9."
-   \`\`\`
+5. **데이터 차트·인포그래픽** (**⚠️ bgSource는 "ai"이되 codeGenHint 추가해서 정밀 모드로 처리됨**)
+   - 도넛 차트, 비교 인포그래픽, 타임라인
+   - 예: "70% 중동 의존도", "20% vs 40% 찌꺼기", "3경로 비교"
+   - 판단: "숫자·비율을 차트로 강조해야 하는가?" YES → AI + codeGenHint
 
-   대본: "20일짜리 공급선과 60일짜리 공급선"
-   \`\`\`
-   "aiPrompt": "Split screen side-by-side comparison. Left panel: '20일' label with stable clock icon, calm ocean. Right panel: '60일' label with tense clock icon, stormy ocean. All labels in Korean (한글). Dark background, 16:9."
-   \`\`\`
+---
 
-   대본: "가벼운 기름용 공장, 무거운 기름용 공장"
-   \`\`\`
-   "aiPrompt": "Side-by-side split screen comparison of two oil refineries. Left: 'Light Oil (가벼운 기름)' simple refinery. Right: 'Heavy Oil (무거운 기름)' complex upgrader refinery. All Korean labels. Dark background, 16:9."
-   \`\`\`
+**AI 절대 금지 (100% stock·gif·freepik·실사 검색 사용)**:
 
-4. **스톡으로 찾기 어려운 특수 장면 — 단, 실사로 먼저 시도 후 AI** (선별적 허용)
+| 장면 내용 | 올바른 처리 |
+|-----------|-----------|
+| 정유공장·공장·설비 | **stock** (Pexels에 수천 개) |
+| 공항·활주로·비행기 | **stock** |
+| 유조선·화물선·항구 | **stock** |
+| 도시·거리·풍경 | **stock** |
+| 사무실·회의·서류 | **stock** |
+| 현장 엔지니어·작업자 | **stock** |
+| 실존 인물 (네타냐후·트럼프 등) | **needRealImage: true + realSearchKeyword** (구글 검색) |
+| 국기·로고·심볼 | **freepikQueries** 또는 **needLogo** |
+| 놀람·궁금·끄덕임 등 감정 | **gif** |
+| 악수·저울·도미노 (일반 비유) | **stock** (Pexels에 있음) |
 
-   **AI를 쓰기 전에 먼저 자문**: "이게 실제로 존재했던 인물/사건/장소인가?"
+---
 
-   **YES인 경우** → AI 쓰지 말고 **needRealImage: true** 사용 (실사 이미지로 처리)
-   - "트럼프", "네타냐후" 같은 실존 인물 등장 → 실사 (구글 검색)
-   - "1988 하르게이사 폭격" 같은 실제 역사 사건 → 실사 (자료 사진)
-   - "베르베라 공항 활주로" 같은 실제 장소 → 실사 (위성사진)
-   - "기드온 사르 방문 장면" → 실사 (뉴스 사진)
+**판단 체크리스트 (매 장면마다 순서대로)**:
 
-   **NO인 경우** → AI 사용 (bgSource: ai, 텍스트 금지)
-   - "플랑크톤이 석유가 되는 과정" — 상상 장면, 촬영 불가
-   - "지질학적 단면도" — 과학적 모식도, 실제 사진 없음
-   - "소련이 편을 바꾸는 상징적 장면" — 가상의 상징
-   - "바레의 비밀 정책서를 쓰는 모습" — 사실 자료 없는 상상
-   - "원유가 파이프 속을 흐르는 내부 시각화" — 촬영 불가
-   - "돈이 증발하는 상징적 이미지" — 개념을 시각화
+1. **Pexels에 영상 있을까?** (실제 장소·물건·사람) → YES면 **stock**
+2. **실제 존재하는 인물·사건·장소?** → YES면 **needRealImage**
+3. **감정·리액션 GIF로 충분?** → YES면 **gif**
+4. **국기·로고·아이콘?** → YES면 **freepikQueries** or **needLogo**
+5. **위 4개 다 아니면 AI 사용 판단 (5가지 조건 해당하는지 재확인)**
 
-   **판단 3단계**:
-   1. Pexels에 영상 있을까? YES → stock / NO ↓
-   2. 실제 존재하는 인물·사건·장소인가? YES → needRealImage (실사) / NO ↓
-   3. 상상·상징·촬영 불가능한 장면인가? YES → AI (텍스트 금지)
+**AI 사용 한도**: 전체 장면의 **5~10%만**. 30% 넘으면 설계 잘못됨.
+
+---
+
+**Split Screen 비교 장면 (aiPrompt 작성 시 참고)**:
+
+대본에 "A vs B", "한쪽은 ~, 반대로 ~" 패턴이면 split screen 구성 권장.
+
+대본: "미국은 70%, 한국은 15%"
+"aiPrompt": "Split screen comparison infographic. Left side: USA flag icon with '70%' large label. Right side: Korea flag icon with '15%' large label. All labels in Korean (한글). Dark background, 16:9."
+
+대본: "가벼운 기름용 공장, 무거운 기름용 공장"
+"aiPrompt": "Side-by-side split screen comparison of two oil refineries. Left: 'Light Oil (가벼운 기름)' simple refinery. Right: 'Heavy Oil (무거운 기름)' complex upgrader refinery. All Korean labels. Dark background, 16:9."
 
 **AI 금지 (반드시 대체)**:
 
@@ -4267,37 +4285,73 @@ stock bgQuery 생성 후 자문:
 
 ### codeGenHint 작성 조건 (핵심만 선별)
 
-다음 경우에만 추가 (전체 장면의 **15~25%**):
-1. **핵심 숫자 강조** (70%, 1조 6천억 원 등) → HeroStat
-2. **2~3개 수치 나열** (여러 지표 동시) → DataStack
-3. **좌우 비교** (A vs B, 이전 vs 이후) → SplitCompare
-4. **3~6개 항목 비교** (국가별·기업별 비율) → BarChart
-5. **연대기·단계적 사건** (3~5개 연도/단계) → Timeline
-6. **핵심 키워드 각인** (한 번에 강조하고 싶은 단어) → Typography
+### 🎯 핵심 원칙 — "한 장면 한 메시지"
+
+**영상은 8~10초짜리 장면 연속. 시청자는 한 장면에서 정보 하나만 기억할 수 있음.**
+
+실전 검증:
+- 6카드 대시보드 = 정보 과잉 → 아무것도 기억 못 함
+- 1개 숫자 + 지도 배경 = 강렬한 인상
+- 따라서 codeGenHint의 data는 **최대한 단순하게 (1~3개 요소만)**
+
+### 사용 조건 (전체 장면의 **5~15%만**)
+
+다음 경우에만 추가 — **진짜 강조해야 할 순간만 엄선**:
+
+1. **영상 훅 숫자** (오프닝 충격 통계) → HeroStat
+   - 예: "70%", "1조 6천억 원", "세계 1위"
+2. **결정적 대비** (A vs B 한 쌍) → SplitCompare
+   - 예: "20% vs 40%", "미국 70% vs 한국 15%"
+3. **핵심 순위·비율** (3~5개 막대만) → BarChart
+   - 예: "3경로 비교 (22일/42일/60일)"
+4. **중요 연대기** (3~5개 이벤트) → Timeline
+   - 예: 역사 전환점들
+5. **2~3개 수치 요약** → DataStack
+
+**Typography 패턴은 거의 쓰지 말 것** — 일반 text_headline이 충분.
+
+### 🚫 codeGenHint 쓰면 안 되는 경우
+
+- 단순 정보 전달 장면 → text_headline만
+- 감정·리액션 장면 → gif
+- 풍경·일반 배경 장면 → stock
+- 여러 데이터 한 번에 던지는 대시보드 → 정보 과잉. 장면 쪼개거나 text_headline만
 
 ### codeGenHint 필드 구조
 
-{ "pattern": "HeroStat" | "DataStack" | "SplitCompare" | "BarChart" | "Timeline" | "Typography",
-  "data": { (패턴별 형식) },
-  "emphasis": "강조 포인트 한 줄 설명 (선택)",
+{ "pattern": "HeroStat" | "DataStack" | "SplitCompare" | "BarChart" | "Timeline",
+  "data": { (패턴별 형식, **최대 3~5개 요소**) },
+  "emphasis": "강조 포인트 한 줄 (선택)",
   "animation": "spring" | "fade" | "sequential" (선택) }
 
-### 예시
+### 좋은 예
 
 **대본**: "한국의 중동 의존도 70%"
-{ "id": 8, "narration": "한국의 중동 의존도는 70%입니다", "bgSource": "ai", "aiPrompt": "...", "codeGenHint": { "pattern": "HeroStat", "data": { "value": "70%", "subLabel": "중동 의존도" }, "emphasis": "70% 수치 극대화", "animation": "spring" } }
+{ "id": 8, "codeGenHint": { "pattern": "HeroStat", "data": { "value": "70%", "subLabel": "중동 의존도" }, "animation": "spring" } }
+→ 숫자 하나만 거대하게. 깔끔.
 
-**대본**: "세계 10대 정유소 중 3곳이 한국"
-{ "id": 79, "codeGenHint": { "pattern": "BarChart", "data": { "items": [{"label":"한국","value":3}, {"label":"미국","value":2}, {"label":"인도","value":1}, {"label":"기타","value":4}] }, "emphasis": "한국 3곳 강조" } }
+**대본**: "파나마 40일 vs 남미 60일"
+{ "id": 19, "codeGenHint": { "pattern": "BarChart", "data": { "items": [{"label":"중동","value":22}, {"label":"파나마","value":42}, {"label":"남미","value":60}] } } }
+→ 3개 막대만. 시청자가 한 눈에 비교.
 
-### 사용 원칙
+### 나쁜 예 (실전 실패 사례)
 
-- **15~25%만** 사용. 남발 금지.
-- 단순 정보 장면은 text_headline 유지.
-- 패턴별 data 형식 **정확히** 지킬 것 (셀팟 AI가 이 구조로 Remotion 코드 작성).
-- animation 생략 시 패턴별 기본값 적용.
+**대본**: "한국 정유사 연간 1조 6천억 원 추가 비용"
+❌ 6개 카드 대시보드 (시간, 거리, 제약, 날씨, 연료비, 중동 대비)
+✅ HeroStat "1조 6천억 원" 하나만
 
-**⚠️ 중요**: codeGenHint가 있는 장면은 **overlays에서 text_headline 제거 금지**. Remotion 코드로 대체되는 게 아니라, fallback으로 공존함. 셀팟 AI가 코드 생성에 성공하면 Remotion이 우선, 실패하면 text_headline이 표시됨.
+**대본**: "20~25일 운송 소요"
+❌ 6개 데이터 카드 (처리량·의존도 포함)
+✅ 지도 배경 + "20~25일" 라벨 하나만
+
+### 사용 원칙 (엄수)
+
+- **5~15%만**. 30개 장면 영상이면 codeGenHint는 **최대 5개**.
+- data 필드 요소는 **3~5개 이하**. 초과하면 정보 과잉.
+- 패턴별 data 형식 정확히 지킬 것.
+- **"이 장면의 핵심 메시지 하나"**를 먼저 정하고 그걸만 시각화.
+
+**⚠️ 중요**: codeGenHint가 있는 장면은 **overlays에서 text_headline 제거 금지**. fallback으로 공존.
 
 ---
 
@@ -4594,7 +4648,19 @@ ${script}
 
 ## 출력 전 마지막 확인
 
+### 🎯 최우선 원칙 (실전 검증됨)
+
+1. **스톡 우선 원칙 (80% 목표)**: 실사·실물이면 무조건 stock. AI는 5가지 조건 (과거/불가시/은유/지도/데이터)일 때만.
+2. **한 장면 한 메시지**: 한 장면에 정보 하나만. 여러 데이터 던지면 시청자 아무것도 기억 못 함.
+3. **codeGenHint 5~15%**: 남발 금지. 진짜 강조할 순간에만.
+4. **bgSource 비율 체크**: stock 80% / gif 10% / ai 10% 이하가 이상적.
+
+### 체크리스트
+
 - 모든 장면에 대해 위 4가지 체크를 수행했는가?
+- **🏭 스톡 가능한 장면이 ai로 설정돼 있지 않은가?** (정유공장·공항·유조선·도시·거리·사무실 등은 무조건 stock)
+- **📊 codeGenHint가 30% 넘지 않는가?** (남발 시 제거)
+- **🎯 각 codeGenHint의 data가 3~5개 이하로 단순한가?** (6개 이상이면 정보 과잉)
 - **🗺️ 지도 장면**: 지리·경로·위치 설명 장면마다 isMapScene:true + mapLabels 배열 넣었는가?
 - **🏛️ 역사 몽타주**: 역사 인물+증거사진 조합 장면마다 isHistoricalMontage:true + montageElements 배열 넣었는가?
 - JSON만 출력하는가? (설명·주석·코드블록 마커 금지)
