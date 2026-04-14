@@ -4724,6 +4724,9 @@ ${script}
                 // 🏛️ 역사 자료 몽타주 장면
                 const montageScenes = jsonObj.scenes.filter(s => s.isHistoricalMontage === true && Array.isArray(s.montageElements) && s.montageElements.length > 0);
 
+                // ⚛️ Remotion 코드 힌트 장면
+                const codeGenHintScenes = jsonObj.scenes.filter(s => s.codeGenHint && s.codeGenHint.pattern);
+
                 // 셀팟에 넣을 JSON은 내부 메타 필드 제거 (깨끗하게)
                 const cleanScenes = jsonObj.scenes.map(s => {
                     const { needRealImage, realSearchKeyword, gifAltKeyword, needCharacter, characterSequence, needLogo, logoName, logoPosition, overlayUpgrade, freepikQueries, sfxKeywords, isMapScene, mapLabels, isHistoricalMontage, montageElements, montageCaption, montageStyle, ...rest } = s;
@@ -4767,7 +4770,8 @@ ${script}
                     <span style="color:#e83e8c;">🎭 캐릭터 삽입 ${characterScenes.length}개</span> ·
                     <span style="color:#0d6efd;">🏢 브랜드 로고 ${logoScenes.length}개</span> ·
                     <span style="color:#17a2b8;">🗺️ 지도 ${mapScenes.length}개</span> ·
-                    <span style="color:#8b4513;">🏛️ 몽타주 ${montageScenes.length}개</span>
+                    <span style="color:#8b4513;">🏛️ 몽타주 ${montageScenes.length}개</span> ·
+                    <span style="color:#8b5cf6;">⚛️ Remotion 힌트 ${codeGenHintScenes.length}개</span>
                 `;
 
                 document.getElementById('jsonOutput').value = window._sellpotJsonData;
@@ -4784,8 +4788,7 @@ ${script}
                 // 브랜드 로고 목록 렌더링
                 _renderLogoList(logoScenes);
 
-                // ⚛️ Remotion 코드 힌트 (셀팟 일괄 생성용)
-                const codeGenHintScenes = jsonObj.scenes.filter(s => s.codeGenHint && s.codeGenHint.pattern);
+                // ⚛️ Remotion 코드 힌트 렌더 (필터는 위에서 완료)
                 _renderCodeGenHintList(codeGenHintScenes);
 
                 // AI 이미지 프롬프트 모음 (젠스파크용)
