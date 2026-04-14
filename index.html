@@ -3970,6 +3970,39 @@ stock bgQuery 생성 후 자문:
 - **"이 장면 배경으로 Pexels에서 뭐가 나왔으면 좋겠나?"** 자문
 - 요리사·팔굽혀펴기·손 벌리기 같은 **엉뚱한 매칭 방지**
 
+#### 🎯 감정 단어는 검색어 우선순위 맨 뒤 (매우 중요)
+
+**실전 검증된 사실**:
+- 감정 단어(sad, crying, thoughtful, worried, happy 등)를 bgQuery 앞에 넣으면 → Pexels가 **"일반 인물 얼굴"** 영상으로 매칭
+- 결과: 맥락 없이 그냥 슬픈 사람·생각하는 사람 얼굴 나와서 **장면 상황이 전달 안 됨**
+
+**올바른 우선순위**:
+1. **핵심 키워드** (공장·공항·유조선 등 구체 명사)
+2. **행동·상황** (leaving, closing, gathering 등 동사)
+3. **장소·물건** (gate, box, corridor, desk 등)
+4. **구도** (aerial, close up, wide shot)
+5. **분위기** (empty, last, silent, sunset) ← 감정 대체
+6. **감정 단어는 최후 보조, 또는 생략**
+
+**예시 비교**:
+
+나레이션: "공장 문 닫고 사람들 떠나는 쓸쓸한 모습"
+
+- ❌ 나쁨 (감정 우선): `"sad worker thoughtful crying leaving factory"`
+  → Pexels 매칭: 일반 슬픈 얼굴 클로즈업
+- ✅ 좋음 (상황 우선): `"factory closure workers leaving carrying boxes industrial plant"`
+  → Pexels 매칭: 폐업 공장에서 박스 들고 나가는 작업자
+- ✅ 더 좋음 (상황 + 분위기): `"factory closure workers leaving empty plant last shift sunset"`
+  → 감정 대신 "last shift", "empty", "sunset"으로 분위기 전달
+
+**원칙**:
+> 감정은 **상황어로 대체**하라.
+> "sad" → "empty", "last", "closed"
+> "worried" → "alone", "silent"
+> "happy" → "gathering", "celebrating"
+
+**예외**: GIF bgSource일 때는 감정 단어 OK (GIF는 짧은 감정 리액션 전용이라 감정어가 정답).
+
 **좋은 예**:
 - 나레이션 "이스라엘이 네타냐후 총리와 외무장관이 공동 선언문에 서명" → "politicians signing document press conference podium"
 - 나레이션 "후티 반군이 홍해를 지나는 상선을 공격" → "cargo ship red sea missile explosion night"
