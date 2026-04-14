@@ -2036,15 +2036,15 @@
                     </div>
                 </div>
 
-                <div class="section" id="jsonOverlayUpgradeSection" style="display:none;">
-                    <div class="section-title">6️⃣ 오버레이 업그레이드 추천 (선택 사항)</div>
+                <div class="section" id="jsonCodeGenHintSection" style="display:none;">
+                    <div class="section-title">⚛️ Remotion 오버레이 코드 힌트 (셀팟 일괄 생성용)</div>
                     <div class="section-content">
                         <p style="font-size:0.85rem;color:#666;margin-bottom:12px;">
-                            기본은 헤드라인(자동 적용)이지만, 핵심 장면은 셀팟에서 <strong>직접 다른 오버레이 타입</strong>으로 바꾸면 더 화려해집니다.
-                            시간 여유 있는 장면만 업그레이드하세요. <strong style="color:#20c997;">선택 사항</strong>.
+                            핵심 임팩트 장면은 <strong style="color:#8b5cf6;">셀팟의 "AI 코드 생성 모드 → 전체 장면 일괄 생성"</strong>으로 커스텀 Remotion 애니메이션 오버레이가 자동 생성됩니다.
+                            JSON에 codeGenHint가 이미 포함되어 있어서 셀팟 AI가 참고해서 코드를 작성합니다. 별도 작업 없음.
                         </p>
-                        <div id="jsonOverlayUpgradeList" style="margin-bottom:12px;"></div>
-                        <button class="search-btn" onclick="copyOverlayUpgradeList(this)" style="width:100%;background:#20c997;border-color:#20c997;">📋 업그레이드 추천 목록 복사</button>
+                        <div id="jsonCodeGenHintList" style="margin-bottom:12px;"></div>
+                        <button class="search-btn" onclick="copyCodeGenHintList(this)" style="width:100%;background:#8b5cf6;border-color:#8b5cf6;">📋 힌트 요약 텍스트 복사 (참고용)</button>
                     </div>
                 </div>
 
@@ -3215,7 +3215,7 @@ ${chunkRule}
 - \"sceneDuration\": 장면 재생 시간 (초 단위, 숫자). 자세한 규칙 아래 참조.
 - \"transition\": 다음 장면으로의 전환 효과. "fade" | "cut" | "slide" | "zoom" 중 하나.
 - \"overlays\": 셀팟 오버레이 프리셋 **배열**. 한 장면에 1개 또는 여러 개 순차 표시 가능. 각 요소는 { type, data, duration } 형식. 자세한 규칙 아래 참조.
-- \"overlayUpgrade\": (선택) 사용자가 시간 여유 있을 때 셀팟에서 수동으로 업그레이드할 추천 오버레이 타입과 데이터. { type, data } 형식. 차트·VS대결·랭킹 같은 화려한 오버레이를 추천하고 싶을 때만 추가. 자세한 규칙 아래 참조.
+- \"codeGenHint\": (선택) 셀팟의 Remotion 커스텀 오버레이 코드 생성기용 힌트. { pattern, data, emphasis, animation } 형식. 핵심 숫자·비교·타임라인 장면에만 추가. 자세한 규칙 아래 참조.
 - \"freepikQueries\": (선택) 캐릭터·심볼·아이콘이 필요한 장면에 셀팟 캐릭터 탭의 Freepik 검색용 영문 키워드 배열. ["flag iran", "missile launch", "explosion fire"] 형식. 자세한 규칙 아래 참조.
 - \"sfxKeywords\": (선택) 임팩트가 필요한 장면에 무료 효과음 사이트(YouTube Audio Library, Freesound 등)에서 검색할 영문 키워드 배열. ["deep boom impact", "metallic ding"] 형식. 자세한 규칙 아래 참조.
 - \"freepikAsset\": Freepik 아이콘/3D 에셋 검색어. { keyword, type } 형식. type은 "icon" 또는 "3D". 에셋이 정보 전달에 유용할 때만 추가.
@@ -4727,6 +4727,7 @@ ${script}
                 // 셀팟에 넣을 JSON은 내부 메타 필드 제거 (깨끗하게)
                 const cleanScenes = jsonObj.scenes.map(s => {
                     const { needRealImage, realSearchKeyword, gifAltKeyword, needCharacter, characterSequence, needLogo, logoName, logoPosition, overlayUpgrade, freepikQueries, sfxKeywords, isMapScene, mapLabels, isHistoricalMontage, montageElements, montageCaption, montageStyle, ...rest } = s;
+                    // codeGenHint는 보존 (셀팟이 Remotion 코드 생성 시 참고)
                     return rest;
                 });
                 const cleanJson = { scenes: cleanScenes };
@@ -4783,9 +4784,9 @@ ${script}
                 // 브랜드 로고 목록 렌더링
                 _renderLogoList(logoScenes);
 
-                // 오버레이 업그레이드 추천 (text_headline → 더 화려한 타입)
-                const overlayUpgradeScenes = jsonObj.scenes.filter(s => s.overlayUpgrade);
-                _renderOverlayUpgradeList(overlayUpgradeScenes);
+                // ⚛️ Remotion 코드 힌트 (셀팟 일괄 생성용)
+                const codeGenHintScenes = jsonObj.scenes.filter(s => s.codeGenHint && s.codeGenHint.pattern);
+                _renderCodeGenHintList(codeGenHintScenes);
 
                 // AI 이미지 프롬프트 모음 (젠스파크용)
                 _renderAiPromptsList(jsonObj.scenes);
@@ -5222,48 +5223,90 @@ ${script}
             return ko ? `${ko} (${type})` : type;
         }
 
-        function _renderOverlayUpgradeList(upgradeScenes) {
-            const sec = document.getElementById('jsonOverlayUpgradeSection');
-            const list = document.getElementById('jsonOverlayUpgradeList');
-            if (!upgradeScenes || upgradeScenes.length === 0) {
+        // ⚛️ Remotion 코드 힌트 렌더링
+        const _REMOTION_PATTERN_KO = {
+            'HeroStat': '거대 숫자',
+            'DataStack': '수치 나열',
+            'SplitCompare': '좌우 VS',
+            'BarChart': '막대차트',
+            'Timeline': '타임라인',
+            'Typography': '키워드 각인'
+        };
+
+        function _summarizeHintData(pattern, data) {
+            if (!data || typeof data !== 'object') return '';
+            try {
+                switch (pattern) {
+                    case 'HeroStat':
+                        return (data.value || '') + (data.subLabel ? ' · ' + data.subLabel : '');
+                    case 'DataStack':
+                        return (data.items || []).map(it => (it.label || '') + ':' + (it.value || '')).join(' / ');
+                    case 'SplitCompare': {
+                        const l = data.left || {}, r = data.right || {};
+                        return (l.label || '') + ' ' + (l.value || '') + ' ↔ ' + (r.label || '') + ' ' + (r.value || '');
+                    }
+                    case 'BarChart':
+                        return (data.items || []).map(it => (it.label || '') + '(' + (it.value || '') + ')').join(', ');
+                    case 'Timeline':
+                        return (data.events || []).map(ev => (ev.year || '') + '·' + (ev.label || '')).join(' → ');
+                    case 'Typography':
+                        return (data.words || []).join(' / ');
+                    default:
+                        return JSON.stringify(data);
+                }
+            } catch(e) { return ''; }
+        }
+
+        function _renderCodeGenHintList(hintScenes) {
+            const sec = document.getElementById('jsonCodeGenHintSection');
+            const list = document.getElementById('jsonCodeGenHintList');
+            if (!hintScenes || hintScenes.length === 0) {
                 sec.style.display = 'none';
                 list.innerHTML = '';
                 return;
             }
             sec.style.display = '';
-            window._sellpotOverlayUpgrades = upgradeScenes;
+            window._sellpotCodeGenHints = hintScenes;
             let html = '<div style="display:flex;flex-direction:column;gap:6px;">';
-            upgradeScenes.forEach(s => {
+            hintScenes.forEach(s => {
                 const summary = s.narration.length > 60 ? s.narration.substring(0, 60) + '...' : s.narration;
-                const u = s.overlayUpgrade || {};
-                const recommendType = u.type || '';
-                const typeDisplay = _overlayTypeDisplay(recommendType);
-                html += `
-                    <div style="padding:10px;background:#e6fcf5;border:1px solid #63e6be;border-radius:8px;">
-                        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px;">
-                            <span style="font-weight:700;color:#0ca678;font-size:0.85rem;">장면 ${s.id}</span>
-                            <span style="color:#aaa;">→</span>
-                            <code style="background:#fff;padding:3px 10px;border-radius:4px;font-weight:700;color:#0ca678;border:1px solid #63e6be;">${_escapeHtml(typeDisplay)}</code>
-                        </div>
-                        <div style="font-size:0.82rem;color:#555;">${_escapeHtml(summary)}</div>
-                    </div>
-                `;
+                const h = s.codeGenHint || {};
+                const pattern = h.pattern || '';
+                const patternKo = _REMOTION_PATTERN_KO[pattern] || pattern;
+                const dataSummary = _summarizeHintData(pattern, h.data);
+                const emphasis = h.emphasis ? '<div style="font-size:0.78rem;color:#7c3aed;margin-top:4px;">💡 ' + _escapeHtml(h.emphasis) + '</div>' : '';
+                html += '<div style="padding:10px;background:#f3e8ff;border:1px solid #c4b5fd;border-radius:8px;">'
+                    + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px;">'
+                    + '<span style="font-weight:700;color:#7c3aed;font-size:0.85rem;">⚛️ 장면 ' + s.id + '</span>'
+                    + '<span style="color:#aaa;">→</span>'
+                    + '<code style="background:#fff;padding:3px 10px;border-radius:4px;font-weight:700;color:#7c3aed;border:1px solid #c4b5fd;">' + _escapeHtml(patternKo) + ' (' + _escapeHtml(pattern) + ')</code>'
+                    + '</div>'
+                    + '<div style="font-size:0.82rem;color:#555;margin-bottom:4px;">' + _escapeHtml(summary) + '</div>'
+                    + (dataSummary ? '<div style="font-size:0.78rem;color:#6d28d9;background:#fff;padding:6px 8px;border-radius:4px;border:1px dashed #c4b5fd;">📊 ' + _escapeHtml(dataSummary) + '</div>' : '')
+                    + emphasis
+                    + '</div>';
             });
             html += '</div>';
-            html += '<p style="font-size:0.78rem;color:#888;margin-top:10px;line-height:1.5;">💡 셀팟에서 해당 장면 클릭 → 오버레이 탭 → 위의 타입 선택 → UI에서 직접 데이터 입력. 시간 여유 있는 장면만 업그레이드하세요.</p>';
+            html += '<p style="font-size:0.78rem;color:#888;margin-top:10px;line-height:1.5;">💡 JSON에 codeGenHint가 포함돼 있습니다. 셀팟에서 <strong>오버레이 탭 → AI 코드 생성 모드 → 전체 장면 일괄 생성</strong> 버튼 클릭하면 자동으로 Remotion 코드가 작성되어 적용됩니다.</p>';
             list.innerHTML = html;
         }
 
-        function copyOverlayUpgradeList(btn) {
-            const upgrades = window._sellpotOverlayUpgrades || [];
-            if (upgrades.length === 0) { alert('추천 장면이 없습니다.'); return; }
-            let text = '# 오버레이 타입 추천 (선택 사항)\n';
-            text += '셀팟에서 해당 장면 클릭 → 오버레이 탭 → 추천 타입 선택 → 데이터 직접 입력\n\n';
-            upgrades.forEach(s => {
+        function copyCodeGenHintList(btn) {
+            const hints = window._sellpotCodeGenHints || [];
+            if (hints.length === 0) { alert('코드 힌트가 없습니다.'); return; }
+            let text = '# ⚛️ Remotion 오버레이 코드 힌트 요약\n\n';
+            text += '사용법: JSON을 셀팟에 붙여넣고 "AI 코드 생성 모드 → 전체 장면 일괄 생성" 클릭.\n\n';
+            hints.forEach(s => {
                 const summary = s.narration.length > 60 ? s.narration.substring(0, 60) + '...' : s.narration;
-                const u = s.overlayUpgrade || {};
-                text += `장면 ${s.id} → ${_overlayTypeDisplay(u.type || '')}\n`;
-                text += `  "${summary}"\n\n`;
+                const h = s.codeGenHint || {};
+                const patternKo = _REMOTION_PATTERN_KO[h.pattern] || h.pattern;
+                text += '장면 ' + s.id + ' → ' + patternKo + ' (' + (h.pattern || '') + ')\n';
+                text += '  "' + summary + '"\n';
+                const ds = _summarizeHintData(h.pattern, h.data);
+                if (ds) text += '  데이터: ' + ds + '\n';
+                if (h.emphasis) text += '  강조: ' + h.emphasis + '\n';
+                if (h.animation) text += '  애니메이션: ' + h.animation + '\n';
+                text += '\n';
             });
             safeCopy(text).then(() => {
                 const orig = btn.textContent;
