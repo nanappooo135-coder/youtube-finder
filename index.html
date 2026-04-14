@@ -2135,8 +2135,22 @@
 
                     <div class="input-group">
                         <label>대본 붙여넣기</label>
-                        <textarea id="ttsInput" rows="10" placeholder="대본을 붙여넣으세요. 숫자가 포함된 부분이 자동으로 변환됩니다." style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;resize:vertical;font-family:inherit;line-height:1.6;"></textarea>
+                        <textarea id="ttsInput" rows="10" placeholder="대본을 붙여넣으세요. 한국어 대본은 아래 '일본어로 번역' 버튼으로 먼저 번역 가능." style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;resize:vertical;font-family:inherit;line-height:1.6;"></textarea>
                         <p id="ttsCharCount" style="font-size:0.8rem;color:#888;margin-top:4px;text-align:right;">0자</p>
+                    </div>
+
+                    <div class="input-group" id="jaTranslateGroup">
+                        <label>한→일 번역 (일본 채널용, 선택)</label>
+                        <p style="font-size:0.8rem;color:#888;margin-bottom:8px;line-height:1.5;">
+                            직역이 아니라 <b>일본 유튜브 내레이션 스타일로 현지화 번역</b>합니다. 한국식 호흡/호명 제거, 고유명사 한자병기(TTS 오독 방지), 한국 특유 개념 각주 삽입, ですます 해설조 통일.
+                        </p>
+                        <button id="jaTranslateBtn" onclick="translateKoToJa()" style="width:100%;padding:12px;background:white;color:#dc3545;border:2px solid #dc3545;border-radius:10px;font-size:0.95rem;font-weight:700;cursor:pointer;">
+                            🇯🇵 일본어로 번역하기 (Gemini Pro)
+                        </button>
+                        <div id="jaTranslateStatus" style="display:none;margin-top:8px;font-size:0.85rem;color:#666;"></div>
+                        <button id="jaRestoreBtn" onclick="restoreKoOriginal()" style="display:none;width:100%;margin-top:8px;padding:8px;background:#f8f9fa;color:#666;border:1px solid #dee2e6;border-radius:8px;font-size:0.85rem;cursor:pointer;">
+                            ↩ 한국어 원본으로 되돌리기
+                        </button>
                     </div>
 
                     <div class="input-group">
@@ -5793,6 +5807,147 @@ ${script}
         const JA_SINGLE = ['ゼロ','いち','に','さん','よん','ご','ろく','なな','はち','きゅう'];
         function decimalToJapanese(intPart, decPart) {
             return numberToJapanese(parseInt(intPart)) + 'てん' + decPart.split('').map(d => JA_SINGLE[parseInt(d)]).join('');
+        }
+
+        // ===== 한→일 번역 (일본 채널용 로컬라이제이션) =====
+        async function translateKoToJa() {
+            const inputEl = document.getElementById('ttsInput');
+            const btn = document.getElementById('jaTranslateBtn');
+            const statusEl = document.getElementById('jaTranslateStatus');
+            const restoreBtn = document.getElementById('jaRestoreBtn');
+            const script = (inputEl.value || '').trim();
+
+            if (!script) { alert('번역할 한국어 대본을 먼저 붙여넣어 주세요'); return; }
+            if (script.length < 20) { alert('대본이 너무 짧습니다'); return; }
+
+            // 이미 일본어가 대부분이면 경고
+            const hanCount = (script.match(/[\u3040-\u309F\u30A0-\u30FF]/g) || []).length;
+            const koCount = (script.match(/[\uAC00-\uD7AF]/g) || []).length;
+            if (hanCount > koCount && koCount < 50) {
+                if (!confirm('입력된 텍스트가 이미 일본어로 보입니다. 그래도 번역하시겠어요?')) return;
+            }
+
+            const prompt = `당신은 한국 유튜브 경제·역사 채널의 대본을 일본 유튜브 시청자용으로 "현지화 번역(로컬라이제이션)"하는 전문가입니다. 단순 직역이 아니라, 일본인 시청자가 한국 채널임을 의식하지 않고 자연스럽게 청취할 수 있는 일본 유튜브 내레이션체 일본어로 변환합니다.
+
+[번역 규칙 — 반드시 전부 적용]
+
+1. **한국식 호흡·호명 제거**
+   - "여러분", "~죠", "생각해 보세요", "~한다면 어떻게 될까요?", "돈의 흐름을 따라가보면" 같은 한국 유튜브 특유 표현 금지
+   - "皆さん" 연발 금지. 필요 시 극히 제한적으로 1~2회만
+   - 과도한 질문형(?)으로 시청자 붙잡기 금지. 일본식 해설조로 차분히
+
+2. **문체 통일**
+   - ですます체 기본. 해설·다큐멘터리 느낌
+   - 한국식 속사포 정보 나열은 한 템포 쉬어가는 형태로 재배치
+   - 문장 길이 리듬 조절 (짧은 문장 연타 금지, 길고 짧은 문장 교차)
+
+3. **고유명사 처리 (TTS 오독 방지 필수)**
+   - 한국 인명/지명/기업명은 **카타카나 + 한자 병기** 형식
+     - 예: 문재인 → 文在寅(ムン・ジェイン)
+     - 예: 삼성 → サムスン(三星)
+     - 예: 서울 → ソウル
+   - 일본인에게 생소한 이름은 첫 등장 시 "韓国の〜" 같은 한 마디 수식어 추가
+   - 한자 단어는 읽기 어려우면 ひらがな로 개방 (예: 貨幣 → おかね 문맥에 따라)
+
+4. **한국 특유 개념 각주 삽입 (일본에 없는 제도·사건)**
+   - 전세 → "チョンセ（韓国独自の不動産賃貸制度。保証金だけで家賃なしで借りる方式）" 처럼 한 문장 보충
+   - 재벌 → "財閥（韓国の巨大企業グループ）"
+   - IMF 외환위기 → "1997年のアジア通貨危機（韓国では国家破産危機と呼ばれる）"
+   - 국민연금, 전두환, 박정희, 5·18, 6·25 등 일본인이 모를 사건/개념은 한 줄로 배경 설명
+
+5. **숫자·통화 처리**
+   - 숫자 자체는 원문 그대로 유지 (콤마 포함, 예: 165,500)
+   - "원"은 "ウォン"으로 변환 (예: 100만원 → 100万ウォン)
+   - "조·억·만" 단위는 일본식 한자로 변환 (兆/億/万)
+   - 환율 감각이 없는 일본인을 위해 주요 금액은 괄호로 엔화 환산 병기 (대략적 환산 OK. 예: "100万ウォン（約10万円）")
+
+6. **구조·순서 엄수**
+   - 원문 대본의 인트로/본문 구조, 문단 순서, 주장·결론은 절대 변경 금지
+   - 삭제·요약·창작 금지. 모든 문장을 일본어로 옮기되 위 규칙대로 표현만 각색
+
+7. **TTS 친화**
+   - 읽기 헷갈리는 동음이의 한자는 ふりがな 대신 ひらがな로 풀어쓰기
+   - 문장 끝에 마침표·쉼표로 호흡 명확히
+   - 아라비아 숫자 유지 (일본어 숫자 읽기 변환은 다른 도구에서 처리)
+
+[출력 형식]
+- 번역된 일본어 대본 본문만 출력
+- 설명, 주석, 머리말, "다음은 번역입니다" 같은 메타 발언 일체 금지
+- 원문 대본의 줄바꿈·단락 구조 유지
+
+[번역 대상 한국어 대본]
+${script}
+
+[위 대본을 규칙대로 번역한 일본어 본문만 출력]`;
+
+            btn.disabled = true;
+            btn.textContent = '번역 중...';
+            btn.style.opacity = '0.6';
+            statusEl.style.display = '';
+            statusEl.textContent = 'Gemini Pro로 번역 중입니다. 대본 길이에 따라 30초~2분 소요.';
+
+            const startT = Date.now();
+            const timer = setInterval(() => {
+                const sec = Math.floor((Date.now() - startT) / 1000);
+                statusEl.textContent = `Gemini Pro로 번역 중... (${sec}초 경과)`;
+            }, 1000);
+
+            try {
+                const result = await callGemini(prompt, {
+                    maxTokens: 32768,
+                    temperature: 0.4,
+                    model: 'gemini-2.5-pro'
+                });
+                clearInterval(timer);
+
+                const translated = (result.text || '').trim();
+                if (!translated || translated.length < 20) {
+                    throw new Error('번역 결과가 비어있거나 너무 짧습니다.');
+                }
+
+                // 원본 보관
+                window._koOriginalScript = inputEl.value;
+
+                // 입력창 교체 + 글자수 갱신
+                inputEl.value = translated;
+                document.getElementById('ttsCharCount').textContent = `${translated.length.toLocaleString()}자`;
+
+                // 언어 버튼 자동 전환 (ko → ja)
+                const jaBtnEl = document.getElementById('ttsLangJa');
+                if (jaBtnEl) jaBtnEl.click();
+
+                statusEl.innerHTML = `<span style="color:#28a745;font-weight:700;">✓ 번역 완료</span> — ${Math.floor((Date.now()-startT)/1000)}초 소요. 아래 "변환하기" 버튼으로 숫자를 일본어 읽기로 변환하세요.`;
+                restoreBtn.style.display = '';
+
+                // 입력창으로 스크롤
+                inputEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } catch (e) {
+                clearInterval(timer);
+                statusEl.innerHTML = `<span style="color:#dc3545;font-weight:700;">✗ 번역 실패</span> — ${e.message || e}`;
+                console.error('번역 실패:', e);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🇯🇵 일본어로 번역하기 (Gemini Pro)';
+                btn.style.opacity = '1';
+            }
+        }
+
+        function restoreKoOriginal() {
+            const original = window._koOriginalScript;
+            if (!original) { alert('복원할 한국어 원본이 없습니다'); return; }
+            if (!confirm('현재 일본어 대본을 한국어 원본으로 되돌립니다. 진행할까요?')) return;
+
+            const inputEl = document.getElementById('ttsInput');
+            inputEl.value = original;
+            document.getElementById('ttsCharCount').textContent = `${original.length.toLocaleString()}자`;
+
+            // 언어 버튼 한국어로 복귀
+            const koBtnEl = document.getElementById('ttsLangKo');
+            if (koBtnEl) koBtnEl.click();
+
+            document.getElementById('jaRestoreBtn').style.display = 'none';
+            document.getElementById('jaTranslateStatus').style.display = 'none';
+            delete window._koOriginalScript;
         }
 
         // 메인 변환 함수
