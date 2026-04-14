@@ -3930,6 +3930,46 @@ stock bgQuery 생성 후 자문:
 
 5개 모두 YES여야 완성.
 
+#### 🚨 실전 실패 사례 — 절대 반복 금지
+
+**사례 1**: "답이 뒤집힌다" (반전·구조 이야기)
+- ❌ bgQuery: "flipping card revealing opposite side" → AI가 "요리사가 생선 뒤집기" 매칭 시도 → 요리사 영상 나옴
+- ✅ bgQuery: "reverse arrow sign spinning backward animation" (더 명확한 시각적 반전)
+- ✅ 또는 bgQuery: "coin flipping in slow motion close up" (동전 뒤집기, 경제 맥락)
+
+**사례 2**: "지분 구조" (기업 소유권)
+- ❌ bgQuery: "corporate ownership structure" → "사람이 손 벌린 장면" 매칭 → 엉뚱함
+- ✅ bgQuery: "corporate boardroom signing contract handshake close up"
+- ✅ 또는 bgQuery: "pie chart diagram shareholders company hierarchy"
+
+**사례 3**: "기술 락인·공장 구조"
+- ❌ bgQuery: "technology lock in factory" → "사람 팔굽혀펴기" 매칭 → 무관
+- ✅ bgQuery: "factory assembly line automated machinery production"
+- ✅ 또는 bgQuery: "industrial control room engineers monitoring screens"
+
+**원칙 재확인**:
+> 비유·상징을 검색어로 직역하지 마라.
+> **실제로 Pexels에 있을 법한 영상 장면으로 번역**하라.
+
+#### 비유 → 구체 장면 번역 사전
+
+| 나레이션 비유 | 직역 (실패) | 구체 장면 번역 (성공) |
+|---------------|--------------|----------------------|
+| "답이 뒤집힌다" | "flipping answer" | "reverse arrow direction change close up" |
+| "지분으로 묶여있다" | "tied by shares" | "handshake signing shareholder contract" |
+| "기술 락인" | "technology lock in" | "factory industrial machinery gears interlocking" |
+| "구조적 천장" | "structural ceiling" | "person hitting glass ceiling hand close up" |
+| "마지막 퍼즐" | "last puzzle" | "hand placing final jigsaw piece macro" |
+| "안 바꾸는 게 합리적" | "rational not changing" | "chess player protecting king strategic move" |
+| "수십 년의 자산" | "decades of asset" | "old corporate archive library time lapse" |
+| "혈관처럼 연결" | "connected like vein" | "network pipeline industrial glowing aerial" |
+| "설비가 놀다" | "idle equipment" | "empty factory floor dusty machinery night" |
+
+**⚠️ AI가 번역할 때 원칙**:
+- 나레이션 단어를 그대로 영문화하면 안 됨
+- **"이 장면 배경으로 Pexels에서 뭐가 나왔으면 좋겠나?"** 자문
+- 요리사·팔굽혀펴기·손 벌리기 같은 **엉뚱한 매칭 방지**
+
 **좋은 예**:
 - 나레이션 "이스라엘이 네타냐후 총리와 외무장관이 공동 선언문에 서명" → "politicians signing document press conference podium"
 - 나레이션 "후티 반군이 홍해를 지나는 상선을 공격" → "cargo ship red sea missile explosion night"
@@ -4145,6 +4185,39 @@ stock bgQuery 생성 후 자문:
 - 셀팟은 **text_headline / text_quote / title_card** 3가지 타입만 100% 자동 적용됨.
 - 다른 타입(versus_stat, single_stat_card, pie_donut, ranking_list, stat_change, 차트류 등)은 데이터가 화면에 안 뜨거나 깨짐 → **절대 쓰지 말 것**.
 - 한 장면에 **반드시 1개 오버레이만**. 2개 이상이면 텍스트가 겹쳐서 깨짐.
+
+### 🎯 핵심 원칙 — **오버레이는 liberally(넉넉하게) 생성할 것**
+
+실전 피드백 반영 (매우 중요):
+> "차라리 오버레이를 많이 해서 내가 지우는 게 더 좋다. 작으면 만드는 게 더 시간 걸림."
+
+**→ 사용자 입장에서 "삭제 > 추가" — 많이 만들고 지우는 게 훨씬 편함.**
+
+**적용 비율**:
+- **전체 장면의 80% 이상**에 overlays 추가 (text_headline 중심)
+- 완전히 오버레이 없는 장면은 **순수 감정 리액션 GIF 장면**(20% 정도)만
+- 나머지는 전부 핵심 키워드/숫자로 text_headline 부여
+
+### 🎯 핵심 원칙 — **오버레이 내용은 나레이션 핵심과 정확히 매칭**
+
+실전 피드백:
+> "오버레이는 그 내용에 맞는 걸 써서 해주는 게 더 효율적임."
+
+**text_headline.text 작성 원칙**:
+- 나레이션에서 **시청자가 기억해야 할 핵심 키워드** 추출
+- 숫자·퍼센트·핵심 개념 우선
+- 3~15자 이내 (길면 잘려서 안 예쁨)
+- 일반 문장 복사 금지 (나레이션 자막이랑 중복)
+- **"요약" 아니라 "강조 포인트"**
+
+**좋은 예 (나레이션 핵심 정확히 매칭)**:
+
+| 나레이션 | 좋은 text_headline | 나쁜 text_headline |
+|---------|-------------------|-------------------|
+| "근데 이걸 파고 들어가 보면 답이 완전히 뒤집혀요" | "답이 뒤집힌다" | "파고 들어가" (핵심 아님) |
+| "한국 정유사들이 수십 년간 쌓아온 기술 자산" | "수십 년의 자산" or "진짜 무기" | "기술 자산" (애매함) |
+| "S-Oil 최대주주가 사우디 아람코 자회사" | "지분 63.4%" or "아람코 소유" | "S-Oil 회사" (정보 없음) |
+| "기술 락인이라고 부릅니다" | "기술 락인 (Lock-in)" | "부릅니다" (기능 없음) |
 
 ### overlays 배열 구조
 
@@ -4668,13 +4741,18 @@ ${script}
 2. **한 장면 한 메시지**: 한 장면에 정보 하나만. 여러 데이터 던지면 시청자 아무것도 기억 못 함.
 3. **codeGenHint 5~15%**: 남발 금지. 진짜 강조할 순간에만.
 4. **bgSource 비율 체크**: stock 80% / gif 10% / ai 10% 이하가 이상적.
+5. **오버레이는 넉넉히 (80%+)**: text_headline은 사용자가 삭제 > 추가. 많이 달아주는 게 효율적.
+6. **bgQuery는 구체 장면, 비유 직역 금지**: "flipping card" 같은 추상 번역 대신 "reverse arrow direction" 같은 실제 Pexels 영상 있을 만한 키워드.
 
 ### 체크리스트
 
-- 모든 장면에 대해 위 4가지 체크를 수행했는가?
+- 모든 장면에 대해 위 6가지 원칙을 적용했는가?
 - **🏭 스톡 가능한 장면이 ai로 설정돼 있지 않은가?** (정유공장·공항·유조선·도시·거리·사무실 등은 무조건 stock)
 - **📊 codeGenHint가 30% 넘지 않는가?** (남발 시 제거)
 - **🎯 각 codeGenHint의 data가 3~5개 이하로 단순한가?** (6개 이상이면 정보 과잉)
+- **📝 overlays가 80% 이상 장면에 있는가?** (text_headline 중심, 핵심 키워드 3~15자)
+- **🚫 bgQuery에 추상 은유 직역이 없는가?** ("flipping card", "technology lock", "corporate structure" 같은 추상어는 엉뚱한 매칭 유발)
+- **🎬 bgQuery에 주체/행동/구도 3요소 다 있는가?** ("assembly line machinery close up" YES / "refinery" NO)
 - **🗺️ 지도 장면**: 지리·경로·위치 설명 장면마다 isMapScene:true + mapLabels 배열 넣었는가?
 - **🏛️ 역사 몽타주**: 역사 인물+증거사진 조합 장면마다 isHistoricalMontage:true + montageElements 배열 넣었는가?
 - JSON만 출력하는가? (설명·주석·코드블록 마커 금지)
