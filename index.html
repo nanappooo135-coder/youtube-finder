@@ -2088,8 +2088,8 @@
                     <div class="section-title">🗺️ 지도 장면 (AI + 한글 라벨)</div>
                     <div class="section-content">
                         <p style="font-size:0.85rem;color:#666;margin-bottom:12px;">
-                            지리·경로 설명 장면은 <strong style="color:#17a2b8;">젠스파크에 한글 라벨 포함 프롬프트</strong>로 한 번에 생성.
-                            라벨 실패 시 라벨 빼고 재생성 → 캔바에서 한글만 수동 추가.
+                            지리·경로 설명 장면은 <strong style="color:#17a2b8;">젠스파크에 프롬프트 복붙 → 한글 라벨 박힌 지도 완성 → 셀팟 업로드</strong>.
+                            한 번에 나오는 게 기본이고, 드물게 한글이 뭉개질 때만 캔바 백업.
                         </p>
                         <div id="jsonMapList" style="margin-bottom:12px;"></div>
                         <button class="search-btn" onclick="copyMapList(this)" style="width:100%;background:#17a2b8;border-color:#17a2b8;">📋 지도 프롬프트 전체 복사</button>
@@ -3243,6 +3243,18 @@ ${chunkRule}
 - \"needRealImage\": true | false (기본 false, 생략 가능)
 - \"realSearchKeyword\": 구글 검색용 구체 키워드 (needRealImage가 true일 때만)
 - \"gifAltKeyword\": bgSource가 "ai"일 때, GIF로도 표현 가능한 비유·감정 장면이면 Klipy 검색용 대체 키워드 (한글+영문 혼합)
+- \"isMapScene\": true | false (기본 false). **지도 장면일 때 반드시 true**. bgSource는 "ai"여야 함. 아래 "isMapScene + mapLabels 규칙" 섹션 필독.
+- \"mapLabels\": 한글 라벨 배열 (isMapScene이 true일 때만). 예: ["두바이", "아부다비", "페르시아만"]
+- \"isHistoricalMontage\": true | false (기본 false). **역사 인물 + 증거사진 몽타주 장면일 때 true**. needRealImage보다 우선. 아래 규칙 섹션 필독.
+- \"montageElements\": {searchKeyword, koreanLabel} 객체 배열 (isHistoricalMontage가 true일 때만, 2개 이상)
+- \"montageCaption\": 몽타주 하단 한 줄 캡션 (선택)
+- \"montageStyle\": "paper-document" | "modern-news" | "split-era" 중 하나 (선택)
+
+**⚠️ 필수 체크 (매 장면마다):**
+1. 지도·경로·지정학 설명 장면? → isMapScene: true + mapLabels 배열 + bgSource: "ai"
+2. 역사 인물 + 증거사진 2개 이상 조합? → isHistoricalMontage: true + montageElements 배열
+3. 단일 인물/사건만? → needRealImage: true (기존 방식)
+**이 두 필드를 누락하면 유튜브 파인더의 🗺️/🏛️ 섹션이 안 뜬다. 필수.**
 
 아래 조건에 해당하는 장면만 needRealImage = true:
 1. **실존 인물 고유명사** (예: 네타냐후, 트럼프, 시아드 바레, 기드온 사르 등) — 거의 무조건 true
@@ -4581,6 +4593,8 @@ ${script}
 ## 출력 전 마지막 확인
 
 - 모든 장면에 대해 위 4가지 체크를 수행했는가?
+- **🗺️ 지도 장면**: 지리·경로·위치 설명 장면마다 isMapScene:true + mapLabels 배열 넣었는가?
+- **🏛️ 역사 몽타주**: 역사 인물+증거사진 조합 장면마다 isHistoricalMontage:true + montageElements 배열 넣었는가?
 - JSON만 출력하는가? (설명·주석·코드블록 마커 금지)
 `;
         }
@@ -4682,6 +4696,20 @@ ${script}
                 // 브랜드 로고 삽입 장면 (needLogo=true + logoName 존재)
                 const logoScenes = jsonObj.scenes.filter(s => s.needLogo === true && s.logoName);
 
+                // 🗺️ 지도 장면 — AI가 isMapScene 태그 누락 시 aiPrompt 키워드로 자동 감지 (fallback)
+                const MAP_KEYWORDS = /\b(map|peninsula|gulf|strait|route|canal|continent|ocean|shipping)\b/i;
+                jsonObj.scenes.forEach(s => {
+                    if (s.isMapScene === true) return;
+                    if (s.bgSource === 'ai' && typeof s.aiPrompt === 'string' && MAP_KEYWORDS.test(s.aiPrompt)) {
+                        s.isMapScene = true;
+                        if (!Array.isArray(s.mapLabels)) s.mapLabels = [];
+                    }
+                });
+                const mapScenes = jsonObj.scenes.filter(s => s.isMapScene === true);
+
+                // 🏛️ 역사 자료 몽타주 장면
+                const montageScenes = jsonObj.scenes.filter(s => s.isHistoricalMontage === true && Array.isArray(s.montageElements) && s.montageElements.length > 0);
+
                 // 셀팟에 넣을 JSON은 내부 메타 필드 제거 (깨끗하게)
                 const cleanScenes = jsonObj.scenes.map(s => {
                     const { needRealImage, realSearchKeyword, gifAltKeyword, needCharacter, characterSequence, needLogo, logoName, logoPosition, overlayUpgrade, freepikQueries, sfxKeywords, isMapScene, mapLabels, isHistoricalMontage, montageElements, montageCaption, montageStyle, ...rest } = s;
@@ -4722,7 +4750,9 @@ ${script}
                     <span style="color:#cc0000;">📷 실사 필요 ${realScenes.length}개</span> ·
                     <span style="color:#6f42c1;">🎞️ GIF 대체 가능 ${gifAltScenes.length}개</span> ·
                     <span style="color:#e83e8c;">🎭 캐릭터 삽입 ${characterScenes.length}개</span> ·
-                    <span style="color:#0d6efd;">🏢 브랜드 로고 ${logoScenes.length}개</span>
+                    <span style="color:#0d6efd;">🏢 브랜드 로고 ${logoScenes.length}개</span> ·
+                    <span style="color:#17a2b8;">🗺️ 지도 ${mapScenes.length}개</span> ·
+                    <span style="color:#8b4513;">🏛️ 몽타주 ${montageScenes.length}개</span>
                 `;
 
                 document.getElementById('jsonOutput').value = window._sellpotJsonData;
@@ -4754,12 +4784,8 @@ ${script}
                 const sfxScenes = jsonObj.scenes.filter(s => Array.isArray(s.sfxKeywords) && s.sfxKeywords.length > 0);
                 _renderSfxList(sfxScenes);
 
-                // 🗺️ 지도 장면
-                const mapScenes = jsonObj.scenes.filter(s => s.isMapScene === true);
+                // 🗺️ 지도 / 🏛️ 몽타주 렌더 (필터는 위에서 완료)
                 _renderMapList(mapScenes);
-
-                // 🏛️ 역사 자료 몽타주
-                const montageScenes = jsonObj.scenes.filter(s => s.isHistoricalMontage === true && Array.isArray(s.montageElements) && s.montageElements.length > 0);
                 _renderMontageList(montageScenes);
 
                 document.getElementById('jsonResultSection').style.display = '';
