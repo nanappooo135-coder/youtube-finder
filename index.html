@@ -1968,24 +1968,6 @@
                         <textarea id="jsonScript" rows="14" placeholder="대본 전체를 붙여넣으세요.&#10;&#10;예:&#10;지금 아프리카에 지도에는 없는데 대사관은 있고...&#10;&#10;소말릴란드라는 나라입니다. 30년 넘게..." style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;resize:vertical;font-family:inherit;line-height:1.6;"></textarea>
                     </div>
 
-                    <div class="input-group">
-                        <label>장면 묶음 길이 <span style="color:#888;font-weight:400;">(대본 길이에 따라 선택)</span></label>
-                        <div class="tb-options" id="jsonChunk">
-                            <button class="tb-opt" data-val="short" onclick="toggleTbOpt(this,'jsonChunk',1)">
-                                <div class="opt-title">짧게</div>
-                                <div class="opt-desc" style="font-size:0.72rem;color:#888;line-height:1.4;">1문장 = 1장면<br>3천자 이하용</div>
-                            </button>
-                            <button class="tb-opt selected" data-val="normal" onclick="toggleTbOpt(this,'jsonChunk',1)">
-                                <div class="opt-title">보통</div>
-                                <div class="opt-desc" style="font-size:0.72rem;color:#888;line-height:1.4;">1~2문장 = 1장면<br>5~8천자 추천</div>
-                            </button>
-                            <button class="tb-opt" data-val="long" onclick="toggleTbOpt(this,'jsonChunk',1)">
-                                <div class="opt-title">길게</div>
-                                <div class="opt-desc" style="font-size:0.72rem;color:#888;line-height:1.4;">2~3문장 = 1장면<br>8천자 이상용</div>
-                            </button>
-                        </div>
-                    </div>
-
                     <button id="jsonBtn" class="search-btn" onclick="generateSellpotJson()">
                         셀팟 JSON 생성
                     </button>
@@ -2000,6 +1982,19 @@
                     <div class="section-content">
                         <div id="jsonSummary" style="margin-bottom:12px;padding:12px;background:#f5f5f5;border-radius:8px;font-size:0.9rem;"></div>
                         <button class="search-btn" onclick="copySellpotJson(this)" style="width:100%;margin-bottom:8px;font-size:1.05rem;padding:14px;">📋 JSON 전체 복사 (셀팟용)</button>
+                        <button class="search-btn" onclick="splitJsonHalf()" style="width:100%;margin-bottom:8px;background:#17a2b8;border-color:#17a2b8;">✂️ JSON 2분할 (10분씩, 렌더링 과부하 방지)</button>
+                        <div id="jsonSplitResult" style="display:none;margin-bottom:12px;">
+                            <div style="margin-bottom:8px;">
+                                <label style="font-weight:700;font-size:0.9rem;color:#17a2b8;">Part 1</label>
+                                <button class="search-btn" onclick="copySplitPart(1, this)" style="margin-left:8px;padding:4px 12px;font-size:0.8rem;background:#17a2b8;border-color:#17a2b8;">📋 Part 1 복사</button>
+                            </div>
+                            <textarea id="jsonPart1" readonly style="width:100%;min-height:150px;padding:10px;border:2px solid #17a2b8;border-radius:8px;font-size:0.75rem;font-family:'Courier New',monospace;background:#1e1e1e;color:#d4d4d4;margin-bottom:12px;"></textarea>
+                            <div style="margin-bottom:8px;">
+                                <label style="font-weight:700;font-size:0.9rem;color:#17a2b8;">Part 2</label>
+                                <button class="search-btn" onclick="copySplitPart(2, this)" style="margin-left:8px;padding:4px 12px;font-size:0.8rem;background:#17a2b8;border-color:#17a2b8;">📋 Part 2 복사</button>
+                            </div>
+                            <textarea id="jsonPart2" readonly style="width:100%;min-height:150px;padding:10px;border:2px solid #17a2b8;border-radius:8px;font-size:0.75rem;font-family:'Courier New',monospace;background:#1e1e1e;color:#d4d4d4;"></textarea>
+                        </div>
                         <button class="search-btn" onclick="copyUnifiedCommand(this)" style="width:100%;margin-bottom:12px;background:#6f42c1;border-color:#6f42c1;font-size:0.95rem;">🤖 셀팟 AI 통합 명령어 복사 (AI이미지 + 효과음 한 번에)</button>
                         <textarea id="jsonOutput" readonly style="width:100%;min-height:400px;padding:16px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.8rem;font-family:'Courier New',monospace;line-height:1.5;background:#1e1e1e;color:#d4d4d4;resize:vertical;" placeholder="여기에 JSON이 표시됩니다"></textarea>
                     </div>
@@ -4516,7 +4511,7 @@ ${script}
             btn.textContent = '생성 중...';
             _geminiStatusEl = statusEl;
 
-            const chunkMode = document.querySelector('#jsonChunk .tb-opt.selected')?.dataset.val || 'normal';
+            const chunkMode = 'normal';
 
             let usedModel = '';
             let text = '';
@@ -4685,6 +4680,40 @@ ${script}
         function copySellpotJson(btn) {
             if (!window._sellpotJsonData) { alert('먼저 JSON을 생성하세요.'); return; }
             safeCopy(window._sellpotJsonData).then(() => {
+                const orig = btn.textContent;
+                btn.textContent = '✓ 복사됨!';
+                setTimeout(() => btn.textContent = orig, 1500);
+            });
+        }
+
+        // JSON 2분할 기능 (렌더링 과부하 방지용)
+        function splitJsonHalf() {
+            if (!window._sellpotJsonData) { alert('먼저 JSON을 생성하세요.'); return; }
+            try {
+                const data = JSON.parse(window._sellpotJsonData);
+                const scenes = data.scenes || [];
+                if (scenes.length < 2) { alert('장면이 2개 미만이라 분할 불가'); return; }
+                const mid = Math.ceil(scenes.length / 2);
+                const part1Scenes = scenes.slice(0, mid);
+                const part2Scenes = scenes.slice(mid).map((s, i) => ({ ...s, id: i + 1 }));
+                const part1Json = JSON.stringify({ scenes: part1Scenes }, null, 2);
+                const part2Json = JSON.stringify({ scenes: part2Scenes }, null, 2);
+                window._sellpotPart1 = part1Json;
+                window._sellpotPart2 = part2Json;
+                document.getElementById('jsonPart1').value = part1Json;
+                document.getElementById('jsonPart2').value = part2Json;
+                document.getElementById('jsonSplitResult').style.display = '';
+                // 스크롤
+                document.getElementById('jsonSplitResult').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } catch (e) {
+                alert('분할 실패: ' + e.message);
+            }
+        }
+
+        function copySplitPart(partNum, btn) {
+            const text = partNum === 1 ? window._sellpotPart1 : window._sellpotPart2;
+            if (!text) { alert('먼저 분할 버튼을 누르세요.'); return; }
+            safeCopy(text).then(() => {
                 const orig = btn.textContent;
                 btn.textContent = '✓ 복사됨!';
                 setTimeout(() => btn.textContent = orig, 1500);
