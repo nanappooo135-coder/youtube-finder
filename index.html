@@ -4249,53 +4249,55 @@ stock bgQuery 생성 후 자문:
 
 ---
 
-## overlayUpgrade 규칙 (선택 사항 — 수동 업그레이드 추천)
+## codeGenHint 규칙 (Remotion 커스텀 오버레이 코드 힌트)
 
-기본 overlays는 text_headline으로 두지만, **시청자에게 임팩트 있는 핵심 장면**에는 더 화려한 오버레이를 추천할 수 있다.
-사용자가 시간 여유 있을 때 셀팟에서 직접 그 장면의 오버레이 타입을 바꿀 수 있도록 **별도 가이드**로 제공.
+기본 overlays는 text_headline으로 두지만, **핵심 임팩트 장면**은 셀팟의 **"AI 코드 생성 모드 (React + Remotion)"** 으로 커스텀 애니메이션 오버레이를 생성한다.
+이 codeGenHint 필드는 **셀팟 AI가 Remotion 코드를 쓸 때 참고할 지시서**이다.
 
-### 추천 가능한 셀팟 오버레이 타입
+### 사용 가능한 Remotion 디자인 패턴 (셀팟 내장)
 
-| 타입 | 쓰는 경우 | data 형식 |
-|------|----------|-----------|
-| **versus_stat** | 좌우 비교 (A vs B) | { "left": "...", "right": "..." } |
-| **single_stat_card** | 큰 숫자 + 라벨 | { "number": "...", "label": "..." } |
-| **stat_change** | 변화 (X → Y) | { "from": "...", "to": "...", "label": "..." } |
-| **pie_donut** | 비율 시각화 | { "labels": [...], "values": [...] } |
-| **ranking_list** | 순위 (3~5개) | { "items": [{ "rank": 1, "name": "...", "value": "..." }] } |
+| pattern | 용도 | data 필드 |
+|---------|------|---------|
+| **HeroStat** | 거대한 숫자 하나 + 서브라벨 | { "value": "70%", "subLabel": "중동 의존도" } |
+| **DataStack** | 수치 2~3개 세로 나열 | { "items": [{"label":"GDP","value":"4.6%"}, {"label":"실업률","value":"3.2%"}] } |
+| **SplitCompare** | 좌우 VS 비교 | { "left": {"label":"미국","value":"70%"}, "right": {"label":"한국","value":"15%"} } |
+| **BarChart** | 막대 차트 (항목 비교) | { "items": [{"label":"중동","value":70}, {"label":"미국","value":16}, {"label":"기타","value":14}] } |
+| **Timeline** | 연도별 이벤트 노드 | { "events": [{"year":"1988","label":"하르게이사 폭격"}, {"year":"1991","label":"독립"}] } |
+| **Typography** | 굵은 텍스트 순차 등장 | { "words": ["예측", "불가능한", "거리"] } |
 
-### overlayUpgrade 작성 조건
+### codeGenHint 작성 조건 (핵심만 선별)
 
-다음 경우에만 추가:
-- **핵심 데이터·통계 장면** (그냥 텍스트보다 차트로 보면 임팩트 큼)
-- **명확한 비교/변화/순위가 있는 장면**
-- **시청자가 한눈에 인지하면 좋은 정보**
+다음 경우에만 추가 (전체 장면의 **15~25%**):
+1. **핵심 숫자 강조** (70%, 1조 6천억 원 등) → HeroStat
+2. **2~3개 수치 나열** (여러 지표 동시) → DataStack
+3. **좌우 비교** (A vs B, 이전 vs 이후) → SplitCompare
+4. **3~6개 항목 비교** (국가별·기업별 비율) → BarChart
+5. **연대기·단계적 사건** (3~5개 연도/단계) → Timeline
+6. **핵심 키워드 각인** (한 번에 강조하고 싶은 단어) → Typography
+
+### codeGenHint 필드 구조
+
+{ "pattern": "HeroStat" | "DataStack" | "SplitCompare" | "BarChart" | "Timeline" | "Typography",
+  "data": { (패턴별 형식) },
+  "emphasis": "강조 포인트 한 줄 설명 (선택)",
+  "animation": "spring" | "fade" | "sequential" (선택) }
 
 ### 예시
 
-**대본**: "미국은 70%, 한국은 15%"
-\`\`\`json
-{
-  "narration": "미국은 70%, 한국은 15%",
-  "bgSource": "stock",
-  "bgQuery": "world map shipping route",
-  "overlays": [
-    { "type": "text_headline", "data": { "text": "미국 70% vs 한국 15%" } }
-  ],
-  "overlayUpgrade": {
-    "type": "versus_stat",
-    "data": { "left": "미국 70%", "right": "한국 15%" }
-  }
-}
-\`\`\`
+**대본**: "한국의 중동 의존도 70%"
+{ "id": 8, "narration": "한국의 중동 의존도는 70%입니다", "bgSource": "ai", "aiPrompt": "...", "codeGenHint": { "pattern": "HeroStat", "data": { "value": "70%", "subLabel": "중동 의존도" }, "emphasis": "70% 수치 극대화", "animation": "spring" } }
 
-→ 자동 적용은 헤드라인 (자동화 100%)
-→ 수동 업그레이드 옵션은 versus_stat (별도 섹션에 표시)
+**대본**: "세계 10대 정유소 중 3곳이 한국"
+{ "id": 79, "codeGenHint": { "pattern": "BarChart", "data": { "items": [{"label":"한국","value":3}, {"label":"미국","value":2}, {"label":"인도","value":1}, {"label":"기타","value":4}] }, "emphasis": "한국 3곳 강조" } }
 
-### 사용 비중
+### 사용 원칙
 
-- **overlayUpgrade**: 전체 장면의 **10~20%만** (정말 임팩트 큰 장면)
-- 너무 많이 추가하면 사용자 부담 → 핵심만 선별
+- **15~25%만** 사용. 남발 금지.
+- 단순 정보 장면은 text_headline 유지.
+- 패턴별 data 형식 **정확히** 지킬 것 (셀팟 AI가 이 구조로 Remotion 코드 작성).
+- animation 생략 시 패턴별 기본값 적용.
+
+**⚠️ 중요**: codeGenHint가 있는 장면은 **overlays에서 text_headline 제거 금지**. Remotion 코드로 대체되는 게 아니라, fallback으로 공존함. 셀팟 AI가 코드 생성에 성공하면 Remotion이 우선, 실패하면 text_headline이 표시됨.
 
 ---
 
@@ -4697,12 +4699,24 @@ ${script}
                 const logoScenes = jsonObj.scenes.filter(s => s.needLogo === true && s.logoName);
 
                 // 🗺️ 지도 장면 — AI가 isMapScene 태그 누락 시 aiPrompt 키워드로 자동 감지 (fallback)
-                const MAP_KEYWORDS = /\b(map|peninsula|gulf|strait|route|canal|continent|ocean|shipping)\b/i;
+                // 강한 지도 신호가 있고 + 비교/차트/인포그래픽이 아닐 때만 태그
+                const MAP_STRONG = /\b(minimalist map|shipping route|world map|geographic map|animated map|map showing|map of|peninsula|strait|gulf of|the canal)\b/i;
+                const MAP_EXCLUDE = /\b(split screen|side-by-side|bar chart|donut chart|pie chart|line graph|infographic|pie_donut|flowchart)\b/i;
                 jsonObj.scenes.forEach(s => {
                     if (s.isMapScene === true) return;
-                    if (s.bgSource === 'ai' && typeof s.aiPrompt === 'string' && MAP_KEYWORDS.test(s.aiPrompt)) {
+                    if (s.bgSource !== 'ai' || typeof s.aiPrompt !== 'string') return;
+                    if (MAP_EXCLUDE.test(s.aiPrompt)) return;
+                    if (MAP_STRONG.test(s.aiPrompt)) {
                         s.isMapScene = true;
                         if (!Array.isArray(s.mapLabels)) s.mapLabels = [];
+                    }
+                });
+                // 스타일 prefix 자동 삽입 (일관된 수채화·문서풍 지도)
+                const MAP_STYLE_PREFIX = 'Stylized vintage watercolor documentary map illustration, muted earth tones, aged paper texture, cinematic composition, dark atmospheric background, 16:9. ';
+                jsonObj.scenes.forEach(s => {
+                    if (s.isMapScene !== true || typeof s.aiPrompt !== 'string') return;
+                    if (!s.aiPrompt.startsWith('Stylized vintage watercolor')) {
+                        s.aiPrompt = MAP_STYLE_PREFIX + s.aiPrompt;
                     }
                 });
                 const mapScenes = jsonObj.scenes.filter(s => s.isMapScene === true);
