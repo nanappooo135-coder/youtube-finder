@@ -10295,7 +10295,7 @@ Example format:
 
         let _econYtCache = {};
         let _econYtCacheTime = {};
-        const ECON_YT_CACHE_TTL = 10 * 60 * 1000;
+        const ECON_YT_CACHE_TTL = 30 * 60 * 1000; // 30분 캐시 (API 절약)
 
         async function fetchEconYoutube(forceRefresh = false) {
             const catEl = document.getElementById('econYtCategory');
@@ -10324,14 +10324,9 @@ Example format:
             timeEl.textContent = '';
 
             // YouTube API 키 확인
-            let apiKey = null;
-            if (typeof getActiveApiKey === 'function') {
-                try { apiKey = getActiveApiKey(); } catch(e) {}
-            }
-            if (!apiKey && typeof YOUTUBE_API_KEYS !== 'undefined' && YOUTUBE_API_KEYS.length) {
-                apiKey = YOUTUBE_API_KEYS[0];
-            }
-            if (!apiKey) {
+            const loadKeysFn = typeof loadApiKeys === 'function' ? loadApiKeys : null;
+            const allKeys = loadKeysFn ? loadKeysFn().filter(Boolean) : [];
+            if (!allKeys.length) {
                 loadingEl.style.display = 'none';
                 errorEl.style.display = '';
                 errorEl.innerHTML = 'YouTube API 키가 없어요. 주제찾기 탭의 API 키 설정에서 먼저 등록해주세요.';
@@ -10341,9 +10336,43 @@ Example format:
             const category = ECON_YT_CATEGORIES[cat];
             const publishedAfter = new Date(Date.now() - parseInt(period) * 24 * 60 * 60 * 1000).toISOString();
 
+            // 할당량 초과 시 다음 키로 자동 전환 helper
+            function isQuotaError(msg) {
+                return /quota|exceed|exceeded|usage limit|rate limit/i.test(msg || '');
+            }
+
+            async function tryApiCall(url) {
+                let lastErr = null;
+                for (let i = 0; i < allKeys.length; i++) {
+                    const activeIdx = getActiveKeyIdx();
+                    const key = allKeys[activeIdx] || allKeys[0];
+                    try {
+                        const res = await fetch(url + '&key=' + key);
+                        if (res.ok) return await res.json();
+                        const err = await res.json().catch(() => ({}));
+                        const msg = err.error?.message || 'HTTP ' + res.status;
+                        lastErr = new Error(msg);
+                        if (isQuotaError(msg) && typeof switchApiKey === 'function') {
+                            // 다음 키로 전환 시도
+                            if (!switchApiKey()) break; // 모든 키 소진
+                            continue; // 다음 반복에서 새 키 사용
+                        }
+                        throw lastErr;
+                    } catch(e) {
+                        lastErr = e;
+                        if (isQuotaError(e.message) && typeof switchApiKey === 'function') {
+                            if (!switchApiKey()) break;
+                            continue;
+                        }
+                        throw e;
+                    }
+                }
+                throw lastErr || new Error('모든 API 키 소진');
+            }
+
             try {
-                // 1. search.list로 영상 ID들 가져오기 (maxResults 50으로 늘려서 필터 후 충분히 남기)
-                const searchUrl = 'https://www.googleapis.com/youtube/v3/search?' + new URLSearchParams({
+                // 1. search.list (100 units, 가장 비쌈)
+                const searchUrlBase = 'https://www.googleapis.com/youtube/v3/search?' + new URLSearchParams({
                     part: 'snippet',
                     q: category.query,
                     type: 'video',
@@ -10351,16 +10380,10 @@ Example format:
                     relevanceLanguage: 'ko',
                     order: sort,
                     publishedAfter: publishedAfter,
-                    maxResults: '50',
-                    key: apiKey
+                    maxResults: '50'
                 });
 
-                const searchRes = await fetch(searchUrl);
-                if (!searchRes.ok) {
-                    const err = await searchRes.json().catch(() => ({}));
-                    throw new Error(err.error?.message || 'API 오류 ' + searchRes.status);
-                }
-                const searchData = await searchRes.json();
+                const searchData = await tryApiCall(searchUrlBase);
                 const videoIds = (searchData.items || []).map(it => it.id?.videoId).filter(Boolean);
                 if (!videoIds.length) {
                     loadingEl.style.display = 'none';
@@ -10369,18 +10392,12 @@ Example format:
                     return;
                 }
 
-                // 2. videos.list로 상세정보 (조회수, 길이 등) 가져오기
-                const videosUrl = 'https://www.googleapis.com/youtube/v3/videos?' + new URLSearchParams({
+                // 2. videos.list (1 unit, 저렴)
+                const videosUrlBase = 'https://www.googleapis.com/youtube/v3/videos?' + new URLSearchParams({
                     part: 'snippet,statistics,contentDetails',
-                    id: videoIds.join(','),
-                    key: apiKey
+                    id: videoIds.join(',')
                 });
-                const videosRes = await fetch(videosUrl);
-                if (!videosRes.ok) {
-                    const err = await videosRes.json().catch(() => ({}));
-                    throw new Error(err.error?.message || 'API 오류 ' + videosRes.status);
-                }
-                const videosData = await videosRes.json();
+                const videosData = await tryApiCall(videosUrlBase);
 
                 const videos = (videosData.items || []).map(v => {
                     const duration = parseIsoDuration(v.contentDetails?.duration);
@@ -10417,7 +10434,13 @@ Example format:
             } catch (e) {
                 loadingEl.style.display = 'none';
                 errorEl.style.display = '';
-                errorEl.innerHTML = '유튜브 API 오류: ' + e.message + '<br><small>할당량 초과일 수 있어요. 주제찾기 탭에서 다른 API 키로 교체해보세요.</small>';
+                if (/quota|exceed/i.test(e.message)) {
+                    errorEl.innerHTML = '⚠️ 모든 YouTube API 키 할당량 초과 (일일 10,000 units).<br>'
+                        + '<small>내일 초기화돼요. 빨리 쓰고 싶으면 <a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="color:#dc3545;font-weight:700;">새 API 키 발급</a> 후 주제찾기 탭에서 추가하세요.<br>'
+                        + '💡 search API는 1회당 100 units 먹어서 하루 100번 정도만 가능. 캐시(30분) 덕에 같은 조건 재조회는 API 소비 없음.</small>';
+                } else {
+                    errorEl.innerHTML = '유튜브 API 오류: ' + e.message;
+                }
             }
         }
 
