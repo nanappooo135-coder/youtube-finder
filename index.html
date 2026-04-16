@@ -10194,18 +10194,36 @@ Example format:
             const xml = parser.parseFromString(xmlText, 'text/xml');
             const items = xml.querySelectorAll('item');
             const trends = [];
+            // namespace 인식 헬퍼 (querySelector는 ht:* 같은 namespaced 태그를 못 찾음)
+            function findChildrenByLocalName(parent, localName) {
+                const result = [];
+                for (const child of parent.children) {
+                    if (child.localName === localName) result.push(child);
+                }
+                return result;
+            }
+            function findFirstChildText(parent, localName) {
+                for (const child of parent.children) {
+                    if (child.localName === localName) return (child.textContent || '').trim();
+                }
+                return '';
+            }
+            function decodeHtmlEntities(s) {
+                return s.replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+            }
+
             items.forEach((item, i) => {
-                const title = item.querySelector('title')?.textContent?.trim();
-                const traffic = item.querySelector('ht\\:approx_traffic, approx_traffic')?.textContent?.trim();
+                const title = findFirstChildText(item, 'title');
+                const traffic = findFirstChildText(item, 'approx_traffic');
                 // 여러 news_item 중 첫 번째 파싱
-                const newsItems = item.querySelectorAll('ht\\:news_item, news_item');
+                const newsItems = findChildrenByLocalName(item, 'news_item');
                 let newsTitle = '', newsUrl = '', newsSource = '', newsSnippet = '';
                 if (newsItems.length > 0) {
                     const first = newsItems[0];
-                    newsTitle = (first.querySelector('ht\\:news_item_title, news_item_title')?.textContent?.trim() || '').replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, '&');
-                    newsUrl = first.querySelector('ht\\:news_item_url, news_item_url')?.textContent?.trim() || '';
-                    newsSource = first.querySelector('ht\\:news_item_source, news_item_source')?.textContent?.trim() || '';
-                    newsSnippet = (first.querySelector('ht\\:news_item_snippet, news_item_snippet')?.textContent?.trim() || '').replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, '&');
+                    newsTitle = decodeHtmlEntities(findFirstChildText(first, 'news_item_title'));
+                    newsUrl = findFirstChildText(first, 'news_item_url');
+                    newsSource = findFirstChildText(first, 'news_item_source');
+                    newsSnippet = decodeHtmlEntities(findFirstChildText(first, 'news_item_snippet'));
                 }
                 if (title) trends.push({
                     rank: i + 1,
@@ -10456,7 +10474,27 @@ Example format:
 
                 if (!news || !news.length) {
                     errorEl.style.display = '';
-                    errorEl.innerHTML = '해당 키워드로 최근 뉴스가 없어요. 다른 카테고리를 선택해보세요.';
+                    const err = window._lastNaverNewsError;
+                    const naverSearchUrl = 'https://search.naver.com/search.naver?where=news&query=' + encodeURIComponent(query) + '&sort=1';
+
+                    if (err?.type === 'network') {
+                        // CORS 또는 네트워크 에러
+                        errorEl.innerHTML = '⚠️ <b>브라우저에서 Naver API가 차단됐어요</b> (CORS 정책).<br>'
+                            + '<small>Naver OpenAPI는 원래 서버 호출용이라 브라우저에서 직접 호출이 막혀있어요.<br>'
+                            + '대안: <a href="' + naverSearchUrl + '" target="_blank" style="color:#03c75a;font-weight:700;">→ 네이버 뉴스 최신순으로 직접 이동</a><br>'
+                            + '에러 상세: ' + err.message + '</small>';
+                    } else if (err?.type === 'http') {
+                        // 401 = 인증 실패, 403 = 차단, 429 = 한도 초과
+                        let msg = 'Naver API 응답: HTTP ' + err.code;
+                        if (err.code === 401) msg = '⚠️ <b>API 키 인증 실패</b> (HTTP 401). Client ID 또는 Secret이 잘못됐어요. 다시 확인해주세요.';
+                        else if (err.code === 403) msg = '⚠️ <b>API 사용 권한 없음</b> (HTTP 403). Naver Developers에서 "검색" API를 사용 설정 했는지 확인하세요.';
+                        else if (err.code === 429) msg = '⚠️ <b>일일 사용 한도 초과</b> (HTTP 429). 25,000회/일 한도 다 썼거나 너무 많이 호출됨.';
+                        errorEl.innerHTML = msg + '<br><small>' + (err.message || '') + '</small>';
+                    } else {
+                        // 진짜 0 결과
+                        errorEl.innerHTML = '해당 키워드로 최근 뉴스가 없어요. 다른 카테고리를 선택해보세요.<br>'
+                            + '<a href="' + naverSearchUrl + '" target="_blank" style="color:#03c75a;font-weight:700;">→ 네이버 뉴스에서 직접 검색</a>';
+                    }
                     return;
                 }
 
@@ -10467,12 +10505,7 @@ Example format:
             } catch (e) {
                 loadingEl.style.display = 'none';
                 errorEl.style.display = '';
-                if (/CORS|fetch|Network/i.test(e.message)) {
-                    errorEl.innerHTML = '⚠️ 브라우저에서 Naver API 직접 호출이 차단됐어요 (CORS).<br>'
-                        + '<small>Naver API는 원래 서버사이드용이라 브라우저에서 제한이 있어요. 아래 빠른 링크로 <a href="https://search.naver.com/search.naver?where=news&query=' + encodeURIComponent(query) + '&sort=1" target="_blank" style="color:#03c75a;font-weight:700;">네이버 뉴스 최신순</a>으로 이동해서 확인하세요.</small>';
-                } else {
-                    errorEl.innerHTML = 'Naver API 오류: ' + e.message;
-                }
+                errorEl.innerHTML = 'Naver API 오류: ' + e.message;
             }
         }
 
@@ -10867,6 +10900,8 @@ Example format:
 
         // Naver News Search API (CORS 허용, 안정적)
         async function fetchNaverNewsSearch(query, clientId, clientSecret) {
+            // 에러 정보를 외부에서 확인할 수 있도록 마지막 에러 저장
+            window._lastNaverNewsError = null;
             try {
                 const url = 'https://openapi.naver.com/v1/search/news.json?display=30&sort=date&query=' + encodeURIComponent(query);
                 const res = await fetch(url, {
@@ -10875,9 +10910,20 @@ Example format:
                         'X-Naver-Client-Secret': clientSecret
                     }
                 });
-                if (!res.ok) return null;
+                if (!res.ok) {
+                    let errMsg = 'HTTP ' + res.status;
+                    try {
+                        const errData = await res.json();
+                        errMsg = errData.errorMessage || errData.message || errMsg;
+                    } catch (e) {}
+                    window._lastNaverNewsError = { type: 'http', code: res.status, message: errMsg };
+                    return null;
+                }
                 const data = await res.json();
-                if (!data.items || !data.items.length) return null;
+                if (!data.items || !data.items.length) {
+                    window._lastNaverNewsError = { type: 'empty', message: '검색 결과 0건' };
+                    return null;
+                }
 
                 return data.items.map(it => {
                     const title = cleanNewsTitle(stripHtmlTags(it.title || ''));
@@ -10899,6 +10945,8 @@ Example format:
                     };
                 }).filter(n => n.title && n.link);
             } catch (e) {
+                // CORS, network 에러
+                window._lastNaverNewsError = { type: 'network', message: e.message };
                 return null;
             }
         }
