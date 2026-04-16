@@ -10425,27 +10425,70 @@ Example format:
 
             // === 1차: GitHub Actions가 만든 news.json 시도 ===
             // (CORS 없음, 자동 갱신, 가장 안정적)
-            if (cat !== 'custom') {
-                try {
-                    const cacheBuster = forceRefresh ? '?t=' + Date.now() : '?v=12';
-                    const res = await fetch('news.json' + cacheBuster);
-                    if (res.ok) {
-                        const data = await res.json();
-                        const catData = data.categories?.[cat];
-                        if (catData && catData.news && catData.news.length) {
+            try {
+                const cacheBuster = forceRefresh ? '?t=' + Date.now() : '?v=12';
+                const res = await fetch('news.json' + cacheBuster);
+                if (res.ok) {
+                    const data = await res.json();
+
+                    // 커스텀: 내 채널 키워드로 모든 카테고리에서 필터
+                    if (cat === 'custom') {
+                        const channelKeywords = (document.getElementById('channelKeywords')?.value || '').trim();
+                        if (!channelKeywords) {
                             loadingEl.style.display = 'none';
-                            errorEl.style.display = 'none';
-                            if (badgeEl) {
-                                badgeEl.style.display = '';
-                                badgeEl.textContent = '자동 갱신';
-                                badgeEl.style.background = '#10b981';
-                            }
-                            renderIssueRadar(catData.news, data.generated_at);
+                            errorEl.style.display = '';
+                            errorEl.innerHTML = '⚠️ 주제찾기 탭에서 <b>핵심 키워드</b>를 먼저 저장해주세요.';
                             return;
                         }
+                        const kws = channelKeywords.split(/[,，\s]+/).filter(Boolean).map(k => k.trim());
+                        // 모든 카테고리 뉴스 합치기 + 중복 제거 + 키워드 매칭
+                        const allNews = [];
+                        const seenLinks = new Set();
+                        Object.values(data.categories || {}).forEach(c => {
+                            (c.news || []).forEach(n => {
+                                if (seenLinks.has(n.link)) return;
+                                seenLinks.add(n.link);
+                                // 제목에 채널 키워드 중 하나라도 포함되면 수집
+                                if (kws.some(kw => n.title.includes(kw))) {
+                                    allNews.push(n);
+                                }
+                            });
+                        });
+                        allNews.sort((a, b) => b.pubTimestamp - a.pubTimestamp);
+                        const filtered = allNews.slice(0, 30);
+
+                        loadingEl.style.display = 'none';
+                        if (!filtered.length) {
+                            errorEl.style.display = '';
+                            errorEl.innerHTML = '채널 키워드(' + kws.join(', ') + ')와 매칭되는 최근 뉴스가 없어요.<br>'
+                                + '<small>키워드가 너무 특수하면 매칭 뉴스가 없을 수 있어요. 주제찾기 탭에서 키워드를 더 일반적으로 바꿔보세요.</small>';
+                            return;
+                        }
+                        errorEl.style.display = 'none';
+                        if (badgeEl) {
+                            badgeEl.style.display = '';
+                            badgeEl.textContent = '내 키워드: ' + kws.slice(0, 3).join('/') + (kws.length > 3 ? '...' : '');
+                            badgeEl.style.background = '#8b5cf6';
+                        }
+                        renderIssueRadar(filtered, data.generated_at);
+                        return;
                     }
-                } catch (e) { /* fallback to direct API */ }
-            }
+
+                    // 일반 카테고리
+                    const catData = data.categories?.[cat];
+                    if (catData && catData.news && catData.news.length) {
+                        loadingEl.style.display = 'none';
+                        errorEl.style.display = 'none';
+                        if (badgeEl) {
+                            badgeEl.style.display = '';
+                            badgeEl.textContent = '자동 갱신';
+                            badgeEl.style.background = '#10b981';
+                        }
+                        renderIssueRadar(catData.news, data.generated_at);
+                        return;
+                    }
+                }
+            } catch (e) { /* fallback to direct API */ }
 
             // === 2차: 사용자 Naver 키로 직접 호출 (CORS 차단되면 실패) ===
             // 커스텀: 내 채널 키워드 사용
