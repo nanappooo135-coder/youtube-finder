@@ -10189,20 +10189,21 @@ Example format:
         // 실시간 경제 뉴스 (Google News RSS 기반)
         // ===========================
         const ECON_NEWS_CATEGORIES = {
-            econ:   { name: '경제',       query: '한국 경제 OR 코스피 OR 환율 OR 금리' },
-            stock:  { name: '주식',       query: '주식 OR 증시 OR 코스피 OR 코스닥 OR 종목' },
-            real:   { name: '부동산',     query: '부동산 OR 아파트 OR 전세 OR 매매 OR 분양' },
-            global: { name: '글로벌',     query: '미국 경제 OR 연준 OR FOMC OR 달러 OR 중국 경제 OR 일본 경제' },
-            policy: { name: '금융정책',   query: '한국은행 OR 기준금리 OR 금융위원회 OR 기획재정부 OR 재정정책' },
-            crypto: { name: '암호화폐',   query: '비트코인 OR 이더리움 OR 가상화폐 OR 암호화폐 OR 코인 규제' }
+            econ:   { name: '경제',       query: '경제' },
+            stock:  { name: '주식',       query: '주식 증시' },
+            real:   { name: '부동산',     query: '부동산' },
+            global: { name: '글로벌',     query: '미국경제 연준' },
+            policy: { name: '금융정책',   query: '한국은행 기준금리' },
+            crypto: { name: '암호화폐',   query: '비트코인 코인' }
         };
 
         let _econNewsCache = {};
         let _econNewsCacheTime = {};
         const ECON_NEWS_CACHE_TTL = 5 * 60 * 1000;
 
-        function buildGoogleNewsRssUrl(query, hours = 24) {
-            const q = encodeURIComponent(query + ' when:' + hours + 'h');
+        function buildGoogleNewsRssUrl(query) {
+            // when: 필터 제거 (쿼리 복잡도 낮춰서 프록시 통과율 높임)
+            const q = encodeURIComponent(query);
             return 'https://news.google.com/rss/search?q=' + q + '&hl=ko&gl=KR&ceid=KR:ko';
         }
 
@@ -10226,14 +10227,17 @@ Example format:
             timeEl.textContent = '';
 
             const category = ECON_NEWS_CATEGORIES[cat];
-            const rssUrl = buildGoogleNewsRssUrl(category.query, 24);
+            const rssUrl = buildGoogleNewsRssUrl(category.query);
             const news = await fetchGoogleNewsRss(rssUrl);
 
             loadingEl.style.display = 'none';
 
             if (!news || !news.length) {
                 errorEl.style.display = '';
-                errorEl.innerHTML = '뉴스를 불러올 수 없습니다. 잠시 후 새로고침을 눌러주세요.';
+                const dbg = (window._econNewsDebug || []).map(d => d.proxy + ': ' + (d.error || 'items=' + d.items)).join(' | ');
+                errorEl.innerHTML = '뉴스를 불러올 수 없습니다. 브라우저 확장(광고차단/프라이버시) 때문일 수 있어요.<br>'
+                    + '<a href="https://news.google.com/search?q=' + encodeURIComponent(category.query) + '&hl=ko&gl=KR" target="_blank" style="color:#2b6cb0;font-weight:700;">→ Google News에서 직접 보기</a>'
+                    + '<div style="font-size:0.75rem;color:#888;margin-top:8px;word-break:break-all;">디버그: ' + (dbg || 'N/A') + '</div>';
                 return;
             }
 
@@ -10242,61 +10246,105 @@ Example format:
             renderEconNews(news);
         }
 
-        async function fetchGoogleNewsRss(rssUrl) {
-            // 1차: rss2json.com (RSS → JSON 변환 API, 무료 무인증)
-            try {
-                const ctrl = new AbortController();
-                const tid = setTimeout(() => ctrl.abort(), 10000);
-                const apiUrl = 'https://api.rss2json.com/v1/api.json?count=30&rss_url=' + encodeURIComponent(rssUrl);
-                const res = await fetch(apiUrl, { signal: ctrl.signal });
-                clearTimeout(tid);
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.status === 'ok' && data.items && data.items.length) {
-                        const news = data.items.map(it => {
-                            let title = cleanNewsTitle(it.title || '');
-                            let sourceName = it.author || '';
-                            // 제목에서 "... - 매체명" 형식 분리
-                            const dashMatch = title.match(/^(.+?)\s+-\s+([^-]+)$/);
-                            if (!sourceName && dashMatch) {
-                                title = dashMatch[1].trim();
-                                sourceName = dashMatch[2].trim();
-                            } else if (sourceName) {
-                                const esc = sourceName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                                title = title.replace(new RegExp('\\s+-\\s+' + esc + '$'), '').trim();
-                            }
-                            const ts = it.pubDate ? new Date(it.pubDate).getTime() : Date.now();
-                            return {
-                                title,
-                                link: it.link,
-                                pubDate: it.pubDate,
-                                pubTimestamp: isNaN(ts) ? Date.now() : ts,
-                                sourceName: sourceName || '뉴스'
-                            };
-                        }).filter(n => n.title && n.link);
-                        news.sort((a, b) => b.pubTimestamp - a.pubTimestamp);
-                        if (news.length) return news.slice(0, 30);
-                    }
-                }
-            } catch (e) { /* 프록시 폴백 */ }
+        // 여러 CORS 프록시 (순차 fallback)
+        const NEWS_PROXIES = [
+            { name: 'rss2json', fn: url => 'https://api.rss2json.com/v1/api.json?count=30&rss_url=' + encodeURIComponent(url), type: 'json' },
+            { name: 'allorigins-raw', fn: url => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url), type: 'xml' },
+            { name: 'allorigins-get', fn: url => 'https://api.allorigins.win/get?url=' + encodeURIComponent(url), type: 'allorigins-wrap' },
+            { name: 'corsproxy.io', fn: url => 'https://corsproxy.io/?' + encodeURIComponent(url), type: 'xml' },
+            { name: 'codetabs', fn: url => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url), type: 'xml' }
+        ];
 
-            // 2차: CORS 프록시로 RSS 직접 파싱
-            let xmlText = null;
-            for (const proxyFn of CORS_PROXIES) {
+        // 디버깅용 로그 (콘솔에만)
+        window._econNewsDebug = [];
+
+        async function fetchGoogleNewsRss(rssUrl) {
+            window._econNewsDebug = [];
+
+            for (const proxy of NEWS_PROXIES) {
                 try {
                     const ctrl = new AbortController();
-                    const tid = setTimeout(() => ctrl.abort(), 10000);
-                    const res = await fetch(proxyFn(rssUrl), { signal: ctrl.signal });
+                    const tid = setTimeout(() => ctrl.abort(), 12000);
+                    const res = await fetch(proxy.fn(rssUrl), { signal: ctrl.signal });
                     clearTimeout(tid);
-                    if (res.ok) {
-                        xmlText = await res.text();
-                        if (xmlText && xmlText.includes('<item')) break;
-                        xmlText = null;
-                    }
-                } catch (e) { /* 다음 프록시 */ }
-            }
-            if (!xmlText) return null;
 
+                    const logEntry = { proxy: proxy.name, status: res.status };
+
+                    if (!res.ok) {
+                        logEntry.error = 'HTTP ' + res.status;
+                        window._econNewsDebug.push(logEntry);
+                        continue;
+                    }
+
+                    // 타입에 따라 처리
+                    if (proxy.type === 'json') {
+                        const data = await res.json();
+                        if (data.status === 'ok' && data.items && data.items.length) {
+                            logEntry.items = data.items.length;
+                            window._econNewsDebug.push(logEntry);
+                            return parseRss2JsonData(data.items);
+                        }
+                        logEntry.error = data.message || 'No items';
+                    } else if (proxy.type === 'allorigins-wrap') {
+                        const data = await res.json();
+                        if (data && data.contents) {
+                            const news = parseRssXml(data.contents);
+                            if (news && news.length) {
+                                logEntry.items = news.length;
+                                window._econNewsDebug.push(logEntry);
+                                return news;
+                            }
+                        }
+                        logEntry.error = 'Empty contents';
+                    } else {
+                        // xml
+                        const text = await res.text();
+                        if (text && text.includes('<item')) {
+                            const news = parseRssXml(text);
+                            if (news && news.length) {
+                                logEntry.items = news.length;
+                                window._econNewsDebug.push(logEntry);
+                                return news;
+                            }
+                        }
+                        logEntry.error = 'No <item> tags';
+                    }
+                    window._econNewsDebug.push(logEntry);
+                } catch (e) {
+                    window._econNewsDebug.push({ proxy: proxy.name, error: e.message });
+                }
+            }
+
+            console.warn('[EconNews] All proxies failed:', window._econNewsDebug);
+            return null;
+        }
+
+        function parseRss2JsonData(items) {
+            const news = items.map(it => {
+                let title = cleanNewsTitle(it.title || '');
+                let sourceName = it.author || '';
+                const dashMatch = title.match(/^(.+?)\s+-\s+([^-]+)$/);
+                if (!sourceName && dashMatch) {
+                    title = dashMatch[1].trim();
+                    sourceName = dashMatch[2].trim();
+                } else if (sourceName) {
+                    const esc = sourceName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    title = title.replace(new RegExp('\\s+-\\s+' + esc + '$'), '').trim();
+                }
+                const ts = it.pubDate ? new Date(it.pubDate).getTime() : Date.now();
+                return {
+                    title,
+                    link: it.link,
+                    pubDate: it.pubDate,
+                    pubTimestamp: isNaN(ts) ? Date.now() : ts,
+                    sourceName: sourceName || '뉴스'
+                };
+            }).filter(n => n.title && n.link);
+            news.sort((a, b) => b.pubTimestamp - a.pubTimestamp);
+            return news.slice(0, 30);
+        }
+
+        function parseRssXml(xmlText) {
             try {
                 const parser = new DOMParser();
                 const xml = parser.parseFromString(xmlText, 'text/xml');
