@@ -10243,6 +10243,44 @@ Example format:
         }
 
         async function fetchGoogleNewsRss(rssUrl) {
+            // 1차: rss2json.com (RSS → JSON 변환 API, 무료 무인증)
+            try {
+                const ctrl = new AbortController();
+                const tid = setTimeout(() => ctrl.abort(), 10000);
+                const apiUrl = 'https://api.rss2json.com/v1/api.json?count=30&rss_url=' + encodeURIComponent(rssUrl);
+                const res = await fetch(apiUrl, { signal: ctrl.signal });
+                clearTimeout(tid);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.status === 'ok' && data.items && data.items.length) {
+                        const news = data.items.map(it => {
+                            let title = cleanNewsTitle(it.title || '');
+                            let sourceName = it.author || '';
+                            // 제목에서 "... - 매체명" 형식 분리
+                            const dashMatch = title.match(/^(.+?)\s+-\s+([^-]+)$/);
+                            if (!sourceName && dashMatch) {
+                                title = dashMatch[1].trim();
+                                sourceName = dashMatch[2].trim();
+                            } else if (sourceName) {
+                                const esc = sourceName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                                title = title.replace(new RegExp('\\s+-\\s+' + esc + '$'), '').trim();
+                            }
+                            const ts = it.pubDate ? new Date(it.pubDate).getTime() : Date.now();
+                            return {
+                                title,
+                                link: it.link,
+                                pubDate: it.pubDate,
+                                pubTimestamp: isNaN(ts) ? Date.now() : ts,
+                                sourceName: sourceName || '뉴스'
+                            };
+                        }).filter(n => n.title && n.link);
+                        news.sort((a, b) => b.pubTimestamp - a.pubTimestamp);
+                        if (news.length) return news.slice(0, 30);
+                    }
+                }
+            } catch (e) { /* 프록시 폴백 */ }
+
+            // 2차: CORS 프록시로 RSS 직접 파싱
             let xmlText = null;
             for (const proxyFn of CORS_PROXIES) {
                 try {
@@ -10271,8 +10309,6 @@ Example format:
                     const sourceEl = item.querySelector('source');
                     let sourceName = sourceEl?.textContent?.trim() || '';
 
-                    // Google News는 제목에 "...  - 매체명" 형식으로 소스 포함
-                    // source 태그가 없으면 제목에서 추출
                     if (!sourceName) {
                         const dashMatch = title.match(/^(.+?)\s+-\s+([^-]+)$/);
                         if (dashMatch) {
@@ -10280,7 +10316,6 @@ Example format:
                             sourceName = dashMatch[2].trim();
                         }
                     } else {
-                        // source가 있으면 제목에서 매체명 부분 제거
                         const esc = sourceName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                         title = title.replace(new RegExp('\\s+-\\s+' + esc + '$'), '').trim();
                     }
@@ -10296,7 +10331,6 @@ Example format:
                         });
                     }
                 });
-                // 시간 역순 정렬
                 news.sort((a, b) => b.pubTimestamp - a.pubTimestamp);
                 return news.slice(0, 30);
             } catch (e) {
