@@ -2580,12 +2580,13 @@
                 <div class="section-content">
                     <p style="font-size:0.85rem;color:#888;margin-bottom:12px;">
                         경제 뉴스 헤드라인 — <b>제목 클릭</b>하면 유튜브 검색, <b>📄 기사</b> 클릭하면 원문 새창.
+                        <span id="econNewsSourceBadge" style="display:none;margin-left:8px;padding:2px 8px;background:#03c75a;color:white;border-radius:4px;font-size:0.75rem;font-weight:700;">Naver API</span>
                     </p>
                     <div id="econNewsLoading" style="display:none;text-align:center;padding:20px;color:#888;">
                         <div class="trend-spinner"></div>
                         불러오는 중...
                     </div>
-                    <div id="econNewsError" style="display:none;padding:16px;background:#fff5f5;border:1px solid #ffe0e0;border-radius:10px;color:#dc3545;font-size:0.9rem;"></div>
+                    <div id="econNewsError" style="display:none;padding:16px;background:#fff5f5;border:1px solid #ffe0e0;border-radius:10px;color:#dc3545;font-size:0.9rem;line-height:1.6;"></div>
                     <div id="econNewsList"></div>
                     <p id="econNewsTime" style="font-size:0.8rem;color:#aaa;margin-top:8px;text-align:right;"></p>
                 </div>
@@ -10227,17 +10228,38 @@ Example format:
             timeEl.textContent = '';
 
             const category = ECON_NEWS_CATEGORIES[cat];
-            const rssUrl = buildGoogleNewsRssUrl(category.query);
-            const news = await fetchGoogleNewsRss(rssUrl);
+            let news = null;
+
+            // 1차: Naver News Search API (Naver 키 있을 때, 가장 안정적)
+            const naverCid = localStorage.getItem('naver_client_id');
+            const naverSecret = localStorage.getItem('naver_client_secret');
+            const badgeEl = document.getElementById('econNewsSourceBadge');
+            let usedNaver = false;
+            if (naverCid && naverSecret) {
+                news = await fetchNaverNewsSearch(category.query, naverCid, naverSecret);
+                if (news && news.length) usedNaver = true;
+            }
+
+            // 2차: Google News RSS (프록시 경유)
+            if (!news || !news.length) {
+                const rssUrl = buildGoogleNewsRssUrl(category.query);
+                news = await fetchGoogleNewsRss(rssUrl);
+            }
+
+            if (badgeEl) {
+                badgeEl.style.display = usedNaver ? '' : 'none';
+                badgeEl.textContent = usedNaver ? 'Naver API' : 'Google News';
+                badgeEl.style.background = usedNaver ? '#03c75a' : '#4285f4';
+            }
 
             loadingEl.style.display = 'none';
 
             if (!news || !news.length) {
                 errorEl.style.display = '';
-                const dbg = (window._econNewsDebug || []).map(d => d.proxy + ': ' + (d.error || 'items=' + d.items)).join(' | ');
-                errorEl.innerHTML = '뉴스를 불러올 수 없습니다. 브라우저 확장(광고차단/프라이버시) 때문일 수 있어요.<br>'
-                    + '<a href="https://news.google.com/search?q=' + encodeURIComponent(category.query) + '&hl=ko&gl=KR" target="_blank" style="color:#2b6cb0;font-weight:700;">→ Google News에서 직접 보기</a>'
-                    + '<div style="font-size:0.75rem;color:#888;margin-top:8px;word-break:break-all;">디버그: ' + (dbg || 'N/A') + '</div>';
+                const hasNaver = naverCid && naverSecret;
+                errorEl.innerHTML = '뉴스를 불러올 수 없습니다.<br>'
+                    + (hasNaver ? '' : '<b style="color:#03c75a;">💡 팁:</b> 아래 <b>Naver 키워드 트렌드 비교</b> 섹션에서 Naver API 키를 저장하면 뉴스가 안정적으로 불러와집니다.<br>')
+                    + '<a href="https://search.naver.com/search.naver?where=news&query=' + encodeURIComponent(category.query) + '&sort=1" target="_blank" style="color:#03c75a;font-weight:700;">→ 네이버 뉴스에서 직접 검색</a>';
                 return;
             }
 
@@ -10245,6 +10267,80 @@ Example format:
             _econNewsCacheTime[cacheKey] = Date.now();
             renderEconNews(news);
         }
+
+        // Naver News Search API (CORS 허용, 안정적)
+        async function fetchNaverNewsSearch(query, clientId, clientSecret) {
+            try {
+                const url = 'https://openapi.naver.com/v1/search/news.json?display=30&sort=date&query=' + encodeURIComponent(query);
+                const res = await fetch(url, {
+                    headers: {
+                        'X-Naver-Client-Id': clientId,
+                        'X-Naver-Client-Secret': clientSecret
+                    }
+                });
+                if (!res.ok) return null;
+                const data = await res.json();
+                if (!data.items || !data.items.length) return null;
+
+                return data.items.map(it => {
+                    const title = cleanNewsTitle(stripHtmlTags(it.title || ''));
+                    const link = it.originallink || it.link;
+                    const pubDate = it.pubDate;
+                    const ts = pubDate ? new Date(pubDate).getTime() : Date.now();
+                    // 링크에서 도메인 추출 → 매체명으로 사용
+                    let sourceName = '뉴스';
+                    try {
+                        const host = new URL(link).hostname.replace(/^www\./, '');
+                        sourceName = PRESS_DOMAIN_MAP[host] || host.split('.')[0].toUpperCase();
+                    } catch(e) {}
+                    return {
+                        title,
+                        link,
+                        pubDate,
+                        pubTimestamp: isNaN(ts) ? Date.now() : ts,
+                        sourceName
+                    };
+                }).filter(n => n.title && n.link);
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function stripHtmlTags(s) { return s.replace(/<[^>]+>/g, ''); }
+
+        // 도메인 → 매체명 매핑 (주요 경제 매체)
+        const PRESS_DOMAIN_MAP = {
+            'yna.co.kr': '연합뉴스',
+            'yonhapnewstv.co.kr': '연합뉴스TV',
+            'hankyung.com': '한국경제',
+            'mk.co.kr': '매일경제',
+            'edaily.co.kr': '이데일리',
+            'sedaily.com': '서울경제',
+            'mt.co.kr': '머니투데이',
+            'news.mt.co.kr': '머니투데이',
+            'chosun.com': '조선일보',
+            'biz.chosun.com': '조선비즈',
+            'donga.com': '동아일보',
+            'joongang.co.kr': '중앙일보',
+            'hani.co.kr': '한겨레',
+            'kmib.co.kr': '국민일보',
+            'khan.co.kr': '경향신문',
+            'nocutnews.co.kr': '노컷뉴스',
+            'ohmynews.com': '오마이뉴스',
+            'kbs.co.kr': 'KBS',
+            'news.kbs.co.kr': 'KBS',
+            'imbc.com': 'MBC',
+            'sbs.co.kr': 'SBS',
+            'ytn.co.kr': 'YTN',
+            'mbn.co.kr': 'MBN',
+            'fnnews.com': '파이낸셜뉴스',
+            'biz.heraldcorp.com': '헤럴드경제',
+            'heraldcorp.com': '헤럴드',
+            'news1.kr': '뉴스1',
+            'newsis.com': '뉴시스',
+            'zdnet.co.kr': 'ZDNet',
+            'etnews.com': '전자신문'
+        };
 
         // 여러 CORS 프록시 (순차 fallback)
         const NEWS_PROXIES = [
