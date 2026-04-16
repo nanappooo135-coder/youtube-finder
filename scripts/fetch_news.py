@@ -13,16 +13,55 @@ import urllib.parse
 from datetime import datetime, timezone, timedelta
 
 # 카테고리 설정
-# Naver Search API는 OR 연산자 지원 안 함 → 단일 키워드 또는 여러 키워드 합성 (다중 호출 후 병합)
-# 각 카테고리별로 여러 단일 키워드를 호출해서 결과 합치고 시간순 정렬
+# Naver Search API는 OR 연산자 지원 안 함 → 단일 키워드 다중 호출 후 병합
+# exclude: 제목/링크에 이 키워드 있으면 제외 (클러터 제거)
 CATEGORIES = {
-    "econ":   {"name": "경제 전반",   "queries": ["경제뉴스", "경제전망", "한국경제"]},
-    "stock":  {"name": "주식/증시",   "queries": ["코스피", "코스닥", "증시"]},
-    "real":   {"name": "부동산",      "queries": ["부동산", "아파트", "집값"]},
-    "global": {"name": "글로벌",      "queries": ["미국경제", "연준", "환율", "중국경제"]},
-    "policy": {"name": "금융정책",    "queries": ["한국은행", "기준금리", "통화정책"]},
-    "crypto": {"name": "암호화폐",    "queries": ["비트코인", "이더리움", "암호화폐"]},
+    "econ": {
+        "name": "경제 전반",
+        "queries": ["경제뉴스", "경제전망", "한국경제"],
+        "exclude": ["부고", "별세", "장인상", "출마", "시장님", "시장 출마", "의원 출마", "광고", "부동산"],
+    },
+    "stock": {
+        "name": "주식/증시",
+        "queries": ["코스피", "코스닥", "증시", "주식시장"],
+        "exclude": ["부고", "별세"],
+    },
+    "real": {
+        "name": "부동산",
+        "queries": ["부동산시장", "아파트 매매", "집값", "전세값", "분양"],
+        "exclude": ["부고", "별세", "출마"],
+    },
+    "global": {
+        "name": "글로벌",
+        "queries": ["FOMC", "미국 증시", "다우존스", "나스닥", "국제유가", "중국 GDP", "일본은행"],
+        "exclude": [
+            # 한국 종목/은행/기업 제외 (글로벌 카테고리 오염 방지)
+            "코스피", "코스닥", "삼성전자", "현대차", "SK하이닉스", "LG에너지",
+            "부산은행", "경남은행", "수출입은행", "BNK", "KB국민", "신한은행", "우리은행", "하나은행",
+            "부고", "별세", "출마",
+        ],
+    },
+    "policy": {
+        "name": "금융정책",
+        "queries": ["한국은행 금리", "기준금리 인상", "통화정책", "금융위원회", "기획재정부"],
+        "exclude": ["부고", "별세"],
+    },
+    "crypto": {
+        "name": "암호화폐",
+        "queries": ["비트코인", "이더리움", "가상화폐", "알트코인"],
+        "exclude": ["부고", "별세"],
+    },
 }
+
+
+def should_exclude(title: str, exclude_keywords: list) -> bool:
+    """제목에 제외 키워드가 있으면 True 반환"""
+    if not exclude_keywords:
+        return False
+    for kw in exclude_keywords:
+        if kw in title:
+            return True
+    return False
 
 # 도메인 → 매체명 매핑
 PRESS_MAP = {
@@ -127,20 +166,24 @@ def main():
 
     for key, cat in CATEGORIES.items():
         queries = cat.get("queries", [cat.get("query", "")])
-        print(f"  · {cat['name']} - 키워드 {len(queries)}개")
+        exclude_keywords = cat.get("exclude", [])
+        print(f"  · {cat['name']} - 키워드 {len(queries)}개, 제외 {len(exclude_keywords)}개")
         all_news = []
         seen_links = set()
+        excluded_count = 0
 
         for q in queries:
             print(f"    → '{q}' 검색 중...")
             news = fetch_naver_news(q, cid, secret, display=20)
             if news:
-                # 7일 이내 + 중복 제거
                 for item in news:
                     if item["pubTimestamp"] < week_ago_ms:
                         continue  # 너무 오래된 뉴스 스킵
                     if item["link"] in seen_links:
                         continue  # 중복 스킵
+                    if should_exclude(item["title"], exclude_keywords):
+                        excluded_count += 1
+                        continue  # 카테고리 exclude 필터
                     seen_links.add(item["link"])
                     all_news.append(item)
             time.sleep(0.3)  # API rate limit 보호
@@ -154,7 +197,7 @@ def main():
             "queries": queries,
             "news": all_news,
         }
-        print(f"    ✓ {len(all_news)}건 (최근 7일 이내, 중복 제거)")
+        print(f"    ✓ {len(all_news)}건 수집 (제외 {excluded_count}건, 7일 이내)")
 
     # news.json 저장 (저장소 루트)
     output_path = os.path.join(os.path.dirname(__file__), "..", "news.json")
