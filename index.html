@@ -1201,6 +1201,57 @@
         #procBtn_trend:not(.inactive) { background: #ff6b00 !important; color: white !important; border-color: #ff6b00 !important; }
         @media (max-width: 600px) { .trend-grid { grid-template-columns: 1fr; } }
 
+        /* === Trend Card V2 (뉴스 컨텍스트 포함) === */
+        .trend-card-v2 {
+            padding: 12px 14px;
+            border: 2px solid #f0f0f0;
+            border-radius: 12px;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            transition: border-color 0.2s;
+        }
+        .trend-card-v2:hover { border-color: #ff6b00; }
+        .trend-card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .trend-news-reason {
+            font-size: 0.8rem;
+            color: #555;
+            line-height: 1.4;
+            padding: 6px 8px;
+            background: #f9f9f9;
+            border-radius: 6px;
+            border-left: 3px solid #ff6b00;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .trend-actions {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+        .trend-action-btn {
+            padding: 5px 10px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            border-radius: 6px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.15s;
+        }
+        .trend-news-btn { background: #fff5ee; color: #ff6b00; border-color: #ffcc99; }
+        .trend-news-btn:hover { background: #ff6b00; color: white; border-color: #ff6b00; }
+        .trend-yt-btn { background: #fef2f2; color: #dc3545; border-color: #f5b7bd; }
+        .trend-yt-btn:hover { background: #dc3545; color: white; border-color: #dc3545; }
+        .trend-search-btn { background: #f0f7ff; color: #2b6cb0; border-color: #bfdbfe; }
+        .trend-search-btn:hover { background: #2b6cb0; color: white; border-color: #2b6cb0; }
+
         /* === Econ News === */
         .econ-news-item {
             display: flex;
@@ -10146,8 +10197,26 @@ Example format:
             items.forEach((item, i) => {
                 const title = item.querySelector('title')?.textContent?.trim();
                 const traffic = item.querySelector('ht\\:approx_traffic, approx_traffic')?.textContent?.trim();
-                const newsTitle = item.querySelector('ht\\:news_item_title, news_item_title')?.textContent?.trim();
-                if (title) trends.push({ rank: i + 1, keyword: title, traffic: traffic || '', newsTitle });
+                // 여러 news_item 중 첫 번째 파싱
+                const newsItems = item.querySelectorAll('ht\\:news_item, news_item');
+                let newsTitle = '', newsUrl = '', newsSource = '', newsSnippet = '';
+                if (newsItems.length > 0) {
+                    const first = newsItems[0];
+                    newsTitle = (first.querySelector('ht\\:news_item_title, news_item_title')?.textContent?.trim() || '').replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, '&');
+                    newsUrl = first.querySelector('ht\\:news_item_url, news_item_url')?.textContent?.trim() || '';
+                    newsSource = first.querySelector('ht\\:news_item_source, news_item_source')?.textContent?.trim() || '';
+                    newsSnippet = (first.querySelector('ht\\:news_item_snippet, news_item_snippet')?.textContent?.trim() || '').replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, '&');
+                }
+                if (title) trends.push({
+                    rank: i + 1,
+                    keyword: title,
+                    traffic: traffic || '',
+                    newsTitle,
+                    newsUrl,
+                    newsSource,
+                    newsSnippet,
+                    totalNews: newsItems.length
+                });
             });
             _googleTrendsCache = trends;
             _googleTrendsCacheTime = Date.now();
@@ -10163,11 +10232,30 @@ Example format:
             }
             gridEl.innerHTML = trends.map(t => {
                 const safeKw = t.keyword.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-                return '<div class="trend-card" onclick="onTrendKeywordClick(\'' + safeKw + '\')" title="' + (t.newsTitle || '').replace(/"/g, '&quot;') + '">'
+                const safeNewsUrl = (t.newsUrl || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                const newsBlock = t.newsTitle
+                    ? '<div class="trend-news-reason" title="' + t.newsTitle.replace(/"/g, '&quot;') + '">'
+                        + '📰 ' + t.newsTitle
+                        + (t.newsSource ? ' <span style="color:#aaa;">· ' + t.newsSource + '</span>' : '')
+                        + '</div>'
+                    : '';
+                const newsBtn = t.newsUrl
+                    ? '<button class="trend-action-btn trend-news-btn" onclick="event.stopPropagation();window.open(\'' + safeNewsUrl + '\',\'_blank\')" title="뉴스 원문">📰 뉴스</button>'
+                    : '';
+                const ytBtn = '<button class="trend-action-btn trend-yt-btn" onclick="event.stopPropagation();onTrendKeywordClick(\'' + safeKw + '\')" title="유튜브 검색 (선점 기회 확인)">▶️ 유튜브</button>';
+                const searchBtn = '<button class="trend-action-btn trend-search-btn" onclick="event.stopPropagation();window.open(\'https://www.google.com/search?q=' + encodeURIComponent(t.keyword) + '\',\'_blank\')" title="구글 검색">🔍 검색</button>';
+
+                return '<div class="trend-card-v2">'
+                    + '<div class="trend-card-header">'
                     + '<div class="trend-rank ' + (t.rank <= 3 ? 'top3' : '') + '">' + t.rank + '</div>'
-                    + '<div class="trend-info"><div class="trend-keyword">' + t.keyword + '</div>'
+                    + '<div class="trend-info">'
+                    + '<div class="trend-keyword">' + t.keyword + '</div>'
                     + (t.traffic ? '<div class="trend-traffic">검색량 ' + t.traffic + '</div>' : '')
-                    + '</div></div>';
+                    + '</div>'
+                    + '</div>'
+                    + newsBlock
+                    + '<div class="trend-actions">' + newsBtn + ytBtn + searchBtn + '</div>'
+                    + '</div>';
             }).join('');
             const now = new Date();
             timeEl.textContent = '마지막 업데이트: ' + now.getHours() + '시 ' + String(now.getMinutes()).padStart(2,'0') + '분';
