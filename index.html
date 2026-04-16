@@ -10262,13 +10262,36 @@ Example format:
         // 실시간 경제 유튜브 (YouTube Data API 기반)
         // ===========================
         const ECON_YT_CATEGORIES = {
-            econ:   { name: '경제 전반', query: '경제 OR 경기 OR 금리 OR 환율' },
-            stock:  { name: '주식/증시', query: '주식 OR 증시 OR 코스피 OR 코스닥' },
-            real:   { name: '부동산',   query: '부동산 OR 아파트 OR 집값 OR 전세' },
-            global: { name: '글로벌',   query: '미국경제 OR 연준 OR 달러 OR 중국경제' },
-            policy: { name: '금융정책', query: '한국은행 OR 기준금리 OR 통화정책' },
-            crypto: { name: '암호화폐', query: '비트코인 OR 코인 OR 이더리움 OR 가상화폐' }
+            econ:   { name: '경제 전반', query: '경제뉴스 OR 한국경제 OR 경제전망 OR 경제분석' },
+            stock:  { name: '주식/증시', query: '주식투자 OR 증시분석 OR 코스피 OR 코스닥 OR 주식시장' },
+            real:   { name: '부동산',   query: '부동산 OR 아파트가격 OR 집값 OR 전세 OR 분양' },
+            global: { name: '글로벌',   query: '미국경제 OR 연준 OR FOMC OR 달러환율 OR 중국경제 OR 일본경제' },
+            policy: { name: '금융정책', query: '한국은행 OR 기준금리 OR 통화정책 OR 금융위원회' },
+            crypto: { name: '암호화폐', query: '비트코인 OR 이더리움 OR 암호화폐 OR 가상화폐 OR 알트코인' }
         };
+
+        // 경제 영상이 아닌 걸로 확실한 키워드 (제목에 있으면 제외)
+        const ECON_YT_BLOCK_KEYWORDS = [
+            '하이라이트', '중계', '실시간 중계',
+            'KBO', 'MLB', 'NBA', 'EPL', 'UFC', '프로야구', '프로축구', '프로농구',
+            '야구', '축구', '농구', '배구', '골프', '테니스',
+            '삼성 vs', '한화 vs', '롯데 vs', 'LG vs', '두산 vs', 'KIA vs', '키움 vs', 'NC vs', 'SSG vs', 'KT vs',
+            ' vs 삼성', ' vs 한화', ' vs 롯데', ' vs LG', ' vs 두산', ' vs KIA', ' vs 키움', ' vs NC', ' vs SSG',
+            'SPORTS', 'Sports',
+            '드라마', '예능', '뮤비', '뮤직비디오', 'MV',
+            '게임플레이', '공략'
+        ];
+
+        function isEconomicVideo(video) {
+            const title = (video.title || '').toLowerCase();
+            const channel = (video.channelTitle || '').toLowerCase();
+            const combined = title + ' ' + channel;
+            // 차단 키워드가 제목/채널명에 있으면 경제 영상 아님
+            for (const kw of ECON_YT_BLOCK_KEYWORDS) {
+                if (combined.includes(kw.toLowerCase())) return false;
+            }
+            return true;
+        }
 
         let _econYtCache = {};
         let _econYtCacheTime = {};
@@ -10319,7 +10342,7 @@ Example format:
             const publishedAfter = new Date(Date.now() - parseInt(period) * 24 * 60 * 60 * 1000).toISOString();
 
             try {
-                // 1. search.list로 영상 ID들 가져오기
+                // 1. search.list로 영상 ID들 가져오기 (maxResults 50으로 늘려서 필터 후 충분히 남기)
                 const searchUrl = 'https://www.googleapis.com/youtube/v3/search?' + new URLSearchParams({
                     part: 'snippet',
                     q: category.query,
@@ -10328,7 +10351,7 @@ Example format:
                     relevanceLanguage: 'ko',
                     order: sort,
                     publishedAfter: publishedAfter,
-                    maxResults: '25',
+                    maxResults: '50',
                     key: apiKey
                 });
 
@@ -10374,10 +10397,20 @@ Example format:
                     };
                 });
 
-                // Shorts 제외 (60초 이하)
-                const filtered = videos.filter(v => v.duration > 60);
+                // Shorts 제외 (60초 이하) + 비경제 영상 제외 (스포츠/엔터 등)
+                const filtered = videos
+                    .filter(v => v.duration > 60)
+                    .filter(v => isEconomicVideo(v))
+                    .slice(0, 25);
 
                 loadingEl.style.display = 'none';
+
+                if (!filtered.length) {
+                    errorEl.style.display = '';
+                    errorEl.innerHTML = '필터링 후 남은 경제 영상이 없어요. 기간을 늘리거나 다른 카테고리를 선택해보세요.';
+                    return;
+                }
+
                 _econYtCache[cacheKey] = filtered;
                 _econYtCacheTime[cacheKey] = Date.now();
                 renderEconYoutube(filtered);
