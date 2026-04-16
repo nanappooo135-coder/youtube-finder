@@ -13,13 +13,15 @@ import urllib.parse
 from datetime import datetime, timezone, timedelta
 
 # 카테고리 설정
+# Naver Search API는 OR 연산자 지원 안 함 → 단일 키워드 또는 여러 키워드 합성 (다중 호출 후 병합)
+# 각 카테고리별로 여러 단일 키워드를 호출해서 결과 합치고 시간순 정렬
 CATEGORIES = {
-    "econ":   {"name": "경제 전반",   "query": "경제"},
-    "stock":  {"name": "주식/증시",   "query": "코스피 OR 증시 OR 주가"},
-    "real":   {"name": "부동산",      "query": "부동산 OR 아파트 OR 집값"},
-    "global": {"name": "글로벌",      "query": "미국경제 OR 연준 OR 환율 OR 중국경제"},
-    "policy": {"name": "금융정책",    "query": "한국은행 OR 기준금리 OR 통화정책"},
-    "crypto": {"name": "암호화폐",    "query": "비트코인 OR 암호화폐"},
+    "econ":   {"name": "경제 전반",   "queries": ["경제뉴스", "경제전망", "한국경제"]},
+    "stock":  {"name": "주식/증시",   "queries": ["코스피", "코스닥", "증시"]},
+    "real":   {"name": "부동산",      "queries": ["부동산", "아파트", "집값"]},
+    "global": {"name": "글로벌",      "queries": ["미국경제", "연준", "환율", "중국경제"]},
+    "policy": {"name": "금융정책",    "queries": ["한국은행", "기준금리", "통화정책"]},
+    "crypto": {"name": "암호화폐",    "queries": ["비트코인", "이더리움", "암호화폐"]},
 }
 
 # 도메인 → 매체명 매핑
@@ -120,15 +122,39 @@ def main():
         "categories": {},
     }
 
+    # 최근 7일 이내만 유지 (오래된 뉴스 필터)
+    week_ago_ms = int((time.time() - 7 * 86400) * 1000)
+
     for key, cat in CATEGORIES.items():
-        print(f"  · {cat['name']} ({cat['query']})")
-        news = fetch_naver_news(cat["query"], cid, secret)
-        if news is None:
-            output["categories"][key] = {"name": cat["name"], "query": cat["query"], "news": [], "error": "fetch failed"}
-        else:
-            output["categories"][key] = {"name": cat["name"], "query": cat["query"], "news": news}
-            print(f"    ✓ {len(news)}건 수집")
-        time.sleep(0.3)  # API rate limit 보호
+        queries = cat.get("queries", [cat.get("query", "")])
+        print(f"  · {cat['name']} - 키워드 {len(queries)}개")
+        all_news = []
+        seen_links = set()
+
+        for q in queries:
+            print(f"    → '{q}' 검색 중...")
+            news = fetch_naver_news(q, cid, secret, display=20)
+            if news:
+                # 7일 이내 + 중복 제거
+                for item in news:
+                    if item["pubTimestamp"] < week_ago_ms:
+                        continue  # 너무 오래된 뉴스 스킵
+                    if item["link"] in seen_links:
+                        continue  # 중복 스킵
+                    seen_links.add(item["link"])
+                    all_news.append(item)
+            time.sleep(0.3)  # API rate limit 보호
+
+        # 시간 역순 정렬 (최신 먼저) + 30개로 제한
+        all_news.sort(key=lambda x: x["pubTimestamp"], reverse=True)
+        all_news = all_news[:30]
+
+        output["categories"][key] = {
+            "name": cat["name"],
+            "queries": queries,
+            "news": all_news,
+        }
+        print(f"    ✓ {len(all_news)}건 (최근 7일 이내, 중복 제거)")
 
     # news.json 저장 (저장소 루트)
     output_path = os.path.join(os.path.dirname(__file__), "..", "news.json")
