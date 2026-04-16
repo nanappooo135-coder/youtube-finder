@@ -10417,18 +10417,47 @@ Example format:
             if (!catEl) return;
             const cat = catEl.value;
 
+            const loadingEl = document.getElementById('issueRadarLoading');
+            const errorEl = document.getElementById('issueRadarError');
+            const listEl = document.getElementById('issueRadarList');
+            const timeEl = document.getElementById('issueRadarTime');
+            const badgeEl = document.getElementById('issueRadarBadge');
+
+            // === 1차: GitHub Actions가 만든 news.json 시도 ===
+            // (CORS 없음, 자동 갱신, 가장 안정적)
+            if (cat !== 'custom') {
+                try {
+                    const cacheBuster = forceRefresh ? '?t=' + Date.now() : '?v=12';
+                    const res = await fetch('news.json' + cacheBuster);
+                    if (res.ok) {
+                        const data = await res.json();
+                        const catData = data.categories?.[cat];
+                        if (catData && catData.news && catData.news.length) {
+                            loadingEl.style.display = 'none';
+                            errorEl.style.display = 'none';
+                            if (badgeEl) {
+                                badgeEl.style.display = '';
+                                badgeEl.textContent = '자동 갱신';
+                                badgeEl.style.background = '#10b981';
+                            }
+                            renderIssueRadar(catData.news, data.generated_at);
+                            return;
+                        }
+                    }
+                } catch (e) { /* fallback to direct API */ }
+            }
+
+            // === 2차: 사용자 Naver 키로 직접 호출 (CORS 차단되면 실패) ===
             // 커스텀: 내 채널 키워드 사용
             let query = '';
             if (cat === 'custom') {
                 const channelKeywords = (document.getElementById('channelKeywords')?.value || '').trim();
                 if (!channelKeywords) {
-                    document.getElementById('issueRadarLoading').style.display = 'none';
-                    const errorEl = document.getElementById('issueRadarError');
+                    loadingEl.style.display = 'none';
                     errorEl.style.display = '';
                     errorEl.innerHTML = '주제찾기 탭에서 <b>핵심 키워드</b>를 먼저 저장해주세요.';
                     return;
                 }
-                // 쉼표/공백으로 분리된 키워드를 OR로 연결 (최대 5개)
                 query = channelKeywords.split(/[,，\s]+/).filter(Boolean).slice(0, 5).join(' OR ');
             } else {
                 query = ISSUE_RADAR_CATEGORIES[cat].query;
@@ -10441,12 +10470,6 @@ Example format:
                 return;
             }
 
-            const loadingEl = document.getElementById('issueRadarLoading');
-            const errorEl = document.getElementById('issueRadarError');
-            const listEl = document.getElementById('issueRadarList');
-            const timeEl = document.getElementById('issueRadarTime');
-            const badgeEl = document.getElementById('issueRadarBadge');
-
             loadingEl.style.display = '';
             errorEl.style.display = 'none';
             listEl.innerHTML = '';
@@ -10458,13 +10481,14 @@ Example format:
             if (!cid || !secret) {
                 loadingEl.style.display = 'none';
                 errorEl.style.display = '';
-                errorEl.innerHTML = '⚠️ Naver API 키가 필요해요. 아래에 입력하고 저장하면 바로 뉴스가 떠요.<br>'
+                errorEl.innerHTML = '⚠️ <b>news.json이 아직 생성되지 않았어요</b> (GitHub Actions 첫 실행 대기 중) 또는 사용자 키가 필요해요.<br>'
+                    + '<small style="display:block;margin-top:6px;">10분 뒤 다시 시도하거나, 임시로 Naver 키 입력 (CORS 문제 있음):</small>'
                     + '<div style="margin-top:10px;display:flex;gap:6px;">'
                     + '<input type="text" id="quickNaverCid" placeholder="Client ID" style="flex:1;padding:8px;border:1px solid #e0e0e0;border-radius:6px;font-size:0.85rem;" />'
                     + '<input type="password" id="quickNaverSecret" placeholder="Client Secret" style="flex:1;padding:8px;border:1px solid #e0e0e0;border-radius:6px;font-size:0.85rem;" />'
                     + '<button onclick="quickSaveNaverKeys()" style="padding:8px 16px;background:#03c75a;color:white;border:none;border-radius:6px;font-weight:700;cursor:pointer;white-space:nowrap;">저장 + 로드</button>'
                     + '</div>'
-                    + '<small style="display:block;margin-top:8px;color:#888;">키 없으면 <a href="https://developers.naver.com/apps/#/register?api=ndsearch" target="_blank" style="color:#03c75a;font-weight:700;">여기서 발급</a> (무료, 2분 소요)</small>';
+                    + '<small style="display:block;margin-top:8px;color:#888;">키 없으면 <a href="https://developers.naver.com/apps/#/register?api=ndsearch" target="_blank" style="color:#03c75a;font-weight:700;">여기서 발급</a></small>';
                 return;
             }
 
@@ -10529,7 +10553,7 @@ Example format:
             fetchIssueRadar(true);
         }
 
-        function renderIssueRadar(news) {
+        function renderIssueRadar(news, generatedAt) {
             const listEl = document.getElementById('issueRadarList');
             const timeEl = document.getElementById('issueRadarTime');
 
@@ -10551,8 +10575,15 @@ Example format:
                     + '</div>';
             }).join('');
 
-            const now = new Date();
-            timeEl.textContent = '마지막 업데이트: ' + now.getHours() + '시 ' + String(now.getMinutes()).padStart(2,'0') + '분 ' + String(now.getSeconds()).padStart(2,'0') + '초 (30초 캐시)';
+            if (generatedAt) {
+                // GitHub Actions가 생성한 시간 표시
+                const genDate = new Date(generatedAt);
+                const ago = formatRelativeTime(genDate.getTime());
+                timeEl.textContent = '서버 자동 갱신: ' + genDate.getHours() + '시 ' + String(genDate.getMinutes()).padStart(2,'0') + '분 (' + ago + ') · 10분마다 갱신';
+            } else {
+                const now = new Date();
+                timeEl.textContent = '마지막 조회: ' + now.getHours() + '시 ' + String(now.getMinutes()).padStart(2,'0') + '분 ' + String(now.getSeconds()).padStart(2,'0') + '초 (30초 캐시)';
+            }
         }
 
         // ===========================
