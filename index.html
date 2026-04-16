@@ -10190,12 +10190,12 @@ Example format:
         // 실시간 경제 뉴스 (Google News RSS 기반)
         // ===========================
         const ECON_NEWS_CATEGORIES = {
-            econ:   { name: '경제',       query: '경제' },
-            stock:  { name: '주식',       query: '주식 증시' },
-            real:   { name: '부동산',     query: '부동산' },
-            global: { name: '글로벌',     query: '미국경제 연준' },
-            policy: { name: '금융정책',   query: '한국은행 기준금리' },
-            crypto: { name: '암호화폐',   query: '비트코인 코인' }
+            econ:   { name: '경제',     query: '경제',           keywords: ['경제','경기','GDP','성장률','수출','수입','물가','인플레이션'] },
+            stock:  { name: '주식',     query: '주식 증시',       keywords: ['주식','증시','코스피','코스닥','종목','상한가','하한가','외국인','기관'] },
+            real:   { name: '부동산',   query: '부동산',         keywords: ['부동산','아파트','전세','매매','분양','청약','집값','주택'] },
+            global: { name: '글로벌',   query: '미국경제 연준',   keywords: ['미국','연준','FOMC','달러','환율','중국','일본','유럽','ECB'] },
+            policy: { name: '금융정책', query: '한국은행 금리',   keywords: ['한국은행','기준금리','금리','통화정책','금융위','기재부','재정'] },
+            crypto: { name: '암호화폐', query: '비트코인',       keywords: ['비트코인','이더리움','코인','가상화폐','암호화폐','NFT','블록체인'] }
         };
 
         let _econNewsCache = {};
@@ -10221,6 +10221,7 @@ Example format:
             const errorEl = document.getElementById('econNewsError');
             const listEl = document.getElementById('econNewsList');
             const timeEl = document.getElementById('econNewsTime');
+            const badgeEl = document.getElementById('econNewsSourceBadge');
 
             loadingEl.style.display = '';
             errorEl.style.display = 'none';
@@ -10229,43 +10230,69 @@ Example format:
 
             const category = ECON_NEWS_CATEGORIES[cat];
             let news = null;
+            let usedSource = '';
 
-            // 1차: Naver News Search API (Naver 키 있을 때, 가장 안정적)
-            const naverCid = localStorage.getItem('naver_client_id');
-            const naverSecret = localStorage.getItem('naver_client_secret');
-            const badgeEl = document.getElementById('econNewsSourceBadge');
-            let usedNaver = false;
-            if (naverCid && naverSecret) {
-                news = await fetchNaverNewsSearch(category.query, naverCid, naverSecret);
-                if (news && news.length) usedNaver = true;
+            // 전략 1: BUSINESS 토픽 RSS (검색보다 안정적)
+            if (!news || !news.length) {
+                const bizUrl = 'https://news.google.com/rss/headlines/section/topic/BUSINESS?hl=ko&gl=KR&ceid=KR:ko';
+                news = await fetchGoogleNewsRss(bizUrl);
+                if (news && news.length) {
+                    // 카테고리별 키워드로 필터 (경제 전반이면 필터 안 함)
+                    if (cat !== 'econ') {
+                        news = filterNewsByKeywords(news, category.keywords);
+                    }
+                    if (news.length) usedSource = 'BUSINESS 토픽';
+                }
             }
 
-            // 2차: Google News RSS (프록시 경유)
+            // 전략 2: TOP STORIES 토픽 (모든 주요 뉴스)
             if (!news || !news.length) {
-                const rssUrl = buildGoogleNewsRssUrl(category.query);
-                news = await fetchGoogleNewsRss(rssUrl);
+                const topUrl = 'https://news.google.com/rss?hl=ko&gl=KR&ceid=KR:ko';
+                news = await fetchGoogleNewsRss(topUrl);
+                if (news && news.length) {
+                    news = filterNewsByKeywords(news, category.keywords);
+                    if (news.length) usedSource = 'TOP STORIES';
+                }
+            }
+
+            // 전략 3: 검색 URL (원래 방식)
+            if (!news || !news.length) {
+                const searchUrl = buildGoogleNewsRssUrl(category.query);
+                news = await fetchGoogleNewsRss(searchUrl);
+                if (news && news.length) usedSource = '검색';
             }
 
             if (badgeEl) {
-                badgeEl.style.display = usedNaver ? '' : 'none';
-                badgeEl.textContent = usedNaver ? 'Naver API' : 'Google News';
-                badgeEl.style.background = usedNaver ? '#03c75a' : '#4285f4';
+                badgeEl.style.display = usedSource ? '' : 'none';
+                badgeEl.textContent = usedSource;
+                badgeEl.style.background = '#4285f4';
             }
 
             loadingEl.style.display = 'none';
 
             if (!news || !news.length) {
                 errorEl.style.display = '';
-                const hasNaver = naverCid && naverSecret;
-                errorEl.innerHTML = '뉴스를 불러올 수 없습니다.<br>'
-                    + (hasNaver ? '' : '<b style="color:#03c75a;">💡 팁:</b> 아래 <b>Naver 키워드 트렌드 비교</b> 섹션에서 Naver API 키를 저장하면 뉴스가 안정적으로 불러와집니다.<br>')
-                    + '<a href="https://search.naver.com/search.naver?where=news&query=' + encodeURIComponent(category.query) + '&sort=1" target="_blank" style="color:#03c75a;font-weight:700;">→ 네이버 뉴스에서 직접 검색</a>';
+                const dbg = (window._econNewsDebug || []).map(d => d.proxy + ': ' + (d.error || 'items=' + d.items)).join(' | ');
+                errorEl.innerHTML = '뉴스를 불러올 수 없습니다. 브라우저/네트워크가 프록시 서비스를 차단하고 있을 수 있어요.<br>'
+                    + '<div style="margin-top:8px;"><b>대안:</b> 아래 빠른 링크에서 네이버 뉴스/연합뉴스로 직접 이동해서 브라우징 하세요.</div>'
+                    + '<a href="https://news.google.com/search?q=' + encodeURIComponent(category.query) + '&hl=ko&gl=KR" target="_blank" style="color:#2b6cb0;font-weight:700;display:inline-block;margin-top:6px;">→ Google News에서 직접 보기</a>'
+                    + ' · <a href="https://search.naver.com/search.naver?where=news&query=' + encodeURIComponent(category.query) + '&sort=1" target="_blank" style="color:#03c75a;font-weight:700;">네이버 뉴스에서 직접 검색</a>'
+                    + '<details style="margin-top:8px;"><summary style="cursor:pointer;font-size:0.75rem;color:#888;">기술 디버그</summary><div style="font-size:0.75rem;color:#888;word-break:break-all;">' + (dbg || 'N/A') + '</div></details>';
                 return;
             }
 
             _econNewsCache[cacheKey] = news;
             _econNewsCacheTime[cacheKey] = Date.now();
             renderEconNews(news);
+        }
+
+        function filterNewsByKeywords(news, keywords) {
+            if (!keywords || !keywords.length) return news;
+            const lowers = keywords.map(k => k.toLowerCase());
+            return news.filter(n => {
+                const t = n.title.toLowerCase();
+                return lowers.some(kw => t.includes(kw));
+            });
         }
 
         // Naver News Search API (CORS 허용, 안정적)
@@ -10348,7 +10375,9 @@ Example format:
             { name: 'allorigins-raw', fn: url => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url), type: 'xml' },
             { name: 'allorigins-get', fn: url => 'https://api.allorigins.win/get?url=' + encodeURIComponent(url), type: 'allorigins-wrap' },
             { name: 'corsproxy.io', fn: url => 'https://corsproxy.io/?' + encodeURIComponent(url), type: 'xml' },
-            { name: 'codetabs', fn: url => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url), type: 'xml' }
+            { name: 'codetabs', fn: url => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url), type: 'xml' },
+            { name: 'thingproxy', fn: url => 'https://thingproxy.freeboard.io/fetch/' + url, type: 'xml' },
+            { name: 'cors.sh', fn: url => 'https://proxy.cors.sh/' + url, type: 'xml' }
         ];
 
         // 디버깅용 로그 (콘솔에만)
