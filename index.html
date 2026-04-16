@@ -10440,9 +10440,13 @@ Example format:
             if (!cid || !secret) {
                 loadingEl.style.display = 'none';
                 errorEl.style.display = '';
-                errorEl.innerHTML = '⚠️ Naver API 키가 필요합니다.<br>'
-                    + '아래 <b>📊 Naver 키워드 트렌드 비교</b> 섹션에서 Client ID / Secret 입력 후 저장해주세요.<br>'
-                    + '<small>키 없으면 <a href="https://developers.naver.com/apps/#/register?api=ndsearch" target="_blank" style="color:#03c75a;font-weight:700;">여기서 발급</a> (무료, 2분 소요)</small>';
+                errorEl.innerHTML = '⚠️ Naver API 키가 필요해요. 아래에 입력하고 저장하면 바로 뉴스가 떠요.<br>'
+                    + '<div style="margin-top:10px;display:flex;gap:6px;">'
+                    + '<input type="text" id="quickNaverCid" placeholder="Client ID" style="flex:1;padding:8px;border:1px solid #e0e0e0;border-radius:6px;font-size:0.85rem;" />'
+                    + '<input type="password" id="quickNaverSecret" placeholder="Client Secret" style="flex:1;padding:8px;border:1px solid #e0e0e0;border-radius:6px;font-size:0.85rem;" />'
+                    + '<button onclick="quickSaveNaverKeys()" style="padding:8px 16px;background:#03c75a;color:white;border:none;border-radius:6px;font-weight:700;cursor:pointer;white-space:nowrap;">저장 + 로드</button>'
+                    + '</div>'
+                    + '<small style="display:block;margin-top:8px;color:#888;">키 없으면 <a href="https://developers.naver.com/apps/#/register?api=ndsearch" target="_blank" style="color:#03c75a;font-weight:700;">여기서 발급</a> (무료, 2분 소요)</small>';
                 return;
             }
 
@@ -10470,6 +10474,26 @@ Example format:
                     errorEl.innerHTML = 'Naver API 오류: ' + e.message;
                 }
             }
+        }
+
+        function quickSaveNaverKeys() {
+            const cid = document.getElementById('quickNaverCid')?.value.trim();
+            const secret = document.getElementById('quickNaverSecret')?.value.trim();
+            if (!cid || !secret) {
+                alert('Client ID와 Secret 둘 다 입력해주세요.');
+                return;
+            }
+            localStorage.setItem('naver_client_id', cid);
+            localStorage.setItem('naver_client_secret', secret);
+            // 메인 입력창에도 동기화
+            const mainCid = document.getElementById('naverClientId');
+            const mainSecret = document.getElementById('naverClientSecret');
+            if (mainCid) mainCid.value = cid;
+            if (mainSecret) mainSecret.value = secret;
+            const status = document.getElementById('naverKeyStatus');
+            if (status) { status.textContent = '✓ 저장 완료!'; status.style.color = '#03c75a'; }
+            // 즉시 뉴스 로드
+            fetchIssueRadar(true);
         }
 
         function renderIssueRadar(news) {
