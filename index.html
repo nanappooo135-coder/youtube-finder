@@ -1200,6 +1200,57 @@
         #procBtn_trend.inactive:hover { background: #fff5ee !important; }
         #procBtn_trend:not(.inactive) { background: #ff6b00 !important; color: white !important; border-color: #ff6b00 !important; }
         @media (max-width: 600px) { .trend-grid { grid-template-columns: 1fr; } }
+
+        /* === Econ News === */
+        .econ-news-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 12px 14px;
+            border: 1px solid #e8e8e8;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            transition: all 0.2s;
+            background: white;
+        }
+        .econ-news-item:hover { border-color: #2b6cb0; background: #f0f7ff; }
+        .econ-news-source {
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 4px;
+            background: #e8f0fe;
+            color: #2b6cb0;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .econ-news-source.src-hk { background: #fce4e4; color: #c0392b; }
+        .econ-news-source.src-mt { background: #fff4e0; color: #b7791f; }
+        .econ-news-title {
+            flex: 1;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #222;
+            line-height: 1.4;
+            cursor: pointer;
+        }
+        .econ-news-title:hover { color: #dc3545; text-decoration: underline; }
+        .econ-news-time {
+            font-size: 0.75rem;
+            color: #999;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .econ-news-article-link {
+            font-size: 0.75rem;
+            color: #2b6cb0;
+            text-decoration: none;
+            white-space: nowrap;
+            flex-shrink: 0;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        .econ-news-article-link:hover { background: #e8f0fe; }
     </style>
 </head>
 <body>
@@ -2509,6 +2560,35 @@
 
         <!-- ===== 프로세스: 실시간 트렌드 ===== -->
         <div id="process-trend" style="display:none;">
+
+            <!-- 실시간 경제 뉴스 (경제 채널 특화) -->
+            <div class="section">
+                <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
+                    📰 실시간 경제 뉴스 헤드라인
+                    <div style="display:flex;gap:6px;">
+                        <select id="econNewsSource" onchange="fetchEconNews(true)" style="padding:6px 10px;border:1px solid #e0e0e0;border-radius:6px;font-size:0.8rem;">
+                            <option value="yna">연합뉴스 경제</option>
+                            <option value="hk">한국경제</option>
+                            <option value="mt">머니투데이</option>
+                            <option value="all">전체 통합</option>
+                        </select>
+                        <button onclick="fetchEconNews(true)" style="padding:6px 16px;background:#2b6cb0;color:white;border:none;border-radius:8px;font-size:0.85rem;cursor:pointer;">새로고침</button>
+                    </div>
+                </div>
+                <div class="section-content">
+                    <p style="font-size:0.85rem;color:#888;margin-bottom:12px;">
+                        경제 뉴스 헤드라인 — <b>제목 클릭</b>하면 유튜브 검색, <b>📄 기사</b> 클릭하면 원문 새창.
+                    </p>
+                    <div id="econNewsLoading" style="display:none;text-align:center;padding:20px;color:#888;">
+                        <div class="trend-spinner"></div>
+                        불러오는 중...
+                    </div>
+                    <div id="econNewsError" style="display:none;padding:16px;background:#fff5f5;border:1px solid #ffe0e0;border-radius:10px;color:#dc3545;font-size:0.9rem;"></div>
+                    <div id="econNewsList"></div>
+                    <p id="econNewsTime" style="font-size:0.8rem;color:#aaa;margin-top:8px;text-align:right;"></p>
+                </div>
+            </div>
+
             <div class="section">
                 <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
                     🔥 Google 급상승 검색어 (한국)
@@ -2579,8 +2659,17 @@
                         <a href="https://signal.bz" target="_blank" class="trend-link-card" style="border-color:#ff6b00;">
                             <span style="font-size:1.2rem;">📡</span><span>Signal.bz 실시간</span>
                         </a>
-                        <a href="https://www.youtube.com/feed/trending" target="_blank" class="trend-link-card" style="border-color:#dc3545;">
-                            <span style="font-size:1.2rem;">▶️</span><span>YouTube 인기 급상승</span>
+                        <a href="https://www.yna.co.kr/economy/all" target="_blank" class="trend-link-card" style="border-color:#2b6cb0;">
+                            <span style="font-size:1.2rem;">📰</span><span>연합뉴스 경제</span>
+                        </a>
+                        <a href="https://www.hankyung.com/economy" target="_blank" class="trend-link-card" style="border-color:#c0392b;">
+                            <span style="font-size:1.2rem;">💹</span><span>한국경제</span>
+                        </a>
+                        <a href="https://finance.naver.com/news/mainnews.naver" target="_blank" class="trend-link-card" style="border-color:#03c75a;">
+                            <span style="font-size:1.2rem;">📊</span><span>네이버 금융 뉴스</span>
+                        </a>
+                        <a href="https://news.kotra.or.kr/user/extra/kotranews/main/main/jsp/Page.do?pageNo=1" target="_blank" class="trend-link-card" style="border-color:#8e44ad;">
+                            <span style="font-size:1.2rem;">🌏</span><span>KOTRA 해외경제</span>
                         </a>
                     </div>
                 </div>
@@ -2949,7 +3038,7 @@
             if (proc === 'visual') checkFcServer('vsServerStatus');
             if (proc === 'review') checkFcServer('rvServerStatus');
             if (proc === 'factcheck') checkFcServer();
-            if (proc === 'trend') fetchGoogleTrends();
+            if (proc === 'trend') { fetchGoogleTrends(); fetchEconNews(); }
         }
 
         // API 상태 확인 (서버 불필요 — API 키 존재 여부만 체크)
@@ -10093,6 +10182,180 @@ Example format:
         }
 
         try { loadNaverApiKeys(); } catch(e) {}
+
+        // ===========================
+        // 실시간 경제 뉴스 (경제 채널용)
+        // ===========================
+        const ECON_NEWS_SOURCES = {
+            yna: {
+                name: '연합뉴스',
+                cls: 'src-yna',
+                rss: 'https://www.yna.co.kr/rss/economy.xml'
+            },
+            hk: {
+                name: '한국경제',
+                cls: 'src-hk',
+                rss: 'http://rss.hankyung.com/feed/economy.xml'
+            },
+            mt: {
+                name: '머니투데이',
+                cls: 'src-mt',
+                rss: 'https://rss.mt.co.kr/mt_news.xml'
+            }
+        };
+
+        let _econNewsCache = {};
+        let _econNewsCacheTime = {};
+        const ECON_NEWS_CACHE_TTL = 5 * 60 * 1000;
+
+        async function fetchEconNews(forceRefresh = false) {
+            const source = document.getElementById('econNewsSource').value;
+            const cacheKey = source;
+
+            if (!forceRefresh && _econNewsCache[cacheKey] && (Date.now() - (_econNewsCacheTime[cacheKey] || 0)) < ECON_NEWS_CACHE_TTL) {
+                renderEconNews(_econNewsCache[cacheKey]);
+                return;
+            }
+
+            const loadingEl = document.getElementById('econNewsLoading');
+            const errorEl = document.getElementById('econNewsError');
+            const listEl = document.getElementById('econNewsList');
+            const timeEl = document.getElementById('econNewsTime');
+
+            loadingEl.style.display = '';
+            errorEl.style.display = 'none';
+            listEl.innerHTML = '';
+            timeEl.textContent = '';
+
+            const sources = source === 'all' ? Object.keys(ECON_NEWS_SOURCES) : [source];
+            const allNews = [];
+
+            for (const srcKey of sources) {
+                const src = ECON_NEWS_SOURCES[srcKey];
+                const news = await fetchNewsRss(src.rss, src);
+                if (news) allNews.push(...news);
+            }
+
+            loadingEl.style.display = 'none';
+
+            if (!allNews.length) {
+                errorEl.style.display = '';
+                errorEl.innerHTML = '뉴스를 불러올 수 없습니다. 새로고침을 다시 눌러보거나 잠시 후 시도해주세요.';
+                return;
+            }
+
+            // 시간 역순 정렬 (최신 먼저)
+            allNews.sort((a, b) => b.pubTimestamp - a.pubTimestamp);
+
+            // 최대 30개
+            const finalNews = allNews.slice(0, 30);
+
+            _econNewsCache[cacheKey] = finalNews;
+            _econNewsCacheTime[cacheKey] = Date.now();
+            renderEconNews(finalNews);
+        }
+
+        async function fetchNewsRss(rssUrl, src) {
+            let xmlText = null;
+            for (const proxyFn of CORS_PROXIES) {
+                try {
+                    const ctrl = new AbortController();
+                    const tid = setTimeout(() => ctrl.abort(), 8000);
+                    const res = await fetch(proxyFn(rssUrl), { signal: ctrl.signal });
+                    clearTimeout(tid);
+                    if (res.ok) {
+                        xmlText = await res.text();
+                        if (xmlText && (xmlText.includes('<item>') || xmlText.includes('<item '))) break;
+                        xmlText = null;
+                    }
+                } catch (e) { /* 다음 프록시 */ }
+            }
+            if (!xmlText) return null;
+
+            try {
+                const parser = new DOMParser();
+                const xml = parser.parseFromString(xmlText, 'text/xml');
+                const items = xml.querySelectorAll('item');
+                const news = [];
+                items.forEach(item => {
+                    const title = item.querySelector('title')?.textContent?.trim();
+                    const link = item.querySelector('link')?.textContent?.trim();
+                    const pubDate = item.querySelector('pubDate')?.textContent?.trim();
+                    if (title && link) {
+                        const ts = pubDate ? new Date(pubDate).getTime() : Date.now();
+                        news.push({
+                            title: cleanNewsTitle(title),
+                            link,
+                            pubDate,
+                            pubTimestamp: isNaN(ts) ? Date.now() : ts,
+                            source: src
+                        });
+                    }
+                });
+                return news;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function cleanNewsTitle(title) {
+            // CDATA/HTML 엔티티 정리
+            return title.replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1')
+                        .replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+                        .replace(/&amp;/g, '&').replace(/&quot;/g, '"')
+                        .replace(/&#039;/g, "'").replace(/&apos;/g, "'")
+                        .trim();
+        }
+
+        function renderEconNews(news) {
+            const listEl = document.getElementById('econNewsList');
+            const timeEl = document.getElementById('econNewsTime');
+
+            if (!news.length) {
+                listEl.innerHTML = '<p style="color:#888;text-align:center;padding:20px;">뉴스가 없습니다.</p>';
+                return;
+            }
+
+            listEl.innerHTML = news.map(n => {
+                const timeStr = formatRelativeTime(n.pubTimestamp);
+                const safeTitle = n.title.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                const safeLink = n.link.replace(/"/g, '&quot;');
+                return '<div class="econ-news-item">'
+                    + '<span class="econ-news-source ' + n.source.cls + '">' + n.source.name + '</span>'
+                    + '<div class="econ-news-title" onclick="searchYoutubeFromNews(\'' + safeTitle + '\')">' + n.title + '</div>'
+                    + '<span class="econ-news-time">' + timeStr + '</span>'
+                    + '<a class="econ-news-article-link" href="' + safeLink + '" target="_blank" title="기사 원문 보기">📄 기사</a>'
+                    + '</div>';
+            }).join('');
+
+            const now = new Date();
+            timeEl.textContent = '마지막 업데이트: ' + now.getHours() + '시 ' + String(now.getMinutes()).padStart(2,'0') + '분 (5분 캐시)';
+        }
+
+        function formatRelativeTime(ts) {
+            const diff = Date.now() - ts;
+            const min = Math.floor(diff / 60000);
+            const hr = Math.floor(diff / 3600000);
+            const day = Math.floor(diff / 86400000);
+            if (min < 1) return '방금';
+            if (min < 60) return min + '분 전';
+            if (hr < 24) return hr + '시간 전';
+            if (day < 7) return day + '일 전';
+            const d = new Date(ts);
+            return (d.getMonth() + 1) + '/' + d.getDate();
+        }
+
+        function searchYoutubeFromNews(title) {
+            // 헤드라인에서 핵심 키워드만 추출해서 유튜브 검색
+            // 대괄호 [이슈], 종목시세 등 제거
+            const cleaned = title
+                .replace(/\[[^\]]+\]/g, ' ')  // [속보], [단독] 등 제거
+                .replace(/\([^)]+\)/g, ' ')    // 괄호 안 내용 제거
+                .replace(/[""''"]/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+            window.open('https://www.youtube.com/results?search_query=' + encodeURIComponent(cleaned), '_blank');
+        }
     </script>
 </body>
 </html>
