@@ -1182,6 +1182,24 @@
             transition: width 0.3s;
             width: 0%;
         }
+        /* === Trend Tab === */
+        .trend-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .trend-card { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 2px solid #f0f0f0; border-radius: 12px; cursor: pointer; transition: all 0.2s; background: white; }
+        .trend-card:hover { border-color: #ff6b00; background: #fff8f0; transform: translateY(-1px); box-shadow: 0 2px 8px rgba(255,107,0,0.15); }
+        .trend-rank { font-size: 1.1rem; font-weight: 800; color: #ff6b00; min-width: 28px; text-align: center; }
+        .trend-rank.top3 { color: #dc3545; }
+        .trend-info { flex: 1; min-width: 0; }
+        .trend-keyword { font-size: 0.95rem; font-weight: 700; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .trend-traffic { font-size: 0.75rem; color: #999; margin-top: 2px; }
+        .trend-spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid #f0f0f0; border-top-color: #ff6b00; border-radius: 50%; animation: trendSpin 0.8s linear infinite; margin-bottom: 8px; }
+        @keyframes trendSpin { to { transform: rotate(360deg); } }
+        .trend-api-box { padding: 12px; background: #f8f9fa; border-radius: 10px; border: 1px solid #e0e0e0; }
+        .trend-link-card { display: flex; align-items: center; gap: 8px; padding: 14px 16px; border: 2px solid #e0e0e0; border-radius: 12px; text-decoration: none; color: #333; font-weight: 700; font-size: 0.95rem; transition: all 0.2s; }
+        .trend-link-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        #procBtn_trend.inactive { background: transparent !important; color: #ff6b00 !important; border-color: #ff6b00 !important; }
+        #procBtn_trend.inactive:hover { background: #fff5ee !important; }
+        #procBtn_trend:not(.inactive) { background: #ff6b00 !important; color: white !important; border-color: #ff6b00 !important; }
+        @media (max-width: 600px) { .trend-grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
@@ -1208,6 +1226,7 @@
             <button class="process-btn inactive" id="procBtn_json" onclick="switchProcess('json')">JSON</button>
             <button class="process-btn inactive" id="procBtn_tts" onclick="switchProcess('tts')">TTS변환</button>
             <button class="process-btn inactive" id="procBtn_ref" onclick="switchProcess('ref')">레퍼런스</button>
+            <button class="process-btn inactive" id="procBtn_trend" onclick="switchProcess('trend')">🔥트렌드</button>
         </div>
 
         <!-- ===== 프로세스 1: 주제찾기 ===== -->
@@ -2488,6 +2507,86 @@
 
         </div><!-- /process-ref -->
 
+        <!-- ===== 프로세스: 실시간 트렌드 ===== -->
+        <div id="process-trend" style="display:none;">
+            <div class="section">
+                <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
+                    🔥 Google 급상승 검색어 (한국)
+                    <button onclick="fetchGoogleTrends(true)" style="padding:6px 16px;background:#ff6b00;color:white;border:none;border-radius:8px;font-size:0.85rem;cursor:pointer;">새로고침</button>
+                </div>
+                <div class="section-content">
+                    <p style="font-size:0.85rem;color:#888;margin-bottom:12px;">
+                        오늘 한국에서 급상승 중인 검색어예요. 키워드를 클릭하면 유튜브에서 바로 검색합니다.
+                    </p>
+                    <div id="googleTrendsLoading" style="display:none;text-align:center;padding:20px;color:#888;">
+                        <div class="trend-spinner"></div>
+                        불러오는 중...
+                    </div>
+                    <div id="googleTrendsError" style="display:none;padding:16px;background:#fff5f5;border:1px solid #ffe0e0;border-radius:10px;color:#dc3545;font-size:0.9rem;"></div>
+                    <div id="googleTrendsGrid" class="trend-grid"></div>
+                    <p id="googleTrendsTime" style="font-size:0.8rem;color:#aaa;margin-top:8px;text-align:right;"></p>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">📊 Naver 키워드 트렌드 비교</div>
+                <div class="section-content">
+                    <p style="font-size:0.85rem;color:#888;margin-bottom:12px;">
+                        특정 키워드의 네이버 검색량 추이를 비교해요. 최대 5개 키워드까지.
+                        <a href="https://developers.naver.com/apps/#/register?api=datalab" target="_blank" style="color:#03c75a;">API 키 발급 →</a>
+                    </p>
+                    <div class="trend-api-box" id="naverApiBox">
+                        <div style="display:flex;gap:8px;margin-bottom:8px;">
+                            <input type="text" id="naverClientId" placeholder="Naver Client ID" style="flex:1;padding:10px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.85rem;">
+                            <input type="password" id="naverClientSecret" placeholder="Client Secret" style="flex:1;padding:10px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.85rem;">
+                            <button onclick="saveNaverApiKeys()" style="padding:10px 16px;background:#03c75a;color:white;border:none;border-radius:10px;font-size:0.85rem;font-weight:700;cursor:pointer;white-space:nowrap;">저장</button>
+                        </div>
+                        <p id="naverKeyStatus" style="font-size:0.8rem;color:#888;"></p>
+                    </div>
+                    <div class="input-group" style="margin-top:12px;">
+                        <label>비교할 키워드 <span style="color:#888;font-weight:400;">(쉼표로 구분, 최대 5개)</span></label>
+                        <div style="display:flex;gap:8px;">
+                            <input type="text" id="naverKeywords" placeholder="예: 트럼프, 관세, 무역전쟁, 환율, 금리" style="flex:1;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;" onkeydown="if(event.key==='Enter')fetchNaverTrend()">
+                            <select id="naverPeriod" style="padding:10px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.85rem;">
+                                <option value="1">최근 1개월</option>
+                                <option value="3" selected>최근 3개월</option>
+                                <option value="6">최근 6개월</option>
+                                <option value="12">최근 1년</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button onclick="fetchNaverTrend()" style="width:100%;padding:14px;background:#03c75a;color:white;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;margin-top:8px;">
+                        트렌드 검색
+                    </button>
+                    <div id="naverTrendResult" style="display:none;margin-top:16px;">
+                        <div id="naverTrendChart" style="width:100%;height:300px;border:1px solid #e0e0e0;border-radius:10px;overflow:hidden;position:relative;background:#fafafa;"></div>
+                        <div id="naverTrendLegend" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;"></div>
+                        <div id="naverTrendSummary" style="margin-top:12px;font-size:0.9rem;line-height:1.6;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">🔗 트렌드 사이트 바로가기</div>
+                <div class="section-content">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                        <a href="https://trends.google.co.kr/trending?geo=KR" target="_blank" class="trend-link-card" style="border-color:#4285f4;">
+                            <span style="font-size:1.2rem;">📈</span><span>Google Trends</span>
+                        </a>
+                        <a href="https://datalab.naver.com/keyword/realtimetrend/index.naver" target="_blank" class="trend-link-card" style="border-color:#03c75a;">
+                            <span style="font-size:1.2rem;">🟢</span><span>Naver DataLab</span>
+                        </a>
+                        <a href="https://signal.bz" target="_blank" class="trend-link-card" style="border-color:#ff6b00;">
+                            <span style="font-size:1.2rem;">📡</span><span>Signal.bz 실시간</span>
+                        </a>
+                        <a href="https://www.youtube.com/feed/trending" target="_blank" class="trend-link-card" style="border-color:#dc3545;">
+                            <span style="font-size:1.2rem;">▶️</span><span>YouTube 인기 급상승</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div><!-- /process-trend -->
+
         </div><!-- /process-topic -->
 
     </div><!-- /container -->
@@ -2844,11 +2943,13 @@
             document.getElementById('process-title').style.display = proc === 'title' ? '' : 'none';
             document.getElementById('process-tts').style.display = proc === 'tts' ? '' : 'none';
             document.getElementById('process-ref').style.display = proc === 'ref' ? '' : 'none';
+            document.getElementById('process-trend').style.display = proc === 'trend' ? '' : 'none';
 
             if (proc === 'thumbtext') checkFcServer('ttServerStatus');
             if (proc === 'visual') checkFcServer('vsServerStatus');
             if (proc === 'review') checkFcServer('rvServerStatus');
             if (proc === 'factcheck') checkFcServer();
+            if (proc === 'trend') fetchGoogleTrends();
         }
 
         // API 상태 확인 (서버 불필요 — API 키 존재 여부만 체크)
@@ -9791,6 +9892,207 @@ Example format:
                 setTimeout(() => btn.textContent = '복사', 1500);
             });
         }
+    </script>
+
+    <script>
+        // ===========================
+        // 실시간 트렌드 기능
+        // ===========================
+        let _googleTrendsCache = null;
+        let _googleTrendsCacheTime = 0;
+        const TRENDS_CACHE_TTL = 10 * 60 * 1000;
+
+        const CORS_PROXIES = [
+            url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+            url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+            url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`
+        ];
+
+        async function fetchGoogleTrends(forceRefresh = false) {
+            if (!forceRefresh && _googleTrendsCache && (Date.now() - _googleTrendsCacheTime) < TRENDS_CACHE_TTL) {
+                renderGoogleTrends(_googleTrendsCache);
+                return;
+            }
+            const loadingEl = document.getElementById('googleTrendsLoading');
+            const errorEl = document.getElementById('googleTrendsError');
+            const gridEl = document.getElementById('googleTrendsGrid');
+            const timeEl = document.getElementById('googleTrendsTime');
+            loadingEl.style.display = '';
+            errorEl.style.display = 'none';
+            gridEl.innerHTML = '';
+            timeEl.textContent = '';
+
+            const rssUrl = 'https://trends.google.co.kr/trending/rss?geo=KR';
+            let xmlText = null;
+            for (const proxyFn of CORS_PROXIES) {
+                try {
+                    const ctrl = new AbortController();
+                    const tid = setTimeout(() => ctrl.abort(), 8000);
+                    const res = await fetch(proxyFn(rssUrl), { signal: ctrl.signal });
+                    clearTimeout(tid);
+                    if (res.ok) {
+                        xmlText = await res.text();
+                        if (xmlText && xmlText.includes('<item>')) break;
+                        xmlText = null;
+                    }
+                } catch (e) { /* next proxy */ }
+            }
+            loadingEl.style.display = 'none';
+            if (!xmlText) {
+                errorEl.style.display = '';
+                errorEl.innerHTML = 'RSS 피드를 불러올 수 없습니다. 아래 바로가기에서 직접 확인해주세요.<br><a href="https://trends.google.co.kr/trending?geo=KR" target="_blank" style="color:#dc3545;font-weight:700;">Google Trends 열기 →</a>';
+                return;
+            }
+            const parser = new DOMParser();
+            const xml = parser.parseFromString(xmlText, 'text/xml');
+            const items = xml.querySelectorAll('item');
+            const trends = [];
+            items.forEach((item, i) => {
+                const title = item.querySelector('title')?.textContent?.trim();
+                const traffic = item.querySelector('ht\\:approx_traffic, approx_traffic')?.textContent?.trim();
+                const newsTitle = item.querySelector('ht\\:news_item_title, news_item_title')?.textContent?.trim();
+                if (title) trends.push({ rank: i + 1, keyword: title, traffic: traffic || '', newsTitle });
+            });
+            _googleTrendsCache = trends;
+            _googleTrendsCacheTime = Date.now();
+            renderGoogleTrends(trends);
+        }
+
+        function renderGoogleTrends(trends) {
+            const gridEl = document.getElementById('googleTrendsGrid');
+            const timeEl = document.getElementById('googleTrendsTime');
+            if (!trends.length) {
+                gridEl.innerHTML = '<p style="color:#888;text-align:center;padding:20px;">급상승 검색어가 없습니다.</p>';
+                return;
+            }
+            gridEl.innerHTML = trends.map(t => {
+                const safeKw = t.keyword.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                return '<div class="trend-card" onclick="onTrendKeywordClick(\'' + safeKw + '\')" title="' + (t.newsTitle || '').replace(/"/g, '&quot;') + '">'
+                    + '<div class="trend-rank ' + (t.rank <= 3 ? 'top3' : '') + '">' + t.rank + '</div>'
+                    + '<div class="trend-info"><div class="trend-keyword">' + t.keyword + '</div>'
+                    + (t.traffic ? '<div class="trend-traffic">검색량 ' + t.traffic + '</div>' : '')
+                    + '</div></div>';
+            }).join('');
+            const now = new Date();
+            timeEl.textContent = '마지막 업데이트: ' + now.getHours() + '시 ' + String(now.getMinutes()).padStart(2,'0') + '분';
+        }
+
+        function onTrendKeywordClick(keyword) {
+            window.open('https://www.youtube.com/results?search_query=' + encodeURIComponent(keyword), '_blank');
+        }
+
+        // Naver DataLab
+        const NAVER_CHART_COLORS = ['#03c75a', '#dc3545', '#4285f4', '#ff6b00', '#9b59b6'];
+
+        function loadNaverApiKeys() {
+            const cid = localStorage.getItem('naver_client_id') || '';
+            const secret = localStorage.getItem('naver_client_secret') || '';
+            const cidEl = document.getElementById('naverClientId');
+            const secEl = document.getElementById('naverClientSecret');
+            const statusEl = document.getElementById('naverKeyStatus');
+            if (!cidEl) return;
+            cidEl.value = cid;
+            secEl.value = secret;
+            if (cid && secret) { statusEl.textContent = '✓ API 키 저장됨'; statusEl.style.color = '#03c75a'; }
+            else { statusEl.textContent = 'Naver Developers에서 DataLab API 키를 발급받으세요.'; statusEl.style.color = '#888'; }
+        }
+
+        function saveNaverApiKeys() {
+            const cid = document.getElementById('naverClientId').value.trim();
+            const secret = document.getElementById('naverClientSecret').value.trim();
+            if (!cid || !secret) { alert('Client ID와 Secret을 모두 입력해주세요.'); return; }
+            localStorage.setItem('naver_client_id', cid);
+            localStorage.setItem('naver_client_secret', secret);
+            document.getElementById('naverKeyStatus').textContent = '✓ 저장 완료!';
+            document.getElementById('naverKeyStatus').style.color = '#03c75a';
+        }
+
+        async function fetchNaverTrend() {
+            const cid = localStorage.getItem('naver_client_id');
+            const secret = localStorage.getItem('naver_client_secret');
+            if (!cid || !secret) { alert('먼저 Naver API 키를 입력해주세요.'); return; }
+            const keywordsRaw = document.getElementById('naverKeywords').value.trim();
+            if (!keywordsRaw) { alert('비교할 키워드를 입력해주세요.'); return; }
+            const keywords = keywordsRaw.split(',').map(k => k.trim()).filter(k => k).slice(0, 5);
+            const months = parseInt(document.getElementById('naverPeriod').value);
+            const endDate = new Date(); const startDate = new Date(); startDate.setMonth(startDate.getMonth() - months);
+            const fmt = d => d.toISOString().split('T')[0];
+            const body = { startDate: fmt(startDate), endDate: fmt(endDate), timeUnit: months <= 1 ? 'date' : 'week',
+                keywordGroups: keywords.map(k => ({ groupName: k, keywords: [k] })) };
+            const chartEl = document.getElementById('naverTrendChart');
+            const legendEl = document.getElementById('naverTrendLegend');
+            const summaryEl = document.getElementById('naverTrendSummary');
+            chartEl.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#888;"><div class="trend-spinner"></div>&nbsp;불러오는 중...</div>';
+            legendEl.innerHTML = ''; summaryEl.innerHTML = '';
+            document.getElementById('naverTrendResult').style.display = '';
+            try {
+                const res = await fetch('https://openapi.naver.com/v1/datalab/search', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Naver-Client-Id': cid, 'X-Naver-Client-Secret': secret },
+                    body: JSON.stringify(body) });
+                if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.errorMessage || 'API 오류 (' + res.status + ')'); }
+                const data = await res.json();
+                renderNaverChart(data.results, chartEl, legendEl, summaryEl);
+            } catch (e) {
+                if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError')) {
+                    chartEl.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:20px;text-align:center;">'
+                        + '<p style="color:#dc3545;font-weight:700;margin-bottom:8px;">CORS 제한으로 직접 호출이 차단됐어요</p>'
+                        + '<p style="color:#666;font-size:0.85rem;">브라우저 보안 정책 때문에 Naver API 직접 호출이 안 됩니다.<br>'
+                        + '<a href="https://datalab.naver.com/keyword/trendSearch.naver" target="_blank" style="color:#03c75a;">Naver DataLab</a>에서 직접 검색해주세요.</p></div>';
+                } else { chartEl.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#dc3545;">' + e.message + '</div>'; }
+            }
+        }
+
+        function renderNaverChart(results, chartEl, legendEl, summaryEl) {
+            if (!results || !results.length) { chartEl.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#888;">결과가 없습니다.</div>'; return; }
+            const canvas = document.createElement('canvas');
+            canvas.width = chartEl.clientWidth * 2; canvas.height = 600; canvas.style.width = '100%'; canvas.style.height = '100%';
+            chartEl.innerHTML = ''; chartEl.appendChild(canvas);
+            const ctx = canvas.getContext('2d');
+            const pad = { top: 30, right: 30, bottom: 60, left: 60 };
+            const w = canvas.width - pad.left - pad.right, h = canvas.height - pad.top - pad.bottom;
+            let maxVal = 0;
+            results.forEach(r => r.data.forEach(d => { if (d.ratio > maxVal) maxVal = d.ratio; }));
+            if (maxVal === 0) maxVal = 100;
+            ctx.fillStyle = '#fafafa'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = '#e8e8e8'; ctx.lineWidth = 1;
+            for (let i = 0; i <= 5; i++) {
+                const y = pad.top + (h / 5) * i;
+                ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + w, y); ctx.stroke();
+                ctx.fillStyle = '#999'; ctx.font = '20px sans-serif'; ctx.textAlign = 'right';
+                ctx.fillText(Math.round(maxVal * (5 - i) / 5), pad.left - 10, y + 6);
+            }
+            results.forEach((result, ri) => {
+                const color = NAVER_CHART_COLORS[ri % NAVER_CHART_COLORS.length];
+                const pts = result.data; if (!pts.length) return;
+                ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.beginPath();
+                pts.forEach((p, pi) => { const x = pad.left + (w / Math.max(pts.length - 1, 1)) * pi; const y = pad.top + h - (p.ratio / maxVal) * h; pi === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); });
+                ctx.stroke();
+            });
+            const fd = results[0].data;
+            if (fd.length > 0) {
+                ctx.fillStyle = '#999'; ctx.font = '20px sans-serif'; ctx.textAlign = 'center';
+                [0, Math.floor(fd.length / 2), fd.length - 1].forEach(idx => {
+                    const x = pad.left + (w / Math.max(fd.length - 1, 1)) * idx;
+                    ctx.fillText(fd[idx].period, x, canvas.height - 15);
+                });
+            }
+            legendEl.innerHTML = results.map((r, i) =>
+                '<span style="display:inline-flex;align-items:center;gap:4px;font-size:0.85rem;font-weight:700;">'
+                + '<span style="width:12px;height:12px;border-radius:3px;background:' + NAVER_CHART_COLORS[i % NAVER_CHART_COLORS.length] + ';display:inline-block;"></span>'
+                + r.title + '</span>').join('');
+            const parts = results.map((r, i) => {
+                const data = r.data; if (data.length < 2) return '';
+                const recent = data.slice(-4), older = data.slice(-8, -4);
+                const rAvg = recent.reduce((s, d) => s + d.ratio, 0) / recent.length;
+                const oAvg = older.length ? older.reduce((s, d) => s + d.ratio, 0) / older.length : rAvg;
+                const chg = oAvg > 0 ? ((rAvg - oAvg) / oAvg * 100).toFixed(0) : 0;
+                const arrow = chg > 5 ? '📈 상승' : chg < -5 ? '📉 하락' : '➡️ 유지';
+                return '<span style="color:' + NAVER_CHART_COLORS[i % NAVER_CHART_COLORS.length] + ';font-weight:700;">' + r.title + '</span>: ' + arrow + ' (' + (chg > 0 ? '+' : '') + chg + '%)';
+            }).filter(Boolean);
+            summaryEl.innerHTML = parts.length ? '<b>최근 추세:</b> ' + parts.join(' · ') : '';
+        }
+
+        try { loadNaverApiKeys(); } catch(e) {}
     </script>
 </body>
 </html>
