@@ -2624,6 +2624,38 @@
         <!-- ===== 프로세스: 실시간 트렌드 ===== -->
         <div id="process-trend" style="display:none;">
 
+            <!-- 실시간 경제 뉴스 이슈 레이더 (Naver News Search API) -->
+            <div class="section">
+                <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
+                    🚨 경제 이슈 레이더 (실시간)
+                    <div style="display:flex;gap:6px;align-items:center;">
+                        <select id="issueRadarCategory" onchange="fetchIssueRadar(true)" style="padding:6px 10px;border:1px solid #e0e0e0;border-radius:6px;font-size:0.8rem;">
+                            <option value="econ">📊 경제 전반</option>
+                            <option value="stock">💹 주식/증시</option>
+                            <option value="real">🏢 부동산</option>
+                            <option value="global">🌍 글로벌</option>
+                            <option value="policy">🏛️ 금융정책</option>
+                            <option value="crypto">🪙 암호화폐</option>
+                            <option value="custom">🎯 내 채널 키워드</option>
+                        </select>
+                        <button onclick="fetchIssueRadar(true)" style="padding:6px 16px;background:#e74c3c;color:white;border:none;border-radius:8px;font-size:0.85rem;cursor:pointer;">새로고침</button>
+                    </div>
+                </div>
+                <div class="section-content">
+                    <p style="font-size:0.85rem;color:#888;margin-bottom:12px;">
+                        <b>📰 제목 클릭</b>은 유튜브 검색 (선점 기회 확인) · <b>🔗 기사</b>는 원문. 30초 캐시, 수동 새로고침으로 갱신.
+                        <span id="issueRadarBadge" style="display:none;margin-left:8px;padding:2px 8px;background:#03c75a;color:white;border-radius:4px;font-size:0.75rem;font-weight:700;">Naver API</span>
+                    </p>
+                    <div id="issueRadarLoading" style="display:none;text-align:center;padding:20px;color:#888;">
+                        <div class="trend-spinner"></div>
+                        불러오는 중...
+                    </div>
+                    <div id="issueRadarError" style="display:none;padding:16px;background:#fff5f5;border:1px solid #ffe0e0;border-radius:10px;color:#dc3545;font-size:0.9rem;line-height:1.6;"></div>
+                    <div id="issueRadarList"></div>
+                    <p id="issueRadarTime" style="font-size:0.8rem;color:#aaa;margin-top:8px;text-align:right;"></p>
+                </div>
+            </div>
+
             <!-- 실시간 경제 유튜브 (경제 채널 특화) -->
             <div class="section">
                 <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
@@ -3113,7 +3145,7 @@
             if (proc === 'visual') checkFcServer('vsServerStatus');
             if (proc === 'review') checkFcServer('rvServerStatus');
             if (proc === 'factcheck') checkFcServer();
-            if (proc === 'trend') { fetchGoogleTrends(); fetchEconYoutube(); }
+            if (proc === 'trend') { fetchIssueRadar(); fetchGoogleTrends(); fetchEconYoutube(); }
         }
 
         // API 상태 확인 (서버 불필요 — API 키 존재 여부만 체크)
@@ -10257,6 +10289,126 @@ Example format:
         }
 
         try { loadNaverApiKeys(); } catch(e) {}
+
+        // ===========================
+        // 경제 이슈 레이더 (Naver News Search API)
+        // ===========================
+        const ISSUE_RADAR_CATEGORIES = {
+            econ:   { name: '경제',     query: '경제' },
+            stock:  { name: '주식',     query: '코스피 OR 증시 OR 주가' },
+            real:   { name: '부동산',   query: '부동산 OR 아파트 OR 집값' },
+            global: { name: '글로벌',   query: '미국경제 OR 연준 OR 환율 OR 중국경제' },
+            policy: { name: '금융정책', query: '한국은행 OR 기준금리 OR 통화정책' },
+            crypto: { name: '암호화폐', query: '비트코인 OR 암호화폐' }
+        };
+
+        let _issueRadarCache = {};
+        let _issueRadarCacheTime = {};
+        const ISSUE_RADAR_CACHE_TTL = 30 * 1000; // 30초 (실시간성 중시)
+
+        async function fetchIssueRadar(forceRefresh = false) {
+            const catEl = document.getElementById('issueRadarCategory');
+            if (!catEl) return;
+            const cat = catEl.value;
+
+            // 커스텀: 내 채널 키워드 사용
+            let query = '';
+            if (cat === 'custom') {
+                const channelKeywords = (document.getElementById('channelKeywords')?.value || '').trim();
+                if (!channelKeywords) {
+                    document.getElementById('issueRadarLoading').style.display = 'none';
+                    const errorEl = document.getElementById('issueRadarError');
+                    errorEl.style.display = '';
+                    errorEl.innerHTML = '주제찾기 탭에서 <b>핵심 키워드</b>를 먼저 저장해주세요.';
+                    return;
+                }
+                // 쉼표/공백으로 분리된 키워드를 OR로 연결 (최대 5개)
+                query = channelKeywords.split(/[,，\s]+/).filter(Boolean).slice(0, 5).join(' OR ');
+            } else {
+                query = ISSUE_RADAR_CATEGORIES[cat].query;
+            }
+
+            const cacheKey = cat + '|' + query;
+
+            if (!forceRefresh && _issueRadarCache[cacheKey] && (Date.now() - (_issueRadarCacheTime[cacheKey] || 0)) < ISSUE_RADAR_CACHE_TTL) {
+                renderIssueRadar(_issueRadarCache[cacheKey]);
+                return;
+            }
+
+            const loadingEl = document.getElementById('issueRadarLoading');
+            const errorEl = document.getElementById('issueRadarError');
+            const listEl = document.getElementById('issueRadarList');
+            const timeEl = document.getElementById('issueRadarTime');
+            const badgeEl = document.getElementById('issueRadarBadge');
+
+            loadingEl.style.display = '';
+            errorEl.style.display = 'none';
+            listEl.innerHTML = '';
+            timeEl.textContent = '';
+
+            const cid = localStorage.getItem('naver_client_id');
+            const secret = localStorage.getItem('naver_client_secret');
+
+            if (!cid || !secret) {
+                loadingEl.style.display = 'none';
+                errorEl.style.display = '';
+                errorEl.innerHTML = '⚠️ Naver API 키가 필요합니다.<br>'
+                    + '아래 <b>📊 Naver 키워드 트렌드 비교</b> 섹션에서 Client ID / Secret 입력 후 저장해주세요.<br>'
+                    + '<small>키 없으면 <a href="https://developers.naver.com/apps/#/register?api=ndsearch" target="_blank" style="color:#03c75a;font-weight:700;">여기서 발급</a> (무료, 2분 소요)</small>';
+                return;
+            }
+
+            try {
+                const news = await fetchNaverNewsSearch(query, cid, secret);
+                loadingEl.style.display = 'none';
+
+                if (!news || !news.length) {
+                    errorEl.style.display = '';
+                    errorEl.innerHTML = '해당 키워드로 최근 뉴스가 없어요. 다른 카테고리를 선택해보세요.';
+                    return;
+                }
+
+                if (badgeEl) badgeEl.style.display = '';
+                _issueRadarCache[cacheKey] = news;
+                _issueRadarCacheTime[cacheKey] = Date.now();
+                renderIssueRadar(news);
+            } catch (e) {
+                loadingEl.style.display = 'none';
+                errorEl.style.display = '';
+                if (/CORS|fetch|Network/i.test(e.message)) {
+                    errorEl.innerHTML = '⚠️ 브라우저에서 Naver API 직접 호출이 차단됐어요 (CORS).<br>'
+                        + '<small>Naver API는 원래 서버사이드용이라 브라우저에서 제한이 있어요. 아래 빠른 링크로 <a href="https://search.naver.com/search.naver?where=news&query=' + encodeURIComponent(query) + '&sort=1" target="_blank" style="color:#03c75a;font-weight:700;">네이버 뉴스 최신순</a>으로 이동해서 확인하세요.</small>';
+                } else {
+                    errorEl.innerHTML = 'Naver API 오류: ' + e.message;
+                }
+            }
+        }
+
+        function renderIssueRadar(news) {
+            const listEl = document.getElementById('issueRadarList');
+            const timeEl = document.getElementById('issueRadarTime');
+
+            if (!news.length) {
+                listEl.innerHTML = '<p style="color:#888;text-align:center;padding:20px;">뉴스가 없습니다.</p>';
+                return;
+            }
+
+            listEl.innerHTML = news.map(n => {
+                const timeStr = formatRelativeTime(n.pubTimestamp);
+                const safeTitle = n.title.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                const safeLink = n.link.replace(/"/g, '&quot;');
+                const ytSearchUrl = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(n.title) + '&sp=CAISAhAB'; // 최근 업로드순
+                return '<div class="econ-news-item">'
+                    + '<span class="econ-news-source">' + (n.sourceName || '뉴스').substring(0, 8) + '</span>'
+                    + '<div class="econ-news-title" onclick="window.open(\'' + ytSearchUrl + '\',\'_blank\')" title="클릭: 유튜브에서 이 제목 검색 (선점 기회 확인)">' + n.title + '</div>'
+                    + '<span class="econ-news-time">' + timeStr + '</span>'
+                    + '<a class="econ-news-article-link" href="' + safeLink + '" target="_blank" title="기사 원문">🔗 기사</a>'
+                    + '</div>';
+            }).join('');
+
+            const now = new Date();
+            timeEl.textContent = '마지막 업데이트: ' + now.getHours() + '시 ' + String(now.getMinutes()).padStart(2,'0') + '분 ' + String(now.getSeconds()).padStart(2,'0') + '초 (30초 캐시)';
+        }
 
         // ===========================
         // 실시간 경제 유튜브 (YouTube Data API 기반)
