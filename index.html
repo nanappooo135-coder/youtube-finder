@@ -3836,11 +3836,12 @@ realSearchKeyword 예:
 
 사용자가 셀팟에서 **직접 캐릭터 이미지를 순차 삽입**하는 방식이다. 지식세포 스타일에서 많이 씀.
 
-**needCharacter: true로 표시할 조건 (아래 중 하나라도 해당하면 true)**:
-1. **특정 정치인/유명인 등장** (트럼프, 네타냐후, 푸틴, 시진핑, 바이든 등 고유명사)
-2. **국가 간 대립·동맹·전쟁** (국기 활용이 효과적인 순간)
+**needCharacter: true로 표시할 조건 (아래 중 하나라도 해당하면 반드시 true)**:
+1. **특정 정치인/유명인 고유명사가 narration에 1명이라도 등장하면 거의 무조건 true** (트럼프, 네타냐후, 푸틴, 시진핑, 바이든, 하메네이, 젤렌스키, 마크롱, 김정은, 문재인, 윤석열, MBS, 머스크, 갈리바프, 무니르 등)
+2. **국가 간 대립·동맹·전쟁·협상·봉쇄** (국기 활용이 효과적인 순간)
 3. **여러 주체가 순차로 등장**하는 상황 (예: "A가 B에게 C를 선언")
 4. **풍자적/만화적 설명이 더 효과적인 순간** (진지한 스톡보다 캐릭터가 재미)
+⚠️ **인물 고유명사가 나오는데 needCharacter를 false로 두면 안 됨. 이것이 가장 흔한 실수.**
 
 **characterSequence 작성 규칙**:
 - 배열 형식. 화면에 **순서대로 나올 요소**를 적음.
@@ -5360,6 +5361,30 @@ ${script}
                     }
                 });
                 const mapScenes = jsonObj.scenes.filter(s => s.isMapScene === true);
+
+                // 🎭 캐릭터 자동 감지 fallback — Gemini가 needCharacter를 누락한 경우 narration에서 인물명 감지
+                const PERSON_NAMES = /트럼프|바이든|푸틴|시진핑|네타냐후|하메네이|젤렌스키|마크롱|숄츠|스타머|모디|김정은|윤석열|문재인|오바마|부시|클린턴|레이건|시리자|에르도안|MBS|빈살만|갈리바프|무니르|밴스|머스크|엘론머스크|베조스|저커버그|키신저|볼턴|폼페이오/;
+                const COUNTRY_CONFRONTATION = /대립|전쟁|충돌|봉쇄|제재|협상|회담|정상회담|동맹|적대|침공|공습|폭격|휴전/;
+                jsonObj.scenes.forEach(s => {
+                    if (s.needCharacter === true) return; // 이미 태그됨
+                    const narr = s.narration || '';
+                    const personMatch = narr.match(PERSON_NAMES);
+                    if (personMatch) {
+                        s.needCharacter = true;
+                        if (!Array.isArray(s.characterSequence) || s.characterSequence.length === 0) {
+                            // narration에서 감지된 인물명으로 자동 생성
+                            const found = [];
+                            const allMatches = narr.match(new RegExp(PERSON_NAMES.source, 'g')) || [];
+                            const unique = [...new Set(allMatches)];
+                            unique.forEach(name => found.push(name + ' 캐릭터'));
+                            // 국가 대립 맥락이면 관련 이모지 추가
+                            if (COUNTRY_CONFRONTATION.test(narr)) {
+                                found.push('⚡ 대립/긴장');
+                            }
+                            s.characterSequence = found;
+                        }
+                    }
+                });
 
                 // 🏛️ 역사 자료 몽타주 장면
                 const montageScenes = jsonObj.scenes.filter(s => s.isHistoricalMontage === true && Array.isArray(s.montageElements) && s.montageElements.length > 0);
