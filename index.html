@@ -3411,13 +3411,24 @@ ${scriptSection}`;
                     blocks.push({ ko: koText, prompt: (enMatch ? enMatch[1] : '').trim() });
                 }
 
+                // 🎭 인물 자동 감지 — 한국어 텍스트에서 인물명 추출
+                const VS_PERSON_RE = /트럼프|바이든|푸틴|시진핑|네타냐후|하메네이|젤렌스키|마크롱|숄츠|스타머|모디|김정은|김정일|김일성|윤석열|문재인|박근혜|이명박|오바마|부시|클린턴|레이건|카터|닉슨|에르도안|MBS|빈살만|갈리바프|무니르|밴스|머스크|베조스|저커버그|키신저|볼턴|폼페이오|페제시키안|아라그치|카다피|후세인|사담|카스트로|마두로|아사드|모즈타바|라이시|로하니|아마디네자드/g;
+                blocks.forEach(b => {
+                    const matches = b.ko.match(VS_PERSON_RE);
+                    b.persons = matches ? [...new Set(matches)] : [];
+                });
+
                 resultsEl.innerHTML = `<div style="margin-bottom:12px;font-size:0.9rem;font-weight:700;color:#dc3545;">도입부 ${introLines.length}개 + 본문 ${bodyGroups.length}개 = 총 ${totalPairs}개 요청 → ${blocks.length}개 생성됨</div>` +
-                blocks.map(b => `
-                    <div class="vs-card">
+                blocks.map(b => {
+                    const personBadges = b.persons.length > 0
+                        ? `<div style="margin-bottom:6px;">${b.persons.map(p => `<span style="display:inline-block;background:#7c3aed;color:#fff;font-size:0.75rem;font-weight:700;padding:2px 8px;border-radius:12px;margin:2px 4px 2px 0;">🎭 ${escapeHtml(p)}</span>`).join('')}</div>`
+                        : '';
+                    return `<div class="vs-card">
+                        ${personBadges}
                         <div class="vs-ko">${escapeHtml(b.ko)}</div>
                         <div class="vs-prompt">${escapeHtml(b.prompt)}</div>
-                    </div>
-                `).join('') +
+                    </div>`;
+                }).join('') +
                 `<details style="margin-top:16px;" open><summary style="cursor:pointer;font-weight:700;color:#888;">원본 텍스트 (${fullText.length.toLocaleString()}자)</summary>
                 <textarea style="width:100%;min-height:300px;margin-top:8px;padding:12px;border:2px solid #e0e0e0;border-radius:8px;font-size:0.85rem;font-family:inherit;line-height:1.6;" readonly>${escapeHtml(fullText)}</textarea></details>`;
 
