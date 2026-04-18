@@ -3687,18 +3687,9 @@ ${chunkRule}
 
 ### ⚠️ 오버레이는 overlays 배열로만 작성 (textOverlay 금지)
 
-**❌ 잘못된 예 (셀팟 인식 불가)**:
-```
-"textOverlay": "80만 명",
-"textPosition": "bottom"
-```
+**❌ 잘못된 예 (셀팟 인식 불가)**: "textOverlay": "80만 명", "textPosition": "bottom"
 
-**✅ 올바른 예 (셀팟 자동 적용)**:
-```
-"overlays": [
-  { "type": "text_headline", "data": { "text": "80만 명" } }
-]
-```
+**✅ 올바른 예 (셀팟 자동 적용)**: "overlays": [{ "type": "text_headline", "data": { "text": "80만 명" } }]
 
 → **단순 텍스트 오버레이도 무조건 overlays 배열로!**
 
