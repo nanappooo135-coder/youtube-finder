@@ -3671,12 +3671,12 @@ ${chunkRule}
 - \"characterLayout\": 캐릭터 배치 레이아웃. 12가지 프리셋 중 하나. 캐릭터 프리셋이 있는 경우에만 사용. (생략 가능)
 - \"characterAsset\": 사용할 캐릭터 프리셋 이름. characterLayout이 있을 때만 추가. (생략 가능)
 - \"aiPrompt\": bgSource가 "ai"일 때만 포함. 영문 프롬프트. 반드시 "dark background"와 "16:9" 포함
-- \"textOverlay\": 화면에 표시할 텍스트. 없으면 필드 자체를 생략
-- \"textPosition\": textOverlay가 있을 때만 포함
 - \"sfxPrompt\": 효과음이 필요한 장면에만 포함. 영문 키워드. 짧게.
 
-### 사용 금지 필드 (절대 포함하지 마세요)
+### 🚨 사용 금지 필드 (절대 포함하지 마세요)
 
+- **\"textOverlay\"**: ❌ 절대 사용 금지! 셀팟이 무시함. 대신 **overlays 배열** 사용.
+- **\"textPosition\"**: ❌ 절대 사용 금지! overlays 배열만 써라.
 - transition
 - durationSeconds
 - notes
@@ -3684,6 +3684,23 @@ ${chunkRule}
 - bgSource: "solid"
 - textStyle, textFont, textSize, textColor, textBg
 - infographicType, infographicData
+
+### ⚠️ 오버레이는 overlays 배열로만 작성 (textOverlay 금지)
+
+**❌ 잘못된 예 (셀팟 인식 불가)**:
+```
+"textOverlay": "80만 명",
+"textPosition": "bottom"
+```
+
+**✅ 올바른 예 (셀팟 자동 적용)**:
+```
+"overlays": [
+  { "type": "text_headline", "data": { "text": "80만 명" } }
+]
+```
+
+→ **단순 텍스트 오버레이도 무조건 overlays 배열로!**
 
 ### 내부 전용 메타 필드 (실사 교체 안내용 + GIF 교체 안내용)
 
@@ -5419,6 +5436,19 @@ ${script}
 
                 // ⚛️ Remotion 코드 힌트 장면
                 const codeGenHintScenes = jsonObj.scenes.filter(s => s.codeGenHint && s.codeGenHint.pattern);
+
+                // textOverlay/textPosition → overlays 배열 자동 변환 (셀팟 호환)
+                jsonObj.scenes.forEach(s => {
+                    if (typeof s.textOverlay === 'string' && s.textOverlay.trim()) {
+                        if (!Array.isArray(s.overlays)) s.overlays = [];
+                        const hasHeadline = s.overlays.some(o => o && (o.type === 'text_headline' || o.type === 'text_quote' || o.type === 'title_card'));
+                        if (!hasHeadline) {
+                            s.overlays.push({ type: 'text_headline', data: { text: s.textOverlay.trim() } });
+                        }
+                        delete s.textOverlay;
+                        delete s.textPosition;
+                    }
+                });
 
                 // 셀팟에 넣을 JSON은 내부 메타 필드 제거 (깨끗하게)
                 const cleanScenes = jsonObj.scenes.map(s => {
