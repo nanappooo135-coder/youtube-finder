@@ -4681,8 +4681,8 @@ stock bgQuery 생성 후 자문:
 ## overlays 배열 상세 규칙 (셀팟 100% 자동화 — 텍스트 전용)
 
 **⚠️ 매우 중요한 원칙 (실험 결과 검증됨)**:
-- 셀팟은 **text_headline / text_quote / title_card** 3가지 타입만 100% 자동 적용됨.
-- 다른 타입(versus_stat, single_stat_card, pie_donut, ranking_list, stat_change, 차트류 등)은 데이터가 화면에 안 뜨거나 깨짐 → **절대 쓰지 말 것**.
+- 셀팟 v1.0.13 기준 **7가지 타입** 자동 인식 (text_headline, text_quote, title_card, single_stat_card, versus_stat, pie_donut, bar_chart_comparison, timeline_horizontal, ranking_list)
+- 셀팟 AI가 나레이션 읽고 data를 자동으로 채움 → **type만 정확히 지정**하면 됨
 - 한 장면에 **반드시 1개 오버레이만**. 2개 이상이면 텍스트가 겹쳐서 깨짐.
 
 ### 🎯 핵심 원칙 — **오버레이는 "선택적" 배치 (핵심 메시지가 있는 장면만)**
@@ -4749,24 +4749,51 @@ stock bgQuery 생성 후 자문:
 - **data**: { text } 또는 { text, author } 또는 { mainTitle, subtitle }
 - 한 장면에 1개만. 절대 여러 개 X.
 
-### 사용 가능한 타입 (이 3가지만)
+### 사용 가능한 타입 7가지 (실전 검증됨 — 셀팟 자동 인식)
 
-| type | 쓰는 경우 | data 형식 |
-|------|----------|-----------|
-| **text_headline** | 거의 모든 강조 (숫자, 키워드, 비교, 변화) | { "text": "표시 텍스트" } |
-| **text_quote** | 인용문·실제 발언 | { "text": "인용문", "author": "발화자" } |
-| **title_card** | 챕터·섹션 시작 (영상 1편당 3~5개) | { "mainTitle": "제목", "subtitle": "부제" } |
+내용 유형에 맞게 **다양하게 사용**. 셀팟 AI가 나레이션 읽고 data 자동 채움.
 
-### 정보 표현 전략 (text_headline으로 모든 것 표현)
+| type | 쓰는 경우 | 한글명 |
+|------|----------|--------|
+| **text_headline** | 짧은 키워드·핵심 문구 강조 | 헤드라인 |
+| **text_quote** | 인용문·실제 발언 | 인용문 |
+| **title_card** | 챕터·섹션 시작 (영상당 3~5개) | 타이틀 |
+| **single_stat_card** | **거대 숫자 강조** (70%, 200만 등 1개 수치) | 수치카드 |
+| **versus_stat** | **A vs B 비교** (좌우 대결·대립) | VS대결 |
+| **pie_donut** | **비율·점유율** (85% vs 15% 같은 도넛) | 도넛차트 |
+| **bar_chart_comparison** | **3개 이상 항목 비교** (막대 차트) | 막대차트 |
+| **timeline_horizontal** | **시간순 이벤트** (연도별 사건 3~5개) | 타임라인 |
+| **ranking_list** | **순위 나열** (1위·2위·3위) | 랭킹 |
 
-기존에 다양한 차트 타입을 썼던 것들을 **모두 text_headline 한 줄로** 변환:
+### data 구조 (타입별)
 
-| 표현하려는 것 | text_headline data.text |
+- **text_headline / text_quote / title_card**: `{ "text": "..." }` 또는 `{ "text": "...", "author": "..." }` 또는 `{ "mainTitle": "...", "subtitle": "..." }`
+- **single_stat_card / versus_stat / pie_donut / bar_chart_comparison / timeline_horizontal / ranking_list**: data 필드는 셀팟 AI가 자동 생성하므로 **빈 객체 `{}` 또는 생략 가능**. 또는 간단한 힌트만: `{ "title": "주제" }`.
+
+### 타입 선택 예시
+
+| 나레이션 | 추천 type |
+|---------|----------|
+| "중동 의존도 70%" | single_stat_card |
+| "미국 70% vs 한국 15%" | versus_stat |
+| "석탄 85%, 기타 15%" | pie_donut |
+| "세계 1위 인도, 2위 한국, 3위 한국" | ranking_list |
+| "중동 22일, 파나마 42일, 남미 60일" | bar_chart_comparison |
+| "1700년대 격리, 1920년대 의존, 1990년대 붕괴" | timeline_horizontal |
+| "안 바꾸는 게 합리적" | text_headline |
+| "칭기즈칸의 나라" | title_card |
+
+### 정보 표현 전략 (type 맞춤 선택)
+
+단순 키워드는 text_headline, 숫자·데이터는 single_stat_card 이상의 전용 타입. **한 장면 = 한 type**.
+
+| 표현하려는 것 | 추천 type + text |
 |--------------|------------------------|
-| 단일 숫자 강조 | "70%" |
-| 숫자 + 라벨 | "70% 중동 의존" |
-| A vs B 비교 | "미국 70% vs 한국 15%" |
-| 전후 변화 | "10% → 70%" |
+| 단일 숫자 강조 | single_stat_card / "70%" |
+| A vs B 비교 | versus_stat |
+| 전후 변화·비율 | pie_donut |
+| 핵심 결론 | text_headline / "결론 문장" |
+| 챕터 전환 | title_card |
 | 비율 (3개) | "중동 70% · 미국 16% · 기타 14%" |
 | 순위 (3개) | "1위 인도 · 2위 한국 · 3위 한국" |
 | 핵심 결론 | "안 바꾸는 게 합리적" |
@@ -4826,9 +4853,9 @@ stock bgQuery 생성 후 자문:
 ### ⚠️ 절대 원칙
 
 1. **한 장면에 overlays는 0개 또는 1개만**. 여러 개 절대 금지 (겹쳐서 깨짐).
-2. **type은 text_headline / text_quote / title_card 3가지만**. 다른 타입(versus_stat 등) 절대 금지.
-3. 여러 정보를 한 화면에 표현하고 싶으면 → **하나의 text_headline 텍스트로 합쳐서** 표현 (예: "미국 70% vs 한국 15%").
-4. **bgSource는 stock** 권장 (배경 영상 위에 텍스트 얹기).
+2. **type은 7가지 중 선택**: text_headline / text_quote / title_card / single_stat_card / versus_stat / pie_donut / bar_chart_comparison / timeline_horizontal / ranking_list. 내용에 맞게 다양하게 사용.
+3. 단순 키워드 강조는 text_headline, 숫자·데이터·비교는 전용 타입 (single_stat_card, versus_stat 등).
+4. **bgSource는 stock** 권장 (배경 영상 위에 오버레이 얹기).
 
 ### ⚠️ 사용 비중 목표 (매우 엄격)
 
@@ -5185,12 +5212,16 @@ Freepik에 아이콘·3D 에셋이 풍부해서 **stock 영상 위에 얹으면 
 
 ## ⚠️ 자동화 100%를 위한 절대 원칙 (다시 강조)
 
-1. **overlays type은 text_headline / text_quote / title_card 3가지만**. 다른 타입은 셀팟 자동 처리 안 됨 → 절대 금지.
+1. **overlays type은 7가지 중 선택** (text_headline, text_quote, title_card, single_stat_card, versus_stat, pie_donut, bar_chart_comparison, timeline_horizontal, ranking_list). 내용에 맞게.
 2. **한 장면에 overlays 1개만**. 여러 개 넣으면 텍스트 겹쳐서 깨짐.
-3. 비교/순위/변화/비율 모두 → **text_headline 한 줄**로 합쳐서 표현.
-   - 비교: "A 70% vs B 15%"
-   - 변화: "10% → 70%"
-   - 순위: "1위 인도 · 2위 한국"
+3. 내용별 타입 선택:
+   - 단일 숫자 강조 → single_stat_card
+   - A vs B 비교 → versus_stat
+   - 비율 (퍼센트) → pie_donut
+   - 3+ 항목 비교 → bar_chart_comparison
+   - 시간순 이벤트 → timeline_horizontal
+   - 순위 → ranking_list
+   - 핵심 키워드 → text_headline
 4. bgmMood는 한글 그대로 ("다큐", "뉴스" 등).
 5. needLogo, needRealImage 등 메타 필드는 그대로 유지.
 
@@ -5429,24 +5460,22 @@ ${script}
                 // ⚛️ Remotion 코드 힌트 장면
                 const codeGenHintScenes = jsonObj.scenes.filter(s => s.codeGenHint && s.codeGenHint.pattern);
 
-                // overlays 배열 → textOverlay 자동 복제 (셀팟 호환 — 셀팟은 textOverlay 필드를 읽음)
+                // overlays 배열 → textOverlay 자동 복제 (텍스트 타입만, 셀팟 폴백용)
+                // 데이터 타입(versus_stat, single_stat_card 등)은 셀팟 AI가 자동 생성하므로 textOverlay 불필요
                 jsonObj.scenes.forEach(s => {
-                    // 이미 textOverlay 있으면 스킵
                     if (typeof s.textOverlay === 'string' && s.textOverlay.trim()) return;
-                    // overlays 배열에서 text_headline/text_quote/title_card 찾아서 textOverlay로 복사
                     if (Array.isArray(s.overlays) && s.overlays.length > 0) {
                         const first = s.overlays[0];
                         if (first && first.data) {
-                            if (first.type === 'text_headline' && first.data.text) {
-                                s.textOverlay = first.data.text;
-                                if (!s.textPosition) s.textPosition = 'center';
-                            } else if (first.type === 'text_quote' && first.data.text) {
+                            if ((first.type === 'text_headline' || first.type === 'text_quote') && first.data.text) {
                                 s.textOverlay = first.data.text;
                                 if (!s.textPosition) s.textPosition = 'center';
                             } else if (first.type === 'title_card' && first.data.mainTitle) {
                                 s.textOverlay = first.data.mainTitle;
                                 if (!s.textPosition) s.textPosition = 'center';
                             }
+                            // 데이터 타입 (single_stat_card, versus_stat, pie_donut, bar_chart_comparison, timeline_horizontal, ranking_list) 은 textOverlay로 변환 X
+                            // 셀팟이 overlays 배열을 직접 인식하므로 그대로 둠
                         }
                     }
                 });
