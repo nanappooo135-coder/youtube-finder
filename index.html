@@ -4131,10 +4131,18 @@ GIF는 매칭 확률 낮아서 **최소 4개 대체 키워드** 필수.
    - aiPrompt에 Paper Cut 스타일 prefix 자동 삽입됨 (코드가 처리)
    - 판단: "경로·거리를 보여줘야 하는가?" YES → AI 지도 (isMapScene: true)
 
-5. **데이터 차트·인포그래픽** (**⚠️ bgSource는 "ai"이되 codeGenHint 추가해서 정밀 모드로 처리됨**)
-   - 도넛 차트, 비교 인포그래픽, 타임라인
-   - 예: "70% 중동 의존도", "20% vs 40% 찌꺼기", "3경로 비교"
-   - 판단: "숫자·비율을 차트로 강조해야 하는가?" YES → AI + codeGenHint
+5. **데이터 차트·인포그래픽** (**⚠️ 오버레이로 처리 — bgSource는 stock!**)
+   - 단순 비교·숫자·순위·비율은 **오버레이 타입**이 직접 시각화함 (versus_stat, single_stat_card, pie_donut, bar_chart_comparison, ranking_list, timeline_horizontal)
+   - **이런 장면의 bgSource는 "stock"** (분위기 전달용 배경) — AI 중복 생성 절대 금지
+   - 예: "70% 중동 의존도" → stock (국가 풍경) + single_stat_card 오버레이
+   - 예: "한국 $35,000 vs 몽골 $5,000" → stock (도시 대비) + versus_stat 또는 bar_chart_comparison 오버레이
+   - 예: "3경로 비교 (22일/42일/60일)" → stock (항해 영상) + bar_chart_comparison 오버레이
+   - **AI를 쓰는 경우는 진짜 복잡한 인포그래픽 합성 장면만** (여러 요소 + 지도 + 아이콘 + 설명 다 한 화면에)
+
+**⚠️ 중복 생성 방지 규칙**:
+- 오버레이가 데이터 다 표현 → bgSource는 stock (AI 금지)
+- codeGenHint 있는 장면은 거의 **stock 배경 + 전용 오버레이** 조합
+- AI 배경은 오버레이로 표현 불가능한 경우에만 (풍경·비유·역사 재현)
 
 ---
 
