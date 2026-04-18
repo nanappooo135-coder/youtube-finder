@@ -2171,19 +2171,13 @@
                     <div class="section-content">
                         <div id="jsonSummary" style="margin-bottom:12px;padding:12px;background:#f5f5f5;border-radius:8px;font-size:0.9rem;"></div>
                         <button class="search-btn" onclick="copySellpotJson(this)" style="width:100%;margin-bottom:8px;font-size:1.05rem;padding:14px;">📋 JSON 전체 복사 (셀팟용)</button>
-                        <button class="search-btn" onclick="splitJsonHalf()" style="width:100%;margin-bottom:8px;background:#17a2b8;border-color:#17a2b8;">✂️ JSON 2분할 (10분씩, 렌더링 과부하 방지)</button>
-                        <div id="jsonSplitResult" style="display:none;margin-bottom:12px;">
-                            <div style="margin-bottom:8px;">
-                                <label style="font-weight:700;font-size:0.9rem;color:#17a2b8;">Part 1</label>
-                                <button class="search-btn" onclick="copySplitPart(1, this)" style="margin-left:8px;padding:4px 12px;font-size:0.8rem;background:#17a2b8;border-color:#17a2b8;">📋 Part 1 복사</button>
-                            </div>
-                            <textarea id="jsonPart1" readonly style="width:100%;min-height:150px;padding:10px;border:2px solid #17a2b8;border-radius:8px;font-size:0.75rem;font-family:'Courier New',monospace;background:#1e1e1e;color:#d4d4d4;margin-bottom:12px;"></textarea>
-                            <div style="margin-bottom:8px;">
-                                <label style="font-weight:700;font-size:0.9rem;color:#17a2b8;">Part 2</label>
-                                <button class="search-btn" onclick="copySplitPart(2, this)" style="margin-left:8px;padding:4px 12px;font-size:0.8rem;background:#17a2b8;border-color:#17a2b8;">📋 Part 2 복사</button>
-                            </div>
-                            <textarea id="jsonPart2" readonly style="width:100%;min-height:150px;padding:10px;border:2px solid #17a2b8;border-radius:8px;font-size:0.75rem;font-family:'Courier New',monospace;background:#1e1e1e;color:#d4d4d4;"></textarea>
+                        <div style="display:flex;gap:6px;margin-bottom:8px;">
+                            <button class="search-btn" onclick="splitJsonInto(2)" style="flex:1;background:#17a2b8;border-color:#17a2b8;font-size:0.85rem;">✂️ 2분할 (~10분/편)</button>
+                            <button class="search-btn" onclick="splitJsonInto(3)" style="flex:1;background:#28a745;border-color:#28a745;font-size:0.85rem;">✂️ 3분할 (~7분/편)</button>
+                            <button class="search-btn" onclick="splitJsonInto(4)" style="flex:1;background:#fd7e14;border-color:#fd7e14;font-size:0.85rem;">✂️ 4분할 (~5분/편)</button>
                         </div>
+                        <p style="font-size:0.75rem;color:#888;margin-bottom:8px;">셀팟 렌더 한도 10분. 영상 길이에 따라 분할 선택 (15분→2분할, 20분→3분할, 30분→4분할).</p>
+                        <div id="jsonSplitResult" style="display:none;margin-bottom:12px;"></div>
                         <button class="search-btn" onclick="copyUnifiedCommand(this)" style="width:100%;margin-bottom:12px;background:#6f42c1;border-color:#6f42c1;font-size:0.95rem;">🤖 셀팟 AI 통합 명령어 복사 (AI이미지 + 효과음 한 번에)</button>
                         <textarea id="jsonOutput" readonly style="width:100%;min-height:400px;padding:16px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.8rem;font-family:'Courier New',monospace;line-height:1.5;background:#1e1e1e;color:#d4d4d4;resize:vertical;" placeholder="여기에 JSON이 표시됩니다"></textarea>
                     </div>
@@ -5507,38 +5501,67 @@ ${script}
             });
         }
 
-        // JSON 2분할 기능 (렌더링 과부하 방지용)
-        function splitJsonHalf() {
+        // JSON N분할 기능 (렌더링 과부하 방지용 — 셀팟 10분 한도)
+        window._sellpotParts = [];
+
+        function splitJsonInto(n) {
             if (!window._sellpotJsonData) { alert('먼저 JSON을 생성하세요.'); return; }
             try {
                 const data = JSON.parse(window._sellpotJsonData);
                 const scenes = data.scenes || [];
-                if (scenes.length < 2) { alert('장면이 2개 미만이라 분할 불가'); return; }
-                const mid = Math.ceil(scenes.length / 2);
-                const part1Scenes = scenes.slice(0, mid);
-                const part2Scenes = scenes.slice(mid).map((s, i) => ({ ...s, id: i + 1 }));
-                const part1Json = JSON.stringify({ scenes: part1Scenes }, null, 2);
-                const part2Json = JSON.stringify({ scenes: part2Scenes }, null, 2);
-                window._sellpotPart1 = part1Json;
-                window._sellpotPart2 = part2Json;
-                document.getElementById('jsonPart1').value = part1Json;
-                document.getElementById('jsonPart2').value = part2Json;
-                document.getElementById('jsonSplitResult').style.display = '';
-                // 스크롤
+                if (scenes.length < n) { alert('장면이 ' + n + '개 미만이라 ' + n + '분할 불가'); return; }
+                const chunkSize = Math.ceil(scenes.length / n);
+                const parts = [];
+                for (let i = 0; i < n; i++) {
+                    const chunk = scenes.slice(i * chunkSize, (i + 1) * chunkSize);
+                    if (chunk.length === 0) continue;
+                    const renumbered = chunk.map((s, idx) => ({ ...s, id: idx + 1 }));
+                    parts.push(JSON.stringify({ scenes: renumbered }, null, 2));
+                }
+                window._sellpotParts = parts;
+                _renderSplitResult(parts);
                 document.getElementById('jsonSplitResult').scrollIntoView({ behavior: 'smooth', block: 'start' });
             } catch (e) {
                 alert('분할 실패: ' + e.message);
             }
         }
 
-        function copySplitPart(partNum, btn) {
-            const text = partNum === 1 ? window._sellpotPart1 : window._sellpotPart2;
-            if (!text) { alert('먼저 분할 버튼을 누르세요.'); return; }
-            safeCopy(text).then(() => {
+        // 하위호환: 기존 splitJsonHalf 유지
+        function splitJsonHalf() { splitJsonInto(2); }
+
+        function _renderSplitResult(parts) {
+            const container = document.getElementById('jsonSplitResult');
+            container.style.display = '';
+            const colors = ['#17a2b8', '#28a745', '#fd7e14', '#dc3545', '#6f42c1', '#e83e8c'];
+            let html = '';
+            parts.forEach((json, i) => {
+                const color = colors[i % colors.length];
+                const sceneCount = (JSON.parse(json).scenes || []).length;
+                html += '<div style="margin-bottom:12px;">'
+                    + '<div style="margin-bottom:6px;display:flex;align-items:center;gap:8px;">'
+                    + '<label style="font-weight:700;font-size:0.9rem;color:' + color + ';">Part ' + (i + 1) + '</label>'
+                    + '<span style="font-size:0.78rem;color:#888;">(' + sceneCount + '개 장면)</span>'
+                    + '<button class="search-btn" onclick="copySplitPartByIndex(' + i + ', this)" style="margin-left:auto;padding:4px 12px;font-size:0.8rem;background:' + color + ';border-color:' + color + ';">📋 Part ' + (i + 1) + ' 복사</button>'
+                    + '</div>'
+                    + '<textarea readonly style="width:100%;min-height:120px;padding:10px;border:2px solid ' + color + ';border-radius:8px;font-size:0.72rem;font-family:Courier New,monospace;background:#1e1e1e;color:#d4d4d4;">' + _escapeHtml(json) + '</textarea>'
+                    + '</div>';
+            });
+            container.innerHTML = html;
+        }
+
+        function copySplitPartByIndex(idx, btn) {
+            const parts = window._sellpotParts || [];
+            if (!parts[idx]) { alert('먼저 분할 버튼을 누르세요.'); return; }
+            safeCopy(parts[idx]).then(() => {
                 const orig = btn.textContent;
                 btn.textContent = '✓ 복사됨!';
                 setTimeout(() => btn.textContent = orig, 1500);
             });
+        }
+
+        // 하위호환: 기존 copySplitPart(1 or 2)
+        function copySplitPart(partNum, btn) {
+            copySplitPartByIndex(partNum - 1, btn);
         }
 
         function copyUnifiedCommand(btn) {
