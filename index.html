@@ -4768,7 +4768,7 @@ stock bgQuery 생성 후 자문:
 ### data 구조 (타입별)
 
 - **text_headline / text_quote / title_card**: data 구조는 { "text": "..." } 또는 { "text": "...", "author": "..." } 또는 { "mainTitle": "...", "subtitle": "..." }
-- **single_stat_card / versus_stat / pie_donut / bar_chart_comparison / timeline_horizontal / ranking_list**: data 필드는 셀팟 AI가 자동 생성하므로 **빈 객체 또는 생략 가능**. 또는 간단한 힌트만: { "title": "주제" }
+- **single_stat_card / versus_stat / pie_donut / bar_chart_comparison / timeline_horizontal / ranking_list**: **반드시 data.text 포함** (셀팟 폴백용). 예: { "text": "70% 중동 의존도" } 또는 { "text": "미국 70% vs 한국 15%" }. 셀팟 AI가 이 text 기반으로 전용 시각화 생성.
 
 ### 타입 선택 예시
 
@@ -5460,8 +5460,7 @@ ${script}
                 // ⚛️ Remotion 코드 힌트 장면
                 const codeGenHintScenes = jsonObj.scenes.filter(s => s.codeGenHint && s.codeGenHint.pattern);
 
-                // overlays 배열 → textOverlay 자동 복제 (텍스트 타입만, 셀팟 폴백용)
-                // 데이터 타입(versus_stat, single_stat_card 등)은 셀팟 AI가 자동 생성하므로 textOverlay 불필요
+                // overlays 배열 → textOverlay 무조건 생성 (셀팟 호환 — 모든 장면에 최소 오버레이 보장)
                 jsonObj.scenes.forEach(s => {
                     if (typeof s.textOverlay === 'string' && s.textOverlay.trim()) return;
                     if (Array.isArray(s.overlays) && s.overlays.length > 0) {
@@ -5469,13 +5468,19 @@ ${script}
                         if (first && first.data) {
                             if ((first.type === 'text_headline' || first.type === 'text_quote') && first.data.text) {
                                 s.textOverlay = first.data.text;
-                                if (!s.textPosition) s.textPosition = 'center';
                             } else if (first.type === 'title_card' && first.data.mainTitle) {
                                 s.textOverlay = first.data.mainTitle;
-                                if (!s.textPosition) s.textPosition = 'center';
+                            } else if (first.data.text) {
+                                // 데이터 타입도 data.text 있으면 사용
+                                s.textOverlay = first.data.text;
+                            } else if (first.data.title) {
+                                // title 힌트 있으면 사용
+                                s.textOverlay = first.data.title;
+                            } else if (first.data.value) {
+                                // value 있으면 사용 (HeroStat류)
+                                s.textOverlay = String(first.data.value);
                             }
-                            // 데이터 타입 (single_stat_card, versus_stat, pie_donut, bar_chart_comparison, timeline_horizontal, ranking_list) 은 textOverlay로 변환 X
-                            // 셀팟이 overlays 배열을 직접 인식하므로 그대로 둠
+                            if (s.textOverlay && !s.textPosition) s.textPosition = 'center';
                         }
                     }
                 });
