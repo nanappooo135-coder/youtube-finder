@@ -2190,7 +2190,9 @@
                             장면별로 <strong>이미지 3순위 추천</strong>(스톡·AI·실사 중 내용에 가장 맞는 순서)과
                             <strong>오버레이 추천</strong>을 표시합니다. 셀팟에서 장면 넘어가며 참고하세요.
                         </p>
-                        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+                        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
+                            <div id="sceneGuideProgress" style="font-size:0.82rem;color:#495057;font-weight:600;"></div>
+                            <button class="search-btn" onclick="_resetSceneProgress()" style="padding:4px 12px;font-size:0.78rem;background:#868e96;border-color:#868e96;">🔄 진행률 초기화</button>
                             <button class="search-btn" onclick="copySceneGuide(this)" style="margin-left:auto;padding:4px 12px;font-size:0.8rem;background:#6f42c1;border-color:#6f42c1;">📋 가이드 전체 복사</button>
                         </div>
                         <div id="jsonSceneGuideList" style="max-height:700px;overflow-y:auto;"></div>
@@ -5640,10 +5642,41 @@ ${script}
                           ⚠️ JSON이 중간에 잘려서 완성된 장면만 복구했습니다. 전체 장면이 부족하면 대본을 반으로 나눠서 2번 생성해 주세요.
                        </div>`
                     : '';
+
+                // 전체 길이 계산 (sceneDuration 합산, 없으면 나레이션 기반 추정 5초/장면)
+                const totalSec = jsonObj.scenes.reduce((sum, s) => {
+                    if (typeof s.sceneDuration === 'number') return sum + s.sceneDuration;
+                    // 대략 추정: 나레이션 글자수 / 6 (초당 6자)
+                    const chars = (s.narration || '').length;
+                    return sum + Math.max(3, Math.round(chars / 6));
+                }, 0);
+                const totalMin = Math.floor(totalSec / 60);
+                const totalRemSec = Math.round(totalSec % 60);
+                const durationStr = totalMin + '분 ' + totalRemSec + '초';
+
+                // 10분 초과 경고 배너
+                let durationBanner = '';
+                if (totalSec > 600) {
+                    const needParts = Math.ceil(totalSec / 600);
+                    const minPerPart = Math.ceil(totalSec / needParts / 60);
+                    const btnSplit = (needParts <= 4) ? needParts : 4;
+                    durationBanner = '<div style="padding:12px;background:#ffe3e3;border:2px solid #e03131;border-radius:8px;margin-bottom:8px;font-size:0.88rem;">'
+                        + '<div style="font-weight:700;color:#c92a2a;margin-bottom:4px;">⚠️ 총 ' + durationStr + ' — 셀팟 10분 한도 초과</div>'
+                        + '<div style="color:#495057;font-size:0.82rem;">'
+                        + needParts + '개 파트로 분할 권장 (파트당 약 ' + minPerPart + '분). 아래 <strong>' + btnSplit + '분할</strong> 버튼을 눌러 자동 분할하세요.'
+                        + '</div>'
+                        + '</div>';
+                } else if (totalSec > 540) {
+                    durationBanner = '<div style="padding:10px;background:#fff3cd;border:1px solid #ffc107;border-radius:6px;margin-bottom:8px;font-size:0.85rem;color:#856404;">'
+                        + '⏱️ 총 ' + durationStr + ' — 10분 한도 근접. 안전하게 2분할 권장.'
+                        + '</div>';
+                }
+
                 document.getElementById('jsonSummary').innerHTML = `
                     <div style="margin-bottom:8px;">${modelBadge}</div>
                     ${warnBanner}
-                    <strong>총 ${total}개 장면</strong> 생성 완료<br>
+                    ${durationBanner}
+                    <strong>총 ${total}개 장면 · ⏱️ ${durationStr}</strong><br>
                     <span style="color:#0066cc;">📹 stock ${counts.stock}개 (${pct('stock')}%)</span> ·
                     <span style="color:#cc6600;">🎞️ gif ${counts.gif}개 (${pct('gif')}%)</span> ·
                     <span style="color:#990099;">🎨 ai ${counts.ai}개 (${pct('ai')}%)</span> ·
@@ -6433,6 +6466,16 @@ ${script}
                 list.innerHTML = '<p style="text-align:center;color:#888;padding:20px;">표시할 장면이 없습니다.</p>';
                 return;
             }
+            // 진행률 계산
+            const progress = _getSceneProgress();
+            const doneCount = scenes.filter(s => progress[s.id]).length;
+            const pct = Math.round((doneCount / scenes.length) * 100);
+            const progEl = document.getElementById('sceneGuideProgress');
+            if (progEl) {
+                progEl.innerHTML = '✅ <strong>' + doneCount + '/' + scenes.length + '</strong> 완료 (' + pct + '%)'
+                    + ' <span style="display:inline-block;width:100px;height:6px;background:#e9ecef;border-radius:3px;margin-left:6px;vertical-align:middle;overflow:hidden;">'
+                    + '<span style="display:block;width:' + pct + '%;height:100%;background:linear-gradient(90deg,#51cf66,#37b24d);"></span></span>';
+            }
             let html = '<div style="display:flex;flex-direction:column;gap:8px;">';
             scenes.forEach(s => {
                 html += _renderSceneGuideCard(s);
@@ -6441,15 +6484,46 @@ ${script}
             list.innerHTML = html;
         }
 
+        // === 진행률 체크박스 (localStorage) ===
+        function _sceneProgressKey() {
+            // 대본 해시 기반 키 (장면 개수 + 첫 장면 일부로 구분)
+            const scenes = window._sceneGuideData || [];
+            if (scenes.length === 0) return 'sceneProgress_empty';
+            const firstSnippet = (scenes[0].narration || '').substring(0, 20);
+            return 'sceneProgress_' + scenes.length + '_' + firstSnippet.replace(/\s/g, '');
+        }
+        function _getSceneProgress() {
+            try {
+                const raw = localStorage.getItem(_sceneProgressKey());
+                return raw ? JSON.parse(raw) : {};
+            } catch(e) { return {}; }
+        }
+        function _setSceneProgress(progress) {
+            try { localStorage.setItem(_sceneProgressKey(), JSON.stringify(progress)); } catch(e) {}
+        }
+        window._toggleSceneDone = function(sceneId) {
+            const p = _getSceneProgress();
+            p[sceneId] = !p[sceneId];
+            _setSceneProgress(p);
+            _renderSceneGuideFromState();
+        };
+        window._resetSceneProgress = function() {
+            if (!confirm('모든 장면의 완료 체크를 초기화할까요?')) return;
+            _setSceneProgress({});
+            _renderSceneGuideFromState();
+        };
+
         function _renderSceneGuideCard(s) {
             const narr = s.narration || '';
             const summary = narr.length > 90 ? narr.substring(0, 90) + '...' : narr;
+            const progress = _getSceneProgress();
+            const isDone = !!progress[s.id];
 
             // 이미지 3순위 추천
             const imageRanks = _rankImageSources(s);
             const topRank = imageRanks[0];
-            const bgColor = _RANK_COLORS[topRank.type].bg;
-            const bgBorder = _RANK_COLORS[topRank.type].border;
+            const bgColor = isDone ? '#f1f3f5' : _RANK_COLORS[topRank.type].bg;
+            const bgBorder = isDone ? '#adb5bd' : _RANK_COLORS[topRank.type].border;
 
             let rows = '';
 
@@ -6532,8 +6606,17 @@ ${script}
                 rows += '<div style="margin-top:4px;font-size:0.78rem;"><strong style="color:#8b4513;">🏛️ 몽타주:</strong> ' + s.montageElements.length + '개 자료 조합</div>';
             }
 
-            return '<div style="padding:10px 12px;background:' + bgColor + ';border-left:4px solid ' + bgBorder + ';border-radius:6px;">'
-                + '<div style="font-weight:700;font-size:0.85rem;margin-bottom:4px;color:#212529;">━━━ 장면 ' + s.id + ' ━━━</div>'
+            const doneStyle = isDone ? 'opacity:0.55;' : '';
+            const checkboxHtml = '<label style="display:inline-flex;align-items:center;gap:4px;font-size:0.78rem;cursor:pointer;user-select:none;float:right;">'
+                + '<input type="checkbox" ' + (isDone ? 'checked' : '') + ' onchange="_toggleSceneDone(' + s.id + ')" style="cursor:pointer;"/>'
+                + '<span style="color:' + (isDone ? '#51cf66' : '#868e96') + ';">' + (isDone ? '✅ 완료' : '☐ 미완료') + '</span>'
+                + '</label>';
+            const titleHtml = isDone
+                ? '<div style="font-weight:700;font-size:0.85rem;margin-bottom:4px;color:#868e96;"><s>━━━ 장면 ' + s.id + ' ━━━</s>' + checkboxHtml + '</div>'
+                : '<div style="font-weight:700;font-size:0.85rem;margin-bottom:4px;color:#212529;">━━━ 장면 ' + s.id + ' ━━━' + checkboxHtml + '</div>';
+
+            return '<div style="padding:10px 12px;background:' + bgColor + ';border-left:4px solid ' + bgBorder + ';border-radius:6px;' + doneStyle + '">'
+                + titleHtml
                 + '<div style="font-size:0.82rem;color:#333;margin-bottom:4px;line-height:1.5;">📝 "' + _escapeHtml(summary) + '"</div>'
                 + rows
                 + '</div>';
