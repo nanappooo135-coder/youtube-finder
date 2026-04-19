@@ -2219,6 +2219,14 @@
                                 px
                             </label>
                             <label style="font-size:0.82rem;display:flex;align-items:center;gap:6px;">
+                                포맷:
+                                <select id="resizeFormat" style="padding:4px 8px;border:1px solid #ced4da;border-radius:4px;font-size:0.82rem;">
+                                    <option value="image/jpeg">JPG (권장)</option>
+                                    <option value="image/png">PNG (Lambda 에러시)</option>
+                                    <option value="image/webp">WebP (실험)</option>
+                                </select>
+                            </label>
+                            <label style="font-size:0.82rem;display:flex;align-items:center;gap:6px;" id="resizeQualityLabel">
                                 품질:
                                 <input type="range" id="resizeQuality" value="85" min="50" max="95" style="width:100px;"/>
                                 <span id="resizeQualityVal">85</span>%
@@ -2228,6 +2236,9 @@
                                 자동 다운로드
                             </label>
                             <button class="search-btn" onclick="_clearResizeResults()" style="margin-left:auto;padding:4px 12px;font-size:0.8rem;background:#6c757d;border-color:#6c757d;">결과 초기화</button>
+                        </div>
+                        <div style="margin-top:6px;font-size:0.75rem;color:#666;line-height:1.5;">
+                            💡 <strong>JPG</strong>가 기본 권장. Lambda 렌더링 에러 지속시 <strong>PNG</strong>로 시도 (파일 크기 큼).
                         </div>
                         <div id="resizeResults" style="margin-top:12px;display:flex;flex-direction:column;gap:6px;"></div>
                     </div>
@@ -6334,6 +6345,15 @@ ${script}
 
                 qualityInput.addEventListener('input', () => { qualityVal.textContent = qualityInput.value; });
 
+                // 포맷 변경 시 품질 슬라이더 숨김 (PNG는 무손실)
+                const formatSelect = document.getElementById('resizeFormat');
+                const qualityLabel = document.getElementById('resizeQualityLabel');
+                if (formatSelect && qualityLabel) {
+                    formatSelect.addEventListener('change', () => {
+                        qualityLabel.style.display = (formatSelect.value === 'image/png') ? 'none' : 'flex';
+                    });
+                }
+
                 dropZone.addEventListener('click', () => fileInput.click());
                 fileInput.addEventListener('change', (e) => {
                     _handleResizeFiles(e.target.files);
@@ -6365,6 +6385,8 @@ ${script}
             const resultsEl = document.getElementById('resizeResults');
             const maxWidth = parseInt(document.getElementById('resizeMaxWidth').value) || 1920;
             const quality = (parseInt(document.getElementById('resizeQuality').value) || 85) / 100;
+            const format = document.getElementById('resizeFormat').value || 'image/jpeg';
+            const ext = format === 'image/png' ? 'png' : (format === 'image/webp' ? 'webp' : 'jpg');
             const autoDownload = document.getElementById('resizeAutoDownload').checked;
 
             for (const file of files) {
@@ -6377,17 +6399,17 @@ ${script}
                 resultsEl.insertBefore(row, resultsEl.firstChild);
 
                 try {
-                    const result = await _resizeImage(file, maxWidth, quality);
+                    const result = await _resizeImage(file, maxWidth, quality, format);
                     const kbOrig = (file.size / 1024).toFixed(0);
                     const kbNew = (result.blob.size / 1024).toFixed(0);
                     const savings = Math.round((1 - result.blob.size / file.size) * 100);
                     const origName = file.name.replace(/\.[^.]+$/, '');
-                    const newName = origName + '_' + result.width + 'x' + result.height + '.jpg';
+                    const newName = origName + '_' + result.width + 'x' + result.height + '.' + ext;
 
                     row.style.background = '#d1f7c4';
                     row.style.borderColor = '#51cf66';
                     row.innerHTML = '<span>✅ <strong>' + _escapeHtml(file.name) + '</strong></span>'
-                        + '<span style="color:#495057;">→ ' + result.width + '×' + result.height + ' · ' + kbNew + ' KB (' + kbOrig + ' KB → ' + savings + '% 감소)</span>'
+                        + '<span style="color:#495057;">→ ' + result.width + '×' + result.height + ' · ' + kbNew + ' KB (' + kbOrig + ' KB → ' + savings + '% 감소) · ' + ext.toUpperCase() + '</span>'
                         + '<button class="search-btn" style="margin-left:auto;padding:3px 10px;font-size:0.75rem;background:#51cf66;border-color:#51cf66;" data-url="' + result.url + '" data-name="' + _escapeHtml(newName) + '">💾 다운로드</button>';
 
                     const btn = row.querySelector('button');
@@ -6402,7 +6424,8 @@ ${script}
             }
         }
 
-        function _resizeImage(file, maxWidth, quality) {
+        function _resizeImage(file, maxWidth, quality, format) {
+            format = format || 'image/jpeg';
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.onload = (e) => {
@@ -6420,15 +6443,24 @@ ${script}
                         canvas.width = w;
                         canvas.height = h;
                         const ctx = canvas.getContext('2d');
-                        // 흰 배경 (투명 PNG → JPG 변환 시 검은색 방지)
-                        ctx.fillStyle = '#ffffff';
-                        ctx.fillRect(0, 0, w, h);
+                        // JPG인 경우만 흰 배경 (투명 → 검은색 방지)
+                        // PNG는 투명도 유지
+                        if (format === 'image/jpeg') {
+                            ctx.fillStyle = '#ffffff';
+                            ctx.fillRect(0, 0, w, h);
+                        }
                         ctx.drawImage(img, 0, 0, w, h);
-                        canvas.toBlob((blob) => {
+                        // PNG는 quality 인자 무시
+                        const callback = (blob) => {
                             if (!blob) { reject(new Error('변환 실패')); return; }
                             const url = URL.createObjectURL(blob);
                             resolve({ blob, url, width: w, height: h });
-                        }, 'image/jpeg', quality);
+                        };
+                        if (format === 'image/png') {
+                            canvas.toBlob(callback, format);
+                        } else {
+                            canvas.toBlob(callback, format, quality);
+                        }
                     };
                     img.onerror = () => reject(new Error('이미지 로드 실패'));
                     img.src = e.target.result;
