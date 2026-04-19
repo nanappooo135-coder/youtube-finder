@@ -2184,20 +2184,16 @@
                 </div>
 
                 <div class="section" id="jsonSceneGuideSection" style="display:none;">
-                    <div class="section-title">🎬 장면별 작업 가이드 (수동 보완 체크리스트)</div>
+                    <div class="section-title">🎬 장면별 작업 가이드 (전 장면 추천)</div>
                     <div class="section-content">
                         <p style="font-size:0.85rem;color:#666;margin-bottom:12px;">
-                            JSON을 셀팟에 붙여넣은 후, <strong style="color:#dc3545;">수동 작업이 필요한 장면</strong>만 표시됩니다.
-                            각 장면의 <strong>오버레이 타입·배경 방식·검색어</strong>를 한눈에 보고 처리하세요.
+                            장면별로 <strong>이미지 3순위 추천</strong>(스톡·AI·실사 중 내용에 가장 맞는 순서)과
+                            <strong>오버레이 추천</strong>을 표시합니다. 셀팟에서 장면 넘어가며 참고하세요.
                         </p>
                         <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
-                            <label style="display:flex;align-items:center;gap:4px;font-size:0.82rem;cursor:pointer;">
-                                <input type="checkbox" id="sceneGuideFilterManual" onchange="_renderSceneGuideFromState()"/>
-                                수동 필요만 보기 (끄면 전체)
-                            </label>
                             <button class="search-btn" onclick="copySceneGuide(this)" style="margin-left:auto;padding:4px 12px;font-size:0.8rem;background:#6f42c1;border-color:#6f42c1;">📋 가이드 전체 복사</button>
                         </div>
-                        <div id="jsonSceneGuideList" style="max-height:600px;overflow-y:auto;"></div>
+                        <div id="jsonSceneGuideList" style="max-height:700px;overflow-y:auto;"></div>
                     </div>
                 </div>
 
@@ -6269,17 +6265,12 @@ ${script}
             const scenes = window._sceneGuideData || [];
             const list = document.getElementById('jsonSceneGuideList');
             if (!list) return;
-            const filterManual = document.getElementById('sceneGuideFilterManual').checked;
-            const filtered = scenes.filter(s => {
-                if (filterManual) return _sceneNeedsManual(s);
-                return true; // default: show all
-            });
-            if (filtered.length === 0) {
+            if (scenes.length === 0) {
                 list.innerHTML = '<p style="text-align:center;color:#888;padding:20px;">표시할 장면이 없습니다.</p>';
                 return;
             }
             let html = '<div style="display:flex;flex-direction:column;gap:8px;">';
-            filtered.forEach(s => {
+            scenes.forEach(s => {
                 html += _renderSceneGuideCard(s);
             });
             html += '</div>';
@@ -6287,83 +6278,444 @@ ${script}
         }
 
         function _renderSceneGuideCard(s) {
-            const summary = s.narration && s.narration.length > 70 ? s.narration.substring(0, 70) + '...' : (s.narration || '');
-            const bgColor = s.bgSource === 'ai' ? '#fff3cd' : (s.bgSource === 'gif' ? '#e6fcf5' : '#e7f5ff');
-            const bgBorder = s.bgSource === 'ai' ? '#ffc107' : (s.bgSource === 'gif' ? '#20c997' : '#1c7ed6');
+            const narr = s.narration || '';
+            const summary = narr.length > 90 ? narr.substring(0, 90) + '...' : narr;
+
+            // 이미지 3순위 추천
+            const imageRanks = _rankImageSources(s);
+            const topRank = imageRanks[0];
+            const bgColor = _RANK_COLORS[topRank.type].bg;
+            const bgBorder = _RANK_COLORS[topRank.type].border;
 
             let rows = '';
 
-            // 배경 + 대체 옵션 제안
-            const altSuggestion = _suggestAlternatives(s);
-            if (s.bgSource === 'ai') {
-                const promptShort = (s.aiPrompt || '').length > 100 ? (s.aiPrompt || '').substring(0, 100) + '...' : (s.aiPrompt || '');
-                rows += '<div style="margin-top:4px;font-size:0.82rem;"><strong style="color:#b07800;">🖼️ 배경:</strong> AI 배경 생성 <button onclick="_copyText(' + "'" + _jsEscape(s.aiPrompt || '') + "'" + ', this)" style="margin-left:6px;padding:2px 8px;font-size:0.7rem;border:1px solid #ffc107;background:#fff;border-radius:3px;cursor:pointer;">프롬프트 복사</button></div>';
-                if (promptShort) rows += '<div style="font-size:0.72rem;color:#666;margin-left:22px;margin-top:2px;">' + _escapeHtml(promptShort) + '</div>';
-                if (altSuggestion) rows += '<div style="margin-top:3px;margin-left:22px;font-size:0.75rem;color:#0d6efd;background:#e7f1ff;padding:3px 8px;border-radius:4px;display:inline-block;">💡 대체 추천: ' + _escapeHtml(altSuggestion) + '</div>';
-            } else if (s.bgSource === 'gif') {
-                rows += '<div style="margin-top:4px;font-size:0.82rem;"><strong style="color:#0ca678;">🎞️ GIF:</strong> ' + _escapeHtml(s.bgQuery || '') + '</div>';
+            // 이미지 3순위
+            rows += '<div style="margin-top:8px;padding:8px 10px;background:#fff;border-radius:6px;border:1px solid #e9ecef;">';
+            rows += '<div style="font-weight:700;font-size:0.78rem;color:#495057;margin-bottom:6px;">🖼️ 이미지 추천 (순위)</div>';
+            imageRanks.slice(0, 3).forEach((rank, i) => {
+                const color = _RANK_COLORS[rank.type].border;
+                const emoji = _RANK_ICONS[rank.type];
+                const rankNum = i + 1;
+                const rankBadge = rankNum === 1 ? '<span style="background:' + color + ';color:#fff;padding:1px 6px;border-radius:3px;font-size:0.72rem;font-weight:700;margin-right:6px;">1순위 ⭐</span>'
+                    : '<span style="background:#e9ecef;color:#495057;padding:1px 6px;border-radius:3px;font-size:0.72rem;margin-right:6px;">' + rankNum + '순위</span>';
+                rows += '<div style="margin-top:' + (i===0?'0':'4') + 'px;font-size:0.78rem;line-height:1.5;">';
+                rows += rankBadge + '<strong style="color:' + color + ';">' + emoji + ' ' + rank.label + '</strong>';
+                if (rank.reason) rows += ' <span style="color:#868e96;font-size:0.72rem;">— ' + _escapeHtml(rank.reason) + '</span>';
+                rows += '</div>';
+                if (rank.content) {
+                    rows += '<div style="margin-left:8px;margin-top:2px;font-size:0.75rem;color:#212529;word-break:break-word;">';
+                    if (rank.type === 'real') {
+                        const googleUrl = 'https://www.google.com/search?tbm=isch&q=' + encodeURIComponent(rank.content);
+                        rows += '🔍 <code style="background:#f8f9fa;padding:1px 5px;border-radius:3px;">' + _escapeHtml(rank.content) + '</code>';
+                        rows += ' <a href="' + googleUrl + '" target="_blank" rel="noopener" style="color:#1971c2;text-decoration:none;font-size:0.72rem;margin-left:4px;">구글 검색 ↗</a>';
+                    } else if (rank.type === 'character') {
+                        const googleUrl = 'https://www.google.com/search?tbm=isch&q=' + encodeURIComponent(rank.content);
+                        rows += '🎭 <code style="background:#f8f9fa;padding:1px 5px;border-radius:3px;">' + _escapeHtml(rank.content) + '</code>';
+                        if (rank.koreanName) rows += ' <span style="color:#868e96;">(' + _escapeHtml(rank.koreanName) + ')</span>';
+                        rows += ' <a href="' + googleUrl + '" target="_blank" rel="noopener" style="color:#1971c2;text-decoration:none;font-size:0.72rem;margin-left:4px;">구글 검색 ↗</a>';
+                    } else if (rank.type === 'ai') {
+                        rows += _escapeHtml(rank.content);
+                        rows += ' <button onclick="_copyText(' + "'" + _jsEscape(rank.content) + "'" + ', this)" style="margin-left:4px;padding:1px 6px;font-size:0.68rem;border:1px solid #ffc107;background:#fff;border-radius:3px;cursor:pointer;">복사</button>';
+                    } else if (rank.type === 'gif') {
+                        const klipyUrl = 'https://app.klipy.com/gifs/search?q=' + encodeURIComponent(rank.content);
+                        const giphyUrl = 'https://giphy.com/search/' + encodeURIComponent(rank.content.replace(/\s+/g, '-'));
+                        rows += '🔍 <code style="background:#f8f9fa;padding:1px 5px;border-radius:3px;">' + _escapeHtml(rank.content) + '</code>';
+                        rows += ' <a href="' + klipyUrl + '" target="_blank" rel="noopener" style="color:#20c997;text-decoration:none;font-size:0.72rem;margin-left:4px;">Klipy ↗</a>';
+                        rows += ' <a href="' + giphyUrl + '" target="_blank" rel="noopener" style="color:#e83e8c;text-decoration:none;font-size:0.72rem;margin-left:4px;">Giphy ↗</a>';
+                    } else {
+                        const pexelsUrl = 'https://www.pexels.com/search/videos/' + encodeURIComponent(rank.content) + '/';
+                        rows += '🔍 <code style="background:#f8f9fa;padding:1px 5px;border-radius:3px;">' + _escapeHtml(rank.content) + '</code>';
+                        rows += ' <a href="' + pexelsUrl + '" target="_blank" rel="noopener" style="color:#1c7ed6;text-decoration:none;font-size:0.72rem;margin-left:4px;">Pexels ↗</a>';
+                        if (rank.alts && rank.alts.length > 0) {
+                            rows += '<div style="color:#868e96;font-size:0.72rem;margin-top:2px;">대체: ' + _escapeHtml(rank.alts.slice(0,2).join(' / ')) + '</div>';
+                        }
+                    }
+                    rows += '</div>';
+                }
+            });
+            rows += '</div>';
+
+            // 오버레이 추천 (28종)
+            const overlayRec = _recommendOverlay28(s);
+            rows += '<div style="margin-top:6px;padding:8px 10px;background:#fff;border-radius:6px;border:1px solid #e9ecef;">';
+            rows += '<div style="font-weight:700;font-size:0.78rem;color:#495057;margin-bottom:4px;">📝 오버레이 추천</div>';
+            if (overlayRec.type === 'none') {
+                rows += '<div style="font-size:0.78rem;color:#868e96;">✕ <strong>없음</strong> — ' + _escapeHtml(overlayRec.reason) + '</div>';
             } else {
-                rows += '<div style="margin-top:4px;font-size:0.82rem;"><strong style="color:#1c7ed6;">🎬 스톡 (자동):</strong> ' + _escapeHtml(s.bgQuery || '') + '</div>';
-                const alts = Array.isArray(s.bgQueryAlts) ? s.bgQueryAlts : [];
-                if (alts.length > 0) {
-                    rows += '<div style="font-size:0.72rem;color:#666;margin-left:22px;margin-top:2px;">대체: ' + _escapeHtml(alts.slice(0, 2).join(' / ')) + '</div>';
-                }
-                if (altSuggestion) rows += '<div style="margin-top:3px;margin-left:22px;font-size:0.75rem;color:#0d6efd;background:#e7f1ff;padding:3px 8px;border-radius:4px;display:inline-block;">💡 대체 추천: ' + _escapeHtml(altSuggestion) + '</div>';
+                const catColor = _OVERLAY_CATEGORY_COLOR[overlayRec.category] || '#6c757d';
+                rows += '<div style="font-size:0.78rem;">';
+                rows += '<span style="background:' + catColor + ';color:#fff;padding:1px 6px;border-radius:3px;font-size:0.7rem;margin-right:6px;">' + overlayRec.category + '</span>';
+                rows += '<strong style="color:' + catColor + ';">' + _escapeHtml(overlayRec.type) + '</strong>';
+                if (overlayRec.text) rows += ' → "<strong>' + _escapeHtml(overlayRec.text) + '</strong>"';
+                rows += '</div>';
+                if (overlayRec.reason) rows += '<div style="font-size:0.72rem;color:#868e96;margin-top:2px;">💡 ' + _escapeHtml(overlayRec.reason) + '</div>';
             }
-
-            // 오버레이
-            if (Array.isArray(s.overlays) && s.overlays.length > 0) {
-                const ov = s.overlays[0];
-                const typeKo = _OVERLAY_TYPE_KO[ov.type] || ov.type;
-                const isAdvanced = ov.type && ov.type !== 'text_headline' && ov.type !== 'text_quote' && ov.type !== 'title_card';
-                const color = isAdvanced ? '#7c3aed' : '#555';
-                const icon = isAdvanced ? '⚛️' : '📝';
-                let textHint = '';
-                if (ov.data) {
-                    if (ov.data.text) textHint = ov.data.text;
-                    else if (ov.data.mainTitle) textHint = ov.data.mainTitle + (ov.data.subtitle ? ' / ' + ov.data.subtitle : '');
-                    else if (ov.data.title) textHint = ov.data.title;
-                }
-                const action = isAdvanced ? ' <span style="background:#f3e8ff;color:#7c3aed;padding:1px 6px;border-radius:3px;font-size:0.7rem;font-weight:700;">수동 업그레이드</span>' : '';
-                rows += '<div style="margin-top:4px;font-size:0.82rem;"><strong style="color:' + color + ';">' + icon + ' 오버레이:</strong> ' + _escapeHtml(typeKo) + action + (textHint ? ' → "' + _escapeHtml(textHint) + '"' : '') + '</div>';
-            } else if (s.textOverlay) {
-                rows += '<div style="margin-top:4px;font-size:0.82rem;"><strong style="color:#555;">📝 오버레이:</strong> 헤드라인 → "' + _escapeHtml(s.textOverlay) + '"</div>';
-            } else {
-                // 오버레이 없음 — 나레이션 기반 추천
-                const suggestion = _suggestOverlayFromNarration(s.narration || '');
-                if (suggestion) {
-                    rows += '<div style="margin-top:4px;font-size:0.82rem;color:#888;"><strong>💡 오버레이 추천:</strong> ' + _escapeHtml(suggestion) + '</div>';
-                } else {
-                    rows += '<div style="margin-top:4px;font-size:0.78rem;color:#aaa;">✕ 오버레이 없음 (연결 장면)</div>';
-                }
-            }
-
-            // 실사
-            if (s.needRealImage) {
-                rows += '<div style="margin-top:4px;font-size:0.82rem;"><strong style="color:#e03131;">📷 실사 검색:</strong> <code style="background:#fff;padding:2px 6px;border-radius:3px;">' + _escapeHtml(s.realSearchKeyword || '') + '</code> <button onclick="_copyText(' + "'" + _jsEscape(s.realSearchKeyword || '') + "'" + ', this)" style="margin-left:6px;padding:2px 8px;font-size:0.7rem;border:1px solid #e03131;background:#fff;border-radius:3px;cursor:pointer;">복사</button></div>';
-            }
-
-            // 역사 몽타주
-            if (s.isHistoricalMontage && Array.isArray(s.montageElements)) {
-                rows += '<div style="margin-top:4px;font-size:0.82rem;"><strong style="color:#8b4513;">🏛️ 몽타주:</strong> ' + s.montageElements.length + '개 자료 (구글 검색 → 캔바 편집)</div>';
-            }
-
-            // 로고
-            if (s.needLogo && s.logoName) {
-                rows += '<div style="margin-top:4px;font-size:0.82rem;"><strong style="color:#0d6efd;">🏢 로고:</strong> ' + _escapeHtml(s.logoName) + ' (' + (s.logoPosition || 'top-right') + ')</div>';
-            }
+            rows += '</div>';
 
             // 효과음
             if (s.sfxPrompt) {
                 const sfxShort = s.sfxPrompt.length > 60 ? s.sfxPrompt.substring(0, 60) + '...' : s.sfxPrompt;
-                rows += '<div style="margin-top:4px;font-size:0.82rem;"><strong style="color:#f59e0b;">🔊 효과음:</strong> ' + _escapeHtml(sfxShort) + '</div>';
+                rows += '<div style="margin-top:6px;font-size:0.78rem;"><strong style="color:#f59e0b;">🔊 효과음:</strong> ' + _escapeHtml(sfxShort) + '</div>';
             }
 
-            return '<div style="padding:10px 12px;background:' + bgColor + ';border-left:3px solid ' + bgBorder + ';border-radius:6px;">'
-                + '<div style="font-weight:700;font-size:0.85rem;margin-bottom:4px;">━━━ 장면 ' + s.id + ' ━━━</div>'
-                + '<div style="font-size:0.82rem;color:#333;margin-bottom:4px;">📝 "' + _escapeHtml(summary) + '"</div>'
+            // 로고
+            if (s.needLogo && s.logoName) {
+                rows += '<div style="margin-top:4px;font-size:0.78rem;"><strong style="color:#0d6efd;">🏢 로고:</strong> ' + _escapeHtml(s.logoName) + ' (' + (s.logoPosition || 'top-right') + ')</div>';
+            }
+
+            // 몽타주
+            if (s.isHistoricalMontage && Array.isArray(s.montageElements)) {
+                rows += '<div style="margin-top:4px;font-size:0.78rem;"><strong style="color:#8b4513;">🏛️ 몽타주:</strong> ' + s.montageElements.length + '개 자료 조합</div>';
+            }
+
+            return '<div style="padding:10px 12px;background:' + bgColor + ';border-left:4px solid ' + bgBorder + ';border-radius:6px;">'
+                + '<div style="font-weight:700;font-size:0.85rem;margin-bottom:4px;color:#212529;">━━━ 장면 ' + s.id + ' ━━━</div>'
+                + '<div style="font-size:0.82rem;color:#333;margin-bottom:4px;line-height:1.5;">📝 "' + _escapeHtml(summary) + '"</div>'
                 + rows
                 + '</div>';
+        }
+
+        // === 이미지 순위 색상/아이콘 ===
+        const _RANK_COLORS = {
+            stock:     { bg: '#e7f5ff', border: '#1c7ed6' },
+            ai:        { bg: '#fff3cd', border: '#f59e0b' },
+            real:      { bg: '#ffe3e3', border: '#e03131' },
+            character: { bg: '#fce4ec', border: '#e83e8c' },
+            gif:       { bg: '#e6fcf5', border: '#20c997' }
+        };
+        const _RANK_ICONS = {
+            stock: '🎬', ai: '🎨', real: '📷', character: '🎭', gif: '🎞️'
+        };
+        const _OVERLAY_CATEGORY_COLOR = {
+            '기존': '#6c757d',
+            '텍스트': '#0d6efd',
+            '데이터': '#7c3aed',
+            '레이아웃': '#fd7e14'
+        };
+
+        // === 이미지 소스 3순위 결정 ===
+        function _rankImageSources(s) {
+            const narr = s.narration || '';
+            const scores = { stock: 1, ai: 0, real: 0, character: 0, gif: 0 };
+
+            // 실존 인물
+            const realPersonRe = /(칭기즈칸|나폴레옹|링컨|간디|세종|박정희|김일성|김정일|이승만|트럼프|푸틴|네타냐후|시진핑|오바마|김정은|달라이라마|레닌|스탈린|고르바초프|마오쩌둥|덩샤오핑)/;
+            if (realPersonRe.test(narr)) { scores.real += 4; }
+
+            // 실존 지명·기관
+            if (/(울란바토르|베를린|도쿄|북경|상하이|모스크바|워싱턴|서울|평양|IMF|세계은행|백악관|크렘린|NATO|UN|EU)/.test(narr)) {
+                scores.real += 3; scores.stock += 1;
+            }
+
+            // 역사 사건·왕조
+            if (/(청나라|조선|고려|신라|로마|이집트|라마 불교|산업혁명|냉전|공산주의|소련|독립 선언|숙청|사원)/.test(narr)) {
+                scores.real += 2; scores.ai += 2;
+            }
+
+            // 은유·비유·추상 (AI가 최고)
+            if (/(씨를 말리다|목줄|근육|뿌리|씨앗|역기|손아귀|숨줄|청년기|붕괴|도미노|제국|목 조르기|버튼|급소|봉쇄|사슬|줄 끊|증발|불태|무릎|무너짐|쪼개|갈라)/.test(narr)) {
+                scores.ai += 4; scores.gif += 1;
+            }
+
+            // 지도·국가 관계 (AI 지도)
+            if (/(국경|영토|내몽골|외몽골|완충지대|제3의 이웃|자원 부국|러시아와 중국 사이)/.test(narr)) {
+                scores.ai += 4;
+            }
+
+            // 데이터·숫자 (AI infographic)
+            const hasPct = /\d{1,3}\s*(?:%|퍼센트)/.test(narr);
+            const hasMoney = /\$\s*[\d,]+|\d+\s*(조|억|만)\s*(원|달러)/.test(narr);
+            const hasRank = /1위|2위|3위|꼴찌|순위|세계 \d/.test(narr);
+            const hasYears = /\d{4}년|\d+년대/.test(narr);
+            if (hasPct || hasMoney || hasRank) { scores.ai += 3; scores.stock += 1; }
+            if (hasYears && narr.length > 40) { scores.ai += 1; }
+
+            // 감정·반응 (GIF)
+            if (/(왜\?|어떻게|놀랍게|충격|허망|후회|절망|희망|기대|궁금|\?|!\?)/.test(narr) && narr.length < 50) {
+                scores.gif += 3;
+            }
+            if (/(꼴찌|바닥|정지|멈춤|끝|한계)/.test(narr)) scores.gif += 1;
+
+            // 캐릭터 삽입 (지식한잔/잡하게티 스타일)
+            if (/(정치인|대통령|지도자|협상|외교|회의|거래|설득|요구)/.test(narr)) {
+                scores.character += 3;
+            }
+            if (/("[^"]{3,30}"|찍어주시면|약속|공약|선언)/.test(narr)) {
+                scores.character += 2;
+            }
+
+            // 구체 활동·장면 (Stock)
+            if (/(공장|도시|거리|빌딩|사람들|관광객|학생|학교|아이|가족|회사|공항|비행기|선박|광산|건설|시장|상점)/.test(narr)) {
+                scores.stock += 3;
+            }
+
+            // 자연·풍경
+            if (/(산|강|바다|하늘|초원|사막|들판|동물|말|소|양|땅|풍경)/.test(narr)) {
+                scores.stock += 3;
+            }
+
+            // 현재 JSON의 bgSource 가중치 (살짝 우대)
+            const cur = s.bgSource || 'stock';
+            scores[cur] = (scores[cur] || 0) + 1;
+
+            // 정렬
+            const sorted = Object.entries(scores)
+                .sort((a, b) => b[1] - a[1])
+                .filter(([_, score]) => score > 0)
+                .map(([type, score]) => _buildRankEntry(s, type, score));
+
+            // 최소 3개 보장
+            if (sorted.length < 3) {
+                ['stock', 'ai', 'real'].forEach(t => {
+                    if (!sorted.find(r => r.type === t)) sorted.push(_buildRankEntry(s, t, 0));
+                });
+            }
+            return sorted.slice(0, 4);
+        }
+
+        // 순위 엔트리 생성
+        function _buildRankEntry(s, type, score) {
+            const narr = s.narration || '';
+            if (type === 'stock') {
+                return {
+                    type: 'stock',
+                    label: '스톡 영상 (Pexels)',
+                    content: s.bgQuery || _deriveStockKeyword(narr),
+                    alts: Array.isArray(s.bgQueryAlts) ? s.bgQueryAlts : [],
+                    reason: _reasonFor('stock', narr, score)
+                };
+            }
+            if (type === 'ai') {
+                return {
+                    type: 'ai',
+                    label: 'AI 이미지 (셀팟 생성)',
+                    content: s.bgSource === 'ai' && s.aiPrompt ? s.aiPrompt : _deriveAiPrompt(s),
+                    reason: _reasonFor('ai', narr, score)
+                };
+            }
+            if (type === 'real') {
+                return {
+                    type: 'real',
+                    label: '실사 이미지 (구글)',
+                    content: s.realSearchKeyword || _deriveRealKeyword(narr),
+                    reason: _reasonFor('real', narr, score)
+                };
+            }
+            if (type === 'character') {
+                const char = _deriveCharacter(narr);
+                return {
+                    type: 'character',
+                    label: '캐릭터 삽입 (지식한잔 스타일)',
+                    content: char.en,
+                    koreanName: char.ko,
+                    reason: _reasonFor('character', narr, score)
+                };
+            }
+            if (type === 'gif') {
+                return {
+                    type: 'gif',
+                    label: 'GIF (Klipy)',
+                    content: s.bgSource === 'gif' ? (s.bgQuery || '') : _deriveGifKeyword(narr),
+                    reason: _reasonFor('gif', narr, score)
+                };
+            }
+        }
+
+        function _reasonFor(type, narr, score) {
+            if (type === 'real') {
+                if (/(칭기즈칸|트럼프|푸틴|네타냐후|시진핑|레닌|스탈린|마오쩌둥)/.test(narr)) return '실존 인물 — 진짜 사진이 설득력';
+                if (/(울란바토르|IMF|크렘린|백악관)/.test(narr)) return '실존 지명·기관 — 실제 사진 필요';
+                if (/(청나라|소련|1910년|1990년)/.test(narr)) return '역사 아카이브 사진이 임팩트';
+                return '사실성 필요한 장면';
+            }
+            if (type === 'ai') {
+                if (/(내몽골|외몽골|국경|영토)/.test(narr)) return '지도·경로 시각화';
+                if (/(씨를 말|목줄|역기|근육)/.test(narr)) return '은유·비유 — 실사로 표현 불가';
+                if (/\d{1,3}\s*%|\d+조|GDP/.test(narr)) return '데이터·차트 인포그래픽';
+                return '추상 개념 — AI가 최적';
+            }
+            if (type === 'character') {
+                if (/"[^"]+"/.test(narr)) return '인용문 — 캐릭터가 말하는 연출';
+                if (/(정치인|지도자|회의)/.test(narr)) return '풍자·대화 장면 — 캐릭터 효과 큼';
+                return '설명·해설 장면에 캐릭터 추가 가능';
+            }
+            if (type === 'gif') {
+                if (narr.length < 30) return '짧은 감정·반응 — GIF가 리듬 살림';
+                return '감정 임팩트';
+            }
+            // stock
+            if (/(공장|도시|거리|초원|산|강)/.test(narr)) return '실사 풍경·활동 — Pexels에 풍부';
+            return '범용 분위기 영상';
+        }
+
+        // === 각 타입별 콘텐츠 유도 ===
+        function _deriveStockKeyword(narr) {
+            if (/공장|제조/.test(narr)) return 'factory industrial production';
+            if (/도시|빌딩/.test(narr)) return 'city skyline modern buildings';
+            if (/광산/.test(narr)) return 'open pit mine aerial';
+            if (/초원|몽골/.test(narr)) return 'mongolia steppe grassland';
+            if (/항구|선박/.test(narr)) return 'container port cargo ships';
+            if (/회의|협상/.test(narr)) return 'business meeting boardroom';
+            if (/학교|학생/.test(narr)) return 'classroom students learning';
+            if (/가족|아이/.test(narr)) return 'family children home';
+            return 'cinematic documentary abstract';
+        }
+
+        function _deriveAiPrompt(s) {
+            const narr = s.narration || '';
+            // 데이터 인포그래픽
+            const pctMatch = narr.match(/(\d{1,3})\s*(?:%|퍼센트)/);
+            if (pctMatch) {
+                return 'Minimalist infographic chart with large Korean label "' + pctMatch[1] + '%" prominently displayed in red, dark background, cinematic 16:9, bold readable Korean typography (한글), data visualization style';
+            }
+            // VS 비교
+            if (/vs|대비|한쪽.*다른/.test(narr)) {
+                return 'Split screen VS comparison infographic with Korean labels on each side (한글), dark background, red accent, cinematic 16:9, documentary style';
+            }
+            // 지도
+            if (/국경|영토|내몽골|외몽골|러시아.*중국|지도/.test(narr)) {
+                return 'Stylized historical map showing key regions with bold Korean labels (한글), paper-textured background, muted earth tones, cinematic 16:9, documentary cartography';
+            }
+            // 은유
+            if (/씨를 말|목줄|근육|뿌리/.test(narr)) {
+                return 'Symbolic metaphorical illustration, cinematic lighting, dark background, 16:9, documentary editorial style, no text';
+            }
+            // 기본
+            return 'Cinematic documentary illustration, dark background, 16:9, editorial style, key Korean labels (한글) if any text needed';
+        }
+
+        function _deriveRealKeyword(narr) {
+            if (/칭기즈칸/.test(narr)) return 'Genghis Khan statue Mongolia';
+            if (/청나라/.test(narr)) return 'Qing dynasty historical photograph';
+            if (/소련|레닌|스탈린/.test(narr)) return 'Soviet Union archival photo Red Square';
+            if (/IMF/.test(narr)) return 'IMF headquarters Washington DC';
+            if (/울란바토르/.test(narr)) return 'Ulaanbaatar Mongolia cityscape';
+            if (/달라이라마/.test(narr)) return 'Dalai Lama Mongolia visit';
+            if (/트럼프/.test(narr)) return 'Donald Trump official photo';
+            if (/시진핑/.test(narr)) return 'Xi Jinping official photo';
+            if (/사원|라마 불교/.test(narr)) return 'Tibetan Buddhist monastery Mongolia historical';
+            if (/산업혁명/.test(narr)) return 'Industrial Revolution factories 19th century';
+            if (/냉전/.test(narr)) return 'Cold War archival photo';
+            return narr.length > 30 ? narr.substring(0, 30).replace(/[^a-zA-Z가-힣]/g, ' ') + ' historical photo' : 'historical photograph';
+        }
+
+        function _deriveCharacter(narr) {
+            if (/정치인|대통령|지도자/.test(narr)) {
+                return { en: 'cartoon politician character mascot suit tie', ko: '만화 정치인 캐릭터 (정장)' };
+            }
+            if (/협상|회의|거래/.test(narr)) {
+                return { en: 'cartoon businessman character negotiation', ko: '만화 협상가 캐릭터' };
+            }
+            if (/교수|설명|선생/.test(narr)) {
+                return { en: 'cartoon professor character glasses pointing', ko: '만화 교수 캐릭터 (안경)' };
+            }
+            if (/놀람|충격|왜/.test(narr)) {
+                return { en: 'cartoon surprised character shocked expression', ko: '만화 놀란 캐릭터' };
+            }
+            if (/생각|고민|왜/.test(narr)) {
+                return { en: 'cartoon thinking character chin hand', ko: '만화 생각하는 캐릭터' };
+            }
+            return { en: 'cartoon narrator character friendly cute mascot', ko: '만화 해설 캐릭터 (귀여운)' };
+        }
+
+        function _deriveGifKeyword(narr) {
+            if (/왜\?|궁금|의문/.test(narr)) return 'question mark 물음표 궁금';
+            if (/놀람|충격/.test(narr)) return 'shocked surprised 놀람 충격';
+            if (/화남|분노/.test(narr)) return 'angry frustrated 화남 분노';
+            if (/슬픔|안타까움/.test(narr)) return 'sad disappointed 슬픔 낙담';
+            if (/끝|멈춤|정지/.test(narr)) return 'stop halt 정지 끝';
+            return 'reaction emotion 감정 반응';
+        }
+
+        // === 28종 오버레이 추천 ===
+        function _recommendOverlay28(s) {
+            const narr = s.narration || '';
+            // 짧은 연결 장면 (오버레이 불필요)
+            if (narr.length < 25 && !/\d|%|["']/.test(narr)) {
+                return { type: 'none', reason: '연결·감정 장면 — 오버레이 없이 진행' };
+            }
+
+            // 퍼센트 → 도넛차트
+            const pctMatch = narr.match(/(\d{1,3}(?:\.\d+)?)\s*(?:%|퍼센트)/);
+            if (pctMatch) {
+                const pct = parseFloat(pctMatch[1]);
+                if (pct >= 50) return { category: '데이터', type: '도넛차트', text: pctMatch[0], reason: '점유율/비율 강조' };
+                return { category: '기존', type: '수치카드', text: pctMatch[0], reason: '수치 강조' };
+            }
+
+            // 금액 → 수치카드
+            const wonMatch = narr.match(/(\d+(?:\.\d+)?\s*(?:조|억|만|천)\s*(?:원|달러))/);
+            if (wonMatch) return { category: '기존', type: '수치카드', text: wonMatch[1], reason: '금액 강조' };
+            const usdMatch = narr.match(/\$\s*(\d[\d,]*)/);
+            if (usdMatch) return { category: '기존', type: '수치카드', text: '$' + usdMatch[1], reason: '달러 강조' };
+
+            // VS 비교
+            if (/\bvs\b|대비|한쪽|다른 쪽|\d+\s*(?:배|분의)/i.test(narr)) {
+                return { category: '데이터', type: 'VS대결', text: s.textOverlay || '비교', reason: '좌우 대비 강조' };
+            }
+
+            // 순위·랭킹
+            if (/1위|2위|3위|꼴찌|최다|최대|최고|순위/.test(narr)) {
+                return { category: '데이터', type: '랭킹', text: s.textOverlay || '랭킹', reason: '순위 시각화' };
+            }
+
+            // 3+ 항목 나열
+            const nounCount = (narr.match(/석탄|구리|금|우라늄|종교|사유재산|시장|땅|상업|인구/g) || []).length;
+            if (nounCount >= 3) {
+                return { category: '기존', type: '막대차트', text: s.textOverlay || '비교', reason: '여러 항목 나열' };
+            }
+
+            // 타임라인
+            const yearCount = (narr.match(/\d{4}년|\d+년대|\d+년 전/g) || []).length;
+            if (yearCount >= 2 || /\d+년\s*\+\s*\d+년/.test(narr)) {
+                return { category: '데이터', type: '타임라인', text: s.textOverlay || '연대기', reason: '시간 흐름' };
+            }
+
+            // 인용문
+            const quoteMatch = narr.match(/["']([^"']{5,40})["']/);
+            if (quoteMatch) return { category: '텍스트', type: '인용문', text: quoteMatch[1], reason: '대사·인용 강조' };
+
+            // 증감
+            if (/급락|급등|폭등|폭락|2배|절반|감소|증가/.test(narr)) {
+                return { category: '데이터', type: '증감수치', text: s.textOverlay || '변화', reason: '증감 화살표' };
+            }
+
+            // 지도 라벨
+            if (/내몽골|외몽골|국경|러시아.*중국|위치/.test(narr)) {
+                return { category: '레이아웃', type: '지도라벨', text: s.textOverlay || '위치', reason: '지도 위 라벨' };
+            }
+
+            // 콜아웃 (주의·강조)
+            if (/^(근데|그런데|진짜|진짜 무서운|놀라운)/.test(narr)) {
+                return { category: '레이아웃', type: '콜아웃', text: s.textOverlay || '핵심', reason: '강조 포인트' };
+            }
+
+            // 숫자 카운트
+            const bigNumMatch = narr.match(/(\d{3,}(?:만|억|명|개))/);
+            if (bigNumMatch) return { category: '레이아웃', type: '전체숫자', text: bigNumMatch[1], reason: '큰 숫자 임팩트' };
+
+            // 제목급 문장 (짧고 강렬)
+            if (s.textOverlay && s.textOverlay.length <= 8 && narr.length < 40) {
+                return { category: '레이아웃', type: '타이틀', text: s.textOverlay, reason: '챕터 제목' };
+            }
+
+            // 헤드라인 기본
+            if (s.textOverlay) {
+                return { category: '텍스트', type: '헤드라인', text: s.textOverlay, reason: '핵심 키워드 강조' };
+            }
+
+            // 그 외 → 헤드라인 제안
+            const suggested = _suggestHeadlineText(narr);
+            if (suggested) return { category: '텍스트', type: '헤드라인', text: suggested, reason: '나레이션 핵심' };
+
+            return { type: 'none', reason: '일반 설명 장면 — 오버레이 생략 가능' };
+        }
+
+        function _suggestHeadlineText(narr) {
+            // 3~8자 짧은 명사구 추출 시도
+            const match = narr.match(/[가-힣]{3,8}(?:입니다|이에요|예요)/);
+            if (match) return match[0].replace(/입니다|이에요|예요/, '').trim();
+            return '';
         }
 
         function _jsEscape(s) {
@@ -6440,38 +6792,42 @@ ${script}
         function copySceneGuide(btn) {
             const scenes = window._sceneGuideData || [];
             if (scenes.length === 0) { alert('먼저 JSON을 생성하세요.'); return; }
-            const filterManual = document.getElementById('sceneGuideFilterManual').checked;
-            const showStock = document.getElementById('sceneGuideShowStock').checked;
-            const filtered = scenes.filter(s => {
-                if (showStock) return true;
-                if (filterManual) return _sceneNeedsManual(s);
-                return true;
-            });
-            let text = '# 🎬 장면별 작업 가이드\n\n';
-            filtered.forEach(s => {
-                const summary = s.narration && s.narration.length > 70 ? s.narration.substring(0, 70) + '...' : (s.narration || '');
+            let text = '# 🎬 장면별 작업 가이드 (전 장면 추천)\n\n';
+            scenes.forEach(s => {
+                const narr = s.narration || '';
+                const summary = narr.length > 90 ? narr.substring(0, 90) + '...' : narr;
                 text += '━━━ 장면 ' + s.id + ' ━━━\n';
                 text += '📝 "' + summary + '"\n';
-                if (s.bgSource === 'ai') {
-                    text += '🖼️ 배경: AI 배경 생성 (Paper Cut)\n';
-                    if (s.aiPrompt) text += '   프롬프트: ' + s.aiPrompt + '\n';
-                } else if (s.bgSource === 'gif') {
-                    text += '🎞️ GIF: ' + (s.bgQuery || '') + '\n';
+                // 이미지 3순위
+                const ranks = _rankImageSources(s);
+                text += '\n[이미지 추천]\n';
+                ranks.slice(0, 3).forEach((r, i) => {
+                    const star = (i === 0) ? ' ⭐' : '';
+                    text += (i+1) + '순위' + star + ' ' + _RANK_ICONS[r.type] + ' ' + r.label;
+                    if (r.reason) text += ' — ' + r.reason;
+                    text += '\n';
+                    if (r.content) {
+                        if (r.type === 'character' && r.koreanName) {
+                            text += '   ' + r.content + '  /  ' + r.koreanName + '\n';
+                        } else {
+                            text += '   ' + r.content + '\n';
+                        }
+                    }
+                });
+                // 오버레이
+                const ov = _recommendOverlay28(s);
+                text += '\n[오버레이 추천]\n';
+                if (ov.type === 'none') {
+                    text += '✕ 없음 — ' + (ov.reason || '') + '\n';
                 } else {
-                    text += '🎬 스톡 자동: ' + (s.bgQuery || '') + '\n';
+                    text += '[' + ov.category + '] ' + ov.type + (ov.text ? ' → "' + ov.text + '"' : '');
+                    if (ov.reason) text += ' (' + ov.reason + ')';
+                    text += '\n';
                 }
-                if (Array.isArray(s.overlays) && s.overlays.length > 0) {
-                    const ov = s.overlays[0];
-                    const typeKo = _OVERLAY_TYPE_KO[ov.type] || ov.type;
-                    let textHint = '';
-                    if (ov.data) textHint = ov.data.text || ov.data.mainTitle || ov.data.title || '';
-                    text += '📝 오버레이: ' + typeKo + (textHint ? ' → "' + textHint + '"' : '') + '\n';
-                } else if (s.textOverlay) {
-                    text += '📝 오버레이: 헤드라인 → "' + s.textOverlay + '"\n';
-                }
-                if (s.needRealImage) text += '📷 실사 검색: ' + (s.realSearchKeyword || '') + '\n';
+                // 효과음
+                if (s.sfxPrompt) text += '\n🔊 효과음: ' + s.sfxPrompt + '\n';
+                // 로고
                 if (s.needLogo && s.logoName) text += '🏢 로고: ' + s.logoName + '\n';
-                if (s.sfxPrompt) text += '🔊 효과음: ' + s.sfxPrompt + '\n';
                 text += '\n';
             });
             safeCopy(text).then(() => {
