@@ -2192,12 +2192,8 @@
                         </p>
                         <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
                             <label style="display:flex;align-items:center;gap:4px;font-size:0.82rem;cursor:pointer;">
-                                <input type="checkbox" id="sceneGuideFilterManual" checked onchange="_renderSceneGuideFromState()"/>
-                                수동 필요만 보기
-                            </label>
-                            <label style="display:flex;align-items:center;gap:4px;font-size:0.82rem;cursor:pointer;">
-                                <input type="checkbox" id="sceneGuideShowStock" onchange="_renderSceneGuideFromState()"/>
-                                자동 stock도 포함
+                                <input type="checkbox" id="sceneGuideFilterManual" onchange="_renderSceneGuideFromState()"/>
+                                수동 필요만 보기 (끄면 전체)
                             </label>
                             <button class="search-btn" onclick="copySceneGuide(this)" style="margin-left:auto;padding:4px 12px;font-size:0.8rem;background:#6f42c1;border-color:#6f42c1;">📋 가이드 전체 복사</button>
                         </div>
@@ -4490,6 +4486,30 @@ stock bgQuery 생성 후 자문:
 - **"이 장면 배경으로 Pexels에서 뭐가 나왔으면 좋겠나?"** 자문
 - 요리사·팔굽혀펴기·손 벌리기 같은 **엉뚱한 매칭 방지**
 
+#### 🎯 스톡 매칭도 극대화 5가지 규칙 (실전 검증)
+
+**Pexels는 영어 태그 기반이라 검색어 정확도가 매칭률을 결정함. 5가지 엄수.**
+
+1. **구체적 명사 + 행동 + 구도** 3요소 강제
+   - ❌ "factory worker" (너무 일반)
+   - ✅ "factory worker operating control panel close up"
+
+2. **한국어 개념을 영어 visual로 번역**
+   - ❌ "경제 위기" → "economic crisis" (추상어, 매칭 실패)
+   - ✅ "stock market red numbers falling trader panic"
+
+3. **시점·구도 명시** (aerial / close up / wide / macro / slow motion)
+   - ❌ "city street" → 구도 없음
+   - ✅ "city street aerial drone shot sunset"
+
+4. **bgQueryAlts 4개 필수** — 첫 번째 실패 대비
+   - 같은 장면 다른 각도 4개
+   - 1순위 실패하면 셀팟이 alt 순서대로 시도
+
+5. **감정보다 상황 우선** (sad/angry/worried는 맨 뒤)
+
+---
+
 #### 🎯 감정 단어는 검색어 우선순위 맨 뒤 (매우 중요)
 
 **실전 검증된 사실**:
@@ -5474,8 +5494,8 @@ ${script}
                         if (!Array.isArray(s.mapLabels)) s.mapLabels = [];
                     }
                 });
-                // 스타일 prefix 자동 삽입 (Paper Cut / Collage — 다큐멘터리 톤)
-                const MAP_STYLE_PREFIX = 'Paper cut collage illustration style, layered paper textures with torn edges and subtle shadows between layers, documentary aesthetic, muted sophisticated color palette (deep navy, warm earth tones, aged paper), clean cartographic composition, NOT photo-realistic, NOT watercolor, NOT childish cartoon, NOT 3D render, clear readable labels, cinematic 16:9. ';
+                // 스타일 prefix 자동 삽입 (지식한입 스타일 — 밝고 세련된 다큐)
+                const MAP_STYLE_PREFIX = 'Modern infographic illustration style, warm cream beige background, soft pastel color palette with warm earth tones and muted blues, clean flat design, subtle paper texture, readable bold Korean labels in dark text, sophisticated editorial documentary aesthetic (like 지식한입 or 지식세포 YouTube channel style), professional and friendly, NOT dark, NOT gloomy, NOT photo-realistic, NOT childish cartoon, cinematic 16:9. ';
                 jsonObj.scenes.forEach(s => {
                     if (s.isMapScene !== true || typeof s.aiPrompt !== 'string') return;
                     if (!s.aiPrompt.startsWith('Paper cut collage')) {
@@ -6230,11 +6250,9 @@ ${script}
             const list = document.getElementById('jsonSceneGuideList');
             if (!list) return;
             const filterManual = document.getElementById('sceneGuideFilterManual').checked;
-            const showStock = document.getElementById('sceneGuideShowStock').checked;
             const filtered = scenes.filter(s => {
-                if (showStock) return true;
                 if (filterManual) return _sceneNeedsManual(s);
-                return true;
+                return true; // default: show all
             });
             if (filtered.length === 0) {
                 list.innerHTML = '<p style="text-align:center;color:#888;padding:20px;">표시할 장면이 없습니다.</p>';
@@ -6287,6 +6305,14 @@ ${script}
                 rows += '<div style="margin-top:4px;font-size:0.82rem;"><strong style="color:' + color + ';">' + icon + ' 오버레이:</strong> ' + _escapeHtml(typeKo) + action + (textHint ? ' → "' + _escapeHtml(textHint) + '"' : '') + '</div>';
             } else if (s.textOverlay) {
                 rows += '<div style="margin-top:4px;font-size:0.82rem;"><strong style="color:#555;">📝 오버레이:</strong> 헤드라인 → "' + _escapeHtml(s.textOverlay) + '"</div>';
+            } else {
+                // 오버레이 없음 — 나레이션 기반 추천
+                const suggestion = _suggestOverlayFromNarration(s.narration || '');
+                if (suggestion) {
+                    rows += '<div style="margin-top:4px;font-size:0.82rem;color:#888;"><strong>💡 오버레이 추천:</strong> ' + _escapeHtml(suggestion) + '</div>';
+                } else {
+                    rows += '<div style="margin-top:4px;font-size:0.78rem;color:#aaa;">✕ 오버레이 없음 (연결 장면)</div>';
+                }
             }
 
             // 실사
@@ -6319,6 +6345,38 @@ ${script}
 
         function _jsEscape(s) {
             return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n');
+        }
+
+        // 나레이션 기반 오버레이 타입 추천
+        function _suggestOverlayFromNarration(narr) {
+            if (!narr) return '';
+            const n = narr;
+            // 퍼센트
+            const pctMatch = n.match(/(\d{1,3}(?:\.\d+)?)\s*(?:%|퍼센트)/);
+            if (pctMatch) return '수치카드 또는 도넛차트 — "' + pctMatch[1] + '%"';
+            // 금액
+            const wonMatch = n.match(/(\d+(?:\.\d+)?)\s*(조|억|만|천)\s*원/);
+            if (wonMatch) return '수치카드 — "' + wonMatch[0] + '"';
+            // 달러
+            const usdMatch = n.match(/\$\s*(\d[\d,]*)/);
+            if (usdMatch) return '수치카드 — "$' + usdMatch[1] + '"';
+            // 비교 (vs, 대비, 반대)
+            if (/\bvs\b|대비|반대로|한쪽|다른 쪽/i.test(n)) return 'VS대결 (versus_stat)';
+            // 순위
+            if (/1위|2위|3위|순위|최다|최대|최고|세계 \d+/.test(n)) return '랭킹 또는 수치카드';
+            // 시간순
+            if (/\d{4}년|\d+년대|이전|이후|처음|나중에|그 다음|단계/.test(n) && n.length > 30) return '타임라인 또는 헤드라인';
+            // 3개 이상 항목
+            const counts = (n.match(/,|그리고|또|또한|첫째|둘째|셋째/g) || []).length;
+            if (counts >= 3) return '막대차트 또는 헤드라인';
+            // 인용
+            if (/"[^"]+"|'[^']+'/.test(n)) return '인용문 (text_quote)';
+            // 명확한 숫자
+            const numMatch = n.match(/\b(\d{2,})(?:배|개|명|건)/);
+            if (numMatch) return '수치카드 — "' + numMatch[0] + '"';
+            // 일반 핵심 키워드
+            if (n.length < 40) return '헤드라인 (text_headline) — 핵심 3~5자 키워드';
+            return '';
         }
 
         function _copyText(text, btn) {
