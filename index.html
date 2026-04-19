@@ -6709,12 +6709,16 @@ ${script}
             const sorted = Object.entries(scores)
                 .sort((a, b) => b[1] - a[1])
                 .filter(([_, score]) => score > 0)
-                .map(([type, score]) => _buildRankEntry(s, type, score));
+                .map(([type, score]) => _buildRankEntry(s, type, score))
+                .filter(r => r !== null); // real 키워드 없는 경우 제외
 
             // 최소 3개 보장
             if (sorted.length < 3) {
-                ['stock', 'ai', 'real'].forEach(t => {
-                    if (!sorted.find(r => r.type === t)) sorted.push(_buildRankEntry(s, t, 0));
+                ['stock', 'ai', 'gif'].forEach(t => {
+                    if (!sorted.find(r => r.type === t)) {
+                        const entry = _buildRankEntry(s, t, 0);
+                        if (entry) sorted.push(entry);
+                    }
                 });
             }
             return sorted.slice(0, 4);
@@ -6742,10 +6746,12 @@ ${script}
                 };
             }
             if (type === 'real') {
+                const kw = s.realSearchKeyword || _deriveRealKeyword(narr);
+                if (!kw) return null; // 적절한 영문 키워드 없음 → real 제외
                 return {
                     type: 'real',
                     label: '실사 이미지 (구글)',
-                    content: s.realSearchKeyword || _deriveRealKeyword(narr),
+                    content: kw,
                     reason: _reasonFor('real', narr, score)
                 };
             }
@@ -6872,18 +6878,66 @@ ${script}
         }
 
         function _deriveRealKeyword(narr) {
+            // 실존 인물
             if (/칭기즈칸/.test(narr)) return 'Genghis Khan statue Mongolia';
-            if (/청나라/.test(narr)) return 'Qing dynasty historical photograph';
-            if (/소련|레닌|스탈린/.test(narr)) return 'Soviet Union archival photo Red Square';
-            if (/IMF/.test(narr)) return 'IMF headquarters Washington DC';
-            if (/울란바토르/.test(narr)) return 'Ulaanbaatar Mongolia cityscape';
-            if (/달라이라마/.test(narr)) return 'Dalai Lama Mongolia visit';
-            if (/트럼프/.test(narr)) return 'Donald Trump official photo';
-            if (/시진핑/.test(narr)) return 'Xi Jinping official photo';
-            if (/사원|라마 불교/.test(narr)) return 'Tibetan Buddhist monastery Mongolia historical';
-            if (/산업혁명/.test(narr)) return 'Industrial Revolution factories 19th century';
-            if (/냉전/.test(narr)) return 'Cold War archival photo';
-            return narr.length > 30 ? narr.substring(0, 30).replace(/[^a-zA-Z가-힣]/g, ' ') + ' historical photo' : 'historical photograph';
+            if (/나폴레옹/.test(narr)) return 'Napoleon Bonaparte painting';
+            if (/링컨/.test(narr)) return 'Abraham Lincoln portrait';
+            if (/간디/.test(narr)) return 'Mahatma Gandhi historical photo';
+            if (/트럼프/.test(narr)) return 'Donald Trump official portrait';
+            if (/푸틴/.test(narr)) return 'Vladimir Putin official photo';
+            if (/네타냐후/.test(narr)) return 'Benjamin Netanyahu official portrait';
+            if (/시진핑/.test(narr)) return 'Xi Jinping official portrait';
+            if (/오바마/.test(narr)) return 'Barack Obama official portrait';
+            if (/김정은/.test(narr)) return 'Kim Jong Un official photo';
+            if (/달라이라마/.test(narr)) return 'Dalai Lama monk photograph';
+            if (/레닌/.test(narr)) return 'Vladimir Lenin historical photograph';
+            if (/스탈린/.test(narr)) return 'Joseph Stalin archival photo';
+            if (/고르바초프/.test(narr)) return 'Mikhail Gorbachev historical photo';
+            if (/마오쩌둥/.test(narr)) return 'Mao Zedong historical portrait';
+            if (/덩샤오핑/.test(narr)) return 'Deng Xiaoping historical photo';
+            if (/세종/.test(narr)) return 'King Sejong statue Korea';
+            if (/박정희/.test(narr)) return 'Park Chung-hee archival photo';
+            if (/이승만/.test(narr)) return 'Syngman Rhee archival photograph';
+
+            // 왕조·역사 시대
+            if (/청나라/.test(narr)) return 'Qing dynasty historical painting';
+            if (/조선.*(?:왕|임금|지배|시대)|조선 후기/.test(narr)) return 'Joseon dynasty historical painting';
+            if (/고려/.test(narr)) return 'Goryeo dynasty historical artwork';
+            if (/원나라|몽골 제국/.test(narr)) return 'Mongol Empire historical painting';
+            if (/소련|공산주의.*(?:국가|체제)/.test(narr)) return 'Soviet Union archival photo Red Square';
+            if (/냉전/.test(narr)) return 'Cold War archival photograph';
+            if (/산업혁명/.test(narr)) return 'Industrial Revolution 19th century factory photo';
+            if (/세계대전/.test(narr)) return 'World War archival photograph';
+
+            // 실존 지명·기관
+            if (/IMF/.test(narr)) return 'IMF headquarters Washington DC building';
+            if (/세계은행/.test(narr)) return 'World Bank headquarters Washington';
+            if (/크렘린/.test(narr)) return 'Kremlin Moscow Russia building';
+            if (/백악관/.test(narr)) return 'White House Washington DC';
+            if (/울란바토르/.test(narr)) return 'Ulaanbaatar Mongolia cityscape aerial';
+            if (/북경|베이징/.test(narr)) return 'Beijing China Tiananmen cityscape';
+            if (/상하이/.test(narr)) return 'Shanghai skyline China';
+            if (/모스크바/.test(narr)) return 'Moscow Russia Red Square';
+            if (/평양/.test(narr)) return 'Pyongyang North Korea';
+            if (/도쿄/.test(narr)) return 'Tokyo Japan skyline';
+            if (/베를린/.test(narr)) return 'Berlin Germany cityscape';
+
+            // 종교·시설
+            if (/라마 불교|티베트.*불교/.test(narr)) return 'Tibetan Buddhist monastery Mongolia';
+            if (/사원.*파괴|사원.*부서/.test(narr)) return 'destroyed monastery ruins historical';
+            if (/사원|수도원/.test(narr)) return 'Buddhist monastery historical';
+
+            // 사건·재난
+            if (/독립 선언/.test(narr)) return 'historical declaration of independence';
+            if (/붕괴|무너|쓰러/.test(narr) && /소련/.test(narr)) return 'fall of Soviet Union 1991';
+            if (/숙청/.test(narr)) return 'political purge archival photograph';
+
+            // 나라 동상·유적
+            if (/동상/.test(narr)) return 'historical statue monument';
+            if (/유적/.test(narr)) return 'historical ruins archaeology';
+
+            // 매칭 안 되면 null 반환 (real 순위에서 제외)
+            return null;
         }
 
         function _deriveCharacter(narr) {
