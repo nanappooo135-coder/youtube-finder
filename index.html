@@ -6979,95 +6979,68 @@ ${script}
             return 'reaction emotion 감정 반응';
         }
 
-        // === 28종 오버레이 추천 ===
+        // === 28종 오버레이 추천 (엄격 모드) ===
+        // 핵심 원칙: 강조할 이유가 명확할 때만 추천. 모호하면 "없음".
         function _recommendOverlay28(s) {
             const narr = s.narration || '';
-            // 짧은 연결 장면 (오버레이 불필요)
-            if (narr.length < 25 && !/\d|%|["']/.test(narr)) {
-                return { type: 'none', reason: '연결·감정 장면 — 오버레이 없이 진행' };
-            }
 
-            // 퍼센트 → 도넛차트
+            // [1] 숫자·퍼센트 — 시청자가 기억할 핵심 데이터
             const pctMatch = narr.match(/(\d{1,3}(?:\.\d+)?)\s*(?:%|퍼센트)/);
             if (pctMatch) {
                 const pct = parseFloat(pctMatch[1]);
-                if (pct >= 50) return { category: '데이터', type: '도넛차트', text: pctMatch[0], reason: '점유율/비율 강조' };
-                return { category: '기존', type: '수치카드', text: pctMatch[0], reason: '수치 강조' };
+                if (pct >= 50) return { category: '데이터', type: '도넛차트', text: pctMatch[0], reason: '점유율 핵심 데이터' };
+                return { category: '기존', type: '수치카드', text: pctMatch[0], reason: '퍼센트 강조' };
             }
 
-            // 금액 → 수치카드
+            // [2] 금액 — 반드시 강조
             const wonMatch = narr.match(/(\d+(?:\.\d+)?\s*(?:조|억|만|천)\s*(?:원|달러))/);
             if (wonMatch) return { category: '기존', type: '수치카드', text: wonMatch[1], reason: '금액 강조' };
             const usdMatch = narr.match(/\$\s*(\d[\d,]*)/);
             if (usdMatch) return { category: '기존', type: '수치카드', text: '$' + usdMatch[1], reason: '달러 강조' };
 
-            // VS 비교
-            if (/\bvs\b|대비|한쪽|다른 쪽|\d+\s*(?:배|분의)/i.test(narr)) {
-                return { category: '데이터', type: 'VS대결', text: s.textOverlay || '비교', reason: '좌우 대비 강조' };
+            // [3] VS 비교 — 구조적 대비
+            if (/\bvs\b|대비(?!한)|한쪽.*다른 쪽|\d+\s*(?:배|분의)\s*\d+/i.test(narr)) {
+                return { category: '데이터', type: 'VS대결', text: s.textOverlay || '비교', reason: '좌우 대비 명확' };
             }
 
-            // 순위·랭킹
-            if (/1위|2위|3위|꼴찌|최다|최대|최고|순위/.test(narr)) {
-                return { category: '데이터', type: '랭킹', text: s.textOverlay || '랭킹', reason: '순위 시각화' };
+            // [4] 순위 — 시청자가 랭킹 정보 기억
+            if (/\b\d위|꼴찌|최다|최대|최고/.test(narr)) {
+                return { category: '데이터', type: '랭킹', text: s.textOverlay || '순위', reason: '순위 핵심' };
             }
 
-            // 3+ 항목 나열
-            const nounCount = (narr.match(/석탄|구리|금|우라늄|종교|사유재산|시장|땅|상업|인구/g) || []).length;
-            if (nounCount >= 3) {
-                return { category: '기존', type: '막대차트', text: s.textOverlay || '비교', reason: '여러 항목 나열' };
-            }
-
-            // 타임라인
-            const yearCount = (narr.match(/\d{4}년|\d+년대|\d+년 전/g) || []).length;
-            if (yearCount >= 2 || /\d+년\s*\+\s*\d+년/.test(narr)) {
-                return { category: '데이터', type: '타임라인', text: s.textOverlay || '연대기', reason: '시간 흐름' };
-            }
-
-            // 인용문
+            // [5] 인용문 — 누가 직접 한 말
             const quoteMatch = narr.match(/["']([^"']{5,40})["']/);
-            if (quoteMatch) return { category: '텍스트', type: '인용문', text: quoteMatch[1], reason: '대사·인용 강조' };
+            if (quoteMatch) return { category: '텍스트', type: '인용문', text: quoteMatch[1], reason: '직접 대사·인용' };
 
-            // 증감
-            if (/급락|급등|폭등|폭락|2배|절반|감소|증가/.test(narr)) {
-                return { category: '데이터', type: '증감수치', text: s.textOverlay || '변화', reason: '증감 화살표' };
-            }
-
-            // 지도 라벨
-            if (/내몽골|외몽골|국경|러시아.*중국|위치/.test(narr)) {
-                return { category: '레이아웃', type: '지도라벨', text: s.textOverlay || '위치', reason: '지도 위 라벨' };
-            }
-
-            // 콜아웃 (주의·강조)
-            if (/^(근데|그런데|진짜|진짜 무서운|놀라운)/.test(narr)) {
-                return { category: '레이아웃', type: '콜아웃', text: s.textOverlay || '핵심', reason: '강조 포인트' };
-            }
-
-            // 숫자 카운트
-            const bigNumMatch = narr.match(/(\d{3,}(?:만|억|명|개))/);
+            // [6] 큰 숫자 — 충격 숫자
+            const bigNumMatch = narr.match(/(\d{2,}(?:만|억)\s*(?:명|개))/);
             if (bigNumMatch) return { category: '레이아웃', type: '전체숫자', text: bigNumMatch[1], reason: '큰 숫자 임팩트' };
 
-            // 제목급 문장 (짧고 강렬)
-            if (s.textOverlay && s.textOverlay.length <= 8 && narr.length < 40) {
-                return { category: '레이아웃', type: '타이틀', text: s.textOverlay, reason: '챕터 제목' };
+            // [7] 연대기·타임라인 — 3개 이상 시점
+            const yearCount = (narr.match(/\d{4}년|\d+년대|\d+년 전|\d+년\s*동안/g) || []).length;
+            if (yearCount >= 3) {
+                return { category: '데이터', type: '타임라인', text: s.textOverlay || '연대기', reason: '시간 흐름 다단계' };
             }
 
-            // 헤드라인 기본
-            if (s.textOverlay) {
-                return { category: '텍스트', type: '헤드라인', text: s.textOverlay, reason: '핵심 키워드 강조' };
+            // [8] 증감 변화 — 명확한 수치 변화
+            if (/2배|절반으로|급락|급등|폭락|폭등/.test(narr)) {
+                return { category: '데이터', type: '증감수치', text: s.textOverlay || '변화', reason: '명확한 증감' };
             }
 
-            // 그 외 → 헤드라인 제안
-            const suggested = _suggestHeadlineText(narr);
-            if (suggested) return { category: '텍스트', type: '헤드라인', text: suggested, reason: '나레이션 핵심' };
+            // [9] 짧고 강렬한 챕터 전환 (영상 구조 전환 포인트만)
+            // 매우 짧은 나레이션(10자 이하) + textOverlay 존재 → 타이틀
+            if (narr.length <= 15 && s.textOverlay && s.textOverlay.length <= 10) {
+                return { category: '레이아웃', type: '타이틀', text: s.textOverlay, reason: '챕터 전환' };
+            }
 
-            return { type: 'none', reason: '일반 설명 장면 — 오버레이 생략 가능' };
-        }
+            // [10] 강한 수식어 시작 — "진짜", "놀라운", "충격적"
+            if (/^(진짜 무서운|진짜 충격|놀라운|충격적)/.test(narr) && s.textOverlay) {
+                return { category: '레이아웃', type: '콜아웃', text: s.textOverlay, reason: '강조 포인트' };
+            }
 
-        function _suggestHeadlineText(narr) {
-            // 3~8자 짧은 명사구 추출 시도
-            const match = narr.match(/[가-힣]{3,8}(?:입니다|이에요|예요)/);
-            if (match) return match[0].replace(/입니다|이에요|예요/, '').trim();
-            return '';
+            // 나머지는 전부 "없음"
+            // — 일반 설명·감정·반응·연결 장면은 나레이션만으로 충분
+            return { type: 'none', reason: '일반 설명 — 오버레이 없이도 전달 명확' };
         }
 
         function _jsEscape(s) {
