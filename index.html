@@ -5546,8 +5546,8 @@ ${script}
                         if (!Array.isArray(s.mapLabels)) s.mapLabels = [];
                     }
                 });
-                // 스타일 prefix 자동 삽입 (지식한입 스타일 — 밝고 세련된 다큐)
-                const MAP_STYLE_PREFIX = 'Modern infographic illustration style, warm cream beige background, soft pastel color palette with warm earth tones and muted blues, clean flat design, subtle paper texture, readable bold Korean labels in dark text, sophisticated editorial documentary aesthetic (like 지식한입 or 지식세포 YouTube channel style), professional and friendly, NOT dark, NOT gloomy, NOT photo-realistic, NOT childish cartoon, cinematic 16:9. ';
+                // 스타일 prefix 자동 삽입 (세련된 다큐멘터리 인포그래픽)
+                const MAP_STYLE_PREFIX = 'Modern infographic illustration style, warm cream beige background, soft pastel color palette with warm earth tones and muted blues, clean flat design, subtle paper texture, readable bold Korean labels in dark text, sophisticated editorial documentary aesthetic, professional and friendly, NOT dark, NOT gloomy, NOT photo-realistic, NOT childish cartoon, NO brand names, NO logos, NO watermarks, NO channel names, cinematic 16:9. ';
                 jsonObj.scenes.forEach(s => {
                     if (s.isMapScene !== true || typeof s.aiPrompt !== 'string') return;
                     if (!s.aiPrompt.startsWith('Paper cut collage')) {
@@ -6737,7 +6737,9 @@ ${script}
                 };
             }
             if (type === 'ai') {
-                const basePrompt = s.bgSource === 'ai' && s.aiPrompt ? s.aiPrompt : _deriveAiPrompt(s);
+                let basePrompt = s.bgSource === 'ai' && s.aiPrompt ? s.aiPrompt : _deriveAiPrompt(s);
+                // 채널 브랜드명 유입 방지 (AI가 워터마크로 박음)
+                basePrompt = _stripBrandNames(basePrompt);
                 return {
                     type: 'ai',
                     label: 'AI 이미지 (셀팟 생성)',
@@ -6813,6 +6815,25 @@ ${script}
             if (/학교|학생/.test(narr)) return 'classroom students learning';
             if (/가족|아이/.test(narr)) return 'family children home';
             return 'cinematic documentary abstract';
+        }
+
+        // 채널 브랜드명·YouTube 레퍼런스 제거 (AI가 워터마크로 박는 문제 방지)
+        function _stripBrandNames(prompt) {
+            if (!prompt) return prompt;
+            let out = prompt;
+            // 한글 채널명
+            out = out.replace(/\s*\(?\s*like\s+지식한입[^)]*\)?/gi, '');
+            out = out.replace(/\s*\(?\s*like\s+지식세포[^)]*\)?/gi, '');
+            out = out.replace(/지식한입[^\s,.]*\s*(YouTube|채널)?/gi, '');
+            out = out.replace(/지식세포[^\s,.]*\s*(YouTube|채널)?/gi, '');
+            out = out.replace(/자산제곱/gi, '');
+            // 영문 채널 브랜드 방지 문구 추가 (중복 방지)
+            if (!/no brand names|no logos|no watermarks/i.test(out)) {
+                out = out.replace(/\.\s*$/, '') + '. No brand names, no logos, no watermarks, no channel names.';
+            }
+            // 중복 쉼표·공백 정리
+            out = out.replace(/,\s*,/g, ',').replace(/\s{2,}/g, ' ').trim();
+            return out;
         }
 
         // AI 프롬프트 한글 라벨 강제 (텍스트 들어가는 경우만)
