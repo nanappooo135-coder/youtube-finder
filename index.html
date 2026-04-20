@@ -6616,9 +6616,16 @@ ${script}
                 rows += '<div style="font-size:0.78rem;">';
                 rows += '<span style="background:' + catColor + ';color:#fff;padding:1px 6px;border-radius:3px;font-size:0.7rem;margin-right:6px;">' + overlayRec.category + '</span>';
                 rows += '<strong style="color:' + catColor + ';">' + _escapeHtml(overlayRec.type) + '</strong>';
-                if (overlayRec.text) rows += ' → "<strong>' + _escapeHtml(overlayRec.text) + '</strong>"';
+                if (overlayRec.text) {
+                    rows += ' → "<strong>' + _escapeHtml(overlayRec.text) + '</strong>"';
+                    rows += ' <button onclick="_copyText(' + "'" + _jsEscape(overlayRec.text) + "'" + ', this)" style="margin-left:4px;padding:1px 8px;font-size:0.7rem;border:1px solid ' + catColor + ';background:#fff;border-radius:3px;cursor:pointer;color:' + catColor + ';font-weight:600;">📋 복사</button>';
+                }
                 rows += '</div>';
                 if (overlayRec.reason) rows += '<div style="font-size:0.72rem;color:#868e96;margin-top:2px;">💡 ' + _escapeHtml(overlayRec.reason) + '</div>';
+                // 셀팟 사용 힌트
+                rows += '<div style="font-size:0.7rem;color:#495057;margin-top:4px;padding:4px 6px;background:#f8f9fa;border-radius:3px;border-left:2px solid ' + catColor + ';">';
+                rows += '↳ 셀팟에서 <strong>' + _escapeHtml(overlayRec.type) + '</strong> 오버레이 추가 → 텍스트 칸에 위 내용 붙여넣기';
+                rows += '</div>';
             }
             rows += '</div>';
 
