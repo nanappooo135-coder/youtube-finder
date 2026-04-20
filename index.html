@@ -7035,9 +7035,15 @@ ${script}
                 return { category: '데이터', type: 'VS대결', text: s.textOverlay || '비교', reason: '좌우 대비 명확' };
             }
 
-            // [4] 순위 — 시청자가 랭킹 정보 기억
-            if (/\b\d위|꼴찌|최다|최대|최고/.test(narr)) {
-                return { category: '데이터', type: '랭킹', text: s.textOverlay || '순위', reason: '순위 핵심' };
+            // [4] 랭킹 — 나레이션에 복수 순위가 명시된 경우만
+            // 예: "1위 인도, 2위 한국, 3위 중국" → 랭킹 (최소 2개 이상 순위)
+            const rankItems = (narr.match(/\b\d위/g) || []).length;
+            if (rankItems >= 2) {
+                return { category: '데이터', type: '랭킹', text: s.textOverlay || '순위', reason: '복수 순위 명시' };
+            }
+            // "꼴찌/최고/최대" 단독은 헤드라인이 낫다 (셀팟이 가짜 데이터 생성 방지)
+            if (/^\s*꼴찌\s*$|^\s*최고\s*$/.test(narr) && s.textOverlay) {
+                return { category: '텍스트', type: '헤드라인', text: s.textOverlay, reason: '단순 강조' };
             }
 
             // [5] 인용문 — 누가 직접 한 말
