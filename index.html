@@ -7009,9 +7009,10 @@ ${script}
                 scores.stock += 3;
             }
 
-            // 현재 JSON의 bgSource 가중치 (살짝 우대)
+            // 현재 JSON의 bgSource 강력 우대 (Gemini가 이미 분석한 결과 최우선)
+            // JSON ↔ 가이드 매칭 보장
             const cur = s.bgSource || 'stock';
-            scores[cur] = (scores[cur] || 0) + 1;
+            scores[cur] = (scores[cur] || 0) + 10;
 
             // 정렬
             const sorted = Object.entries(scores)
