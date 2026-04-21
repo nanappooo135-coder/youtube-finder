@@ -7881,11 +7881,17 @@ ${script}
                 return { category: '데이터', type: '타임라인', text: s.textOverlay || '연대기', reason: '시간 흐름 다단계' };
             }
 
-            // [8] 막대차트 — 3개 이상 항목 나열 (자원·분야·요소)
-            // 예: "석탄, 구리, 금, 우라늄" / "상업, 금융, 운송, 아이디어"
+            // [8] 항목 나열 — 3개 이상 항목
+            // 막대차트는 비교 수치가 있을 때만, 없으면 불릿리스트
             const itemMatches = narr.match(/[가-힣]{2,6}(?:,\s*[가-힣]{2,6}){2,}/);
             if (itemMatches) {
-                return { category: '기존', type: '막대차트', text: s.textOverlay || '항목 비교', reason: '여러 항목 나열' };
+                // 숫자 비교가 명확한 경우만 막대차트
+                const hasNumericComparison = /\d+\s*(?:배|%|천|만|억|조)|순위|최다|최대/.test(narr);
+                if (hasNumericComparison) {
+                    return { category: '기존', type: '막대차트', text: s.textOverlay || '항목 비교', reason: '수치 비교' };
+                }
+                // 단순 나열 → 불릿리스트
+                return { category: '텍스트', type: '불릿리스트', text: s.textOverlay || '항목', reason: '단순 나열' };
             }
 
             // [9] 증감 변화 — 명확한 수치 변화
