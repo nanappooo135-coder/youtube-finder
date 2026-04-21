@@ -6493,67 +6493,139 @@ ${script}
         }
 
         // 전체 대본에서 핵심 주제·국가·시대·인물 추출 → 개별 장면 추천에 맥락 제공
+        // 다양한 주제 대응 (경제·역사·전쟁·정치·기술·환경 등)
         function _extractGlobalTopic(scenes) {
             const allText = scenes.map(s => s.narration || '').join(' ');
             const topic = {
-                country: null,        // 주제 국가 (영문)
-                era: null,            // 시대 (영문)
-                figures: [],          // 실존 인물 (영문)
-                themes: [],           // 주제 키워드 (영문)
-                topicEn: '',          // 종합 영문 키워드
-                topicKo: ''           // 종합 한글 키워드
+                country: null,
+                region: null,
+                era: null,
+                figures: [],
+                themes: [],
+                topicEn: '',
+                topicKo: ''
             };
 
-            // 주제 국가 감지 (가장 많이 언급된 국가)
-            const countries = {
-                mongolia: (allText.match(/몽골(?!이아)|울란바토르|게르|칭기즈칸/g) || []).length,
-                china: (allText.match(/중국|베이징|시진핑|청나라|내몽골/g) || []).length,
-                russia: (allText.match(/러시아|소련|모스크바|크렘린/g) || []).length,
-                korea: (allText.match(/한국(?!도)|서울|한반도/g) || []).length,
-                japan: (allText.match(/일본|도쿄/g) || []).length,
-                iran: (allText.match(/이란|테헤란/g) || []).length,
-                israel: (allText.match(/이스라엘|네타냐후/g) || []).length,
-                usa: (allText.match(/미국|워싱턴|트럼프|오바마/g) || []).length,
-                north_korea: (allText.match(/북한|평양|김정은/g) || []).length
+            // === 주제 국가 감지 (세계 주요국) ===
+            const countryPatterns = {
+                'mongolia':      /몽골(?!이아)|울란바토르|게르|칭기즈칸/g,
+                'china':         /중국|베이징|시진핑|청나라|내몽골|상하이/g,
+                'russia':        /러시아|소련|모스크바|크렘린|푸틴|레닌|스탈린/g,
+                'south korea':   /한국(?!도)|서울|한반도|박정희|이승만|세종/g,
+                'north korea':   /북한|평양|김정은|김일성|김정일/g,
+                'japan':         /일본|도쿄|오사카|천황|메이지/g,
+                'iran':          /이란|테헤란|페르시아|호메이니/g,
+                'israel':        /이스라엘|예루살렘|네타냐후|팔레스타인/g,
+                'saudi arabia':  /사우디|리야드|무함마드/g,
+                'turkey':        /터키|이스탄불|오스만/g,
+                'egypt':         /이집트|카이로|파라오/g,
+                'india':         /인도|뉴델리|간디|모디/g,
+                'pakistan':      /파키스탄|이슬라마바드/g,
+                'usa':           /미국|워싱턴|뉴욕|트럼프|오바마|바이든/g,
+                'uk':            /영국|런던|브렉시트|엘리자베스|윈스턴/g,
+                'france':        /프랑스|파리|마크롱|나폴레옹|드골/g,
+                'germany':       /독일|베를린|메르켈|히틀러|비스마르크/g,
+                'italy':         /이탈리아|로마|무솔리니|교황/g,
+                'spain':         /스페인|마드리드|바르셀로나/g,
+                'vietnam':       /베트남|호치민|하노이/g,
+                'thailand':      /태국|방콕/g,
+                'singapore':     /싱가포르/g,
+                'indonesia':     /인도네시아|자카르타/g,
+                'philippines':   /필리핀|마닐라/g,
+                'brazil':        /브라질|리우|룰라/g,
+                'argentina':     /아르헨티나|부에노스/g,
+                'mexico':        /멕시코/g,
+                'canada':        /캐나다|토론토|트뤼도/g,
+                'australia':     /호주|시드니|멜버른/g,
+                'ukraine':       /우크라이나|키이우|젤렌스키/g,
+                'afghanistan':   /아프가니스탄|카불|탈레반/g,
+                'ethiopia':      /에티오피아|아디스/g,
+                'south africa':  /남아공|요하네스버그|만델라/g,
+                'venezuela':     /베네수엘라|차베스|마두로/g
             };
-            const topCountry = Object.entries(countries).sort((a,b) => b[1] - a[1])[0];
-            if (topCountry && topCountry[1] >= 3) topic.country = topCountry[0].replace(/_/g, ' ');
+            const scores = {};
+            for (const [c, re] of Object.entries(countryPatterns)) {
+                scores[c] = (allText.match(re) || []).length;
+            }
+            const sorted = Object.entries(scores).sort((a,b) => b[1] - a[1]);
+            if (sorted[0] && sorted[0][1] >= 3) topic.country = sorted[0][0];
 
-            // 시대 감지
-            if (/청나라|조선 후기|19세기|200년 전/.test(allText)) topic.era = 'historical 19th century';
-            else if (/소련|냉전|20세기 중반|1950년대|1960년대|1970년대|1980년대/.test(allText)) topic.era = 'cold war era';
-            else if (/1990년대|2000년대/.test(allText)) topic.era = '1990s 2000s';
-            else if (/2010년|최근|현대/.test(allText)) topic.era = 'modern contemporary';
+            // === 지역 (대륙급) ===
+            if (/중동|아랍|페르시아만|홍해|걸프/.test(allText)) topic.region = 'middle east';
+            else if (/아프리카(?!카)|사하라/.test(allText)) topic.region = 'africa';
+            else if (/동남아|동남아시아|ASEAN/.test(allText)) topic.region = 'southeast asia';
+            else if (/라틴|남미/.test(allText)) topic.region = 'latin america';
+            else if (/유럽연합|EU(?![A-Z])/.test(allText)) topic.region = 'europe';
 
-            // 실존 인물 빈도
-            const figures = {
-                'Genghis Khan': /칭기즈칸/.test(allText),
-                'Mao Zedong': /마오쩌둥/.test(allText),
-                'Xi Jinping': /시진핑/.test(allText),
-                'Dalai Lama': /달라이라마/.test(allText),
-                'Lenin': /레닌/.test(allText),
-                'Stalin': /스탈린/.test(allText),
-                'Trump': /트럼프/.test(allText),
-                'Putin': /푸틴/.test(allText),
-                'Netanyahu': /네타냐후/.test(allText),
-                'Kim Jong Un': /김정은/.test(allText)
+            // === 시대 감지 ===
+            if (/고대|기원전|로마 제국|이집트 문명/.test(allText)) topic.era = 'ancient civilization';
+            else if (/중세|십자군|비잔틴/.test(allText)) topic.era = 'medieval';
+            else if (/대항해|르네상스|15세기|16세기/.test(allText)) topic.era = 'age of exploration';
+            else if (/청나라|조선 후기|19세기|산업혁명|200년 전/.test(allText)) topic.era = '19th century industrial';
+            else if (/세계대전|양차대전|히틀러|나치/.test(allText)) topic.era = 'world war';
+            else if (/소련|냉전|20세기 중반|1950|1960|1970|1980/.test(allText)) topic.era = 'cold war';
+            else if (/1990|2000|2010/.test(allText)) topic.era = 'modern era';
+            else if (/최근|현재|2020|2023|2024|2025|오늘날/.test(allText)) topic.era = 'contemporary';
+
+            // === 실존 인물 ===
+            const figurePatterns = {
+                'Genghis Khan': /칭기즈칸/,
+                'Mao Zedong': /마오쩌둥/,
+                'Xi Jinping': /시진핑/,
+                'Dalai Lama': /달라이라마/,
+                'Lenin': /레닌/,
+                'Stalin': /스탈린/,
+                'Gorbachev': /고르바초프/,
+                'Putin': /푸틴/,
+                'Trump': /트럼프/,
+                'Obama': /오바마/,
+                'Biden': /바이든/,
+                'Kim Jong Un': /김정은/,
+                'Netanyahu': /네타냐후/,
+                'Zelensky': /젤렌스키/,
+                'Modi': /\b모디\b/,
+                'Macron': /마크롱/,
+                'Merkel': /메르켈/,
+                'Hitler': /히틀러/,
+                'Napoleon': /나폴레옹/,
+                'Lincoln': /링컨/,
+                'Gandhi': /\b간디\b/,
+                'Mandela': /만델라/,
+                'Churchill': /처칠/,
+                'Khomeini': /호메이니/,
+                'Mohammed bin Salman': /빈 살만|무함마드 빈/,
+                'Park Chung-hee': /박정희/,
+                'Syngman Rhee': /이승만/,
+                'King Sejong': /세종대왕|세종(?!시)/
             };
-            topic.figures = Object.entries(figures).filter(([_, v]) => v).map(([k]) => k);
+            topic.figures = Object.entries(figurePatterns)
+                .filter(([_, re]) => re.test(allText))
+                .map(([name]) => name);
 
-            // 주제 테마
+            // === 주제 테마 ===
             const themes = [];
-            if (/경제|GDP|무역|수출|산업/.test(allText)) themes.push('economy');
-            if (/전쟁|군사|분쟁/.test(allText)) themes.push('war conflict');
-            if (/자원|광산|석탄|구리|석유/.test(allText)) themes.push('natural resources mining');
-            if (/종교|사원|불교/.test(allText)) themes.push('religion');
-            if (/인구|빈곤|도시/.test(allText)) themes.push('demographics urban');
-            if (/핵|미사일|원자력/.test(allText)) themes.push('nuclear');
-            if (/기술|AI|반도체/.test(allText)) themes.push('technology');
+            if (/경제|GDP|무역|수출|산업|화폐|인플레이션|은행|금융/.test(allText)) themes.push('economy');
+            if (/전쟁|군사|분쟁|침공|미사일|군대/.test(allText)) themes.push('war conflict');
+            if (/자원|광산|석탄|구리|석유|천연가스|희토류|금/.test(allText)) themes.push('natural resources');
+            if (/종교|사원|교회|모스크|이슬람|기독교|불교|유대교|힌두교/.test(allText)) themes.push('religion');
+            if (/인구|빈곤|도시화|이민|난민/.test(allText)) themes.push('demographics');
+            if (/핵|원자력|미사일|방어|MAD/.test(allText)) themes.push('nuclear weapons');
+            if (/기술|AI|반도체|컴퓨터|인터넷|스마트폰/.test(allText)) themes.push('technology');
+            if (/기후|환경|지구온난화|오염|탄소/.test(allText)) themes.push('climate');
+            if (/바이러스|팬데믹|코로나|에볼라|전염병/.test(allText)) themes.push('pandemic');
+            if (/우주|화성|달|NASA|스페이스/.test(allText)) themes.push('space');
+            if (/정치|선거|민주주의|독재|쿠데타/.test(allText)) themes.push('politics');
+            if (/식량|기아|농업/.test(allText)) themes.push('food crisis');
+            if (/물|수자원|가뭄|댐/.test(allText)) themes.push('water');
+            if (/교육|학교|대학/.test(allText)) themes.push('education');
+            if (/보건|의료|병원/.test(allText)) themes.push('healthcare');
+            if (/문화|예술|영화|음악/.test(allText)) themes.push('culture');
             topic.themes = themes;
 
-            // 종합 영문 키워드
+            // === 종합 영문 키워드 ===
             const parts = [];
             if (topic.country) parts.push(topic.country);
+            else if (topic.region) parts.push(topic.region);
             if (topic.era) parts.push(topic.era);
             if (topic.themes.length) parts.push(topic.themes[0]);
             topic.topicEn = parts.join(' ');
