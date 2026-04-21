@@ -6289,7 +6289,9 @@ ${script}
             sec.style.display = '';
             let text = '';
             aiScenes.forEach(s => {
-                text += `${s.id}번 - ${s.aiPrompt}\n\n`;
+                // 한글 강제 + 브랜드명 제거 후처리 (다른 섹션과 통일)
+                const processed = _enforceKoreanInAiPrompt(_stripBrandNames(s.aiPrompt), s);
+                text += `${s.id}번 - ${processed}\n\n`;
             });
             out.value = text.trim();
             window._sellpotAiPromptsText = out.value;
@@ -7542,9 +7544,16 @@ ${script}
                 return;
             }
             sec.style.display = '';
-            window._sellpotMapScenes = mapScenes;
+            // 한글 강제 + 브랜드명 제거 후처리 (장면별 가이드와 통일)
+            const processedScenes = mapScenes.map(s => {
+                const processedPrompt = s.aiPrompt
+                    ? _enforceKoreanInAiPrompt(_stripBrandNames(s.aiPrompt), s)
+                    : '';
+                return { ...s, aiPrompt: processedPrompt };
+            });
+            window._sellpotMapScenes = processedScenes;
             let html = '<div style="display:flex;flex-direction:column;gap:10px;">';
-            mapScenes.forEach(s => {
+            processedScenes.forEach(s => {
                 const summary = s.narration.length > 60 ? s.narration.substring(0, 60) + '...' : s.narration;
                 const labels = Array.isArray(s.mapLabels) ? s.mapLabels : [];
                 const chips = labels.map(l => '<code style="background:#fff;padding:3px 8px;border-radius:4px;border:1px solid #a3e0eb;font-size:0.78rem;margin-right:4px;display:inline-block;margin-bottom:3px;">' + _escapeHtml(l) + '</code>').join('');
