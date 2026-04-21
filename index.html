@@ -6848,14 +6848,19 @@ ${script}
 
         // === 각 타입별 콘텐츠 유도 ===
         function _deriveStockKeyword(narr) {
-            // 우선순위: 구체 → 은유 → 일반
+            // 우선순위: 구체 > 추상 개념 > 은유 > 일반
+            // ⚠️ 정규식 오탐 주의 (아이디어→아이, 상업→상, 등)
 
-            // 산업·경제 침체·정체 (스케일 작음)
-            if (/산업이 안|도시가 안 자|상인이 안 나오|성장 멈춤|발전이 안|멈춰|정체|침체/.test(narr)) {
+            // [우선] 산업 생태계·상업 구조 — 아이디어/금융/운송 같은 개념 나열
+            if (/산업.*생태계|아이디어.*상인|금융.*운송|아이디어.*금융|생태계.*돌아가/.test(narr)) {
+                return 'business ecosystem industrial network';
+            }
+            // 산업·경제 침체·정체
+            if (/산업이 안|도시가 안 자|상인이 안 나오|성장 멈춤|발전이 안|정체|침체/.test(narr)) {
                 return 'abandoned empty town deserted';
             }
             // 빈곤·가난
-            if (/빈곤|가난|끼니|밥 걱정/.test(narr)) return 'poverty slum hungry family';
+            if (/빈곤|가난|끼니|밥 걱정/.test(narr)) return 'poverty slum hungry meal';
             // 천막·게르
             if (/천막|게르/.test(narr)) return 'ger tent mongolia nomad';
             // 광산·채굴
@@ -6864,7 +6869,7 @@ ${script}
             if (/공장|제조|생산 라인/.test(narr)) return 'factory industrial production workers';
             // 도시·빌딩·고층
             if (/고층 빌딩|마천루|스카이라인/.test(narr)) return 'modern city skyline skyscrapers';
-            if (/도시|거리/.test(narr)) return 'urban city street cinematic';
+            if (/(?<!외국 )도시|거리에/.test(narr)) return 'urban city street cinematic';
             // 초원·몽골 풍경
             if (/초원|들판|평원/.test(narr)) return 'mongolia steppe vast grassland';
             // 항구·선박·물류
@@ -6876,18 +6881,19 @@ ${script}
             // 회의·협상·정치
             if (/정치인|국회|의회/.test(narr)) return 'politician speech parliament';
             if (/회의|협상|외교/.test(narr)) return 'business meeting boardroom handshake';
-            // 학교·교육
-            if (/학교|학생|교실/.test(narr)) return 'classroom students asian learning';
-            // 가족·이민·공항
-            if (/비행기|공항/.test(narr)) return 'airport departure travel passengers';
-            if (/가족|아이|어린이/.test(narr)) return 'asian family children home warm';
+            // 교육·학교 (학생 단독은 제외)
+            if (/학교|교실|선생님/.test(narr)) return 'classroom students asian learning';
+            // 이민·공항·이동
+            if (/비행기|공항|이민/.test(narr)) return 'airport departure travel passengers';
+            // 가족 (아이디어 등 오탐 방지)
+            if (/가족(?!관계)|어린이|아이들|아기|꼬마/.test(narr)) return 'asian family children home warm';
             // 자원·에너지
-            if (/석탄/.test(narr)) return 'coal mining heavy machinery';
-            if (/구리|금|우라늄/.test(narr)) return 'mining minerals extraction close up';
+            if (/석탄(?!가)/.test(narr)) return 'coal mining heavy machinery';
+            if (/구리|우라늄/.test(narr)) return 'mining minerals extraction close up';
             // 전쟁·군대·분쟁
             if (/전쟁|군대|군인/.test(narr)) return 'military soldiers tanks historical';
             // 종교
-            if (/사원|절/.test(narr)) return 'buddhist temple monastery asia';
+            if (/사원(?!관)|승려|불교/.test(narr)) return 'buddhist temple monastery asia';
             // 시위·항의
             if (/시위|항의|반중|민족주의/.test(narr)) return 'protest crowd angry signs';
             // 겨울·추위
@@ -6897,16 +6903,16 @@ ${script}
             // 문서·계약
             if (/계약|서명|문서/.test(narr)) return 'contract signing documents business';
             // 돈·경제
-            if (/돈|지폐|달러/.test(narr)) return 'money cash banknotes counting';
-            // 질문·추상 (도입부)
-            if (/왜|어떻게|의문/.test(narr) && narr.length < 30) return 'curious questioning thoughtful';
+            if (/지폐|현금|달러.*뭉치/.test(narr)) return 'money cash banknotes counting';
+            // 질문·추상 (도입부) — 아주 짧을 때만
+            if (/^(왜|어떻게|도대체|과연)/.test(narr) && narr.length < 25) return 'curious questioning thoughtful';
             // 시간·역사
-            if (/200년|긴 시간|오래|과거/.test(narr)) return 'ancient historical archive scroll';
+            if (/200년|긴 시간|오래 전|과거/.test(narr) && narr.length < 35) return 'ancient historical archive documentary';
             // 붕괴·무너짐
             if (/붕괴|무너|쓰러|망하|파괴/.test(narr)) return 'destruction ruins collapse abandoned';
             // 성장·발전
             if (/성장|발전|번영|호황/.test(narr)) return 'booming growing economy construction';
-            // 일반 분위기 (마지막 폴백 — 절대 "cinematic documentary abstract" 쓰지 말 것)
+            // 마지막 폴백
             return 'cinematic aerial landscape documentary';
         }
 
