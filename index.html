@@ -7183,24 +7183,40 @@ ${sceneList}
             }
         }
 
-        // AI 서브타입 감지 (지도/인포그래픽/장면 재현/은유/인물)
+        // AI 서브타입 감지 — 셀팟 모드+스타일까지 구체화
         function _detectAiSubtype(narr, prompt) {
             const p = (prompt || '').toLowerCase();
-            // 지도
+
+            // [정밀모드] 순수 데이터 차트 (단일 차트 템플릿이 정확)
+            // 도넛차트: 단일 퍼센트 명확
+            const pcts = (narr.match(/\d{1,3}\s*%/g) || []);
+            if (pcts.length === 1 && /donut|pie|도넛/.test(p)) return '정밀모드 — 도넛차트';
+            // 막대차트: 둘 이상 비교 수치
+            if (/bar chart.*comparison|comparing.*\d+.*\d+/.test(p)) return '정밀모드 — 막대차트';
+            // 타임라인: 연도 명확 + timeline
+            const yearCount = (narr.match(/\d{4}년/g) || []).length;
+            if (yearCount >= 2 && /timeline|연대/.test(p)) return '정밀모드 — 타임라인';
+
+            // [일반] 지도 → Paper Cut 스타일
             if (/map|지도|국경|영토|내몽골|외몽골|완충지대|geopolitical|border/.test(p) ||
-                /국경|내몽골|외몽골|완충지대|제3의 이웃|끼여/.test(narr)) return '지도';
-            // 인포그래픽 (차트·데이터·수치 시각화)
+                /국경|내몽골|외몽골|완충지대|제3의 이웃|끼여/.test(narr)) return '일반 — 지도 (Paper Cut)';
+
+            // [일반] 인포그래픽 → Isometric / Infographic 스타일
             if (/chart|infographic|donut|bar|percent|%|timeline|visualization|visual|comparison|rank|data|graph|inflation|stat|number/.test(p) ||
-                /\d{1,3}\s*%|차트|그래프|퍼센트|순위|두 배|세 배|배가|급락|급등|증가|감소|두배|x2|x3/.test(narr)) return '인포그래픽';
-            // 역사 재현
+                /\d{1,3}\s*%|차트|그래프|퍼센트|순위|두 배|세 배|배가|급락|급등|증가|감소|두배|x2|x3/.test(narr)) return '일반 — 인포그래픽 (Isometric)';
+
+            // [일반] 역사 재현 → Cinematic / Vintage 스타일
             if (/historical|dynasty|ancient|19th|medieval|painting style/.test(p) ||
-                /청나라|조선|고려|신라|로마|산업혁명|세계대전/.test(narr)) return '역사 재현';
-            // 은유·비유
+                /청나라|조선|고려|신라|로마|산업혁명|세계대전/.test(narr)) return '일반 — 역사 재현 (Cinematic)';
+
+            // [일반] 은유 → Editorial / Cinematic 스타일
             if (/symbolic|metaphor|allegorical|illustration/.test(p) ||
-                /씨를 말|목줄|근육|뿌리|역기|손아귀|숨줄|청년기/.test(narr)) return '은유 일러스트';
-            // 인물
-            if (/portrait|figure|person|character/.test(p)) return '인물';
-            return '이미지';
+                /씨를 말|목줄|근육|뿌리|역기|손아귀|숨줄|청년기/.test(narr)) return '일반 — 은유 (Editorial)';
+
+            // [일반] 인물 → Hyperrealism 스타일
+            if (/portrait|figure|person|character/.test(p)) return '일반 — 인물 (Hyperrealism)';
+
+            return '일반 (Cinematic)';
         }
 
         // Stock 서브타입 감지 (풍경/도시/활동/실사)
