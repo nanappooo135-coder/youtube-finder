@@ -5625,6 +5625,10 @@ ${script}
                 // 셀팟에 넣을 JSON은 내부 메타 필드 제거 (깨끗하게)
                 const cleanScenes = jsonObj.scenes.map(s => {
                     const { needRealImage, realSearchKeyword, gifAltKeyword, needCharacter, characterSequence, needLogo, logoName, logoPosition, overlayUpgrade, freepikQueries, sfxKeywords, isMapScene, mapLabels, isHistoricalMontage, montageElements, montageCaption, montageStyle, ...rest } = s;
+                    // aiPrompt에 한글 강제 + 브랜드명 제거 후처리 적용 (셀팟 가는 JSON 자체에 반영)
+                    if (rest.bgSource === 'ai' && rest.aiPrompt) {
+                        rest.aiPrompt = _enforceKoreanInAiPrompt(_stripBrandNames(rest.aiPrompt), rest);
+                    }
                     // codeGenHint는 보존 (셀팟이 Remotion 코드 생성 시 참고)
                     return rest;
                 });
