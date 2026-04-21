@@ -2201,6 +2201,7 @@
                                 수동 업그레이드만 보기
                             </label>
                             <button class="search-btn" onclick="_resetSceneProgress()" style="padding:4px 12px;font-size:0.78rem;background:#868e96;border-color:#868e96;">🔄 진행률 초기화</button>
+                            <button class="search-btn" onclick="regenerateFallbackKeywords(this)" style="padding:4px 12px;font-size:0.78rem;background:#7048e8;border-color:#7048e8;">✨ AI로 추상 장면 키워드 재생성</button>
                             <button class="search-btn" onclick="copySceneGuide(this)" style="margin-left:auto;padding:4px 12px;font-size:0.8rem;background:#6f42c1;border-color:#6f42c1;">📋 가이드 전체 복사</button>
                         </div>
                         <div id="jsonSceneGuideList" style="max-height:700px;overflow-y:auto;"></div>
@@ -6690,6 +6691,87 @@ ${script}
             return topic;
         }
 
+        // === 폴백 장면 자동 감지 + AI 키워드 재생성 ===
+        function _findFallbackScenes() {
+            const scenes = window._sceneGuideData || [];
+            const fallback = [];
+            scenes.forEach(s => {
+                const ranks = _rankImageSources(s);
+                const stockRank = ranks.find(r => r && r.type === 'stock');
+                if (stockRank && /cinematic aerial landscape documentary/.test(stockRank.content || '')) {
+                    fallback.push(s);
+                }
+            });
+            return fallback;
+        }
+
+        async function regenerateFallbackKeywords(btn) {
+            const fallbackScenes = _findFallbackScenes();
+            if (fallbackScenes.length === 0) {
+                alert('폴백으로 떨어진 장면이 없습니다. 모든 장면이 구체 키워드 매칭됨.');
+                return;
+            }
+
+            const ok = confirm(fallbackScenes.length + '개 장면에 대해 AI 키워드 재생성합니다. 진행할까요?\n(Gemini API 호출, 약 ' + Math.ceil(fallbackScenes.length * 1.5) + '초 소요)');
+            if (!ok) return;
+
+            const orig = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = '⏳ AI 분석 중...';
+
+            // 전체 주제 추출
+            const topic = window._globalTopic || {};
+            const topicHint = [topic.country, topic.era, ...(topic.themes || [])].filter(Boolean).join(', ') || '일반';
+
+            // 모든 장면을 한 번에 묶어서 배치 처리 (API 호출 1번)
+            const sceneList = fallbackScenes.map((s, i) => '[' + (i+1) + '] ' + s.narration).join('\n');
+
+            const prompt = `다음은 유튜브 영상 대본의 추상·은유적 장면들입니다. 각 장면에 대해 Pexels에서 검색할 영문 키워드 1개를 추천해주세요.
+
+전체 영상 주제: ${topicHint}
+
+## 키워드 규칙
+- 2~4단어 이내
+- 명사 위주 (구체적 시각화 가능한 것)
+- "cinematic", "8K", "documentary" 같은 품질 설명자 제외
+- 일반적이지 않고 장면 내용에 정확히 맞는 키워드
+
+## 장면 목록
+${sceneList}
+
+## 출력 형식 (JSON만 반환, 다른 설명 X)
+{"keywords": ["키워드1", "키워드2", "키워드3", ...]}
+
+배열은 장면 순서대로. 정확히 ${fallbackScenes.length}개.`;
+
+            try {
+                const result = await callGemini(prompt, { maxTokens: 2000, temperature: 0.4 });
+                // JSON 추출
+                const jsonMatch = result.match(/\{[\s\S]*"keywords"[\s\S]*\}/);
+                if (!jsonMatch) throw new Error('JSON 응답 파싱 실패');
+                const parsed = JSON.parse(jsonMatch[0]);
+                const keywords = parsed.keywords || [];
+
+                if (keywords.length !== fallbackScenes.length) {
+                    console.warn('키워드 수 불일치:', keywords.length, 'vs', fallbackScenes.length);
+                }
+
+                // 결과 저장 (장면 ID → 키워드)
+                window._aiOverrideKeywords = window._aiOverrideKeywords || {};
+                fallbackScenes.forEach((s, i) => {
+                    if (keywords[i]) window._aiOverrideKeywords[s.id] = keywords[i];
+                });
+
+                _renderSceneGuideFromState();
+                btn.textContent = '✅ ' + keywords.length + '개 재생성 완료';
+                setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 2500);
+            } catch (e) {
+                console.error(e);
+                btn.textContent = '❌ 실패: ' + e.message;
+                setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 3000);
+            }
+        }
+
         // 수동 업그레이드 필요 장면인지 판별 (text_headline이 아닌 오버레이 추천)
         function _sceneNeedsManualUpgrade(s) {
             const rec = _recommendOverlay28(s);
@@ -7037,9 +7119,19 @@ ${script}
         function _buildRankEntry(s, type, score) {
             const narr = s.narration || '';
             if (type === 'stock') {
+                // AI override 우선 (사용자가 재생성 버튼 누른 경우)
+                const aiOverride = window._aiOverrideKeywords && window._aiOverrideKeywords[s.id];
+                if (aiOverride) {
+                    return {
+                        type: 'stock',
+                        label: '스톡 영상 (Pexels) ✨ AI',
+                        content: aiOverride,
+                        alts: [],
+                        reason: 'AI 분석 기반 키워드'
+                    };
+                }
                 const useExisting = s.bgSource === 'stock' && s.bgQuery && !/[가-힣]/.test(s.bgQuery);
                 let baseQuery = useExisting ? s.bgQuery : _deriveStockKeyword(narr);
-                // 폴백 감지 — 구체 매칭 실패 장면은 stock 랭크에서 제외
                 if (baseQuery === '__FALLBACK__') return null;
                 const subtype = _detectStockSubtype(narr, baseQuery);
                 return {
