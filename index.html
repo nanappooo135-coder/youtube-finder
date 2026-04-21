@@ -7471,7 +7471,7 @@ ${script}
                     return {
                         metric: textOverlay || '변화',
                         change: _extractChangeText(narr),
-                        isPositive: /(상승|증가|올라|+)/.test(narr),
+                        isPositive: /(상승|증가|올라|\+)/.test(narr),
                         changeColor: accentColor
                     };
 
