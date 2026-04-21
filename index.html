@@ -6905,7 +6905,13 @@ ${sceneList}
             // 이미지 3순위
             rows += '<div style="margin-top:8px;padding:8px 10px;background:#fff;border-radius:6px;border:1px solid #e9ecef;">';
             rows += '<div style="font-weight:700;font-size:0.78rem;color:#495057;margin-bottom:6px;">🖼️ 이미지 추천 (순위)</div>';
-            imageRanks.slice(0, 3).forEach((rank, i) => {
+            // 4순위까지 표시 + 스톡이 top3에 없으면 보장
+            let display = imageRanks.slice(0, 4);
+            if (!display.find(r => r && r.type === 'stock')) {
+                const stockEntry = imageRanks.find(r => r && r.type === 'stock');
+                if (stockEntry) display.push(stockEntry);
+            }
+            display.forEach((rank, i) => {
                 const color = _RANK_COLORS[rank.type].border;
                 const emoji = _RANK_ICONS[rank.type];
                 const rankNum = i + 1;
@@ -7141,14 +7147,19 @@ ${sceneList}
                 }
                 const useExisting = s.bgSource === 'stock' && s.bgQuery && !/[가-힣]/.test(s.bgQuery);
                 let baseQuery = useExisting ? s.bgQuery : _deriveStockKeyword(narr);
-                if (baseQuery === '__FALLBACK__') return null;
+                const isFallback = baseQuery === '__FALLBACK__';
+                if (isFallback) {
+                    // 1순위에서 떨어뜨리지만, 4순위라도 보여주기 위해 기본 키워드 제공
+                    baseQuery = 'cinematic documentary mood';
+                }
                 const subtype = _detectStockSubtype(narr, baseQuery);
                 return {
                     type: 'stock',
-                    label: '스톡 ' + subtype + ' (Pexels)',
+                    label: '스톡 ' + subtype + ' (Pexels)' + (isFallback ? ' (약함)' : ''),
                     content: _applyGlobalContext(baseQuery, narr),
                     alts: useExisting && Array.isArray(s.bgQueryAlts) ? s.bgQueryAlts.filter(a => !/[가-힣]/.test(a)) : _deriveStockAlts(narr),
-                    reason: _reasonFor('stock', narr, score)
+                    reason: _reasonFor('stock', narr, score),
+                    _fallback: isFallback
                 };
             }
             if (type === 'ai') {
@@ -8044,9 +8055,10 @@ ${sceneList}
                 return { category: '데이터', type: '랭킹', text: s.textOverlay || '순위', reason: '복수 순위 명시' };
             }
 
-            // [5] 인용문 — 누가 직접 한 말
+            // [5] 인용문 — 비활성화 (셀팟 지원 제한)
+            // 인용문 대신 헤드라인으로 처리
             const quoteMatch = narr.match(/["']([^"']{5,40})["']/);
-            if (quoteMatch) return { category: '텍스트', type: '인용문', text: quoteMatch[1], reason: '직접 대사·인용' };
+            if (quoteMatch) return { category: '텍스트', type: '헤드라인', text: quoteMatch[1], reason: '대사·인용 강조' };
 
             // [6] 큰 숫자·인구·규모 — 세자리 이상 임팩트 숫자만
             // 예: 340만 명, 80만 명 (단, 수치카드와 중복 방지 위해 단위 있을 때만)
