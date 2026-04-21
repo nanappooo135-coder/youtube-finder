@@ -7856,9 +7856,19 @@ ${script}
             const usdMatch = narr.match(/\$\s*(\d[\d,]*)/);
             if (usdMatch) return { category: '기존', type: '수치카드', text: '$' + usdMatch[1], reason: '달러 강조' };
 
-            // [3] VS 비교 — 구조적 대비 (완화)
-            if (/\bvs\b|대비(?!한)|한쪽.*다른 쪽|\d+\s*(?:배|분의)\s*\d+|한국.*몽골|중국.*한국|두 나라|양쪽/i.test(narr)) {
-                return { category: '데이터', type: 'VS대결', text: s.textOverlay || '비교', reason: '좌우 대비 강조' };
+            // [2b] 비율 — N명 중 1명, N분의 1, 몇 배
+            const ratioNMatch = narr.match(/(\d+명\s*중\s*\d+명)/);
+            if (ratioNMatch) return { category: '기존', type: '수치카드', text: ratioNMatch[1], reason: '비율 강조' };
+            const fractionMatch = narr.match(/(\d+\s*분의\s*\d+)/);
+            if (fractionMatch) return { category: '기존', type: '수치카드', text: fractionMatch[1], reason: '분수 비율' };
+
+            // [3] VS 비교 — 구조적 대비 (엄격, 실제 두 개체 비교만)
+            // "양쪽에서 원조" 같은 양쪽이지만 대결 아닌 경우 제외
+            const isVs = /\bvs\b|맞섰|대결|싸움|\d+\s*(?:배|분의)\s*\d+/.test(narr) ||
+                /한국.*(\d+|\$|만|억|원|달러).*몽골.*(\d+|\$|만|억|원|달러)/.test(narr) ||
+                /한쪽.*다른 쪽/.test(narr);
+            if (isVs) {
+                return { category: '데이터', type: 'VS대결', text: s.textOverlay || '비교', reason: '두 개체 대비' };
             }
 
             // [4] 랭킹 — 복수 순위 명시
@@ -7871,8 +7881,9 @@ ${script}
             const quoteMatch = narr.match(/["']([^"']{5,40})["']/);
             if (quoteMatch) return { category: '텍스트', type: '인용문', text: quoteMatch[1], reason: '직접 대사·인용' };
 
-            // [6] 큰 숫자·인구·규모 — 임팩트 숫자
-            const bigNumMatch = narr.match(/(\d{2,}(?:만|억|천)\s*(?:명|개|대|달러|원))/);
+            // [6] 큰 숫자·인구·규모 — 세자리 이상 임팩트 숫자만
+            // 예: 340만 명, 80만 명 (단, 수치카드와 중복 방지 위해 단위 있을 때만)
+            const bigNumMatch = narr.match(/(\d{2,}(?:만|억)\s*(?:명|개|대))/);
             if (bigNumMatch) return { category: '레이아웃', type: '전체숫자', text: bigNumMatch[1], reason: '큰 숫자 임팩트' };
 
             // [7] 연대기·타임라인 — 3개 이상 시점
