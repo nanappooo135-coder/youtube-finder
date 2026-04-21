@@ -4820,30 +4820,40 @@ stock bgQuery 생성 후 자문:
 
 ## 🔥 소스 비율 (반드시 준수, 다큐멘터리 스타일)
 
-- **stock: 70~80%** (기본값, 최우선 — 실사 영상)
-- **ai: 15~25%** (데이터 차트·지도·은유만)
-- **gif: 0~10%** ⚠️ 최대 제한 (짧은 감정 리액션만)
+- **stock: 75~85%** (기본값, 최우선 — 실사 영상)
+- **ai: 15~20%** (데이터 차트·지도·인포그래픽만)
+- **gif: 0~5%** ⚠️ 거의 사용 X (셀팟 GIF 매칭 불안정, stock 우선)
 
-### ⚠️ GIF 사용 초엄격 규칙 (최대 10% 넘지 말 것)
+### ⚠️ GIF 거의 사용 금지
 
-**GIF는 다음 경우에만 사용**:
-- 나레이션 15자 이내의 **순수 감정 표현** ("왜?", "말도 안 돼!", "어떻게?")
-- 2~3초짜리 짧은 리액션 장면
-- 나레이션이 의문/놀람/한탄 한 문장
+**셀팟 GIF 검색 오류 많음** → 엉뚱한 영상 나옴. 대신 stock 선호.
 
-**GIF 절대 금지** (이 경우 stock 또는 ai 사용):
-- ❌ 은유·비유 (목줄, 사슬, 빈손 등 → stock 풍경/AI 은유 일러스트)
-- ❌ 추상 개념 (의존, 신뢰, 기회 등 → stock 은유적 장면/AI)
-- ❌ 인물 활동 (협상, 결정 등 → stock)
-- ❌ 구조 설명 (계약, 정책 등 → stock 또는 ai)
-- ❌ 비교·수치 (→ ai)
-- ❌ 장소·사건 묘사 (→ stock)
-- ❌ 긴 설명 문장 (나레이션 30자+ → stock)
+**GIF 허용 유일한 경우**:
+- 나레이션 10자 이내 + 감정 단어 1개만
+- 예: "왜?" / "놀랍죠?" / "충격!"
+
+**그 외 전부 stock 또는 ai**:
+- 은유·비유 → **stock** (관련 풍경/분위기)
+- 추상 개념 → **stock** (상징적 장면)
+- 감정 반응 → **stock** (사람 표정/상황)
+- 인물 활동 → **stock**
+- 구조 설명 → **stock**
+- 비교·수치 → **ai**
+
+### 🔑 스톡 대체 검색어 (중요)
+**각 stock 장면마다 bgQueryAlts 배열에 2~3개 대체 검색어 제공**:
+- 1순위 매칭 실패 시 바로 쓸 수 있게
+- 각각 다른 각도로 같은 장면 표현
+- 예: "쓰러짐" 장면
+  ```
+  "bgQuery": "boxer knockout fall",
+  "bgQueryAlts": ["collapsed fighter exhausted", "weak athlete giving up", "defeated person ground"]
+  ```
 
 ### 판단 체크리스트 (장면마다 순서)
 1. 숫자 차트·지도·인포그래픽? → **ai**
-2. 15자 이내 순수 감정·의문 한 문장? → **gif** (이 경우만!)
-3. 그 외 전부 → **stock** (은유도 stock 풍경으로, 추상도 stock 분위기로)
+2. 10자 이내 순수 감정 감탄? → **gif** (이 경우만!)
+3. 그 외 전부 → **stock + bgQueryAlts 3개**
 
 ### 판단 기준 (장면마다 순서대로 적용)
 
@@ -6964,7 +6974,15 @@ ${sceneList}
                         rows += '🔍 <code style="background:#f8f9fa;padding:1px 5px;border-radius:3px;">' + _escapeHtml(rank.content) + '</code>';
                         rows += ' <a href="' + pexelsUrl + '" target="_blank" rel="noopener" style="color:#1c7ed6;text-decoration:none;font-size:0.72rem;margin-left:4px;">Pexels ↗</a>';
                         if (rank.alts && rank.alts.length > 0) {
-                            rows += '<div style="color:#868e96;font-size:0.72rem;margin-top:2px;">대체: ' + _escapeHtml(rank.alts.slice(0,2).join(' / ')) + '</div>';
+                            rows += '<div style="margin-top:3px;">';
+                            rank.alts.slice(0, 3).forEach((alt, idx) => {
+                                const altUrl = 'https://www.pexels.com/search/videos/' + encodeURIComponent(alt) + '/';
+                                rows += '<div style="color:#868e96;font-size:0.72rem;margin-top:1px;">';
+                                rows += '↳ 대체' + (idx+1) + ': <code style="background:#f8f9fa;padding:1px 4px;border-radius:3px;">' + _escapeHtml(alt) + '</code>';
+                                rows += ' <a href="' + altUrl + '" target="_blank" rel="noopener" style="color:#1c7ed6;text-decoration:none;font-size:0.68rem;">Pexels ↗</a>';
+                                rows += '</div>';
+                            });
+                            rows += '</div>';
                         }
                     }
                     rows += '</div>';
@@ -7450,20 +7468,44 @@ ${sceneList}
             return '__FALLBACK__';
         }
 
-        // 스톡 대체 검색어 (bgSource가 stock 아닐 때 폴백용)
+        // 스톡 대체 검색어 — 항상 3개 의미있는 대안 반환
         function _deriveStockAlts(narr) {
             const primary = _deriveStockKeyword(narr);
             const alts = [];
-            if (/산업|도시가 안 자/.test(narr)) alts.push('ghost town empty streets', 'rusty broken machinery');
-            if (/빈곤|가난/.test(narr)) alts.push('poor family meal', 'child empty bowl');
-            if (/광산/.test(narr)) alts.push('mining trucks heavy equipment', 'underground tunnel workers');
-            if (/도시|빌딩/.test(narr)) alts.push('aerial city drone footage', 'bustling street traffic');
-            if (/공장/.test(narr)) alts.push('automated assembly line', 'industrial facility aerial');
-            if (/회의|협상/.test(narr)) alts.push('negotiation table handshake', 'serious business discussion');
-            if (/시위/.test(narr)) alts.push('street protest flags', 'angry crowd chanting');
-            if (/겨울/.test(narr)) alts.push('frozen river winter', 'heavy snow city');
-            if (alts.length === 0) alts.push('cinematic mongolia landscape', 'documentary aerial nature');
-            return alts.slice(0, 3).filter(a => a !== primary);
+
+            // 구체 키워드 매칭별 대체안
+            if (/산업이 안|도시가 안 자|침체/.test(narr)) alts.push('ghost town empty streets', 'rusty broken machinery', 'abandoned building vacant');
+            if (/빈곤|가난|끼니/.test(narr)) alts.push('poor family meal hungry', 'child empty bowl sad', 'slum poverty homes');
+            if (/천막|게르/.test(narr)) alts.push('mongolian nomad tent', 'traditional yurt settlement', 'canvas tent poverty');
+            if (/광산|채굴/.test(narr)) alts.push('mining trucks heavy equipment', 'underground tunnel workers', 'excavation machinery mining');
+            if (/공장|제조/.test(narr)) alts.push('automated assembly line', 'industrial facility aerial', 'factory workers production');
+            if (/도시|빌딩/.test(narr)) alts.push('aerial city drone footage', 'bustling street traffic', 'modern skyline sunset');
+            if (/국경/.test(narr)) alts.push('border checkpoint trucks', 'customs crossing line', 'barbed wire fence border');
+            if (/회의|협상|외교/.test(narr)) alts.push('negotiation handshake deal', 'serious boardroom meeting', 'diplomat shaking hands');
+            if (/시위|항의/.test(narr)) alts.push('street protest flags', 'angry crowd chanting', 'demonstration rally banner');
+            if (/겨울|추위|난방/.test(narr)) alts.push('frozen city winter cold', 'heavy snow streets', 'people shivering cold');
+            if (/쓰러|버티지 못|무너|붕괴/.test(narr)) alts.push('collapsed fighter exhausted', 'weak person fainting', 'demolition building falling');
+            if (/빈손|공백|없|기회 없/.test(narr)) alts.push('empty hands nothing', 'open palm desperate', 'lonely person waiting');
+            if (/의존|먹여주|받아먹|압박 없/.test(narr)) alts.push('lazy hammock resting', 'pampered lifestyle home', 'passive person sofa');
+            if (/연대기|시간|200년|70년/.test(narr)) alts.push('old clock ticking', 'vintage calendar pages', 'sand hourglass time');
+            if (/손아귀|지배|통제|목줄/.test(narr)) alts.push('chained hands bound', 'puppet master strings', 'ropes binding tied');
+            if (/결정.*못|스스로.*못|기회.*없/.test(narr)) alts.push('tied hands helpless', 'frozen indecisive person', 'hesitant worker idle');
+            if (/출발선|뒤처|혼자/.test(narr)) alts.push('lone runner behind', 'empty starting line', 'person falling behind');
+
+            // 국가·주제 맥락 추가 (전역 주제 있으면)
+            const topic = window._globalTopic;
+            if (topic && topic.country) {
+                alts.push(topic.country + ' landscape scenery');
+            }
+
+            // 비어있으면 일반 폴백
+            if (alts.length === 0) {
+                alts.push('cinematic documentary scene', 'aerial landscape drone', 'city atmosphere mood');
+            }
+
+            // 중복 제거 + primary 제외 + 상위 3개
+            const unique = [...new Set(alts)].filter(a => a !== primary);
+            return unique.slice(0, 3);
         }
 
         // 채널 브랜드명·YouTube 레퍼런스 제거 (AI가 워터마크로 박는 문제 방지)
