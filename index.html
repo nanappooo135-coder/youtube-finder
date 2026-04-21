@@ -6767,11 +6767,14 @@ ${script}
         function _buildRankEntry(s, type, score) {
             const narr = s.narration || '';
             if (type === 'stock') {
+                // 원래 bgSource가 stock이 아니면 기존 bgQuery 쓰지 말고 nar에서 새로 생성
+                // (gif용 한영 혼합 쿼리가 Pexels에선 오작동)
+                const useExisting = s.bgSource === 'stock' && s.bgQuery && !/[가-힣]/.test(s.bgQuery);
                 return {
                     type: 'stock',
                     label: '스톡 영상 (Pexels)',
-                    content: s.bgQuery || _deriveStockKeyword(narr),
-                    alts: Array.isArray(s.bgQueryAlts) ? s.bgQueryAlts : [],
+                    content: useExisting ? s.bgQuery : _deriveStockKeyword(narr),
+                    alts: useExisting && Array.isArray(s.bgQueryAlts) ? s.bgQueryAlts.filter(a => !/[가-힣]/.test(a)) : _deriveStockAlts(narr),
                     reason: _reasonFor('stock', narr, score)
                 };
             }
@@ -6845,15 +6848,82 @@ ${script}
 
         // === 각 타입별 콘텐츠 유도 ===
         function _deriveStockKeyword(narr) {
-            if (/공장|제조/.test(narr)) return 'factory industrial production';
-            if (/도시|빌딩/.test(narr)) return 'city skyline modern buildings';
-            if (/광산/.test(narr)) return 'open pit mine aerial';
-            if (/초원|몽골/.test(narr)) return 'mongolia steppe grassland';
-            if (/항구|선박/.test(narr)) return 'container port cargo ships';
-            if (/회의|협상/.test(narr)) return 'business meeting boardroom';
-            if (/학교|학생/.test(narr)) return 'classroom students learning';
-            if (/가족|아이/.test(narr)) return 'family children home';
-            return 'cinematic documentary abstract';
+            // 우선순위: 구체 → 은유 → 일반
+
+            // 산업·경제 침체·정체 (스케일 작음)
+            if (/산업이 안|도시가 안 자|상인이 안 나오|성장 멈춤|발전이 안|멈춰|정체|침체/.test(narr)) {
+                return 'abandoned empty town deserted';
+            }
+            // 빈곤·가난
+            if (/빈곤|가난|끼니|밥 걱정/.test(narr)) return 'poverty slum hungry family';
+            // 천막·게르
+            if (/천막|게르/.test(narr)) return 'ger tent mongolia nomad';
+            // 광산·채굴
+            if (/광산|채굴|광물/.test(narr)) return 'open pit mine aerial drone';
+            // 공장·제조
+            if (/공장|제조|생산 라인/.test(narr)) return 'factory industrial production workers';
+            // 도시·빌딩·고층
+            if (/고층 빌딩|마천루|스카이라인/.test(narr)) return 'modern city skyline skyscrapers';
+            if (/도시|거리/.test(narr)) return 'urban city street cinematic';
+            // 초원·몽골 풍경
+            if (/초원|들판|평원/.test(narr)) return 'mongolia steppe vast grassland';
+            // 항구·선박·물류
+            if (/항구|선박|컨테이너/.test(narr)) return 'container port cargo ships loading';
+            if (/트럭|운송|물류/.test(narr)) return 'cargo truck highway transport';
+            // 국경
+            if (/국경.*트럭|통관/.test(narr)) return 'border crossing trucks customs';
+            if (/국경/.test(narr)) return 'border gate fence checkpoint';
+            // 회의·협상·정치
+            if (/정치인|국회|의회/.test(narr)) return 'politician speech parliament';
+            if (/회의|협상|외교/.test(narr)) return 'business meeting boardroom handshake';
+            // 학교·교육
+            if (/학교|학생|교실/.test(narr)) return 'classroom students asian learning';
+            // 가족·이민·공항
+            if (/비행기|공항/.test(narr)) return 'airport departure travel passengers';
+            if (/가족|아이|어린이/.test(narr)) return 'asian family children home warm';
+            // 자원·에너지
+            if (/석탄/.test(narr)) return 'coal mining heavy machinery';
+            if (/구리|금|우라늄/.test(narr)) return 'mining minerals extraction close up';
+            // 전쟁·군대·분쟁
+            if (/전쟁|군대|군인/.test(narr)) return 'military soldiers tanks historical';
+            // 종교
+            if (/사원|절/.test(narr)) return 'buddhist temple monastery asia';
+            // 시위·항의
+            if (/시위|항의|반중|민족주의/.test(narr)) return 'protest crowd angry signs';
+            // 겨울·추위
+            if (/겨울|영하|추위|난방/.test(narr)) return 'winter cold snow mongolia';
+            // 자연·환경
+            if (/미세먼지|매연|연기/.test(narr)) return 'city smog air pollution';
+            // 문서·계약
+            if (/계약|서명|문서/.test(narr)) return 'contract signing documents business';
+            // 돈·경제
+            if (/돈|지폐|달러/.test(narr)) return 'money cash banknotes counting';
+            // 질문·추상 (도입부)
+            if (/왜|어떻게|의문/.test(narr) && narr.length < 30) return 'curious questioning thoughtful';
+            // 시간·역사
+            if (/200년|긴 시간|오래|과거/.test(narr)) return 'ancient historical archive scroll';
+            // 붕괴·무너짐
+            if (/붕괴|무너|쓰러|망하|파괴/.test(narr)) return 'destruction ruins collapse abandoned';
+            // 성장·발전
+            if (/성장|발전|번영|호황/.test(narr)) return 'booming growing economy construction';
+            // 일반 분위기 (마지막 폴백 — 절대 "cinematic documentary abstract" 쓰지 말 것)
+            return 'cinematic aerial landscape documentary';
+        }
+
+        // 스톡 대체 검색어 (bgSource가 stock 아닐 때 폴백용)
+        function _deriveStockAlts(narr) {
+            const primary = _deriveStockKeyword(narr);
+            const alts = [];
+            if (/산업|도시가 안 자/.test(narr)) alts.push('ghost town empty streets', 'rusty broken machinery');
+            if (/빈곤|가난/.test(narr)) alts.push('poor family meal', 'child empty bowl');
+            if (/광산/.test(narr)) alts.push('mining trucks heavy equipment', 'underground tunnel workers');
+            if (/도시|빌딩/.test(narr)) alts.push('aerial city drone footage', 'bustling street traffic');
+            if (/공장/.test(narr)) alts.push('automated assembly line', 'industrial facility aerial');
+            if (/회의|협상/.test(narr)) alts.push('negotiation table handshake', 'serious business discussion');
+            if (/시위/.test(narr)) alts.push('street protest flags', 'angry crowd chanting');
+            if (/겨울/.test(narr)) alts.push('frozen river winter', 'heavy snow city');
+            if (alts.length === 0) alts.push('cinematic mongolia landscape', 'documentary aerial nature');
+            return alts.slice(0, 3).filter(a => a !== primary);
         }
 
         // 채널 브랜드명·YouTube 레퍼런스 제거 (AI가 워터마크로 박는 문제 방지)
