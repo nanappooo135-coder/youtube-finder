@@ -6875,56 +6875,92 @@ ${script}
             return out;
         }
 
-        // AI 프롬프트: 모든 텍스트 제거 강제 (AI가 한글 오타 박는 문제 방지)
-        // 전략: AI는 배경 비주얼만, 텍스트는 전부 셀팟 오버레이로 처리
+        // AI 프롬프트: 한글 라벨 강제 (최신 이미지 모델은 한글 잘 씀)
+        // 핵심 한글 텍스트를 구체적으로 명시 → AI가 정확히 그리게 유도
         function _enforceKoreanInAiPrompt(prompt, s) {
             if (!prompt) return prompt;
+            const narr = s.narration || '';
+            const textOverlay = (s.textOverlay || '').trim();
 
             let out = prompt;
 
-            // 1. 기존 "Korean labels" 요구 문구 제거 (AI가 한글 써보려다가 깨짐)
-            out = out.replace(/all text labels in korean[^.]*\.?/gi, '');
-            out = out.replace(/bold readable korean typography[^.]*\.?/gi, '');
-            out = out.replace(/readable bold korean labels[^,.]*/gi, '');
-            out = out.replace(/korean labels?\s*(?:\([한글]+\))?/gi, '');
-            out = out.replace(/\(한글\)/g, '');
-            out = out.replace(/include[^.]*korean[^.]*\./gi, '');
-            out = out.replace(/labels in korean/gi, '');
+            // 1. 기존의 "NO TEXT" 강제 문구 제거 (한글 허용하도록 반전)
+            out = out.replace(/ABSOLUTELY NO TEXT[^.]*\.?/gi, '');
+            out = out.replace(/NO TEXT,\s*NO LETTERS[^.]*\.?/gi, '');
+            out = out.replace(/no text,?\s*no labels\.?/gi, '');
+            out = out.replace(/Text will be added later via overlay\.?/gi, '');
 
-            // 2. 강력한 "no text" 문구 추가
-            if (!/no text.*no letters.*no words|ABSOLUTELY NO TEXT/i.test(out)) {
+            // 2. 추출할 한글 텍스트 준비
+            const koreanTexts = [];
+            if (textOverlay) koreanTexts.push(textOverlay);
+
+            // 퍼센트
+            const pctMatch = narr.match(/(\d{1,3}(?:\.\d+)?)\s*(?:%|퍼센트)/);
+            if (pctMatch && !koreanTexts.some(t => t.includes(pctMatch[1]))) {
+                koreanTexts.push(pctMatch[1] + '%');
+            }
+            // 금액
+            const wonMatch = narr.match(/(\d+(?:\.\d+)?\s*(?:조|억|만|천)\s*(?:원|달러))/);
+            if (wonMatch && !koreanTexts.some(t => t.includes(wonMatch[1]))) {
+                koreanTexts.push(wonMatch[1]);
+            }
+            // 순위
+            const rankMatch = narr.match(/(\d위|꼴찌|최고|최대)/);
+            if (rankMatch && !koreanTexts.some(t => t.includes(rankMatch[1]))) {
+                koreanTexts.push(rankMatch[1]);
+            }
+            // 연도 (2개 이상)
+            const yearMatches = narr.match(/\d{4}년|\d+년대/g) || [];
+            yearMatches.slice(0, 3).forEach(y => {
+                if (!koreanTexts.some(t => t.includes(y))) koreanTexts.push(y);
+            });
+
+            // 3. 한글 강제 문구 추가 (중복 방지)
+            if (!/MANDATORY KOREAN|must include Korean|반드시 한글/i.test(out)) {
                 out = out.replace(/\.\s*$/, '').trim();
-                out += '. ABSOLUTELY NO TEXT, NO LETTERS, NO WORDS, NO NUMBERS, NO KOREAN CHARACTERS, NO ENGLISH CHARACTERS, NO LABELS, NO CAPTIONS, NO WATERMARKS anywhere in the image. Text will be added later via overlay.';
+
+                let koreanEnforce = ' 🔥 MANDATORY KOREAN TEXT REQUIREMENT: The image MUST contain clearly readable Korean text (한글).';
+                if (koreanTexts.length > 0) {
+                    const quoted = koreanTexts.slice(0, 4).map(t => '"' + t.replace(/"/g, "'") + '"').join(', ');
+                    koreanEnforce += ' REQUIRED Korean labels to render prominently and accurately: ' + quoted + '.';
+                }
+                koreanEnforce += ' Use bold, high-contrast Korean typography (Noto Sans KR style). All Korean characters must be perfectly formed, NO garbled text, NO invented characters, NO mixed scripts. Korean text must be the dominant visual element. Spell every Korean syllable precisely.';
+
+                out += koreanEnforce;
             }
 
-            // 3. 중복 정리
+            // 4. 중복 정리
             out = out.replace(/,\s*,+/g, ',').replace(/\s{2,}/g, ' ').replace(/\.\s*\./g, '.').trim();
             return out;
         }
 
         function _deriveAiPrompt(s) {
             const narr = s.narration || '';
-            const noTextSuffix = ' ABSOLUTELY NO TEXT, NO LETTERS, NO WORDS, NO NUMBERS, NO LABELS of any kind. Text overlay added later via Sellpot.';
 
-            // 데이터 인포그래픽 (숫자·차트)
+            // 데이터 인포그래픽 (숫자·차트) — 한글 라벨 포함
             const pctMatch = narr.match(/(\d{1,3})\s*(?:%|퍼센트)/);
             if (pctMatch) {
-                return 'Minimalist infographic visual with a large donut or bar chart shape showing ' + pctMatch[1] + '% proportion highlighted in red, remaining portion in gray, clean flat design, dark background, cinematic 16:9, data visualization composition.' + noTextSuffix;
+                return 'Minimalist infographic donut chart with a large ' + pctMatch[1] + '% slice highlighted in red and remaining portion in gray. Bold Korean label showing "' + pctMatch[1] + '%" prominently in the center. Clean flat design, dark background, cinematic 16:9, data visualization style with clearly legible Korean typography.';
+            }
+            // 금액
+            const wonMatch = narr.match(/(\d+(?:\.\d+)?\s*(?:조|억|만|천)\s*(?:원|달러))/);
+            if (wonMatch) {
+                return 'Minimalist financial infographic with a huge bold Korean number "' + wonMatch[1] + '" centered, red emphasis, dark background, cinematic 16:9, clean editorial style with clearly legible Korean typography.';
             }
             // VS 비교
             if (/vs|대비|한쪽.*다른/.test(narr)) {
-                return 'Split screen VS comparison composition with two contrasting visual elements on left and right, divided by diagonal line, red accent color, dark background, cinematic 16:9, minimalist editorial style.' + noTextSuffix;
+                return 'Split screen VS comparison composition with two contrasting visual elements on left and right, divided by bold diagonal line with Korean "VS" label in center, red accent color, dark background, cinematic 16:9, minimalist editorial style with clearly legible Korean typography.';
             }
             // 지도
             if (/국경|영토|내몽골|외몽골|러시아.*중국|지도/.test(narr)) {
-                return 'Stylized historical map showing regions with distinct colored territories separated by bold borders, paper-textured background, muted earth tones (deep navy, warm beige, terracotta), cinematic 16:9, documentary cartography aesthetic.' + noTextSuffix;
+                return 'Stylized historical map with distinct colored territories separated by bold borders, paper-textured background, muted earth tones (deep navy, warm beige, terracotta), bold Korean labels naming each region (한글) clearly readable, cinematic 16:9, documentary cartography aesthetic.';
             }
             // 은유
             if (/씨를 말|목줄|근육|뿌리|씨앗|역기|손아귀/.test(narr)) {
-                return 'Symbolic metaphorical illustration conveying the narrative concept, cinematic lighting, dark background, 16:9, sophisticated documentary editorial style.' + noTextSuffix;
+                return 'Symbolic metaphorical illustration conveying the narrative concept, cinematic lighting, dark background, 16:9, sophisticated documentary editorial style, subtle Korean text caption if appropriate.';
             }
             // 기본
-            return 'Cinematic documentary illustration, dark dramatic background, 16:9, sophisticated editorial infographic style, conceptual visual composition.' + noTextSuffix;
+            return 'Cinematic documentary illustration with bold Korean text label (한글), dark dramatic background, 16:9, sophisticated editorial infographic style, clearly legible Korean typography as dominant element.';
         }
 
         function _deriveRealKeyword(narr) {
