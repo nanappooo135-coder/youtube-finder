@@ -7189,9 +7189,9 @@ ${sceneList}
             // 지도
             if (/map|지도|국경|영토|내몽골|외몽골|완충지대|geopolitical|border/.test(p) ||
                 /국경|내몽골|외몽골|완충지대|제3의 이웃|끼여/.test(narr)) return '지도';
-            // 인포그래픽 (차트·데이터)
-            if (/chart|infographic|donut|bar|percent|%|timeline|visualization|comparison|rank/.test(p) ||
-                /\d{1,3}\s*%|차트|그래프|퍼센트|순위/.test(narr)) return '인포그래픽';
+            // 인포그래픽 (차트·데이터·수치 시각화)
+            if (/chart|infographic|donut|bar|percent|%|timeline|visualization|visual|comparison|rank|data|graph|inflation|stat|number/.test(p) ||
+                /\d{1,3}\s*%|차트|그래프|퍼센트|순위|두 배|세 배|배가|급락|급등|증가|감소|두배|x2|x3/.test(narr)) return '인포그래픽';
             // 역사 재현
             if (/historical|dynasty|ancient|19th|medieval|painting style/.test(p) ||
                 /청나라|조선|고려|신라|로마|산업혁명|세계대전/.test(narr)) return '역사 재현';
