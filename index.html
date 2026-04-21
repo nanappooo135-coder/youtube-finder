@@ -5667,7 +5667,12 @@ ${script}
                         rest.aiPrompt = _enforceKoreanInAiPrompt(_stripBrandNames(rest.aiPrompt), rest);
                     }
                     // 🔥 overlays 배열 자동 생성 (나레이션 분석 → 28종 중 적합한 타입)
-                    rest.overlays = _autoGenerateOverlays(rest);
+                    try {
+                        rest.overlays = _autoGenerateOverlays(rest);
+                    } catch (e) {
+                        console.error('overlays 자동 생성 실패:', e, rest);
+                        rest.overlays = [];
+                    }
                     return rest;
                 });
                 const cleanJson = { scenes: cleanScenes };
