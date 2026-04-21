@@ -7038,7 +7038,9 @@ ${script}
             const narr = s.narration || '';
             if (type === 'stock') {
                 const useExisting = s.bgSource === 'stock' && s.bgQuery && !/[가-힣]/.test(s.bgQuery);
-                const baseQuery = useExisting ? s.bgQuery : _deriveStockKeyword(narr);
+                let baseQuery = useExisting ? s.bgQuery : _deriveStockKeyword(narr);
+                // 폴백 감지 — 구체 매칭 실패 장면은 stock 랭크에서 제외
+                if (baseQuery === '__FALLBACK__') return null;
                 const subtype = _detectStockSubtype(narr, baseQuery);
                 return {
                     type: 'stock',
@@ -7298,8 +7300,8 @@ ${script}
             if (/붕괴|무너|쓰러|망하|파괴/.test(narr)) return 'destruction ruins collapse abandoned';
             // 성장·발전
             if (/성장|발전|번영|호황/.test(narr)) return 'booming growing economy construction';
-            // 마지막 폴백
-            return 'cinematic aerial landscape documentary';
+            // ⚠️ 마지막 폴백 (구체 매칭 실패) — 추상 장면 표시자
+            return '__FALLBACK__';
         }
 
         // 스톡 대체 검색어 (bgSource가 stock 아닐 때 폴백용)
