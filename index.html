@@ -7225,6 +7225,26 @@ ${script}
             if (/아무것도 없|텅 비|한 톨도|부재|없는 나라/.test(narr)) {
                 return 'empty vacant desolate';
             }
+            // 기회 없음·자기 손 못 씀·시도 못함
+            if (/기회.*없|한 번도 없|시도.*못|자기 손으로.*못|해볼 기회/.test(narr)) {
+                return 'tied hands missed opportunity';
+            }
+            // 출발선·뒤처짐·혼자 늦음
+            if (/출발선|뒤처짐|뒤처|혼자 남|늦었어|뒤에 남/.test(narr)) {
+                return 'starting line runner behind';
+            }
+            // 청춘 잃음·시간 빼앗김
+            if (/청춘|청년기.*빼앗|시간.*빼앗|세월.*잃/.test(narr)) {
+                return 'old clock empty youth';
+            }
+            // 빚·덫·구조적 함정
+            if (/빚.*덫|빚더미|함정|덫|빠져나올 수 없/.test(narr)) {
+                return 'debt trap chains financial';
+            }
+            // 세대 단절·다음 세대 없음
+            if (/세대 단절|다음 세대|대물림.*못|세대.*못 만들/.test(narr)) {
+                return 'broken generation family tree';
+            }
             // 빈곤·가난
             if (/빈곤|가난|끼니|밥 걱정/.test(narr)) return 'poverty slum hungry meal';
             // 천막·게르
