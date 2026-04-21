@@ -6486,8 +6486,79 @@ ${script}
 
         function _renderSceneGuide(scenes) {
             window._sceneGuideData = scenes;
+            // 전체 대본 맥락 추출 (주제·국가·시대 등)
+            window._globalTopic = _extractGlobalTopic(scenes);
             _renderSceneGuideFromState();
             document.getElementById('jsonSceneGuideSection').style.display = '';
+        }
+
+        // 전체 대본에서 핵심 주제·국가·시대·인물 추출 → 개별 장면 추천에 맥락 제공
+        function _extractGlobalTopic(scenes) {
+            const allText = scenes.map(s => s.narration || '').join(' ');
+            const topic = {
+                country: null,        // 주제 국가 (영문)
+                era: null,            // 시대 (영문)
+                figures: [],          // 실존 인물 (영문)
+                themes: [],           // 주제 키워드 (영문)
+                topicEn: '',          // 종합 영문 키워드
+                topicKo: ''           // 종합 한글 키워드
+            };
+
+            // 주제 국가 감지 (가장 많이 언급된 국가)
+            const countries = {
+                mongolia: (allText.match(/몽골(?!이아)|울란바토르|게르|칭기즈칸/g) || []).length,
+                china: (allText.match(/중국|베이징|시진핑|청나라|내몽골/g) || []).length,
+                russia: (allText.match(/러시아|소련|모스크바|크렘린/g) || []).length,
+                korea: (allText.match(/한국(?!도)|서울|한반도/g) || []).length,
+                japan: (allText.match(/일본|도쿄/g) || []).length,
+                iran: (allText.match(/이란|테헤란/g) || []).length,
+                israel: (allText.match(/이스라엘|네타냐후/g) || []).length,
+                usa: (allText.match(/미국|워싱턴|트럼프|오바마/g) || []).length,
+                north_korea: (allText.match(/북한|평양|김정은/g) || []).length
+            };
+            const topCountry = Object.entries(countries).sort((a,b) => b[1] - a[1])[0];
+            if (topCountry && topCountry[1] >= 3) topic.country = topCountry[0].replace(/_/g, ' ');
+
+            // 시대 감지
+            if (/청나라|조선 후기|19세기|200년 전/.test(allText)) topic.era = 'historical 19th century';
+            else if (/소련|냉전|20세기 중반|1950년대|1960년대|1970년대|1980년대/.test(allText)) topic.era = 'cold war era';
+            else if (/1990년대|2000년대/.test(allText)) topic.era = '1990s 2000s';
+            else if (/2010년|최근|현대/.test(allText)) topic.era = 'modern contemporary';
+
+            // 실존 인물 빈도
+            const figures = {
+                'Genghis Khan': /칭기즈칸/.test(allText),
+                'Mao Zedong': /마오쩌둥/.test(allText),
+                'Xi Jinping': /시진핑/.test(allText),
+                'Dalai Lama': /달라이라마/.test(allText),
+                'Lenin': /레닌/.test(allText),
+                'Stalin': /스탈린/.test(allText),
+                'Trump': /트럼프/.test(allText),
+                'Putin': /푸틴/.test(allText),
+                'Netanyahu': /네타냐후/.test(allText),
+                'Kim Jong Un': /김정은/.test(allText)
+            };
+            topic.figures = Object.entries(figures).filter(([_, v]) => v).map(([k]) => k);
+
+            // 주제 테마
+            const themes = [];
+            if (/경제|GDP|무역|수출|산업/.test(allText)) themes.push('economy');
+            if (/전쟁|군사|분쟁/.test(allText)) themes.push('war conflict');
+            if (/자원|광산|석탄|구리|석유/.test(allText)) themes.push('natural resources mining');
+            if (/종교|사원|불교/.test(allText)) themes.push('religion');
+            if (/인구|빈곤|도시/.test(allText)) themes.push('demographics urban');
+            if (/핵|미사일|원자력/.test(allText)) themes.push('nuclear');
+            if (/기술|AI|반도체/.test(allText)) themes.push('technology');
+            topic.themes = themes;
+
+            // 종합 영문 키워드
+            const parts = [];
+            if (topic.country) parts.push(topic.country);
+            if (topic.era) parts.push(topic.era);
+            if (topic.themes.length) parts.push(topic.themes[0]);
+            topic.topicEn = parts.join(' ');
+
+            return topic;
         }
 
         function _renderSceneGuideFromState() {
@@ -6508,7 +6579,25 @@ ${script}
                     + ' <span style="display:inline-block;width:100px;height:6px;background:#e9ecef;border-radius:3px;margin-left:6px;vertical-align:middle;overflow:hidden;">'
                     + '<span style="display:block;width:' + pct + '%;height:100%;background:linear-gradient(90deg,#51cf66,#37b24d);"></span></span>';
             }
-            let html = '<div style="display:flex;flex-direction:column;gap:8px;">';
+
+            // 감지된 전역 주제 표시
+            const topic = window._globalTopic;
+            let topicBanner = '';
+            if (topic) {
+                const parts = [];
+                if (topic.country) parts.push('🌍 ' + topic.country);
+                if (topic.era) parts.push('📅 ' + topic.era);
+                if (topic.themes.length) parts.push('📌 ' + topic.themes.slice(0, 2).join(' · '));
+                if (topic.figures.length) parts.push('👤 ' + topic.figures.slice(0, 3).join(', '));
+                if (parts.length) {
+                    topicBanner = '<div style="padding:8px 12px;background:#e7f5ff;border-left:3px solid #1c7ed6;border-radius:4px;margin-bottom:10px;font-size:0.78rem;color:#0c4a6e;">'
+                        + '<strong>🎯 전체 맥락 자동 감지:</strong> ' + parts.join('  ·  ')
+                        + '<div style="font-size:0.7rem;color:#495057;margin-top:2px;">→ 검색어에 맥락 자동 반영</div>'
+                        + '</div>';
+                }
+            }
+
+            let html = topicBanner + '<div style="display:flex;flex-direction:column;gap:8px;">';
             scenes.forEach(s => {
                 html += _renderSceneGuideCard(s);
             });
@@ -6770,10 +6859,11 @@ ${script}
                 // 원래 bgSource가 stock이 아니면 기존 bgQuery 쓰지 말고 nar에서 새로 생성
                 // (gif용 한영 혼합 쿼리가 Pexels에선 오작동)
                 const useExisting = s.bgSource === 'stock' && s.bgQuery && !/[가-힣]/.test(s.bgQuery);
+                const baseQuery = useExisting ? s.bgQuery : _deriveStockKeyword(narr);
                 return {
                     type: 'stock',
                     label: '스톡 영상 (Pexels)',
-                    content: useExisting ? s.bgQuery : _deriveStockKeyword(narr),
+                    content: _applyGlobalContext(baseQuery, narr),
                     alts: useExisting && Array.isArray(s.bgQueryAlts) ? s.bgQueryAlts.filter(a => !/[가-힣]/.test(a)) : _deriveStockAlts(narr),
                     reason: _reasonFor('stock', narr, score)
                 };
@@ -6844,6 +6934,36 @@ ${script}
             // stock
             if (/(공장|도시|거리|초원|산|강)/.test(narr)) return '실사 풍경·활동 — Pexels에 풍부';
             return '범용 분위기 영상';
+        }
+
+        // 전체 대본 맥락을 개별 키워드에 적용 (국가·시대·주제 prefix/suffix 추가)
+        function _applyGlobalContext(baseQuery, narr) {
+            const topic = window._globalTopic;
+            if (!topic || !baseQuery) return baseQuery;
+
+            // 이미 국가명 들어있으면 skip
+            const lowerQ = baseQuery.toLowerCase();
+            const hasCountry = /mongolia|china|russia|korea|japan|iran|israel|usa|america|north korea/i.test(lowerQ);
+
+            // 장면 자체에 국가명 명시되면 (일반 설명이 아니면) 우선
+            const sceneCountry =
+                /몽골|울란바토르|칭기즈칸|게르/.test(narr) ? 'mongolia' :
+                /중국|베이징|시진핑/.test(narr) ? 'china' :
+                /러시아|모스크바|소련/.test(narr) ? 'russia' :
+                /미국|워싱턴/.test(narr) ? 'USA' :
+                /북한|평양/.test(narr) ? 'north korea' :
+                null;
+
+            // 국가 맥락 추가 (장면 명시 > 전역 주제)
+            const country = sceneCountry || topic.country;
+            if (!hasCountry && country) {
+                // 추상적 개념(ecosystem, empty, cinematic 등)이면 국가 suffix
+                if (/ecosystem|empty|cinematic|abstract|aerial|documentary|historical/.test(lowerQ)) {
+                    return baseQuery + ' ' + country;
+                }
+            }
+
+            return baseQuery;
         }
 
         // === 각 타입별 콘텐츠 유도 ===
