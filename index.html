@@ -7054,12 +7054,12 @@ ${script}
             return 'reaction emotion 감정 반응';
         }
 
-        // === 28종 오버레이 추천 (엄격 모드) ===
-        // 핵심 원칙: 강조할 이유가 명확할 때만 추천. 모호하면 "없음".
+        // === 28종 오버레이 추천 (균형 모드) ===
+        // 원칙: 강조·시각화 가치 있으면 추천. 단순 연결 문장만 "없음".
         function _recommendOverlay28(s) {
             const narr = s.narration || '';
 
-            // [1] 숫자·퍼센트 — 시청자가 기억할 핵심 데이터
+            // [1] 퍼센트 — 시청자가 기억할 핵심 데이터
             const pctMatch = narr.match(/(\d{1,3}(?:\.\d+)?)\s*(?:%|퍼센트)/);
             if (pctMatch) {
                 const pct = parseFloat(pctMatch[1]);
@@ -7073,55 +7073,77 @@ ${script}
             const usdMatch = narr.match(/\$\s*(\d[\d,]*)/);
             if (usdMatch) return { category: '기존', type: '수치카드', text: '$' + usdMatch[1], reason: '달러 강조' };
 
-            // [3] VS 비교 — 구조적 대비
-            if (/\bvs\b|대비(?!한)|한쪽.*다른 쪽|\d+\s*(?:배|분의)\s*\d+/i.test(narr)) {
-                return { category: '데이터', type: 'VS대결', text: s.textOverlay || '비교', reason: '좌우 대비 명확' };
+            // [3] VS 비교 — 구조적 대비 (완화)
+            if (/\bvs\b|대비(?!한)|한쪽.*다른 쪽|\d+\s*(?:배|분의)\s*\d+|한국.*몽골|중국.*한국|두 나라|양쪽/i.test(narr)) {
+                return { category: '데이터', type: 'VS대결', text: s.textOverlay || '비교', reason: '좌우 대비 강조' };
             }
 
-            // [4] 랭킹 — 나레이션에 복수 순위가 명시된 경우만
-            // 예: "1위 인도, 2위 한국, 3위 중국" → 랭킹 (최소 2개 이상 순위)
+            // [4] 랭킹 — 복수 순위 명시
             const rankItems = (narr.match(/\b\d위/g) || []).length;
             if (rankItems >= 2) {
                 return { category: '데이터', type: '랭킹', text: s.textOverlay || '순위', reason: '복수 순위 명시' };
-            }
-            // "꼴찌/최고/최대" 단독은 헤드라인이 낫다 (셀팟이 가짜 데이터 생성 방지)
-            if (/^\s*꼴찌\s*$|^\s*최고\s*$/.test(narr) && s.textOverlay) {
-                return { category: '텍스트', type: '헤드라인', text: s.textOverlay, reason: '단순 강조' };
             }
 
             // [5] 인용문 — 누가 직접 한 말
             const quoteMatch = narr.match(/["']([^"']{5,40})["']/);
             if (quoteMatch) return { category: '텍스트', type: '인용문', text: quoteMatch[1], reason: '직접 대사·인용' };
 
-            // [6] 큰 숫자 — 충격 숫자
-            const bigNumMatch = narr.match(/(\d{2,}(?:만|억)\s*(?:명|개))/);
+            // [6] 큰 숫자·인구·규모 — 임팩트 숫자
+            const bigNumMatch = narr.match(/(\d{2,}(?:만|억|천)\s*(?:명|개|대|달러|원))/);
             if (bigNumMatch) return { category: '레이아웃', type: '전체숫자', text: bigNumMatch[1], reason: '큰 숫자 임팩트' };
 
             // [7] 연대기·타임라인 — 3개 이상 시점
-            const yearCount = (narr.match(/\d{4}년|\d+년대|\d+년 전|\d+년\s*동안/g) || []).length;
+            const yearCount = (narr.match(/\d{4}년|\d+년대|\d+년\s*(?:전|동안|넘게)/g) || []).length;
             if (yearCount >= 3) {
                 return { category: '데이터', type: '타임라인', text: s.textOverlay || '연대기', reason: '시간 흐름 다단계' };
             }
 
-            // [8] 증감 변화 — 명확한 수치 변화
-            if (/2배|절반으로|급락|급등|폭락|폭등/.test(narr)) {
+            // [8] 막대차트 — 3개 이상 항목 나열 (자원·분야·요소)
+            // 예: "석탄, 구리, 금, 우라늄" / "상업, 금융, 운송, 아이디어"
+            const itemMatches = narr.match(/[가-힣]{2,6}(?:,\s*[가-힣]{2,6}){2,}/);
+            if (itemMatches) {
+                return { category: '기존', type: '막대차트', text: s.textOverlay || '항목 비교', reason: '여러 항목 나열' };
+            }
+
+            // [9] 증감 변화 — 명확한 수치 변화
+            if (/2배|3배|절반으로|급락|급등|폭락|폭등|두 배|\d+분의 \d+/.test(narr)) {
                 return { category: '데이터', type: '증감수치', text: s.textOverlay || '변화', reason: '명확한 증감' };
             }
 
-            // [9] 짧고 강렬한 챕터 전환 (영상 구조 전환 포인트만)
-            // 매우 짧은 나레이션(10자 이하) + textOverlay 존재 → 타이틀
-            if (narr.length <= 15 && s.textOverlay && s.textOverlay.length <= 10) {
-                return { category: '레이아웃', type: '타이틀', text: s.textOverlay, reason: '챕터 전환' };
+            // [10] 지도 라벨 — 지도 장면
+            if ((/내몽골|외몽골|국경|러시아.*중국|위치|사이에 끼|버퍼|완충지대/).test(narr) && (s.isMapScene || s.bgSource === 'ai')) {
+                return { category: '레이아웃', type: '지도라벨', text: s.textOverlay || '지역', reason: '지도 위 지역 라벨' };
             }
 
-            // [10] 강한 수식어 시작 — "진짜", "놀라운", "충격적"
-            if (/^(진짜 무서운|진짜 충격|놀라운|충격적)/.test(narr) && s.textOverlay) {
-                return { category: '레이아웃', type: '콜아웃', text: s.textOverlay, reason: '강조 포인트' };
+            // [11] 강한 수식어·챕터 전환 — 콜아웃
+            if (/^(근데 여기서|진짜 무서운|진짜 충격|놀라운|충격적|결정적|핵심은|진짜 문제)/.test(narr)) {
+                return { category: '레이아웃', type: '콜아웃', text: s.textOverlay || '핵심 포인트', reason: '강조·주목 포인트' };
             }
 
-            // 나머지는 전부 "없음"
-            // — 일반 설명·감정·반응·연결 장면은 나레이션만으로 충분
-            return { type: 'none', reason: '일반 설명 — 오버레이 없이도 전달 명확' };
+            // [12] 짧은 제목급 (챕터 타이틀) — 15자 이하 선언문
+            if (narr.length <= 20 && s.textOverlay && s.textOverlay.length <= 12) {
+                return { category: '레이아웃', type: '타이틀', text: s.textOverlay, reason: '챕터 제목' };
+            }
+
+            // [13] 핵심 키워드 강조 — textOverlay가 있고 나레이션이 짧거나 중요 개념
+            // 은유·핵심 개념 키워드 (씨를 말리다, 목줄, 근육 등)
+            if (s.textOverlay && s.textOverlay.length <= 15) {
+                const hasKeyMetaphor = /씨를|목줄|근육|뿌리|출발선|사슬|봉쇄|격리|의존|마지막 기회|세대|대물림/.test(narr);
+                const isShort = narr.length <= 40;
+                if (hasKeyMetaphor || isShort) {
+                    return { category: '텍스트', type: '헤드라인', text: s.textOverlay, reason: '핵심 키워드 강조' };
+                }
+            }
+
+            // [14] 구체 숫자+단위 (비율·배수·기간) — 헤드라인
+            const durationMatch = narr.match(/(\d+년(?:\s*동안|\s*넘게|\s*전)?)/);
+            const multipleMatch = narr.match(/(\d+배|절반|반으로)/);
+            if ((durationMatch || multipleMatch) && s.textOverlay && s.textOverlay.length <= 12) {
+                return { category: '텍스트', type: '헤드라인', text: s.textOverlay, reason: '핵심 기간·배수' };
+            }
+
+            // 나머지 — 연결·설명 장면
+            return { type: 'none', reason: '일반 설명 — 오버레이 없이 전달 명확' };
         }
 
         function _jsEscape(s) {
