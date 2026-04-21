@@ -3651,10 +3651,31 @@ ${introPrompts}`;
         // 셀팟 JSON 생성 프롬프트
         function _buildSellpotJsonPrompt(script, chunkMode) {
             const chunkRule = {
-                short: `**장면 분리 규칙: 짧게 모드**
-- 원칙: 한 문장 = 한 장면
-- 예외: 5단어 이하 짧은 문장은 다음 문장과 합침
-- 결과: 대본 문장 수 ≈ 장면 수 (가장 많은 장면 생성)`,
+                short: `**장면 분리 규칙: 한 문장 = 한 장면 (셀팟 공식 지침)**
+- 원칙: 나레이션의 **각 문장을 개별 장면으로 분리**
+- 예외 1: 5단어 이하 짧은 문장은 다음 문장과 합침
+- 예외 2: "~하죠. 틀렸습니다." 같은 착각→파괴 패턴은 하나로
+- 예외 3: 목차 나열·A/B 시나리오는 하나로
+- 결과: **대본 문장 수 ≈ 장면 수** (컷 리듬 극대화)
+
+## 🎯 소스 비율 (다큐멘터리 스타일)
+- **stock: 65~75%** (기본값) — 실제 장면·활동·풍경·산업 현장
+- **ai: 15~25%** — 차트·지도·인포그래픽·은유·역사 재현
+- **gif: 5~15%** — 감정 반응·질문·비유 (양념)
+
+## 🎯 textOverlay 규칙 (매우 중요)
+- **1~5단어 이내** 절대 엄수
+- 핵심 숫자 하나 or 감정 키워드 하나
+- 나레이션과 중복 금지 (핵심만)
+- 좋은 예: "→ IMF", "17.3%", "$5,000", "무제한", "x4"
+- 나쁜 예: "10명 중 1명 한국행", "세계 2호 공산국" (너무 김)
+
+## 🎯 bgQuery 규칙 (Pexels 최적화)
+- **2~4단어만** (길면 0개 매칭 위험)
+- 명사 위주, 형용사는 1개 이내
+- "cinematic", "8K", "aerial drone" 같은 품질 설명자 제거
+- 좋은 예: "mining industry", "border crossing trucks", "empty factory"
+- 나쁜 예: "a shattered golden trophy labeled GDP Growth #1"`,
                 normal: `**장면 분리 규칙: 보통 모드 (추천)**
 - 원칙: **1~2문장을 하나의 장면으로 묶는다.**
 - 같은 시각적 주제·같은 배경이 어울리는 문장들은 묶는다.
@@ -5466,7 +5487,7 @@ ${script}
             btn.textContent = '생성 중...';
             _geminiStatusEl = statusEl;
 
-            const chunkMode = 'normal';
+            const chunkMode = 'short';  // 셀팟 공식 지침: 한 문장 = 한 장면
 
             let usedModel = '';
             let text = '';
@@ -5622,14 +5643,31 @@ ${script}
                     }
                 });
 
-                // 셀팟에 넣을 JSON은 내부 메타 필드 제거 (깨끗하게)
+                // 셀팟에 넣을 JSON은 미지원 필드 전부 제거 (셀팟 AI 확인 완료)
+                // ❌ 셀팟이 무시하는 필드: bgQueryAlts, transition, textPosition(scene),
+                //    needRealImage, needLogo, isHistoricalMontage, bgmMood, codeGenHint,
+                //    freepikQueries, sfxKeywords, freepikAsset, characterAsset, characterLayout
                 const cleanScenes = jsonObj.scenes.map(s => {
-                    const { needRealImage, realSearchKeyword, gifAltKeyword, needCharacter, characterSequence, needLogo, logoName, logoPosition, overlayUpgrade, freepikQueries, sfxKeywords, isMapScene, mapLabels, isHistoricalMontage, montageElements, montageCaption, montageStyle, ...rest } = s;
-                    // aiPrompt에 한글 강제 + 브랜드명 제거 후처리 적용 (셀팟 가는 JSON 자체에 반영)
+                    const {
+                        // 우리 내부 메타 (UI 가이드용, JSON엔 불필요)
+                        needRealImage, realSearchKeyword, gifAltKeyword,
+                        needCharacter, characterSequence,
+                        needLogo, logoName, logoPosition,
+                        overlayUpgrade,
+                        isMapScene, mapLabels,
+                        isHistoricalMontage, montageElements, montageCaption, montageStyle,
+                        // 셀팟이 무시하는 필드 (dead weight)
+                        bgQueryAlts, transition, bgmMood, codeGenHint,
+                        freepikQueries, sfxKeywords, freepikAsset,
+                        characterAsset, characterLayout,
+                        ...rest
+                    } = s;
+                    // aiPrompt에 한글 강제 + 브랜드명 제거 후처리
                     if (rest.bgSource === 'ai' && rest.aiPrompt) {
                         rest.aiPrompt = _enforceKoreanInAiPrompt(_stripBrandNames(rest.aiPrompt), rest);
                     }
-                    // codeGenHint는 보존 (셀팟이 Remotion 코드 생성 시 참고)
+                    // 🔥 overlays 배열 자동 생성 (나레이션 분석 → 28종 중 적합한 타입)
+                    rest.overlays = _autoGenerateOverlays(rest);
                     return rest;
                 });
                 const cleanJson = { scenes: cleanScenes };
@@ -7327,6 +7365,371 @@ ${script}
             if (/끝|멈춤|정지/.test(narr)) return 'stop halt 정지 끝';
             return 'reaction emotion 감정 반응';
         }
+
+        // === 장면별 overlays 배열 자동 생성 (_recommendOverlay28 + _buildOverlayData) ===
+        function _autoGenerateOverlays(s) {
+            const rec = _recommendOverlay28(s);
+            if (rec.type === 'none') return [];
+
+            // Korean name → Sellpot type value 매핑
+            const sellpotType = _OVERLAY_KO_TO_TYPE[rec.type] || 'text_headline';
+            const data = _buildOverlayData(sellpotType, s);
+
+            // position 자동 배치
+            const position = _determineOverlayPosition(sellpotType, s);
+
+            return [{
+                type: sellpotType,
+                data: data,
+                position: position
+            }];
+        }
+
+        function _determineOverlayPosition(type, s) {
+            // 카테고리별 기본 위치
+            const topTypes = ['text_headline', 'chapter_divider', 'callout_box', 'lower-third'];
+            const bottomTypes = ['map_label'];
+            const centerTypes = ['pie_donut', 'versus_stat', 'single_stat_card',
+                                  'bar_chart_comparison', 'fullscreen_number',
+                                  'ranking_list', 'timeline_horizontal', 'progress_bar',
+                                  'stat_change', 'text_quote', 'title_card'];
+            if (topTypes.includes(type)) return 'top';
+            if (bottomTypes.includes(type)) return 'bottom';
+            if (centerTypes.includes(type)) return 'center';
+            return 'center';
+        }
+
+        // === 나레이션에서 오버레이 data 필드 자동 생성 (22종) ===
+        function _buildOverlayData(type, s) {
+            const narr = s.narration || '';
+            const textOverlay = s.textOverlay || '';
+            const accentColor = '#ff6b6b';
+            const subColor = '#4ecdc4';
+            const textColor = '#ffffff';
+
+            // 퍼센트 추출
+            const pctMatch = narr.match(/(\d{1,3}(?:\.\d+)?)\s*(?:%|퍼센트)/);
+            const pct = pctMatch ? parseFloat(pctMatch[1]) : null;
+            // 금액 추출
+            const wonMatch = narr.match(/(\d+(?:\.\d+)?\s*(?:조|억|만|천)\s*(?:원|달러))/);
+            const usdMatch = narr.match(/\$\s*(\d[\d,]*)/);
+            // 큰 숫자
+            const bigNumMatch = narr.match(/(\d{2,}(?:만|억)\s*(?:명|개|대))/);
+            // 연도
+            const years = (narr.match(/\d{4}년|\d+년대|\d+년\s*(?:전|동안|넘게)/g) || []);
+            // 인용문
+            const quoteMatch = narr.match(/["']([^"']{3,60})["']/);
+
+            switch (type) {
+                case 'text_headline':
+                    return { text: textOverlay || _suggestHeadline(narr) };
+
+                case 'text_quote':
+                    return { text: quoteMatch ? quoteMatch[1] : textOverlay };
+
+                case 'pie_donut':
+                    return {
+                        text: pctMatch ? pctMatch[0] : (textOverlay || '점유율'),
+                        label: textOverlay || '비율',
+                        color: accentColor
+                    };
+
+                case 'single_stat_card': {
+                    let text = textOverlay;
+                    if (pctMatch) text = pctMatch[0];
+                    else if (wonMatch) text = wonMatch[1];
+                    else if (usdMatch) text = '$' + usdMatch[1];
+                    else if (bigNumMatch) text = bigNumMatch[1];
+                    return { text: text || textOverlay, label: _extractLabel(narr, text) };
+                }
+
+                case 'versus_stat': {
+                    const vs = _extractVS(narr);
+                    return {
+                        leftLabel: vs.leftLabel,
+                        leftValue: vs.leftValue,
+                        rightLabel: vs.rightLabel,
+                        rightValue: vs.rightValue
+                    };
+                }
+
+                case 'ranking_list':
+                    return { items: _extractRankingItems(narr) };
+
+                case 'bar_chart_comparison':
+                    return { items: _extractBarItems(narr) };
+
+                case 'timeline_horizontal':
+                    return { events: _extractTimelineEvents(narr) };
+
+                case 'stat_change':
+                    return {
+                        metric: textOverlay || '변화',
+                        change: _extractChangeText(narr),
+                        isPositive: /(상승|증가|올라|+)/.test(narr),
+                        changeColor: accentColor
+                    };
+
+                case 'progress_bar':
+                    return {
+                        label: textOverlay || _extractLabel(narr, ''),
+                        percentage: pct || 50,
+                        showPercentage: true,
+                        barColor: accentColor
+                    };
+
+                case 'fullscreen_number': {
+                    let number = textOverlay;
+                    if (bigNumMatch) number = bigNumMatch[1];
+                    else if (wonMatch) number = wonMatch[1];
+                    else if (pctMatch) number = pctMatch[0];
+                    return {
+                        number: number || textOverlay,
+                        subtitle: _extractSubtitle(narr),
+                        numberColor: accentColor
+                    };
+                }
+
+                case 'callout_box':
+                    return {
+                        title: textOverlay || '핵심',
+                        body: _truncate(narr, 80),
+                        accentColor: accentColor
+                    };
+
+                case 'title_card':
+                    return {
+                        mainTitle: textOverlay || _suggestHeadline(narr),
+                        subtitle: _extractSubtitle(narr),
+                        accentColor: accentColor
+                    };
+
+                case 'chapter_divider':
+                    return {
+                        chapterNumber: String(s.id || ''),
+                        chapterTitle: textOverlay || _suggestHeadline(narr),
+                        subtitle: _extractSubtitle(narr),
+                        dividerColor: accentColor
+                    };
+
+                case 'map_label':
+                    return {
+                        pins: _extractMapPins(narr),
+                        showConnections: true,
+                        connectionColor: textColor
+                    };
+
+                case 'text_bullet_reveal':
+                    return {
+                        items: _extractBulletItems(narr),
+                        bulletColor: accentColor,
+                        animationSpeed: 'medium'
+                    };
+
+                case 'text_split_screen': {
+                    const split = _extractSplit(narr);
+                    return {
+                        leftTitle: split.leftTitle,
+                        leftText: split.leftText,
+                        rightTitle: split.rightTitle,
+                        rightText: split.rightText,
+                        leftColor: accentColor,
+                        rightColor: subColor
+                    };
+                }
+
+                case 'stat_counter_row':
+                    return {
+                        items: _extractStatItems(narr),
+                        valueColor: accentColor
+                    };
+
+                case 'text_typewriter':
+                    return {
+                        text: textOverlay || narr,
+                        speed: 'medium',
+                        color: textColor
+                    };
+
+                case 'name_tag':
+                    return {
+                        name: textOverlay || _extractPersonName(narr),
+                        title: _extractPersonTitle(narr),
+                        variant: 'bar',
+                        accentColor: accentColor
+                    };
+
+                case 'countdown':
+                    return {
+                        title: textOverlay || '기간',
+                        elapsedDays: _estimateDays(narr),
+                        displayFormat: 'years',
+                        numberColor: accentColor
+                    };
+
+                default:
+                    return { text: textOverlay };
+            }
+        }
+
+        // 헬퍼: 핵심 명사구 추출
+        function _suggestHeadline(narr) {
+            const match = narr.match(/[가-힣A-Z0-9]{2,12}(?=[이가을를에도만])/);
+            return match ? match[0] : (narr.substring(0, 10));
+        }
+        function _extractLabel(narr, value) {
+            if (/빈곤/.test(narr)) return '빈곤';
+            if (/비호감/.test(narr)) return '중국 비호감';
+            if (/무역/.test(narr)) return '무역 비중';
+            if (/수출/.test(narr)) return '수출';
+            if (/인구/.test(narr)) return '인구';
+            if (/GDP/.test(narr)) return 'GDP';
+            if (/성장률/.test(narr)) return '성장률';
+            return '';
+        }
+        function _extractSubtitle(narr) {
+            const sentences = narr.split(/[.!?]/);
+            if (sentences.length > 1 && sentences[1].trim()) return sentences[1].trim().substring(0, 30);
+            return '';
+        }
+        function _truncate(str, n) {
+            return str.length > n ? str.substring(0, n) + '...' : str;
+        }
+        function _extractVS(narr) {
+            // "한국의 10분의 1", "한국 5만 vs 몽골 5천" 등
+            const usdPair = narr.match(/(\d+(?:천|만)?\s*달러)[^]*?(\d+(?:천|만)?\s*달러)/);
+            if (usdPair) {
+                return {
+                    leftLabel: '한국', leftValue: usdPair[1],
+                    rightLabel: '몽골', rightValue: usdPair[2]
+                };
+            }
+            return {
+                leftLabel: '비교 A', leftValue: '?',
+                rightLabel: '비교 B', rightValue: '?'
+            };
+        }
+        function _extractRankingItems(narr) {
+            const items = [];
+            const re = /(\d)위\s*([가-힣A-Za-z ]+)/g;
+            let m;
+            while ((m = re.exec(narr)) !== null) {
+                items.push({ rank: parseInt(m[1]), name: m[2].trim(), value: '' });
+            }
+            if (items.length === 0) items.push({ rank: 1, name: '항목 1', value: '' });
+            return items;
+        }
+        function _extractBarItems(narr) {
+            // "석탄, 구리, 금, 우라늄" 같은 나열
+            const matches = narr.match(/[가-힣]{2,6}(?:,\s*[가-힣]{2,6}){2,}/);
+            if (matches) {
+                return matches[0].split(/,\s*/).map(name => ({ name: name.trim(), value: 0 }));
+            }
+            return [{ name: '항목 1', value: 0 }, { name: '항목 2', value: 0 }];
+        }
+        function _extractTimelineEvents(narr) {
+            const events = [];
+            const yearRe = /(\d{4}년|\d+년대|\d+년\s*(?:전|동안|넘게))/g;
+            let m;
+            while ((m = yearRe.exec(narr)) !== null && events.length < 4) {
+                events.push({ year: m[1], title: '', description: '' });
+            }
+            if (events.length === 0) events.push({ year: '시점 1', title: '', description: '' });
+            return events;
+        }
+        function _extractChangeText(narr) {
+            const m = narr.match(/(\d+배|절반|반|두 배|두배)/);
+            return m ? m[1] : '';
+        }
+        function _extractMapPins(narr) {
+            const pins = [];
+            if (/러시아/.test(narr)) pins.push({ x: 45, y: 30, label: '러시아', sub: '', color: '#4ecdc4' });
+            if (/몽골/.test(narr)) pins.push({ x: 55, y: 55, label: '몽골', sub: '', color: '#ff6b6b' });
+            if (/중국/.test(narr)) pins.push({ x: 50, y: 70, label: '중국', sub: '', color: '#f9ca24' });
+            if (/내몽골/.test(narr)) pins.push({ x: 60, y: 65, label: '내몽골', sub: '', color: '#f9ca24' });
+            if (/외몽골/.test(narr)) pins.push({ x: 50, y: 50, label: '외몽골', sub: '', color: '#ff6b6b' });
+            if (pins.length === 0) pins.push({ x: 50, y: 50, label: '지역', sub: '', color: '#ff6b6b' });
+            return pins;
+        }
+        function _extractBulletItems(narr) {
+            // 쉼표 또는 "첫째/둘째"로 나열된 것
+            const parts = narr.split(/[,、]|그리고|또는|첫째|둘째|셋째/).map(p => p.trim()).filter(p => p.length > 4 && p.length < 40);
+            if (parts.length >= 2) return parts.slice(0, 5);
+            return [narr.substring(0, 30)];
+        }
+        function _extractSplit(narr) {
+            // 과거/현재, A/B 대비 구조
+            if (/과거|이전|예전/.test(narr) && /지금|현재|오늘/.test(narr)) {
+                return {
+                    leftTitle: '과거',
+                    leftText: '과거 상황',
+                    rightTitle: '현재',
+                    rightText: '현재 상황'
+                };
+            }
+            return {
+                leftTitle: '좌',
+                leftText: narr.substring(0, 20),
+                rightTitle: '우',
+                rightText: narr.substring(20, 40) || '비교'
+            };
+        }
+        function _extractStatItems(narr) {
+            const items = [];
+            const pctMatch = narr.match(/(\d{1,3})\s*%/);
+            const wonMatch = narr.match(/(\d+(?:\.\d+)?\s*(?:조|억|만)\s*(?:원|달러))/);
+            const bigMatch = narr.match(/(\d{2,}\s*(?:만|억)\s*(?:명|개))/);
+            if (bigMatch) items.push({ label: _extractLabel(narr, ''), value: bigMatch[1].replace(/\s*(명|개)/, ''), suffix: bigMatch[1].match(/명|개/)[0] });
+            if (pctMatch) items.push({ label: '', value: pctMatch[1], suffix: '%' });
+            if (wonMatch) items.push({ label: '금액', value: wonMatch[1].replace(/(원|달러)/, ''), suffix: wonMatch[1].match(/원|달러/)[0] });
+            if (items.length === 0) items.push({ label: '수치', value: '0', suffix: '' });
+            return items;
+        }
+        function _extractPersonName(narr) {
+            const m = narr.match(/(칭기즈칸|나폴레옹|링컨|트럼프|푸틴|시진핑|네타냐후|김정은|세종|박정희)/);
+            return m ? m[1] : '';
+        }
+        function _extractPersonTitle(narr) {
+            if (/대통령/.test(narr)) return '대통령';
+            if (/총리/.test(narr)) return '총리';
+            if (/왕/.test(narr)) return '왕';
+            if (/황제/.test(narr)) return '황제';
+            return '';
+        }
+        function _estimateDays(narr) {
+            const m = narr.match(/(\d+)\s*년/);
+            return m ? parseInt(m[1]) * 365 : 365;
+        }
+
+        // === 한글명 → 셀팟 type 값 매핑 ===
+        const _OVERLAY_KO_TO_TYPE = {
+            '헤드라인': 'text_headline',
+            '인용문': 'text_quote',
+            '타자기': 'text_typewriter',
+            '불릿리스트': 'text_bullet_reveal',
+            '좌우분할': 'text_split_screen',
+            '수치카드': 'single_stat_card',
+            '대비수치': 'versus_stat',
+            '막대차트': 'bar_chart_comparison',
+            '강조텍스트': 'text_headline',
+            '가로수치': 'stat_counter_row',
+            '증감수치': 'stat_change',
+            '도넛차트': 'pie_donut',
+            '타임라인': 'timeline_horizontal',
+            '랭킹': 'ranking_list',
+            'VS대결': 'versus_stat',
+            '프로그레스': 'progress_bar',
+            '하단자막': 'lower-third',
+            '타이틀': 'title_card',
+            '콜아웃': 'callout_box',
+            '지도라벨': 'map_label',
+            '전체숫자': 'fullscreen_number',
+            '이미지+텍스트': 'split_image_text',
+            '카운트다운': 'countdown',
+            '챕터구분': 'chapter_divider',
+            '말풍선': 'name_tag',
+            '네임택': 'name_tag'
+        };
 
         // === 28종 오버레이 추천 (균형 모드) ===
         // 원칙: 강조·시각화 가치 있으면 추천. 단순 연결 문장만 "없음".
