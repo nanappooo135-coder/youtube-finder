@@ -6950,6 +6950,9 @@ ${sceneList}
 
             // 오버레이 추천 (28종)
             const overlayRec = _recommendOverlay28(s);
+            // AI 이미지 + 같은 텍스트 중복 가능성 체크
+            const aiTextDuplicate = (s.bgSource === 'ai' && s.aiPrompt && s.textOverlay &&
+                (s.aiPrompt.includes(s.textOverlay) || s.aiPrompt.includes('"' + s.textOverlay + '"')));
             rows += '<div style="margin-top:6px;padding:8px 10px;background:#fff;border-radius:6px;border:1px solid #e9ecef;">';
             rows += '<div style="font-weight:700;font-size:0.78rem;color:#495057;margin-bottom:4px;">📝 오버레이 추천</div>';
             if (overlayRec.type === 'none') {
@@ -6965,6 +6968,12 @@ ${sceneList}
                 }
                 rows += '</div>';
                 if (overlayRec.reason) rows += '<div style="font-size:0.72rem;color:#868e96;margin-top:2px;">💡 ' + _escapeHtml(overlayRec.reason) + '</div>';
+                // AI 중복 경고
+                if (aiTextDuplicate) {
+                    rows += '<div style="margin-top:4px;padding:4px 6px;background:#fff3cd;border-left:2px solid #f59e0b;border-radius:3px;font-size:0.7rem;color:#92400e;">';
+                    rows += '⚠️ AI 이미지에 같은 텍스트 포함 — <strong>둘 중 하나만 사용</strong> (단색 배경+오버레이 OR AI 이미지)';
+                    rows += '</div>';
+                }
                 // 셀팟 사용 힌트
                 rows += '<div style="font-size:0.7rem;color:#495057;margin-top:4px;padding:4px 6px;background:#f8f9fa;border-radius:3px;border-left:2px solid ' + catColor + ';">';
                 rows += '↳ 셀팟에서 <strong>' + _escapeHtml(overlayRec.type) + '</strong> 오버레이 추가 → 텍스트 칸에 위 내용 붙여넣기';
@@ -7996,22 +8005,9 @@ ${sceneList}
         function _recommendOverlay28(s) {
             const narr = s.narration || '';
 
-            // [0] AI 이미지에 이미 같은 텍스트가 박혀있을 가능성 → 오버레이 생략
-            // AI 프롬프트에 textOverlay 텍스트가 명시되어 있으면 중복이므로 skip
-            if (s.bgSource === 'ai' && s.aiPrompt && s.textOverlay) {
-                const overlayText = s.textOverlay.trim();
-                // 프롬프트에 overlayText가 명시적으로 들어가있는지 확인
-                if (s.aiPrompt.includes('"' + overlayText + '"') ||
-                    s.aiPrompt.includes('"' + overlayText.replace(/[%$]/g, '') + '%"') ||
-                    s.aiPrompt.includes(overlayText)) {
-                    return { type: 'none', reason: 'AI 이미지에 "' + overlayText + '" 텍스트 포함 — 오버레이 중복' };
-                }
-                // 주요 숫자·퍼센트가 프롬프트에 있으면 skip
-                const pctInText = overlayText.match(/(\d{1,3})\s*%/);
-                if (pctInText && s.aiPrompt.includes(pctInText[0])) {
-                    return { type: 'none', reason: 'AI 이미지에 "' + pctInText[0] + '" 포함 — 오버레이 중복' };
-                }
-            }
+            // [0] AI 이미지+오버레이 중복 가능성 체크 (생략 X, 경고만)
+            // 사용자가 AI 안 쓰고 단색/stock 쓸 수 있으니 오버레이는 추천 유지
+            // 단 결과 객체에 warning 플래그 추가
 
             // [1] 퍼센트 — 시청자가 기억할 핵심 데이터
             const pctMatch = narr.match(/(\d{1,3}(?:\.\d+)?)\s*(?:%|퍼센트)/);
