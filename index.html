@@ -7037,13 +7037,12 @@ ${script}
         function _buildRankEntry(s, type, score) {
             const narr = s.narration || '';
             if (type === 'stock') {
-                // 원래 bgSource가 stock이 아니면 기존 bgQuery 쓰지 말고 nar에서 새로 생성
-                // (gif용 한영 혼합 쿼리가 Pexels에선 오작동)
                 const useExisting = s.bgSource === 'stock' && s.bgQuery && !/[가-힣]/.test(s.bgQuery);
                 const baseQuery = useExisting ? s.bgQuery : _deriveStockKeyword(narr);
+                const subtype = _detectStockSubtype(narr, baseQuery);
                 return {
                     type: 'stock',
-                    label: '스톡 영상 (Pexels)',
+                    label: '스톡 ' + subtype + ' (Pexels)',
                     content: _applyGlobalContext(baseQuery, narr),
                     alts: useExisting && Array.isArray(s.bgQueryAlts) ? s.bgQueryAlts.filter(a => !/[가-힣]/.test(a)) : _deriveStockAlts(narr),
                     reason: _reasonFor('stock', narr, score)
@@ -7051,11 +7050,11 @@ ${script}
             }
             if (type === 'ai') {
                 let basePrompt = s.bgSource === 'ai' && s.aiPrompt ? s.aiPrompt : _deriveAiPrompt(s);
-                // 채널 브랜드명 유입 방지 (AI가 워터마크로 박음)
                 basePrompt = _stripBrandNames(basePrompt);
+                const subtype = _detectAiSubtype(narr, basePrompt);
                 return {
                     type: 'ai',
-                    label: 'AI 이미지 (셀팟 생성)',
+                    label: 'AI ' + subtype,
                     content: _enforceKoreanInAiPrompt(basePrompt, s),
                     reason: _reasonFor('ai', narr, score)
                 };
@@ -7088,6 +7087,40 @@ ${script}
                     reason: _reasonFor('gif', narr, score)
                 };
             }
+        }
+
+        // AI 서브타입 감지 (지도/인포그래픽/장면 재현/은유/인물)
+        function _detectAiSubtype(narr, prompt) {
+            const p = (prompt || '').toLowerCase();
+            // 지도
+            if (/map|지도|국경|영토|내몽골|외몽골|완충지대|geopolitical|border/.test(p) ||
+                /국경|내몽골|외몽골|완충지대|제3의 이웃|끼여/.test(narr)) return '지도';
+            // 인포그래픽 (차트·데이터)
+            if (/chart|infographic|donut|bar|percent|%|timeline|visualization|comparison|rank/.test(p) ||
+                /\d{1,3}\s*%|차트|그래프|퍼센트|순위/.test(narr)) return '인포그래픽';
+            // 역사 재현
+            if (/historical|dynasty|ancient|19th|medieval|painting style/.test(p) ||
+                /청나라|조선|고려|신라|로마|산업혁명|세계대전/.test(narr)) return '역사 재현';
+            // 은유·비유
+            if (/symbolic|metaphor|allegorical|illustration/.test(p) ||
+                /씨를 말|목줄|근육|뿌리|역기|손아귀|숨줄|청년기/.test(narr)) return '은유 일러스트';
+            // 인물
+            if (/portrait|figure|person|character/.test(p)) return '인물';
+            return '이미지';
+        }
+
+        // Stock 서브타입 감지 (풍경/도시/활동/실사)
+        function _detectStockSubtype(narr, query) {
+            const q = (query || '').toLowerCase();
+            if (/skyline|city|street|urban|building/.test(q) || /도시|빌딩|거리/.test(narr)) return '도시';
+            if (/factory|mining|industrial|warehouse|construction/.test(q) || /공장|광산|건설|산업/.test(narr)) return '산업 현장';
+            if (/landscape|mountain|desert|steppe|ocean|nature|forest/.test(q) || /초원|산|바다|자연|풍경/.test(narr)) return '자연·풍경';
+            if (/people|family|children|worker|students/.test(q) || /가족|아이|사람들|학생/.test(narr)) return '인물·활동';
+            if (/meeting|negotiation|business|politician|handshake/.test(q) || /회의|협상|정치인|외교/.test(narr)) return '회의·외교';
+            if (/protest|crowd|rally|angry/.test(q) || /시위|항의|반중/.test(narr)) return '시위·군중';
+            if (/winter|snow|cold|smog|pollution/.test(q) || /겨울|추위|미세먼지|연기/.test(narr)) return '환경';
+            if (/archive|historical|old|vintage/.test(q) || /역사|과거|오래/.test(narr)) return '아카이브';
+            return '영상';
         }
 
         function _reasonFor(type, narr, score) {
@@ -7159,6 +7192,14 @@ ${script}
             // 산업·경제 침체·정체
             if (/산업이 안|도시가 안 자|상인이 안 나오|성장 멈춤|발전이 안|정체|침체/.test(narr)) {
                 return 'abandoned empty town deserted';
+            }
+            // 외교·동맹·손 내밀기 (역사적 맥락)
+            if (/손을 내민|동맹|선택지|기대기로|의지하던/.test(narr)) {
+                return 'diplomatic handshake historical';
+            }
+            // 지정학·완충지대·끼여있음 (은유 장면)
+            if (/완충지대|끼여|사이에|선택지가 없|외교/.test(narr)) {
+                return 'geopolitical map historical';
             }
             // 빈곤·가난
             if (/빈곤|가난|끼니|밥 걱정/.test(narr)) return 'poverty slum hungry meal';
