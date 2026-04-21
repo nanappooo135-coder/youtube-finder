@@ -2190,8 +2190,16 @@
                             장면별로 <strong>이미지 3순위 추천</strong>(스톡·AI·실사 중 내용에 가장 맞는 순서)과
                             <strong>오버레이 추천</strong>을 표시합니다. 셀팟에서 장면 넘어가며 참고하세요.
                         </p>
+                        <div id="sceneGuideManualSummary" style="display:none;margin-bottom:10px;padding:10px 12px;background:#fff3cd;border:2px solid #f59e0b;border-radius:8px;font-size:0.82rem;">
+                            <div style="font-weight:700;color:#92400e;margin-bottom:4px;">⚠️ 수동 업그레이드 필요 — 셀팟이 text_headline만 자동 적용. 아래 장면은 수동 변경 필요.</div>
+                            <div id="sceneGuideManualCount" style="color:#78350f;"></div>
+                        </div>
                         <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
                             <div id="sceneGuideProgress" style="font-size:0.82rem;color:#495057;font-weight:600;"></div>
+                            <label style="display:flex;align-items:center;gap:4px;font-size:0.78rem;cursor:pointer;user-select:none;">
+                                <input type="checkbox" id="sceneGuideFilterManual" onchange="_renderSceneGuideFromState()"/>
+                                수동 업그레이드만 보기
+                            </label>
                             <button class="search-btn" onclick="_resetSceneProgress()" style="padding:4px 12px;font-size:0.78rem;background:#868e96;border-color:#868e96;">🔄 진행률 초기화</button>
                             <button class="search-btn" onclick="copySceneGuide(this)" style="margin-left:auto;padding:4px 12px;font-size:0.8rem;background:#6f42c1;border-color:#6f42c1;">📋 가이드 전체 복사</button>
                         </div>
@@ -6682,6 +6690,14 @@ ${script}
             return topic;
         }
 
+        // 수동 업그레이드 필요 장면인지 판별 (text_headline이 아닌 오버레이 추천)
+        function _sceneNeedsManualUpgrade(s) {
+            const rec = _recommendOverlay28(s);
+            if (rec.type === 'none') return false;
+            // 헤드라인·타이틀은 text_headline류로 자동 적용 됨
+            return !['헤드라인', '강조텍스트', '타이틀'].includes(rec.type);
+        }
+
         function _renderSceneGuideFromState() {
             const scenes = window._sceneGuideData || [];
             const list = document.getElementById('jsonSceneGuideList');
@@ -6699,6 +6715,41 @@ ${script}
                 progEl.innerHTML = '✅ <strong>' + doneCount + '/' + scenes.length + '</strong> 완료 (' + pct + '%)'
                     + ' <span style="display:inline-block;width:100px;height:6px;background:#e9ecef;border-radius:3px;margin-left:6px;vertical-align:middle;overflow:hidden;">'
                     + '<span style="display:block;width:' + pct + '%;height:100%;background:linear-gradient(90deg,#51cf66,#37b24d);"></span></span>';
+            }
+
+            // 수동 업그레이드 필요 장면 집계
+            const manualScenes = scenes.filter(s => _sceneNeedsManualUpgrade(s));
+            const manualDone = manualScenes.filter(s => progress[s.id]).length;
+            const manualSummary = document.getElementById('sceneGuideManualSummary');
+            const manualCount = document.getElementById('sceneGuideManualCount');
+            if (manualSummary && manualCount) {
+                if (manualScenes.length > 0) {
+                    manualSummary.style.display = '';
+                    const pctM = Math.round((manualDone / manualScenes.length) * 100);
+                    const scenesByType = {};
+                    manualScenes.forEach(s => {
+                        const rec = _recommendOverlay28(s);
+                        if (!scenesByType[rec.type]) scenesByType[rec.type] = 0;
+                        scenesByType[rec.type]++;
+                    });
+                    const typeBreakdown = Object.entries(scenesByType)
+                        .sort((a, b) => b[1] - a[1])
+                        .map(([t, c]) => t + ' ' + c + '개')
+                        .join(' · ');
+                    manualCount.innerHTML = '<strong>' + manualScenes.length + '개 장면</strong> (완료: ' + manualDone + '/' + manualScenes.length + ' = ' + pctM + '%) — ' + typeBreakdown;
+                } else {
+                    manualSummary.style.display = 'none';
+                }
+            }
+
+            // 필터 적용
+            const filterManual = document.getElementById('sceneGuideFilterManual');
+            const filtered = (filterManual && filterManual.checked)
+                ? scenes.filter(s => _sceneNeedsManualUpgrade(s))
+                : scenes;
+            if (filtered.length === 0) {
+                list.innerHTML = '<p style="text-align:center;color:#888;padding:20px;">조건에 맞는 장면이 없습니다.</p>';
+                return;
             }
 
             // 감지된 전역 주제 표시
@@ -6719,7 +6770,7 @@ ${script}
             }
 
             let html = topicBanner + '<div style="display:flex;flex-direction:column;gap:8px;">';
-            scenes.forEach(s => {
+            filtered.forEach(s => {
                 html += _renderSceneGuideCard(s);
             });
             html += '</div>';
@@ -6856,15 +6907,23 @@ ${script}
             }
 
             const doneStyle = isDone ? 'opacity:0.55;' : '';
+            const needsManual = _sceneNeedsManualUpgrade(s);
             const checkboxHtml = '<label style="display:inline-flex;align-items:center;gap:4px;font-size:0.78rem;cursor:pointer;user-select:none;float:right;">'
                 + '<input type="checkbox" ' + (isDone ? 'checked' : '') + ' onchange="_toggleSceneDone(' + s.id + ')" style="cursor:pointer;"/>'
                 + '<span style="color:' + (isDone ? '#51cf66' : '#868e96') + ';">' + (isDone ? '✅ 완료' : '☐ 미완료') + '</span>'
                 + '</label>';
+            const manualBadge = needsManual && !isDone
+                ? ' <span style="background:#f59e0b;color:#fff;padding:1px 8px;border-radius:4px;font-size:0.7rem;font-weight:700;margin-left:6px;">🔥 수동 업그레이드</span>'
+                : '';
             const titleHtml = isDone
                 ? '<div style="font-weight:700;font-size:0.85rem;margin-bottom:4px;color:#868e96;"><s>━━━ 장면 ' + s.id + ' ━━━</s>' + checkboxHtml + '</div>'
-                : '<div style="font-weight:700;font-size:0.85rem;margin-bottom:4px;color:#212529;">━━━ 장면 ' + s.id + ' ━━━' + checkboxHtml + '</div>';
+                : '<div style="font-weight:700;font-size:0.85rem;margin-bottom:4px;color:#212529;">━━━ 장면 ' + s.id + ' ━━━' + manualBadge + checkboxHtml + '</div>';
 
-            return '<div style="padding:10px 12px;background:' + bgColor + ';border-left:4px solid ' + bgBorder + ';border-radius:6px;' + doneStyle + '">'
+            // 수동 업그레이드 필요 장면은 왼쪽 강조
+            const leftBorder = needsManual && !isDone ? '4px solid #f59e0b' : '4px solid ' + bgBorder;
+            const boxShadow = needsManual && !isDone ? 'box-shadow:0 0 0 1px #f59e0b;' : '';
+
+            return '<div style="padding:10px 12px;background:' + bgColor + ';border-left:' + leftBorder + ';border-radius:6px;' + doneStyle + boxShadow + '">'
                 + titleHtml
                 + '<div style="font-size:0.82rem;color:#333;margin-bottom:4px;line-height:1.5;">📝 "' + _escapeHtml(summary) + '"</div>'
                 + rows
