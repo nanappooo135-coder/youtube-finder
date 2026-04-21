@@ -7205,9 +7205,9 @@ ${script}
             if (/결정.*못|스스로 결정.*없|결정해본 적.*없|판단.*없/.test(narr)) {
                 return 'business uncertainty hesitation';
             }
-            // 의존·기댐
-            if (/의존|의지|기대어|기댄|받아먹/.test(narr)) {
-                return 'dependent helpless alone';
+            // 의존·기댐·받아먹기 (수동성)
+            if (/의존|의지하|기대어|기댄|받아먹|먹여주|밥을 지을|압박이 없/.test(narr)) {
+                return 'relaxed hammock lazy comfortable';
             }
             // 팔다·수출 (스스로 못 팔음)
             if (/(스스로.*팔지|뭘 만들.*팔지)/.test(narr)) {
