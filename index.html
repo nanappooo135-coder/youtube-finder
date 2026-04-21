@@ -7201,6 +7201,30 @@ ${script}
             if (/완충지대|끼여|사이에|선택지가 없|외교/.test(narr)) {
                 return 'geopolitical map historical';
             }
+            // 결정·선택 무능력 (추상)
+            if (/결정.*못|스스로 결정.*없|결정해본 적.*없|판단.*없/.test(narr)) {
+                return 'business uncertainty hesitation';
+            }
+            // 의존·기댐
+            if (/의존|의지|기대어|기댄|받아먹/.test(narr)) {
+                return 'dependent helpless alone';
+            }
+            // 팔다·수출 (스스로 못 팔음)
+            if (/(스스로.*팔지|뭘 만들.*팔지)/.test(narr)) {
+                return 'empty warehouse factory unused';
+            }
+            // 해외 이주·이민·일하러 감
+            if (/해외.*빠져|미래.*안 보인다|나라 떠남/.test(narr)) {
+                return 'airport departure migrant workers';
+            }
+            // 시장 자유화·개방
+            if (/시장.*열|민영화|자유화/.test(narr)) {
+                return 'open market economy gate';
+            }
+            // 공백·없음·무
+            if (/아무것도 없|텅 비|한 톨도|부재|없는 나라/.test(narr)) {
+                return 'empty vacant desolate';
+            }
             // 빈곤·가난
             if (/빈곤|가난|끼니|밥 걱정/.test(narr)) return 'poverty slum hungry meal';
             // 천막·게르
