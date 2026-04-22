@@ -3674,10 +3674,33 @@ ${introPrompts}`;
 - 예외 3: 목차 나열·A/B 시나리오는 하나로
 - 결과: **대본 문장 수 ≈ 장면 수** (컷 리듬 극대화)
 
-## 🎯 소스 비율 (다큐멘터리 스타일)
-- **stock: 65~75%** (기본값) — 실제 장면·활동·풍경·산업 현장
-- **ai: 15~25%** — 차트·지도·인포그래픽·은유·역사 재현
-- **gif: 5~15%** — 감정 반응·질문·비유 (양념)
+## 🎯 소스 선택 — "내용 우선, 비율 억지 X"
+각 장면마다 **"이 나레이션에 가장 맞는 것"** 선택. 자연스러운 결과 범위:
+- **stock 40~60%**: 실제 장면·활동·풍경·산업 현장
+- **ai 15~25%**: 차트·지도·인포그래픽·은유·역사 재현
+- **실사 10~25%** (needRealImage): 실존 인물·역사 사진·특정 장소
+- **gif 5~15%**: 10자 이내 순수 감정 감탄만
+
+### 📷 실사(needRealImage) 판단 규칙 (중요)
+**stock/ai로 대체 불가능하고 실제 사진이 필요한 경우에만**:
+- 실존 인물 (칭기즈칸 동상, 시진핑, 트럼프, 레닌 등)
+- 특정 사건 아카이브 (소련 붕괴, 달라이라마 방문)
+- 고유 장소·건물 (IMF 본부, 크렘린, 오유톨고이 광산)
+- 유물·기념물 (동상, 궁전, 상징물)
+
+### 🔍 realSearchKeyword 작성 규칙 (구글 이미지 매칭)
+- **영문 4~6단어** (짧으면 일반, 길면 매칭 실패)
+- **이름·장소·연도 구체적 포함**
+- ✅ 좋은 예:
+  - "Genghis Khan statue Ulaanbaatar Mongolia"
+  - "Xi Jinping official portrait photo"
+  - "Soviet Union collapse 1991 Moscow"
+  - "IMF headquarters Washington DC building"
+  - "Dalai Lama Mongolia visit 2016"
+- ❌ 나쁜 예:
+  - "Asian leader" (일반화, 매칭 불가)
+  - "ancient emperor" (이름 없음)
+  - "historical event" (구체성 X)
 
 ## 🎯 textOverlay 규칙 (매우 중요)
 - **1~5단어 이내** 절대 엄수
@@ -7634,63 +7657,103 @@ ${sceneList}
         }
 
         function _deriveRealKeyword(narr) {
-            // 실존 인물
-            if (/칭기즈칸/.test(narr)) return 'Genghis Khan statue Mongolia';
-            if (/나폴레옹/.test(narr)) return 'Napoleon Bonaparte painting';
-            if (/링컨/.test(narr)) return 'Abraham Lincoln portrait';
-            if (/간디/.test(narr)) return 'Mahatma Gandhi historical photo';
-            if (/트럼프/.test(narr)) return 'Donald Trump official portrait';
-            if (/푸틴/.test(narr)) return 'Vladimir Putin official photo';
-            if (/네타냐후/.test(narr)) return 'Benjamin Netanyahu official portrait';
-            if (/시진핑/.test(narr)) return 'Xi Jinping official portrait';
+            // === 실존 인물 (구체 이름 + 상황) ===
+            if (/칭기즈칸/.test(narr)) return 'Genghis Khan statue Ulaanbaatar Mongolia';
+            if (/나폴레옹/.test(narr)) return 'Napoleon Bonaparte historical painting';
+            if (/링컨/.test(narr)) return 'Abraham Lincoln portrait president';
+            if (/간디/.test(narr)) return 'Mahatma Gandhi historical photograph India';
+            if (/트럼프/.test(narr)) return 'Donald Trump official portrait president';
+            if (/푸틴/.test(narr)) return 'Vladimir Putin official photo Russia';
+            if (/바이든/.test(narr)) return 'Joe Biden official portrait president';
+            if (/네타냐후/.test(narr)) return 'Benjamin Netanyahu Israel prime minister';
+            if (/시진핑/.test(narr)) return 'Xi Jinping China president portrait';
             if (/오바마/.test(narr)) return 'Barack Obama official portrait';
-            if (/김정은/.test(narr)) return 'Kim Jong Un official photo';
-            if (/달라이라마/.test(narr)) return 'Dalai Lama monk photograph';
-            if (/레닌/.test(narr)) return 'Vladimir Lenin historical photograph';
-            if (/스탈린/.test(narr)) return 'Joseph Stalin archival photo';
-            if (/고르바초프/.test(narr)) return 'Mikhail Gorbachev historical photo';
-            if (/마오쩌둥/.test(narr)) return 'Mao Zedong historical portrait';
-            if (/덩샤오핑/.test(narr)) return 'Deng Xiaoping historical photo';
-            if (/세종/.test(narr)) return 'King Sejong statue Korea';
-            if (/박정희/.test(narr)) return 'Park Chung-hee archival photo';
-            if (/이승만/.test(narr)) return 'Syngman Rhee archival photograph';
+            if (/김정은/.test(narr)) return 'Kim Jong Un North Korea leader';
+            if (/김일성/.test(narr)) return 'Kim Il Sung historical North Korea';
+            if (/김정일/.test(narr)) return 'Kim Jong Il historical photo';
+            if (/달라이라마/.test(narr)) return 'Dalai Lama monk Tibet photograph';
+            if (/레닌/.test(narr)) return 'Vladimir Lenin Soviet Union historical';
+            if (/스탈린/.test(narr)) return 'Joseph Stalin Soviet historical photo';
+            if (/고르바초프/.test(narr)) return 'Mikhail Gorbachev 1991 Soviet Union';
+            if (/옐친/.test(narr)) return 'Boris Yeltsin Russia historical photo';
+            if (/마오쩌둥/.test(narr)) return 'Mao Zedong Chairman China historical';
+            if (/덩샤오핑/.test(narr)) return 'Deng Xiaoping China reform historical';
+            if (/히틀러/.test(narr)) return 'Adolf Hitler historical photograph Germany';
+            if (/처칠/.test(narr)) return 'Winston Churchill British historical';
+            if (/만델라/.test(narr)) return 'Nelson Mandela South Africa historical';
+            if (/모디/.test(narr)) return 'Narendra Modi India Prime Minister';
+            if (/젤렌스키/.test(narr)) return 'Volodymyr Zelensky Ukraine president';
+            if (/메르켈/.test(narr)) return 'Angela Merkel Germany chancellor';
+            if (/마크롱/.test(narr)) return 'Emmanuel Macron France president';
+            if (/호메이니/.test(narr)) return 'Ayatollah Khomeini Iran revolution';
+            if (/무함마드 빈|빈 살만/.test(narr)) return 'Mohammed bin Salman Saudi Arabia';
+            if (/세종/.test(narr)) return 'King Sejong statue Korea historical';
+            if (/박정희/.test(narr)) return 'Park Chung-hee Korea historical photo';
+            if (/이승만/.test(narr)) return 'Syngman Rhee Korea historical photo';
+            if (/김대중/.test(narr)) return 'Kim Dae-jung Korea historical photo';
 
-            // 왕조·역사 시대
-            if (/청나라/.test(narr)) return 'Qing dynasty historical painting';
-            if (/조선.*(?:왕|임금|지배|시대)|조선 후기/.test(narr)) return 'Joseon dynasty historical painting';
-            if (/고려/.test(narr)) return 'Goryeo dynasty historical artwork';
-            if (/원나라|몽골 제국/.test(narr)) return 'Mongol Empire historical painting';
-            if (/소련|공산주의.*(?:국가|체제)/.test(narr)) return 'Soviet Union archival photo Red Square';
-            if (/냉전/.test(narr)) return 'Cold War archival photograph';
-            if (/산업혁명/.test(narr)) return 'Industrial Revolution 19th century factory photo';
-            if (/세계대전/.test(narr)) return 'World War archival photograph';
+            // === 왕조·역사 시대 ===
+            if (/청나라/.test(narr)) return 'Qing dynasty painting historical';
+            if (/명나라/.test(narr)) return 'Ming dynasty painting historical China';
+            if (/조선.*(?:왕|임금|지배|시대)|조선 후기/.test(narr)) return 'Joseon dynasty painting Korea';
+            if (/고려/.test(narr)) return 'Goryeo dynasty artwork Korea';
+            if (/원나라|몽골 제국/.test(narr)) return 'Mongol Empire historical painting map';
+            if (/로마 제국/.test(narr)) return 'Roman Empire ancient ruins';
+            if (/오스만/.test(narr)) return 'Ottoman Empire historical photo';
+            if (/소련|공산주의.*(?:국가|체제)/.test(narr)) return 'Soviet Union Red Square archive';
+            if (/냉전/.test(narr)) return 'Cold War Berlin Wall historical';
+            if (/산업혁명/.test(narr)) return 'Industrial Revolution 19th century factory';
+            if (/1차.*세계대전|1차 대전/.test(narr)) return 'World War 1 historical photo';
+            if (/2차.*세계대전|2차 대전/.test(narr)) return 'World War 2 historical photo';
+            if (/세계대전/.test(narr)) return 'World War historical archive photo';
+            if (/베트남 전쟁/.test(narr)) return 'Vietnam War historical photo';
+            if (/한국 전쟁|6.25/.test(narr)) return 'Korean War 1950 historical';
 
-            // 실존 지명·기관
+            // === 실존 지명·기관 ===
             if (/IMF/.test(narr)) return 'IMF headquarters Washington DC building';
-            if (/세계은행/.test(narr)) return 'World Bank headquarters Washington';
+            if (/세계은행|World Bank/.test(narr)) return 'World Bank headquarters Washington';
+            if (/NATO|나토/.test(narr)) return 'NATO headquarters Brussels building';
+            if (/UN|유엔/.test(narr)) return 'United Nations headquarters New York';
+            if (/EU 본부|유럽연합/.test(narr)) return 'European Union Brussels building';
             if (/크렘린/.test(narr)) return 'Kremlin Moscow Russia building';
-            if (/백악관/.test(narr)) return 'White House Washington DC';
+            if (/백악관/.test(narr)) return 'White House Washington DC exterior';
+            if (/국회의사당|Capitol Hill/.test(narr)) return 'US Capitol building Washington';
             if (/울란바토르/.test(narr)) return 'Ulaanbaatar Mongolia cityscape aerial';
-            if (/북경|베이징/.test(narr)) return 'Beijing China Tiananmen cityscape';
-            if (/상하이/.test(narr)) return 'Shanghai skyline China';
+            if (/베이징|북경/.test(narr)) return 'Beijing China Tiananmen cityscape';
+            if (/상하이/.test(narr)) return 'Shanghai China skyline night';
             if (/모스크바/.test(narr)) return 'Moscow Russia Red Square';
-            if (/평양/.test(narr)) return 'Pyongyang North Korea';
-            if (/도쿄/.test(narr)) return 'Tokyo Japan skyline';
-            if (/베를린/.test(narr)) return 'Berlin Germany cityscape';
+            if (/평양/.test(narr)) return 'Pyongyang North Korea city';
+            if (/도쿄/.test(narr)) return 'Tokyo Japan Shibuya skyline';
+            if (/베를린/.test(narr)) return 'Berlin Germany Brandenburg Gate';
+            if (/파리/.test(narr)) return 'Paris France Eiffel Tower';
+            if (/테헤란/.test(narr)) return 'Tehran Iran cityscape';
+            if (/예루살렘/.test(narr)) return 'Jerusalem Israel Old City';
+            if (/오유톨고이/.test(narr)) return 'Oyu Tolgoi copper gold mine Mongolia';
 
-            // 종교·시설
+            // === 종교·시설 ===
             if (/라마 불교|티베트.*불교/.test(narr)) return 'Tibetan Buddhist monastery Mongolia';
             if (/사원.*파괴|사원.*부서/.test(narr)) return 'destroyed monastery ruins historical';
-            if (/사원|수도원/.test(narr)) return 'Buddhist monastery historical';
+            if (/사원|수도원/.test(narr)) return 'Buddhist monastery Asia historical';
+            if (/모스크/.test(narr)) return 'mosque Islamic architecture historical';
+            if (/교회|성당/.test(narr)) return 'historical cathedral church Europe';
 
-            // 사건·재난
-            if (/독립 선언/.test(narr)) return 'historical declaration of independence';
-            if (/붕괴|무너|쓰러/.test(narr) && /소련/.test(narr)) return 'fall of Soviet Union 1991';
-            if (/숙청/.test(narr)) return 'political purge archival photograph';
+            // === 사건·재난 (특정 연도 포함) ===
+            if (/달라이라마.*몽골|몽골.*달라이라마/.test(narr)) return 'Dalai Lama Mongolia visit 2016';
+            if (/독립 선언/.test(narr)) return 'declaration of independence historical';
+            if (/붕괴|무너|쓰러/.test(narr) && /소련/.test(narr)) return 'Soviet Union collapse 1991 Berlin Wall';
+            if (/베를린 장벽|베를린의 벽/.test(narr)) return 'Berlin Wall 1989 fall historical';
+            if (/천안문/.test(narr)) return 'Tiananmen Square 1989 protest historical';
+            if (/아랍의 봄/.test(narr)) return 'Arab Spring 2011 protest historical';
+            if (/숙청/.test(narr)) return 'political purge archival photo';
+            if (/코로나|팬데믹/.test(narr)) return 'COVID-19 pandemic 2020 empty street';
+            if (/9.11|911 테러/.test(narr)) return 'September 11 2001 New York';
 
-            // 나라 동상·유적
-            if (/동상/.test(narr)) return 'historical statue monument';
-            if (/유적/.test(narr)) return 'historical ruins archaeology';
+            // === 나라 동상·유적 ===
+            if (/동상/.test(narr)) return 'historical monument statue landmark';
+            if (/유적/.test(narr)) return 'historical ruins archaeology ancient';
+            if (/만리장성/.test(narr)) return 'Great Wall of China aerial';
+            if (/피라미드/.test(narr)) return 'Egyptian pyramids Giza historical';
+            if (/에펠탑/.test(narr)) return 'Eiffel Tower Paris France';
 
             // 매칭 안 되면 null 반환 (real 순위에서 제외)
             return null;
