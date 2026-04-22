@@ -6448,11 +6448,17 @@ ${script}
                 return;
             }
             sec.style.display = '';
-            let text = '';
+            let text = '# Genspark 일괄 이미지 생성 요청\n\n';
+            text += '아래는 총 ' + aiScenes.length + '개의 이미지 프롬프트입니다. 각 블록을 순서대로 이미지로 생성해주세요.\n';
+            text += '각 블록의 맨 앞 "### N번 장면" 라벨은 제가 이미지를 구분하기 위한 식별용입니다.\n';
+            text += '**절대 이 번호 라벨을 이미지에 렌더링하지 마세요.** 라벨 다음 줄부터가 실제 이미지 프롬프트입니다.\n\n';
+            text += '---\n\n';
             aiScenes.forEach(s => {
                 // 한글 강제 + 브랜드명 제거 후처리 (다른 섹션과 통일)
                 const processed = _enforceKoreanInAiPrompt(_stripBrandNames(s.aiPrompt), s);
-                text += `${s.id}번 - ${processed}\n\n`;
+                text += '### ' + s.id + '번 장면\n';
+                text += processed + '\n\n';
+                text += '---\n\n';
             });
             out.value = text.trim();
             window._sellpotAiPromptsText = out.value;
