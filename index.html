@@ -5612,7 +5612,7 @@ ${script}
 
                 // 🎬 상징·은유 장면 감지 + 그록 영상화 태깅 + 영상 프롬프트 생성
                 // 상징: 체스·메스·유리 등 비유 소재. 역사·지도·인포그래픽 아닐 때만.
-                const SYMBOLIC_STRONG = /체스|메스|수술|유리|도미노|저울|뇌|그물|은유|비유|힘줄|톱질|사슬|쇠사슬|도장|저격|화살|깨진|부서진|금이|갈라|톱|바늘|매듭|사다리|기둥|열쇠|자물쇠|방패|가면|거울|손금|박힌 못|씨앗|뿌리|목줄|낚싯대/;
+                const SYMBOLIC_STRONG = /체스|메스|수술|유리|도미노|저울|뇌|그물|은유|비유|힘줄|톱질|사슬|쇠사슬|도장|저격|화살|깨진|부서진|금이|갈라|톱|바늘|매듭|사다리|기둥|열쇠|자물쇠|방패|가면|거울|손금|박힌 못|씨앗|뿌리|목줄|낚싯대|심장|심정지|마리오네트|인형|꼭두각시|풍선|폭발|불꽃|스위치|버튼|문 닫히|잠기|찢어|톱니|기어|팽이|거미줄|덫|올가미|지렛대|균열|쪼개|분할|압축|끓|얼음/;
                 // 이동 지도 힌트 (지도 장면 중 path 애니메이션 필요)
                 const MOVING_MAP_HINT = /경로|이동|흘러|향하|연결|→|지나가|통과|가로질|거쳐|돌아|향해|따라|단계/;
 
@@ -8583,6 +8583,15 @@ ${sceneList}
                     text += '[' + ov.category + '] ' + ov.type + (ov.text ? ' → "' + ov.text + '"' : '');
                     if (ov.reason) text += ' (' + ov.reason + ')';
                     text += '\n';
+                }
+                // 🎬 그록 영상화 프롬프트
+                if (s.needsGrokVideo && s.grokVideoPrompt) {
+                    const gvLabel = s.isHistoricalScene ? '역사 재현'
+                                  : s.isMovingMap ? '지도 이동'
+                                  : s.isSymbolicScene ? '상징·은유'
+                                  : '영상화';
+                    text += '\n🎬 그록 영상화 [' + gvLabel + ' · ' + s.grokVideoDuration + '초]\n';
+                    text += '   ' + s.grokVideoPrompt + '\n';
                 }
                 // 효과음
                 if (s.sfxPrompt) text += '\n🔊 효과음: ' + s.sfxPrompt + '\n';
