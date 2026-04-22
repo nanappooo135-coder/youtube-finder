@@ -7988,9 +7988,52 @@ ${sceneList}
                         numberColor: accentColor
                     };
 
+                case 'info_text_highlight':
+                    return {
+                        text: narr,
+                        highlights: _extractHighlights(narr)
+                    };
+
+                case 'dual_stat_vertical':
+                    return {
+                        item1: { label: '항목 1', value: textOverlay || '값' },
+                        item2: { label: '항목 2', value: '' }
+                    };
+
+                case 'speech_bubble':
+                case 'speech_bubble_neon':
+                case 'speech_bubble_sketch':
+                case 'speech_bubble_gradient':
+                    return {
+                        text: quoteMatch ? quoteMatch[1] : (textOverlay || narr),
+                        speakerName: '',
+                        style: '둥근',
+                        position: '우상',
+                        tailDirection: '오른쪽'
+                    };
+
+                case 'chapter_divider':
+                    return {
+                        chapterNumber: 'CHAPTER',
+                        title: textOverlay || _suggestHeadline(narr),
+                        accentColor: accentColor
+                    };
+
                 default:
                     return { text: textOverlay };
             }
+        }
+
+        // 강조텍스트용 키워드 추출
+        function _extractHighlights(narr) {
+            const highlights = [];
+            // 숫자·수치 (15자까지)
+            const nums = narr.match(/\d+\s*(?:%|척|명|개|대|조|억|만|천|원|달러|배)/g) || [];
+            highlights.push(...nums);
+            // 주요 행동 동사
+            const actions = narr.match(/(시작된|종료된|선포된|발표된|체결된|파기된|돌입한|철수한)/g) || [];
+            highlights.push(...actions);
+            return [...new Set(highlights)].slice(0, 3);
         }
 
         // 헬퍼: 핵심 명사구 추출
@@ -8125,31 +8168,34 @@ ${sceneList}
         // === 한글명 → 셀팟 type 값 매핑 ===
         const _OVERLAY_KO_TO_TYPE = {
             '헤드라인': 'text_headline',
-            '인용문': 'text_quote',
+            '강조텍스트': 'info_text_highlight',
             '타자기': 'text_typewriter',
             '불릿리스트': 'text_bullet_reveal',
             '좌우분할': 'text_split_screen',
+            '인용문': 'text_quote',
             '수치카드': 'single_stat_card',
-            '대비수치': 'versus_stat',
-            '막대차트': 'bar_chart_comparison',
-            '강조텍스트': 'text_headline',
+            '대비수치': 'dual_stat_vertical',
             '가로수치': 'stat_counter_row',
             '증감수치': 'stat_change',
             '도넛차트': 'pie_donut',
+            '막대차트': 'bar_chart_comparison',
             '타임라인': 'timeline_horizontal',
             '랭킹': 'ranking_list',
             'VS대결': 'versus_stat',
             '프로그레스': 'progress_bar',
-            '하단자막': 'lower-third',
+            '전체숫자': 'fullscreen_number',
             '타이틀': 'title_card',
+            '챕터구분': 'chapter_divider',
             '콜아웃': 'callout_box',
             '지도라벨': 'map_label',
-            '전체숫자': 'fullscreen_number',
             '이미지+텍스트': 'split_image_text',
             '카운트다운': 'countdown',
-            '챕터구분': 'chapter_divider',
-            '말풍선': 'name_tag',
-            '네임택': 'name_tag'
+            '말풍선': 'speech_bubble',
+            '말풍선(네온)': 'speech_bubble_neon',
+            '말풍선(손글씨)': 'speech_bubble_sketch',
+            '말풍선(그라데이션)': 'speech_bubble_gradient',
+            '네임택': 'name_tag',
+            '하단자막': 'lower-third'
         };
 
         // === 28종 오버레이 추천 (균형 모드) ===
@@ -8157,92 +8203,141 @@ ${sceneList}
         function _recommendOverlay28(s) {
             const narr = s.narration || '';
 
-            // [0] AI 이미지+오버레이 중복 가능성 체크 (생략 X, 경고만)
-            // 사용자가 AI 안 쓰고 단색/stock 쓸 수 있으니 오버레이는 추천 유지
-            // 단 결과 객체에 warning 플래그 추가
+            // === 우선순위 1: 구체 수치·데이터 ===
 
-            // [1] 퍼센트 — 시청자가 기억할 핵심 데이터
+            // 퍼센트
             const pctMatch = narr.match(/(\d{1,3}(?:\.\d+)?)\s*(?:%|퍼센트)/);
+            const pctCount = (narr.match(/\d{1,3}\s*%/g) || []).length;
             if (pctMatch) {
+                // 복수 퍼센트 (2+) → 도넛차트 (비율 분할)
+                if (pctCount >= 2) return { category: '데이터', type: '도넛차트', text: pctMatch[0], reason: '비율 분할 (2+개 %)' };
+                // 단일 50%+ → 도넛차트 (점유율)
                 const pct = parseFloat(pctMatch[1]);
-                if (pct >= 50) return { category: '데이터', type: '도넛차트', text: pctMatch[0], reason: '점유율 핵심 데이터' };
+                if (pct >= 50) return { category: '데이터', type: '도넛차트', text: pctMatch[0], reason: '우세 점유율' };
                 return { category: '기존', type: '수치카드', text: pctMatch[0], reason: '퍼센트 강조' };
             }
 
-            // [2] 금액 — 반드시 강조
+            // 증감 변화 (명확한 수치 변화)
+            if (/급락|급등|폭락|폭등|상승|하락|증가|감소/.test(narr)) {
+                const changeMatch = narr.match(/(\d+%|\d+배|절반|두 배|세 배)/);
+                if (changeMatch) {
+                    return { category: '데이터', type: '증감수치', text: changeMatch[1], reason: '증감 변화' };
+                }
+            }
+
+            // 금액
             const wonMatch = narr.match(/(\d+(?:\.\d+)?\s*(?:조|억|만|천)\s*(?:원|달러))/);
             if (wonMatch) return { category: '기존', type: '수치카드', text: wonMatch[1], reason: '금액 강조' };
             const usdMatch = narr.match(/\$\s*(\d[\d,]*)/);
             if (usdMatch) return { category: '기존', type: '수치카드', text: '$' + usdMatch[1], reason: '달러 강조' };
 
-            // [2b] 비율 — N명 중 1명, N분의 1, 몇 배
+            // 비율
             const ratioNMatch = narr.match(/(\d+명\s*중\s*\d+명)/);
             if (ratioNMatch) return { category: '기존', type: '수치카드', text: ratioNMatch[1], reason: '비율 강조' };
             const fractionMatch = narr.match(/(\d+\s*분의\s*\d+)/);
             if (fractionMatch) return { category: '기존', type: '수치카드', text: fractionMatch[1], reason: '분수 비율' };
 
-            // [3] VS 비교 — 구조적 대비 (엄격, 실제 두 개체 비교만)
-            // "양쪽에서 원조" 같은 양쪽이지만 대결 아닌 경우 제외
-            const isVs = /\bvs\b|맞섰|대결|싸움|\d+\s*(?:배|분의)\s*\d+/.test(narr) ||
+            // 큰 숫자 (전체숫자)
+            const bigNumMatch = narr.match(/(\d{2,}(?:만|억)\s*(?:명|개|대))/);
+            if (bigNumMatch) return { category: '레이아웃', type: '전체숫자', text: bigNumMatch[1], reason: '큰 숫자 임팩트' };
+
+            // === 우선순위 2: 구조·비교 ===
+
+            // VS대결 (대립 구조)
+            const isVs = /\bvs\b|맞섰|대결|싸움|격돌|공격.*대응/.test(narr) ||
                 /한국.*(\d+|\$|만|억|원|달러).*몽골.*(\d+|\$|만|억|원|달러)/.test(narr) ||
-                /한쪽.*다른 쪽/.test(narr);
+                /이란.*미국|미국.*이란/.test(narr);
             if (isVs) {
-                return { category: '데이터', type: 'VS대결', text: s.textOverlay || '비교', reason: '두 개체 대비' };
+                return { category: '데이터', type: 'VS대결', text: s.textOverlay || '대결', reason: '두 주체 대립' };
             }
 
-            // [4] 랭킹 — 복수 순위 명시
+            // 랭킹 (복수 순위)
             const rankItems = (narr.match(/\b\d위/g) || []).length;
             if (rankItems >= 2) {
                 return { category: '데이터', type: '랭킹', text: s.textOverlay || '순위', reason: '복수 순위 명시' };
             }
 
-            // [5] 인용문 — 비활성화 (셀팟 지원 제한)
-            // 인용문 대신 헤드라인으로 처리
-            const quoteMatch = narr.match(/["']([^"']{5,40})["']/);
-            if (quoteMatch) return { category: '텍스트', type: '헤드라인', text: quoteMatch[1], reason: '대사·인용 강조' };
+            // 대비수치 (2가지 관련 정보: 작전명+범위, 직책+소속)
+            const dualInfo = /작전.*명칭|프로젝트.*이름|프로그램.*명|코드명/.test(narr) && /범위|규모|대상/.test(narr);
+            if (dualInfo) {
+                return { category: '기존', type: '대비수치', text: s.textOverlay || '정보', reason: '명칭 + 범위/속성' };
+            }
 
-            // [6] 큰 숫자·인구·규모 — 세자리 이상 임팩트 숫자만
-            // 예: 340만 명, 80만 명 (단, 수치카드와 중복 방지 위해 단위 있을 때만)
-            const bigNumMatch = narr.match(/(\d{2,}(?:만|억)\s*(?:명|개|대))/);
-            if (bigNumMatch) return { category: '레이아웃', type: '전체숫자', text: bigNumMatch[1], reason: '큰 숫자 임팩트' };
+            // === 우선순위 3: 나열·흐름 ===
 
-            // [7] 연대기·타임라인 — 3개 이상 시점
+            // 타임라인 (3+ 시점)
             const yearCount = (narr.match(/\d{4}년|\d+년대|\d+년\s*(?:전|동안|넘게)/g) || []).length;
             if (yearCount >= 3) {
                 return { category: '데이터', type: '타임라인', text: s.textOverlay || '연대기', reason: '시간 흐름 다단계' };
             }
 
-            // [8] 항목 나열 — 3개 이상 항목
-            // 막대차트는 비교 수치가 있을 때만, 없으면 불릿리스트
+            // 항목 나열 (3+ 콤마 구분)
             const itemMatches = narr.match(/[가-힣]{2,6}(?:,\s*[가-힣]{2,6}){2,}/);
             if (itemMatches) {
-                // 숫자 비교가 명확한 경우만 막대차트
                 const hasNumericComparison = /\d+\s*(?:배|%|천|만|억|조)|순위|최다|최대/.test(narr);
                 if (hasNumericComparison) {
                     return { category: '기존', type: '막대차트', text: s.textOverlay || '항목 비교', reason: '수치 비교' };
                 }
-                // 단순 나열 → 불릿리스트
                 return { category: '텍스트', type: '불릿리스트', text: s.textOverlay || '항목', reason: '단순 나열' };
             }
 
-            // [9] 증감 변화 — 명확한 수치 변화
-            if (/2배|3배|절반으로|급락|급등|폭락|폭등|두 배|\d+분의 \d+/.test(narr)) {
-                return { category: '데이터', type: '증감수치', text: s.textOverlay || '변화', reason: '명확한 증감' };
+            // 프로그레스 (복수 진행 지표)
+            if (/\d+시간.*\d+회|\d+단계.*완료|진행률/.test(narr)) {
+                return { category: '데이터', type: '프로그레스', text: s.textOverlay || '진행 상황', reason: '복수 지표' };
             }
 
-            // [10] 지도 라벨 — 지도 장면
+            // === 우선순위 4: 문장·대사 ===
+
+            // 인용문·대사 → 말풍선 (기본)
+            const quoteMatch = narr.match(/["']([^"']{5,40})["']/);
+            if (quoteMatch) {
+                // 긴박·경고 → 네온 말풍선
+                if (/위험|긴급|경고|충격/.test(narr)) {
+                    return { category: '말풍선', type: '말풍선(네온)', text: quoteMatch[1], reason: '긴급 발언' };
+                }
+                return { category: '말풍선', type: '말풍선', text: quoteMatch[1], reason: '직접 대사' };
+            }
+
+            // 긴 사실 문장 + 출처 → 강조텍스트
+            if (narr.length >= 40 && /에 따르면|발표|보고서|따르면/.test(narr)) {
+                return { category: '텍스트', type: '강조텍스트', text: narr, reason: '출처 인용 긴 문장' };
+            }
+
+            // === 우선순위 5: 구조 구분 ===
+
+            // 챕터구분 (영상 섹션 시작)
+            if (/^(\d+부|CHAPTER|파트 \d+|제\d+장)/.test(narr)) {
+                return { category: '레이아웃', type: '챕터구분', text: s.textOverlay || narr, reason: '챕터 시작' };
+            }
+
+            // 인물 소개 → 네임택
+            if (/(기자|장관|대통령|총리|사령관|의원|교수|대표)$/.test(narr) ||
+                /(이 사람은|발표한|소개한).*\s*[가-힣]{2,4}/.test(narr)) {
+                return { category: '레이아웃', type: '네임택', text: s.textOverlay || '이름', reason: '인물 소개' };
+            }
+
+            // === 우선순위 6: 지도·특수 ===
+
+            // 지도 라벨 (AI 지도 배경 + 지역 언급)
             if ((/내몽골|외몽골|국경|러시아.*중국|위치|사이에 끼|버퍼|완충지대/).test(narr) && (s.isMapScene || s.bgSource === 'ai')) {
                 return { category: '레이아웃', type: '지도라벨', text: s.textOverlay || '지역', reason: '지도 위 지역 라벨' };
             }
 
-            // [11] 강한 수식어·챕터 전환 — 콜아웃
-            if (/^(근데 여기서|진짜 무서운|진짜 충격|놀라운|충격적|결정적|핵심은|진짜 문제)/.test(narr)) {
-                return { category: '레이아웃', type: '콜아웃', text: s.textOverlay || '핵심 포인트', reason: '강조·주목 포인트' };
+            // 카운트다운 (시간 카운팅)
+            if (/카운트다운|\d+초 남음|마지막 \d+/.test(narr)) {
+                return { category: '레이아웃', type: '카운트다운', text: s.textOverlay || '시간', reason: '카운트다운 연출' };
             }
 
-            // [12] 짧은 제목급 (챕터 타이틀) — 15자 이하 선언문
+            // === 우선순위 7: 기본 제목·헤드라인 ===
+
+            // 짧은 선언 (15자 이하 선언문) → 타이틀
             if (narr.length <= 20 && s.textOverlay && s.textOverlay.length <= 12) {
                 return { category: '레이아웃', type: '타이틀', text: s.textOverlay, reason: '챕터 제목' };
+            }
+
+            // 극적 등장 키워드 → 타자기
+            if (narr.length < 15 && s.textOverlay && /!|극적|충격적/.test(narr + (s.textOverlay || ''))) {
+                return { category: '텍스트', type: '타자기', text: s.textOverlay, reason: '극적 등장' };
             }
 
             // [13] 핵심 키워드 강조 — textOverlay가 있고 나레이션이 짧거나 중요 개념
