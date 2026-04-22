@@ -1412,6 +1412,13 @@
                 <span class="arrow">&#9660;</span>
             </div>
             <div class="section-content">
+                <!-- 클라우드 동기화 상태 + 수동 복원 -->
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:#f8f9fa;border:1px solid #e0e0e0;border-radius:8px;margin-bottom:10px;">
+                    <div id="cloudStatus" style="font-size:0.85rem;color:#888;">☁️ 클라우드 확인 중...</div>
+                    <button id="cloudRestoreBtn" onclick="manualCloudRestore()" style="padding:6px 12px;background:#dc3545;color:white;border:none;border-radius:6px;font-size:0.8rem;font-weight:700;cursor:pointer;white-space:nowrap;">
+                        🔄 클라우드에서 복원
+                    </button>
+                </div>
                 <div id="apiStatus" class="api-status not-saved">
                     <span>&#9888;&#65039;</span>
                     <span>API 키가 아직 저장되지 않았어요</span>
@@ -12179,8 +12186,19 @@ Example format:
             'folders',
         ];
 
+        // 오버라이드 전에 원본 setItem 참조 확보 (cloudLoad에서 저장 유발 방지용)
+        const _origSetItem = localStorage.setItem.bind(localStorage);
+
+        // 레이스 가드: cloudLoad 성공 전에는 cloudSave 금지 (빈 상태로 Firebase 덮는 사고 방지)
+        window._cloudLoaded = false;
+        window._cloudLastStatus = { ok: null, msg: '확인 중...', count: 0 };
+
         // localStorage → Firebase 업로드
         async function cloudSave() {
+            if (!window._cloudLoaded) {
+                console.warn('[클라우드] 로드 완료 전이라 저장 스킵 (데이터 보호)');
+                return;
+            }
             const data = {};
             SYNC_KEYS.forEach(k => {
                 const v = localStorage.getItem(k);
@@ -12199,19 +12217,67 @@ Example format:
         async function cloudLoad() {
             try {
                 const res = await fetch(`${FIREBASE_DB}/settings.json`);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const data = await res.json();
-                if (!data) return false;
+                if (!data) {
+                    window._cloudLoaded = true;
+                    window._cloudLastStatus = { ok: true, msg: '클라우드 비어있음', count: 0 };
+                    updateCloudStatusUI();
+                    return false;
+                }
                 let changed = false;
+                let count = 0;
                 Object.entries(data).forEach(([k, v]) => {
+                    count++;
                     if (localStorage.getItem(k) !== v) {
-                        localStorage.setItem(k, v);
+                        _origSetItem(k, v); // 오버라이드 우회 → cloudSave 재귀 예약 방지
                         changed = true;
                     }
                 });
+                window._cloudLoaded = true;
+                window._cloudLastStatus = { ok: true, msg: `동기화 OK (${count}개 항목)`, count };
+                updateCloudStatusUI();
                 return changed;
             } catch(e) {
                 console.warn('클라우드 로드 실패:', e);
+                window._cloudLastStatus = { ok: false, msg: `실패: ${e.message || e}`, count: 0 };
+                updateCloudStatusUI();
                 return false;
+            }
+        }
+
+        function updateCloudStatusUI() {
+            const el = document.getElementById('cloudStatus');
+            if (!el) return;
+            const s = window._cloudLastStatus;
+            if (s.ok === null) {
+                el.innerHTML = '☁️ 클라우드 확인 중...';
+                el.style.color = '#888';
+            } else if (s.ok) {
+                el.innerHTML = `☁️ ${s.msg}`;
+                el.style.color = '#28a745';
+            } else {
+                el.innerHTML = `☁️ <span style="font-weight:700;">${s.msg}</span>`;
+                el.style.color = '#dc3545';
+            }
+        }
+
+        // 수동 복원 — 사용자가 버튼 클릭 시 호출
+        async function manualCloudRestore() {
+            const btn = document.getElementById('cloudRestoreBtn');
+            if (btn) { btn.disabled = true; btn.textContent = '복원 중...'; }
+            window._cloudLoaded = false; // 재시도 허용
+            const changed = await cloudLoad();
+            if (btn) { btn.disabled = false; btn.textContent = '🔄 클라우드에서 복원'; }
+            if (window._cloudLastStatus.ok) {
+                if (changed) {
+                    alert('✅ 복원 완료! 페이지를 새로고침합니다.');
+                    location.reload();
+                } else {
+                    alert('ℹ️ 이미 최신 상태입니다 (클라우드와 로컬이 동일).');
+                }
+            } else {
+                alert(`❌ 복원 실패\n\n원인: ${window._cloudLastStatus.msg}\n\n- 광고차단/확장프로그램을 끄고 다시 시도\n- 다른 네트워크(모바일 핫스팟 등)로 시도\n- F12 → Console 에러 확인`);
             }
         }
 
@@ -12222,7 +12288,6 @@ Example format:
         })();
 
         // localStorage 변경 감지 → 자동 클라우드 저장
-        const _origSetItem = localStorage.setItem.bind(localStorage);
         localStorage.setItem = function(key, value) {
             _origSetItem(key, value);
             if (SYNC_KEYS.includes(key)) {
@@ -12230,6 +12295,9 @@ Example format:
                 window._cloudSaveTimer = setTimeout(cloudSave, 2000);
             }
         };
+
+        // HTML 파싱 완료 후 상태 UI 초기 표시
+        document.addEventListener('DOMContentLoaded', updateCloudStatusUI);
     </script>
 
     <script>
