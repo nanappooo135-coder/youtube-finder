@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Data Spec Test</title></head>
+<body><pre id="out"></pre>
+<script>
+function log(s){document.getElementById('out').textContent+=s+'\n';}
+
+// index.html에서 _buildOverlayData 관련 전체 복사
+function _buildOverlayData(type, s) {
+    const narr = s.narration || '';
+    const textOverlay = s.textOverlay || '';
+    const accentColor = '#ff6b6b';
+    const subColor = '#4ecdc4';
+    const textColor = '#ffffff';
+    const pctMatch = narr.match(/(\d{1,3}(?:\.\d+)?)\s*(?:%|퍼센트)/);
+    const pct = pctMatch ? parseFloat(pctMatch[1]) : null;
+    const wonMatch = narr.match(/(\d+(?:\.\d+)?\s*(?:조|억|만|천)\s*(?:원|달러))/);
+    const usdMatch = narr.match(/\$\s*(\d[\d,]*)/);
+    const bigNumMatch = narr.match(/(\d{2,}(?:만|억)\s*(?:명|개|대))/);
+    const quoteMatch = narr.match(/["']([^"']{3,60})["']/);
+    switch (type) {
+        case 'text_headline': return { text: textOverlay || _suggestHeadline(narr) };
+        case 'text_quote': return { text: quoteMatch ? quoteMatch[1] : textOverlay };
+        case 'pie_donut': {
+            const val = pct != null ? pct : 50;
+            const mainLabel = textOverlay || _extractLabel(narr, '') || '항목';
+            return { title: mainLabel, centerLabel: pctMatch ? pctMatch[0] : (textOverlay || ''), segments: [{ label: mainLabel, value: val }, { label: '나머지', value: Math.max(0, 100-val) }] };
+        }
+        case 'single_stat_card': {
+            let text = textOverlay;
+            if (pctMatch) text = pctMatch[0];
+            else if (wonMatch) text = wonMatch[1];
+            else if (usdMatch) text = '$' + usdMatch[1];
+            else if (bigNumMatch) text = bigNumMatch[1];
+            return { text: text || textOverlay, label: _extractLabel(narr, text) };
+        }
+        case 'versus_stat': { const vs = _extractVS(narr); return { top: { label: vs.leftLabel, main: vs.leftValue, sub: '' }, bottom: { label: vs.rightLabel, main: vs.rightValue, sub: '' } }; }
+        case 'ranking_list': return { items: _extractRankingItems(narr) };
+        case 'bar_chart_comparison': return { items: _extractBarItems(narr) };
+        case 'timeline_horizontal': return { events: _extractTimelineEvents(narr) };
+        case 'stat_change': return { metric: textOverlay || '변화', change: _extractChangeText(narr), isPositive: /(상승|증가|올라|\+)/.test(narr), changeColor: accentColor };
+        case 'progress_bar': return { label: textOverlay || _extractLabel(narr, ''), percentage: pct || 50, showPercentage: true, barColor: accentColor };
+        case 'fullscreen_number': { let number = textOverlay; if (bigNumMatch) number = bigNumMatch[1]; else if (wonMatch) number = wonMatch[1]; else if (pctMatch) number = pctMatch[0]; return { number: number || textOverlay, subtitle: _extractSubtitle(narr), numberColor: accentColor }; }
+        case 'callout_box': return { title: textOverlay || '핵심', body: _truncate(narr, 80), accentColor: accentColor };
+        case 'title_card': return { mainTitle: textOverlay || _suggestHeadline(narr), subtitle: _extractSubtitle(narr), accentColor: accentColor };
+        case 'chapter_divider': return { chapterNumber: 'CHAPTER ' + (s.id || 1), title: textOverlay || _suggestHeadline(narr), accentColor: accentColor };
+        case 'map_label': return { pins: _extractMapPins(narr), showConnections: true, connectionColor: textColor };
+        case 'text_bullet_reveal': return { items: _extractBulletItems(narr), bulletColor: accentColor, animationSpeed: 'medium' };
+        case 'text_split_screen': { const split = _extractSplit(narr); return { leftTitle: split.leftTitle, leftText: split.leftText, rightTitle: split.rightTitle, rightText: split.rightText, leftColor: accentColor, rightColor: subColor }; }
+        case 'stat_counter_row': return { items: _extractStatItems(narr), valueColor: accentColor };
+        case 'text_typewriter': return { text: textOverlay || narr, speed: 'medium', color: textColor };
+        case 'name_tag': return { name: textOverlay || _extractPersonName(narr), title: _extractPersonTitle(narr), variant: 'bar', accentColor: accentColor };
+        case 'countdown': return { title: textOverlay || '기간', elapsedDays: _estimateDays(narr), displayFormat: 'years', numberColor: accentColor };
+        case 'info_text_highlight': return { text: narr, highlights: _extractHighlights(narr) };
+        case 'dual_stat_vertical': return { item1: { label: '항목 1', value: textOverlay || '값' }, item2: { label: '항목 2', value: '' } };
+        case 'speech_bubble':
+        case 'speech_bubble_neon':
+        case 'speech_bubble_sketch':
+        case 'speech_bubble_gradient':
+            return { text: quoteMatch ? quoteMatch[1] : (textOverlay || narr), speakerName: '', style: '둥근', position: '우상', tailDirection: '오른쪽' };
+        default: return { text: textOverlay };
+    }
+}
+function _extractHighlights(narr){const highlights=[];const nums=narr.match(/\d+\s*(?:%|척|명|개|대|조|억|만|천|원|달러|배)/g)||[];highlights.push(...nums);const actions=narr.match(/(시작된|종료된|선포된|발표된|체결된|파기된|돌입한|철수한)/g)||[];highlights.push(...actions);return [...new Set(highlights)].slice(0,3);}
+function _suggestHeadline(narr){const m=narr.match(/[가-힣A-Z0-9]{2,12}(?=[이가을를에도만])/);return m?m[0]:(narr.substring(0,10));}
+function _extractLabel(){return '';}
+function _extractSubtitle(n){const s=n.split(/[.!?]/);return s.length>1&&s[1].trim()?s[1].trim().substring(0,30):'';}
+function _truncate(s,n){return s.length>n?s.substring(0,n)+'...':s;}
+function _extractVS(){return{leftLabel:'비교 A',leftValue:'?',rightLabel:'비교 B',rightValue:'?'};}
+function _extractRankingItems(){return[{rank:1,name:'항목 1',value:''}];}
+function _extractBarItems(){return[{name:'항목 1',value:0}];}
+function _extractTimelineEvents(){return[{year:'시점 1',title:'',description:''}];}
+function _extractChangeText(){return '';}
+function _extractMapPins(){return[{x:50,y:50,label:'지역',sub:'',color:'#ff6b6b'}];}
+function _extractBulletItems(n){return[n.substring(0,30)];}
+function _extractSplit(){return{leftTitle:'좌',leftText:'',rightTitle:'우',rightText:''};}
+function _extractStatItems(){return[{label:'',value:'0',suffix:''}];}
+function _extractPersonName(){return '';}
+function _extractPersonTitle(){return '';}
+function _estimateDays(){return 365;}
+
+// === data 구조 스펙 검증 ===
+// reference_sellpot_overlay_types.md 기반
+const specChecks = [
+    { name: 'text_headline', scene: {narration:'호르무즈 해협',textOverlay:'호르무즈'}, required: ['text'] },
+    { name: 'info_text_highlight', scene: {narration:'국방부에 따르면 27척이 동원됐다',textOverlay:''}, required: ['text','highlights'] },
+    { name: 'single_stat_card', scene: {narration:'27척이 동원됐다',textOverlay:'27'}, required: ['text'] },  // spec: label/value/unit/footnote — 실제: text/label
+    { name: 'dual_stat_vertical', scene: {narration:'',textOverlay:'값'}, required: ['item1','item2'] },
+    { name: 'pie_donut', scene: {narration:'70%',textOverlay:''}, required: ['title','centerLabel','segments'] },  // 스펙 기준 엄격 검증
+    { name: 'bar_chart_comparison', scene: {narration:'',textOverlay:''}, required: ['items'] },  // 스펙은 title+items
+    { name: 'versus_stat', scene: {narration:'이란 vs 미국',textOverlay:''}, required: ['top','bottom'] },  // 스펙은 top/bottom
+    { name: 'chapter_divider', scene: {id:1,narration:'1부 시작',textOverlay:'시작'}, required: ['chapterNumber','title','accentColor'] },  // 스펙
+    { name: 'speech_bubble', scene: {narration:'"안녕"',textOverlay:''}, required: ['text','speakerName','style','position','tailDirection'] },
+    { name: 'speech_bubble_neon', scene: {narration:'"위험"',textOverlay:''}, required: ['text','style','position','tailDirection'] },
+    { name: 'name_tag', scene: {narration:'대통령',textOverlay:'홍길동'}, required: ['name','title'] },  // 스펙: name,title,accentColor
+    { name: 'timeline_horizontal', scene: {narration:'2020년',textOverlay:''}, required: ['events'] },  // 스펙: title+events
+    { name: 'stat_counter_row', scene: {narration:'',textOverlay:''}, required: ['items'] },  // 스펙: title+items
+    { name: 'ranking_list', scene: {narration:'',textOverlay:''}, required: ['items'] },
+    { name: 'progress_bar', scene: {narration:'50%',textOverlay:''}, required: ['label','percentage'] },  // 스펙: title+bars
+    { name: 'fullscreen_number', scene: {narration:'6',textOverlay:'6'}, required: ['number'] },  // 스펙: number+label+accentColor
+    { name: 'map_label', scene: {narration:'러시아',textOverlay:''}, required: ['pins'] },
+    { name: 'title_card', scene: {narration:'타이틀',textOverlay:'타이틀'}, required: ['mainTitle'] },  // 스펙: subtitle+mainTitle
+    { name: 'countdown', scene: {narration:'3년',textOverlay:''}, required: ['elapsedDays'] },  // 스펙: startNumber,endNumber,duration
+    { name: 'text_bullet_reveal', scene: {narration:'a,b',textOverlay:''}, required: ['items'] },  // 스펙: title+items
+    { name: 'text_split_screen', scene: {narration:'',textOverlay:''}, required: ['leftTitle','rightTitle'] },  // 스펙: left/right object
+    { name: 'text_typewriter', scene: {narration:'등장',textOverlay:'등장'}, required: ['text','speed'] },
+    { name: 'stat_change', scene: {narration:'상승',textOverlay:''}, required: ['change'] },  // 스펙: label,value,unit,change,direction
+];
+
+let ok = 0, bad = 0;
+log('========== data 스펙 검증 ==========\n');
+log('(memory reference_sellpot_overlay_types.md 기준 스펙 vs 실제 _buildOverlayData 출력)\n');
+
+for (const c of specChecks) {
+    const data = _buildOverlayData(c.name, c.scene);
+    const fields = Object.keys(data).sort();
+    const missing = c.required.filter(f => !(f in data));
+    const pass = missing.length === 0;
+    if (pass) ok++; else bad++;
+    log((pass ? 'OK   ' : 'FAIL ') + c.name);
+    log('  필수: ' + c.required.join(', '));
+    log('  실제: ' + fields.join(', '));
+    if (missing.length) log('  누락: ' + missing.join(', '));
+    log('');
+}
+log('결과: ' + ok + ' pass / ' + bad + ' fail / ' + specChecks.length);
+document.title = 'DONE_' + ok + '_' + bad;
+</script>
+</body></html>

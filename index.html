@@ -7848,12 +7848,18 @@ ${sceneList}
                 case 'text_quote':
                     return { text: quoteMatch ? quoteMatch[1] : textOverlay };
 
-                case 'pie_donut':
+                case 'pie_donut': {
+                    const val = pct != null ? pct : 50;
+                    const mainLabel = textOverlay || _extractLabel(narr, '') || '항목';
                     return {
-                        text: pctMatch ? pctMatch[0] : (textOverlay || '점유율'),
-                        label: textOverlay || '비율',
-                        color: accentColor
+                        title: mainLabel,
+                        centerLabel: pctMatch ? pctMatch[0] : (textOverlay || ''),
+                        segments: [
+                            { label: mainLabel, value: val },
+                            { label: '나머지', value: Math.max(0, 100 - val) }
+                        ]
                     };
+                }
 
                 case 'single_stat_card': {
                     let text = textOverlay;
@@ -7867,10 +7873,8 @@ ${sceneList}
                 case 'versus_stat': {
                     const vs = _extractVS(narr);
                     return {
-                        leftLabel: vs.leftLabel,
-                        leftValue: vs.leftValue,
-                        rightLabel: vs.rightLabel,
-                        rightValue: vs.rightValue
+                        top: { label: vs.leftLabel, main: vs.leftValue, sub: '' },
+                        bottom: { label: vs.rightLabel, main: vs.rightValue, sub: '' }
                     };
                 }
 
@@ -7927,10 +7931,9 @@ ${sceneList}
 
                 case 'chapter_divider':
                     return {
-                        chapterNumber: String(s.id || ''),
-                        chapterTitle: textOverlay || _suggestHeadline(narr),
-                        subtitle: _extractSubtitle(narr),
-                        dividerColor: accentColor
+                        chapterNumber: 'CHAPTER ' + (s.id || 1),
+                        title: textOverlay || _suggestHeadline(narr),
+                        accentColor: accentColor
                     };
 
                 case 'map_label':
@@ -8012,13 +8015,6 @@ ${sceneList}
                         tailDirection: '오른쪽'
                     };
 
-                case 'chapter_divider':
-                    return {
-                        chapterNumber: 'CHAPTER',
-                        title: textOverlay || _suggestHeadline(narr),
-                        accentColor: accentColor
-                    };
-
                 default:
                     return { text: textOverlay };
             }
@@ -8085,7 +8081,7 @@ ${sceneList}
         }
         function _extractBarItems(narr) {
             // "석탄, 구리, 금, 우라늄" 같은 나열
-            const matches = narr.match(/[가-힣]{2,6}(?:,\s*[가-힣]{2,6}){2,}/);
+            const matches = narr.match(/[가-힣]{1,6}(?:,\s*[가-힣]{1,6}){2,}/);
             if (matches) {
                 return matches[0].split(/,\s*/).map(name => ({ name: name.trim(), value: 0 }));
             }
@@ -8245,8 +8241,7 @@ ${sceneList}
 
             // VS대결 (대립 구조)
             const isVs = /\bvs\b|맞섰|대결|싸움|격돌|공격.*대응/.test(narr) ||
-                /한국.*(\d+|\$|만|억|원|달러).*몽골.*(\d+|\$|만|억|원|달러)/.test(narr) ||
-                /이란.*미국|미국.*이란/.test(narr);
+                /한국.*(\d+|\$|만|억|원|달러).*몽골.*(\d+|\$|만|억|원|달러)/.test(narr);
             if (isVs) {
                 return { category: '데이터', type: 'VS대결', text: s.textOverlay || '대결', reason: '두 주체 대립' };
             }
@@ -8272,7 +8267,7 @@ ${sceneList}
             }
 
             // 항목 나열 (3+ 콤마 구분)
-            const itemMatches = narr.match(/[가-힣]{2,6}(?:,\s*[가-힣]{2,6}){2,}/);
+            const itemMatches = narr.match(/[가-힣]{1,6}(?:,\s*[가-힣]{1,6}){2,}/);
             if (itemMatches) {
                 const hasNumericComparison = /\d+\s*(?:배|%|천|만|억|조)|순위|최다|최대/.test(narr);
                 if (hasNumericComparison) {
@@ -8330,24 +8325,27 @@ ${sceneList}
 
             // === 우선순위 7: 기본 제목·헤드라인 ===
 
-            // 짧은 선언 (15자 이하 선언문) → 타이틀
-            if (narr.length <= 20 && s.textOverlay && s.textOverlay.length <= 12) {
-                return { category: '레이아웃', type: '타이틀', text: s.textOverlay, reason: '챕터 제목' };
-            }
-
             // 극적 등장 키워드 → 타자기
             if (narr.length < 15 && s.textOverlay && /!|극적|충격적/.test(narr + (s.textOverlay || ''))) {
                 return { category: '텍스트', type: '타자기', text: s.textOverlay, reason: '극적 등장' };
             }
 
-            // [13] 핵심 키워드 강조 — textOverlay가 있고 나레이션이 짧거나 중요 개념
-            // 은유·핵심 개념 키워드 (씨를 말리다, 목줄, 근육 등)
+            // [13] 핵심 키워드 강조 — 은유·핵심 개념 키워드 (타이틀보다 먼저 잡아야 함)
             if (s.textOverlay && s.textOverlay.length <= 15) {
                 const hasKeyMetaphor = /씨를|목줄|근육|뿌리|출발선|사슬|봉쇄|격리|의존|마지막 기회|세대|대물림/.test(narr);
-                const isShort = narr.length <= 40;
-                if (hasKeyMetaphor || isShort) {
+                if (hasKeyMetaphor) {
                     return { category: '텍스트', type: '헤드라인', text: s.textOverlay, reason: '핵심 키워드 강조' };
                 }
+            }
+
+            // 짧은 선언 (15자 이하 선언문) → 타이틀
+            if (narr.length <= 20 && s.textOverlay && s.textOverlay.length <= 12) {
+                return { category: '레이아웃', type: '타이틀', text: s.textOverlay, reason: '챕터 제목' };
+            }
+
+            // 짧은 나레이션 + textOverlay → 헤드라인 (폴백)
+            if (s.textOverlay && s.textOverlay.length <= 15 && narr.length <= 40) {
+                return { category: '텍스트', type: '헤드라인', text: s.textOverlay, reason: '짧은 장면 키워드' };
             }
 
             // [14] 구체 숫자+단위 (비율·배수·기간) — 헤드라인

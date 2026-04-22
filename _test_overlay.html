@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Overlay Test</title></head>
+<body>
+<pre id="out"></pre>
+<script>
+function log(s) { document.getElementById('out').textContent += s + '\n'; }
+
+// === _OVERLAY_KO_TO_TYPE 매핑 (index.html에서 복사) ===
+const _OVERLAY_KO_TO_TYPE = {
+    '헤드라인': 'text_headline',
+    '강조텍스트': 'info_text_highlight',
+    '타자기': 'text_typewriter',
+    '불릿리스트': 'text_bullet_reveal',
+    '좌우분할': 'text_split_screen',
+    '인용문': 'text_quote',
+    '수치카드': 'single_stat_card',
+    '대비수치': 'dual_stat_vertical',
+    '가로수치': 'stat_counter_row',
+    '증감수치': 'stat_change',
+    '도넛차트': 'pie_donut',
+    '막대차트': 'bar_chart_comparison',
+    '타임라인': 'timeline_horizontal',
+    '랭킹': 'ranking_list',
+    'VS대결': 'versus_stat',
+    '프로그레스': 'progress_bar',
+    '전체숫자': 'fullscreen_number',
+    '타이틀': 'title_card',
+    '챕터구분': 'chapter_divider',
+    '콜아웃': 'callout_box',
+    '지도라벨': 'map_label',
+    '이미지+텍스트': 'split_image_text',
+    '카운트다운': 'countdown',
+    '말풍선': 'speech_bubble',
+    '말풍선(네온)': 'speech_bubble_neon',
+    '말풍선(손글씨)': 'speech_bubble_sketch',
+    '말풍선(그라데이션)': 'speech_bubble_gradient',
+    '네임택': 'name_tag',
+    '하단자막': 'lower-third'
+};
+
+// === _recommendOverlay28 (index.html 8203-8362에서 그대로 복사) ===
+function _recommendOverlay28(s) {
+    const narr = s.narration || '';
+    const pctMatch = narr.match(/(\d{1,3}(?:\.\d+)?)\s*(?:%|퍼센트)/);
+    const pctCount = (narr.match(/\d{1,3}\s*%/g) || []).length;
+    if (pctMatch) {
+        if (pctCount >= 2) return { category: '데이터', type: '도넛차트', text: pctMatch[0], reason: '비율 분할 (2+개 %)' };
+        const pct = parseFloat(pctMatch[1]);
+        if (pct >= 50) return { category: '데이터', type: '도넛차트', text: pctMatch[0], reason: '우세 점유율' };
+        return { category: '기존', type: '수치카드', text: pctMatch[0], reason: '퍼센트 강조' };
+    }
+    if (/급락|급등|폭락|폭등|상승|하락|증가|감소/.test(narr)) {
+        const changeMatch = narr.match(/(\d+%|\d+배|절반|두 배|세 배)/);
+        if (changeMatch) return { category: '데이터', type: '증감수치', text: changeMatch[1], reason: '증감 변화' };
+    }
+    const wonMatch = narr.match(/(\d+(?:\.\d+)?\s*(?:조|억|만|천)\s*(?:원|달러))/);
+    if (wonMatch) return { category: '기존', type: '수치카드', text: wonMatch[1], reason: '금액 강조' };
+    const usdMatch = narr.match(/\$\s*(\d[\d,]*)/);
+    if (usdMatch) return { category: '기존', type: '수치카드', text: '$' + usdMatch[1], reason: '달러 강조' };
+    const ratioNMatch = narr.match(/(\d+명\s*중\s*\d+명)/);
+    if (ratioNMatch) return { category: '기존', type: '수치카드', text: ratioNMatch[1], reason: '비율 강조' };
+    const fractionMatch = narr.match(/(\d+\s*분의\s*\d+)/);
+    if (fractionMatch) return { category: '기존', type: '수치카드', text: fractionMatch[1], reason: '분수 비율' };
+    const bigNumMatch = narr.match(/(\d{2,}(?:만|억)\s*(?:명|개|대))/);
+    if (bigNumMatch) return { category: '레이아웃', type: '전체숫자', text: bigNumMatch[1], reason: '큰 숫자 임팩트' };
+    const isVs = /\bvs\b|맞섰|대결|싸움|격돌|공격.*대응/.test(narr) ||
+        /한국.*(\d+|\$|만|억|원|달러).*몽골.*(\d+|\$|만|억|원|달러)/.test(narr);
+    if (isVs) return { category: '데이터', type: 'VS대결', text: s.textOverlay || '대결', reason: '두 주체 대립' };
+    const rankItems = (narr.match(/\b\d위/g) || []).length;
+    if (rankItems >= 2) return { category: '데이터', type: '랭킹', text: s.textOverlay || '순위', reason: '복수 순위 명시' };
+    const dualInfo = /작전.*명칭|프로젝트.*이름|프로그램.*명|코드명/.test(narr) && /범위|규모|대상/.test(narr);
+    if (dualInfo) return { category: '기존', type: '대비수치', text: s.textOverlay || '정보', reason: '명칭 + 범위/속성' };
+    const yearCount = (narr.match(/\d{4}년|\d+년대|\d+년\s*(?:전|동안|넘게)/g) || []).length;
+    if (yearCount >= 3) return { category: '데이터', type: '타임라인', text: s.textOverlay || '연대기', reason: '시간 흐름 다단계' };
+    const itemMatches = narr.match(/[가-힣]{1,6}(?:,\s*[가-힣]{1,6}){2,}/);
+    if (itemMatches) {
+        const hasNumericComparison = /\d+\s*(?:배|%|천|만|억|조)|순위|최다|최대/.test(narr);
+        if (hasNumericComparison) return { category: '기존', type: '막대차트', text: s.textOverlay || '항목 비교', reason: '수치 비교' };
+        return { category: '텍스트', type: '불릿리스트', text: s.textOverlay || '항목', reason: '단순 나열' };
+    }
+    if (/\d+시간.*\d+회|\d+단계.*완료|진행률/.test(narr)) {
+        return { category: '데이터', type: '프로그레스', text: s.textOverlay || '진행 상황', reason: '복수 지표' };
+    }
+    const quoteMatch = narr.match(/["']([^"']{5,40})["']/);
+    if (quoteMatch) {
+        if (/위험|긴급|경고|충격/.test(narr)) return { category: '말풍선', type: '말풍선(네온)', text: quoteMatch[1], reason: '긴급 발언' };
+        return { category: '말풍선', type: '말풍선', text: quoteMatch[1], reason: '직접 대사' };
+    }
+    if (narr.length >= 40 && /에 따르면|발표|보고서|따르면/.test(narr)) {
+        return { category: '텍스트', type: '강조텍스트', text: narr, reason: '출처 인용 긴 문장' };
+    }
+    if (/^(\d+부|CHAPTER|파트 \d+|제\d+장)/.test(narr)) {
+        return { category: '레이아웃', type: '챕터구분', text: s.textOverlay || narr, reason: '챕터 시작' };
+    }
+    if (/(기자|장관|대통령|총리|사령관|의원|교수|대표)$/.test(narr) ||
+        /(이 사람은|발표한|소개한).*\s*[가-힣]{2,4}/.test(narr)) {
+        return { category: '레이아웃', type: '네임택', text: s.textOverlay || '이름', reason: '인물 소개' };
+    }
+    if ((/내몽골|외몽골|국경|러시아.*중국|위치|사이에 끼|버퍼|완충지대/).test(narr) && (s.isMapScene || s.bgSource === 'ai')) {
+        return { category: '레이아웃', type: '지도라벨', text: s.textOverlay || '지역', reason: '지도 위 지역 라벨' };
+    }
+    if (/카운트다운|\d+초 남음|마지막 \d+/.test(narr)) {
+        return { category: '레이아웃', type: '카운트다운', text: s.textOverlay || '시간', reason: '카운트다운 연출' };
+    }
+    if (narr.length < 15 && s.textOverlay && /!|극적|충격적/.test(narr + (s.textOverlay || ''))) {
+        return { category: '텍스트', type: '타자기', text: s.textOverlay, reason: '극적 등장' };
+    }
+    if (s.textOverlay && s.textOverlay.length <= 15) {
+        const hasKeyMetaphor = /씨를|목줄|근육|뿌리|출발선|사슬|봉쇄|격리|의존|마지막 기회|세대|대물림/.test(narr);
+        if (hasKeyMetaphor) return { category: '텍스트', type: '헤드라인', text: s.textOverlay, reason: '핵심 키워드 강조' };
+    }
+    if (narr.length <= 20 && s.textOverlay && s.textOverlay.length <= 12) {
+        return { category: '레이아웃', type: '타이틀', text: s.textOverlay, reason: '챕터 제목' };
+    }
+    if (s.textOverlay && s.textOverlay.length <= 15 && narr.length <= 40) {
+        return { category: '텍스트', type: '헤드라인', text: s.textOverlay, reason: '짧은 장면 키워드' };
+    }
+    const durationMatch = narr.match(/(\d+년(?:\s*동안|\s*넘게|\s*전)?)/);
+    const multipleMatch = narr.match(/(\d+배|절반|반으로)/);
+    if ((durationMatch || multipleMatch) && s.textOverlay && s.textOverlay.length <= 12) {
+        return { category: '텍스트', type: '헤드라인', text: s.textOverlay, reason: '핵심 기간·배수' };
+    }
+    return { type: 'none', reason: '일반 설명 — 오버레이 없이 전달 명확' };
+}
+
+// === 테스트 케이스 ===
+const cases = [
+    { name: '[신규] 강조텍스트: 긴 사실 + 출처', scene: { id: 1, narration: '국방부 발표에 따르면 27척이 동원됐고 15일간 이어진 작전으로 기록된 가장 큰 규모의 해상 훈련이었습니다.', textOverlay: '해상 훈련' }, expect: '강조텍스트', expectSellpot: 'info_text_highlight' },
+    { name: '[신규] 대비수치: 작전명 + 범위', scene: { id: 2, narration: '이 작전의 명칭은 이코노믹 퓨리였고 그 범위는 호르무즈 해협 전역이었습니다.', textOverlay: '작전 정보' }, expect: '대비수치', expectSellpot: 'dual_stat_vertical' },
+    { name: '[신규] 말풍선: 일반 인용', scene: { id: 3, narration: '그는 "이번이 마지막 기회다"라고 말했다.', textOverlay: '' }, expect: '말풍선', expectSellpot: 'speech_bubble' },
+    { name: '[신규] 말풍선(네온): 긴급 인용', scene: { id: 4, narration: '사령관은 위험 신호를 포착하고 "즉시 철수하라"고 외쳤다.', textOverlay: '' }, expect: '말풍선(네온)', expectSellpot: 'speech_bubble_neon' },
+    { name: '[신규] 챕터구분: "1부"', scene: { id: 5, narration: '1부 이란의 반격이 시작되다.', textOverlay: '이란의 반격' }, expect: '챕터구분', expectSellpot: 'chapter_divider' },
+    { name: '[신규] 챕터구분: CHAPTER', scene: { id: 6, narration: 'CHAPTER 2 몽골의 선택', textOverlay: '' }, expect: '챕터구분', expectSellpot: 'chapter_divider' },
+    { name: '[분기] 막대차트: 수치 비교 있음', scene: { id: 7, narration: '석탄, 구리, 금, 우라늄이 각각 매장량 최대 순위를 기록했다.', textOverlay: '자원' }, expect: '막대차트', expectSellpot: 'bar_chart_comparison' },
+    { name: '[분기] 불릿리스트: 단순 나열', scene: { id: 8, narration: '석탄, 구리, 금, 우라늄 네 가지 지하자원이 매장돼 있습니다.', textOverlay: '자원' }, expect: '불릿리스트', expectSellpot: 'text_bullet_reveal' },
+    { name: '[회귀] 도넛: 50%+', scene: { id: 9, narration: '전체 수입의 70%가 중국으로 향했습니다.', textOverlay: '70%' }, expect: '도넛차트', expectSellpot: 'pie_donut' },
+    { name: '[회귀] 도넛: 복수 %', scene: { id: 10, narration: '30%는 러시아, 40%는 중국으로 흘러갔다.', textOverlay: '비율' }, expect: '도넛차트', expectSellpot: 'pie_donut' },
+    { name: '[회귀] 수치카드: 50%-', scene: { id: 11, narration: '빈곤율이 27%에 머물렀습니다.', textOverlay: '빈곤' }, expect: '수치카드', expectSellpot: 'single_stat_card' },
+    { name: '[회귀] VS대결: 이란 vs 미국', scene: { id: 12, narration: '이란의 미사일과 미국의 항공모함이 맞섰다.', textOverlay: 'VS' }, expect: 'VS대결', expectSellpot: 'versus_stat' },
+    { name: '[회귀] 타임라인: 3+ 연도', scene: { id: 13, narration: '2015년 협정 체결, 2018년 탈퇴, 2020년 갈등 재점화.', textOverlay: '연대기' }, expect: '타임라인', expectSellpot: 'timeline_horizontal' },
+    { name: '[회귀] 증감수치: 급락+수치', scene: { id: 14, narration: '유가가 급락하며 절반 수준으로 주저앉았다.', textOverlay: '유가' }, expect: '증감수치', expectSellpot: 'stat_change' },
+    { name: '[회귀] 랭킹: 복수 순위', scene: { id: 15, narration: '1위 사우디, 2위 러시아, 3위 이란 순이었다.', textOverlay: '랭킹' }, expect: '랭킹', expectSellpot: 'ranking_list' },
+    { name: '[회귀] 전체숫자: 340만 명', scene: { id: 16, narration: '난민 340만 명이 발생했다.', textOverlay: '340만' }, expect: '전체숫자', expectSellpot: 'fullscreen_number' },
+    { name: '[회귀] none: 연결 문장', scene: { id: 17, narration: '그래서 상황이 계속 이어졌습니다. 그 뒤로도 변함이 없었죠.', textOverlay: '' }, expect: 'none', expectSellpot: null },
+    { name: '[회귀] 헤드라인: 은유', scene: { id: 18, narration: '미국은 이란의 목줄을 틀어쥐었다.', textOverlay: '목줄' }, expect: '헤드라인', expectSellpot: 'text_headline' },
+];
+
+let pass = 0, fail = 0;
+log('========== 추천 로직 테스트 ==========\n');
+for (const c of cases) {
+    const rec = _recommendOverlay28(c.scene);
+    const sellpot = rec.type === 'none' ? null : (_OVERLAY_KO_TO_TYPE[rec.type] || 'text_headline');
+    const typeOK = rec.type === c.expect;
+    const sellpotOK = sellpot === c.expectSellpot;
+    const ok = typeOK && sellpotOK;
+    if (ok) pass++; else fail++;
+    log((ok ? 'OK ' : 'FAIL ') + c.name);
+    log('   기대: ' + c.expect + (c.expectSellpot ? ' → ' + c.expectSellpot : ''));
+    log('   실제: ' + rec.type + (sellpot ? ' → ' + sellpot : ' (none)'));
+    if (rec.reason) log('   이유: ' + rec.reason);
+    log('');
+}
+log('\n결과: ' + pass + ' pass / ' + fail + ' fail / ' + cases.length + ' total\n');
+
+log('\n========== 매핑 검증 ==========');
+const pairs = {
+    '헤드라인': 'text_headline',
+    '강조텍스트': 'info_text_highlight',
+    '대비수치': 'dual_stat_vertical',
+    '말풍선': 'speech_bubble',
+    '말풍선(네온)': 'speech_bubble_neon',
+    '말풍선(손글씨)': 'speech_bubble_sketch',
+    '말풍선(그라데이션)': 'speech_bubble_gradient',
+    '챕터구분': 'chapter_divider',
+    '네임택': 'name_tag',
+    'VS대결': 'versus_stat',
+};
+for (const [ko, expected] of Object.entries(pairs)) {
+    const actual = _OVERLAY_KO_TO_TYPE[ko];
+    log((actual === expected ? 'OK ' : 'FAIL ') + ko + ' → ' + actual);
+}
+
+document.title = 'DONE_' + pass + '_' + fail;
+</script>
+</body></html>
