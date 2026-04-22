@@ -5701,6 +5701,52 @@ ${script}
                     }
                 });
 
+                // 🎬 상징·은유 장면 감지 + 그록 영상화 태깅 + 영상 프롬프트 생성
+                // 상징: 체스·메스·유리 등 비유 소재. 역사·지도·인포그래픽 아닐 때만.
+                const SYMBOLIC_STRONG = /체스|메스|수술|유리|도미노|저울|뇌|그물|은유|비유|힘줄|톱질|사슬|쇠사슬|도장|저격|화살|깨진|부서진|금이|갈라|톱|바늘|매듭|사다리|기둥|열쇠|자물쇠|방패|가면|거울|손금|박힌 못|씨앗|뿌리|목줄|낚싯대/;
+                // 이동 지도 힌트 (지도 장면 중 path 애니메이션 필요)
+                const MOVING_MAP_HINT = /경로|이동|흘러|향하|연결|→|지나가|통과|가로질|거쳐|돌아|향해|따라|단계/;
+
+                jsonObj.scenes.forEach(s => {
+                    if (s.bgSource !== 'ai') return;
+                    const narr = s.narration || '';
+                    const prompt = s.aiPrompt || '';
+
+                    // 상징 감지 (다른 카테고리 아닐 때만)
+                    if (!s.isHistoricalScene && !s.isMapScene && !s.isInfographicScene) {
+                        if (SYMBOLIC_STRONG.test(narr) || SYMBOLIC_STRONG.test(prompt)) {
+                            s.isSymbolicScene = true;
+                        }
+                    }
+                    // 지도 이동 여부
+                    if (s.isMapScene && MOVING_MAP_HINT.test(narr)) {
+                        s.isMovingMap = true;
+                    }
+
+                    // 그록 영상화 필요?
+                    // - 역사 재현
+                    // - 지도 (이동 느낌 필요)
+                    // - 상징·은유
+                    s.needsGrokVideo = !!(s.isHistoricalScene || s.isMovingMap || s.isSymbolicScene);
+
+                    if (!s.needsGrokVideo) return;
+
+                    // 길이 추천
+                    // - 상징: 6초 (짧고 임팩트)
+                    // - 역사·지도 이동: 10초 (몰입·path 전개 시간)
+                    if (s.isSymbolicScene) s.grokVideoDuration = 6;
+                    else s.grokVideoDuration = 10;
+
+                    // 영상 프롬프트 생성
+                    if (s.isHistoricalScene) {
+                        s.grokVideoPrompt = 'Subtle historical scene motion. Characters perform small natural actions (looking up from work, gesturing, breathing, subtle head turn). Environmental motion: candlelight flickers, dust motes drift through light beams, fabric moves with breath. Camera slowly pushes in. Cinematic, grounded, NO sudden movement. ' + s.grokVideoDuration + ' seconds.';
+                    } else if (s.isMovingMap) {
+                        s.grokVideoPrompt = 'Animated glowing arrow or path draws smoothly across the map, connecting locations in sequence. Each location label fades in as the path reaches it. Subtle parallax on the map background. Clean, informative motion, NO sudden movement. ' + s.grokVideoDuration + ' seconds.';
+                    } else if (s.isSymbolicScene) {
+                        s.grokVideoPrompt = 'The central symbolic object performs its key action slowly and deliberately (chess piece moves, scalpel cuts, glass cracks, scale tips, etc.). Background stays still. Color pulse or subtle glow emphasizes the moment of action. Camera holds steady. Dramatic but restrained. ' + s.grokVideoDuration + ' seconds.';
+                    }
+                });
+
                 // 🎭 캐릭터 자동 감지 fallback — Gemini가 needCharacter를 누락한 경우 narration에서 인물명 감지
                 const PERSON_NAMES = /트럼프|바이든|푸틴|시진핑|네타냐후|하메네이|젤렌스키|마크롱|숄츠|스타머|모디|김정은|윤석열|문재인|오바마|부시|클린턴|레이건|시리자|에르도안|MBS|빈살만|갈리바프|무니르|밴스|머스크|엘론머스크|베조스|저커버그|키신저|볼턴|폼페이오/;
                 const COUNTRY_CONFRONTATION = /대립|전쟁|충돌|봉쇄|제재|협상|회담|정상회담|동맹|적대|침공|공습|폭격|휴전/;
@@ -5769,6 +5815,8 @@ ${script}
                         overlayUpgrade,
                         isMapScene, mapLabels,
                         isHistoricalScene, isInfographicScene,
+                        isSymbolicScene, isMovingMap,
+                        needsGrokVideo, grokVideoDuration, grokVideoPrompt,
                         isHistoricalMontage, montageElements, montageCaption, montageStyle,
                         // 셀팟이 무시하는 필드 (dead weight)
                         bgQueryAlts, transition, bgmMood, codeGenHint,
@@ -6448,16 +6496,28 @@ ${script}
                 return;
             }
             sec.style.display = '';
+            const grokVideoCount = aiScenes.filter(s => s.needsGrokVideo).length;
             let text = '# Genspark 일괄 이미지 생성 요청\n\n';
             text += '아래는 총 ' + aiScenes.length + '개의 이미지 프롬프트입니다. 각 블록을 순서대로 이미지로 생성해주세요.\n';
             text += '각 블록의 맨 앞 "### N번 장면" 라벨은 제가 이미지를 구분하기 위한 식별용입니다.\n';
             text += '**절대 이 번호 라벨을 이미지에 렌더링하지 마세요.** 라벨 다음 줄부터가 실제 이미지 프롬프트입니다.\n\n';
+            if (grokVideoCount > 0) {
+                text += '🎬 이 중 **' + grokVideoCount + '개**는 그록에 이미지 업로드 후 영상화가 필요합니다. 각 해당 블록에 🎬 영상 프롬프트가 함께 있습니다.\n\n';
+            }
             text += '---\n\n';
             aiScenes.forEach(s => {
                 // 한글 강제 + 브랜드명 제거 후처리 (다른 섹션과 통일)
                 const processed = _enforceKoreanInAiPrompt(_stripBrandNames(s.aiPrompt), s);
                 text += '### ' + s.id + '번 장면\n';
                 text += processed + '\n\n';
+                if (s.needsGrokVideo && s.grokVideoPrompt) {
+                    const label = s.isHistoricalScene ? '역사 재현'
+                                : s.isMovingMap ? '지도 이동'
+                                : s.isSymbolicScene ? '상징·은유'
+                                : '영상화';
+                    text += '🎬 **그록 영상화 (' + label + ' · ' + s.grokVideoDuration + '초):**\n';
+                    text += s.grokVideoPrompt + '\n\n';
+                }
                 text += '---\n\n';
             });
             out.value = text.trim();
