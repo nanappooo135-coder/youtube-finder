@@ -5544,8 +5544,8 @@ ${script}
                     throw new Error('scenes 배열이 없습니다.');
                 }
 
-                // 실사 필요 장면 별도 저장
-                const realScenes = jsonObj.scenes.filter(s => s.needRealImage === true);
+                // 실사 필요 장면 별도 저장 (자동 교정 후 재계산)
+                let realScenes = jsonObj.scenes.filter(s => s.needRealImage === true);
 
                 // GIF 교체 가능 장면 (bgSource=ai + gifAltKeyword 존재)
                 const gifAltScenes = jsonObj.scenes.filter(s => s.bgSource === 'ai' && s.gifAltKeyword);
@@ -5711,6 +5711,81 @@ ${script}
                     }
                 });
 
+                // ═══ 🤖 자동 교정 로직 ═══
+                // A. GIF 과다 → 감정 키워드 없으면 stock으로 변경
+                const EMOTION_STRONG = /충격|놀람|놀란|헉|어이없|웃긴|황당|충격적|무서운|기가 막|경악|분노|빡치|기쁨|슬픔|좌절|한숨|쉿|조용|긴장|리액션|벙쪘|당황|멍때|얼었|깜놀/;
+                jsonObj.scenes.forEach(s => {
+                    if (s.bgSource !== 'gif') return;
+                    const narr = s.narration || '';
+                    // 조건: 나레이션이 25자 초과 OR 감정 키워드 없음 → stock으로 교정
+                    if (narr.length > 25 || !EMOTION_STRONG.test(narr)) {
+                        s.bgSource = 'stock';
+                        s.autoFixedFromGif = true;
+                    }
+                });
+
+                // B. 무기·군함·군사 장비 → 자동 실사 태그 (AI보다 DVIDS 퍼블릭 도메인이 나음)
+                const WEAPON_MILITARY_STRONG = /스프루언스|구축함|함포|MK\s*45|포세이돈|P-8|해병.*헬기|헬기.*해병|항공모함|수직발사관|VLS|이지스|특수부대|상륙함|트리폴리|미\s*해군|해병원정대|공중급유기|무장\s*대기|드라카\s*함|함교/;
+                function _generateWeaponSearchKeyword(narr) {
+                    if (/스프루언스/.test(narr)) return 'USS Spruance DDG-111 destroyer';
+                    if (/MK\s*45|함포/.test(narr)) return 'MK 45 5 inch naval gun firing';
+                    if (/포세이돈|P-8/.test(narr)) return 'P-8 Poseidon maritime patrol aircraft';
+                    if (/트리폴리|상륙함/.test(narr)) return 'USS Tripoli LHA-7 amphibious assault ship';
+                    if (/해병.*헬기|헬기.*해병/.test(narr)) return 'CH-53E Super Stallion US Marines';
+                    if (/수직발사관|VLS/.test(narr)) return 'Mk 41 vertical launch system VLS destroyer';
+                    if (/이지스|구축함|함교/.test(narr)) return 'Arleigh Burke class destroyer bridge';
+                    if (/공중급유기/.test(narr)) return 'KC-135 Stratotanker aerial refueling';
+                    if (/항공모함/.test(narr)) return 'US Navy aircraft carrier';
+                    return 'US Navy warship DVIDS';
+                }
+                jsonObj.scenes.forEach(s => {
+                    if (s.bgSource !== 'ai') return; // stock은 놔둠
+                    if (s.isSymbolicScene || s.isInfographicScene || s.isHistoricalScene) return; // 상징·인포·역사는 그대로
+                    const narr = s.narration || '';
+                    if (!WEAPON_MILITARY_STRONG.test(narr)) return;
+                    // 실사로 전환
+                    s.bgSource = 'real';
+                    s.needRealImage = true;
+                    s.realSearchKeyword = _generateWeaponSearchKeyword(narr);
+                    s.autoFixedToReal = true;
+                    // 그록 영상화 태그 제거 (실사는 영상화 X)
+                    s.needsGrokVideo = false;
+                    delete s.grokVideoPrompt;
+                    delete s.grokVideoDuration;
+                });
+
+                // C. 인접 장면 자동 병합 (기존 _findMergeCandidates 재사용)
+                const enableAutoMerge = true; // 기본 on
+                let autoMergedCount = 0;
+                if (enableAutoMerge && typeof _findMergeCandidates === 'function') {
+                    const groups = _findMergeCandidates(jsonObj.scenes);
+                    const toSkip = new Set();
+                    for (const group of groups) {
+                        const first = group[0];
+                        // 나레이션 합침 (공백으로 연결)
+                        first.narration = group.map(gs => gs.narration || '').filter(Boolean).join(' ');
+                        // 합쳐진 id 기록 (디버그·추적용)
+                        first.mergedFromIds = group.slice(1).map(gs => gs.id);
+                        // 효과음은 가장 임팩트 있는 첫 것 유지
+                        // 나머지는 버림 마킹
+                        for (let i = 1; i < group.length; i++) {
+                            toSkip.add(group[i].id);
+                        }
+                        autoMergedCount += group.length - 1;
+                    }
+                    if (toSkip.size > 0) {
+                        jsonObj.scenes = jsonObj.scenes.filter(s => !toSkip.has(s.id));
+                    }
+                }
+                window._autoFixStats = {
+                    gifFixed: jsonObj.scenes.filter(s => s.autoFixedFromGif).length,
+                    realFixed: jsonObj.scenes.filter(s => s.autoFixedToReal).length,
+                    merged: autoMergedCount
+                };
+                // 자동 교정 반영된 스탯 재계산
+                realScenes = jsonObj.scenes.filter(s => s.needRealImage === true);
+                // ═══ 자동 교정 끝 ═══
+
                 // 셀팟에 넣을 JSON은 미지원 필드 전부 제거 (셀팟 AI 확인 완료)
                 // ❌ 셀팟이 무시하는 필드: bgQueryAlts, transition, textPosition(scene),
                 //    needRealImage, needLogo, isHistoricalMontage, bgmMood, codeGenHint,
@@ -5726,6 +5801,7 @@ ${script}
                         isHistoricalScene, isInfographicScene,
                         isSymbolicScene, isMovingMap,
                         needsGrokVideo, grokVideoDuration, grokVideoPrompt,
+                        autoFixedFromGif, autoFixedToReal, mergedFromIds,
                         isHistoricalMontage, montageElements, montageCaption, montageStyle,
                         // 셀팟이 무시하는 필드 (dead weight)
                         bgQueryAlts, transition, bgmMood, codeGenHint,
@@ -5801,10 +5877,20 @@ ${script}
                         + '</div>';
                 }
 
+                const autoFix = window._autoFixStats || { gifFixed: 0, realFixed: 0, merged: 0 };
+                let autoFixBanner = '';
+                if (autoFix.gifFixed > 0 || autoFix.realFixed > 0 || autoFix.merged > 0) {
+                    const fixes = [];
+                    if (autoFix.merged > 0) fixes.push('🔗 장면 병합 <strong>' + autoFix.merged + '개</strong>');
+                    if (autoFix.gifFixed > 0) fixes.push('🎞️→📹 GIF→Stock <strong>' + autoFix.gifFixed + '개</strong>');
+                    if (autoFix.realFixed > 0) fixes.push('🎨→📷 AI→실사 <strong>' + autoFix.realFixed + '개</strong>');
+                    autoFixBanner = '<div style="padding:8px 12px;background:#e6fcf5;border:2px solid #20c997;border-radius:6px;margin-bottom:10px;font-size:0.82rem;color:#087f5b;">🤖 자동 교정 적용: ' + fixes.join(' · ') + '</div>';
+                }
                 document.getElementById('jsonSummary').innerHTML = `
                     <div style="margin-bottom:8px;">${modelBadge}</div>
                     ${warnBanner}
                     ${durationBanner}
+                    ${autoFixBanner}
                     <strong>총 ${total}개 장면 · ⏱️ ${durationStr}</strong><br>
                     <span style="color:#0066cc;">📹 stock ${counts.stock}개 (${pct('stock')}%)</span> ·
                     <span style="color:#cc6600;">🎞️ gif ${counts.gif}개 (${pct('gif')}%)</span> ·
