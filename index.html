@@ -5664,11 +5664,42 @@ ${script}
                 const MAP_STYLE_PREFIX = 'Modern infographic illustration style, warm cream beige background, soft pastel color palette with warm earth tones and muted blues, clean flat design, subtle paper texture, readable bold Korean labels in dark text, sophisticated editorial documentary aesthetic, professional and friendly, NOT dark, NOT gloomy, NOT photo-realistic, NOT childish cartoon, NO brand names, NO logos, NO watermarks, NO channel names, cinematic 16:9. ';
                 jsonObj.scenes.forEach(s => {
                     if (s.isMapScene !== true || typeof s.aiPrompt !== 'string') return;
-                    if (!s.aiPrompt.startsWith('Paper cut collage')) {
+                    if (!s.aiPrompt.startsWith('Paper cut collage') && !s.aiPrompt.startsWith('Modern infographic illustration style')) {
                         s.aiPrompt = MAP_STYLE_PREFIX + s.aiPrompt;
                     }
                 });
                 const mapScenes = jsonObj.scenes.filter(s => s.isMapScene === true);
+
+                // 🟠 역사 장면 자동 감지 (연도·왕조·역사 인물·시대명)
+                // 지도 아닐 때만 태그. 그림은 어두운 매트 페인팅(Dishonored/Frostpunk 톤) 스타일로.
+                const HISTORICAL_STRONG = /\d{3,4}년(?!대)|19세기|20세기|18세기|17세기|16세기|15세기|중세|고대|조선|고려|신라|백제|고구려|로마제국|명나라|청나라|한나라|당나라|원나라|송나라|에도|메이지|다이쇼|산업혁명|대공황|세계대전|한국전쟁|베트남전|냉전|석유파동|브레튼우즈|금본위|아편전쟁|나폴레옹|링컨|처칠|루즈벨트|스탈린|세종|정조|흥선대원군|이성계|고종|광해군|영조/;
+                const HISTORICAL_STYLE_PREFIX = 'Semi-realistic dark painterly digital illustration, style of muted concept art for atmospheric historical games (Dishonored, The Order 1886, Frostpunk, A Plague Tale). NOT fantasy, NOT anime, NOT photorealistic. Muted color palette, visible brushwork and matte painting texture on all surfaces, realistic human proportions and serious documentary-like facial expressions, deep teal and umber shadows, grounded historical atmosphere, no magical glow, no high-saturation fantasy colors, painterly matte finish, historically accurate costume and props, cinematic 16:9. ';
+                jsonObj.scenes.forEach(s => {
+                    if (s.isMapScene === true) return;
+                    if (s.bgSource !== 'ai' || typeof s.aiPrompt !== 'string') return;
+                    const narr = s.narration || '';
+                    if (!HISTORICAL_STRONG.test(narr)) return;
+                    s.isHistoricalScene = true;
+                    if (!s.aiPrompt.startsWith('Semi-realistic dark painterly')) {
+                        s.aiPrompt = HISTORICAL_STYLE_PREFIX + s.aiPrompt;
+                    }
+                });
+
+                // 🟢 인포그래픽 장면 자동 감지 (수치·퍼센트·비교·흐름)
+                // 지도·역사 아닐 때만 태그. 그림은 파스텔 만화 플랫 벡터 인포그래픽.
+                const INFOGRAPHIC_STRONG = /\d+\s*%|\d+\s*퍼센트|\d+배|\d+\s*분의\s*\d+|\d+\s*명\s*중\s*\d+|비교해보면|구조를|메커니즘|흐름도|단계로|\bvs\b|대비하면/;
+                const INFOGRAPHIC_STYLE_PREFIX = 'Flat 2D vector infographic illustration in Korean educational YouTube channel style. Cream yellow background (#FAF3D0) with subtle crumpled paper texture. Cartoon icons with thick black outlines. Limited pastel palette (cream, red, purple, teal, navy). Bold Korean gothic sans-serif text. Educational documentary tone. NOT photorealistic, NOT anime, NOT childish cartoon. Cinematic 16:9. ';
+                jsonObj.scenes.forEach(s => {
+                    if (s.isMapScene === true) return;
+                    if (s.isHistoricalScene === true) return;
+                    if (s.bgSource !== 'ai' || typeof s.aiPrompt !== 'string') return;
+                    const narr = s.narration || '';
+                    if (!INFOGRAPHIC_STRONG.test(narr)) return;
+                    s.isInfographicScene = true;
+                    if (!s.aiPrompt.startsWith('Flat 2D vector infographic')) {
+                        s.aiPrompt = INFOGRAPHIC_STYLE_PREFIX + s.aiPrompt;
+                    }
+                });
 
                 // 🎭 캐릭터 자동 감지 fallback — Gemini가 needCharacter를 누락한 경우 narration에서 인물명 감지
                 const PERSON_NAMES = /트럼프|바이든|푸틴|시진핑|네타냐후|하메네이|젤렌스키|마크롱|숄츠|스타머|모디|김정은|윤석열|문재인|오바마|부시|클린턴|레이건|시리자|에르도안|MBS|빈살만|갈리바프|무니르|밴스|머스크|엘론머스크|베조스|저커버그|키신저|볼턴|폼페이오/;
@@ -5737,6 +5768,7 @@ ${script}
                         needLogo, logoName, logoPosition,
                         overlayUpgrade,
                         isMapScene, mapLabels,
+                        isHistoricalScene, isInfographicScene,
                         isHistoricalMontage, montageElements, montageCaption, montageStyle,
                         // 셀팟이 무시하는 필드 (dead weight)
                         bgQueryAlts, transition, bgmMood, codeGenHint,
