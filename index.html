@@ -2219,75 +2219,6 @@
                     </div>
                 </div>
 
-                <div class="section" id="imageResizeSection">
-                    <div class="section-title">🖼️ 이미지 리사이즈 도구 (Lambda 에러 방지)</div>
-                    <div class="section-content">
-                        <p style="font-size:0.85rem;color:#666;margin-bottom:12px;">
-                            AI 이미지 업로드 전 <strong style="color:#dc3545;">반드시 리사이즈</strong>하세요. 셀팟 Lambda는 고해상도 파일을 못 읽어 렌더링 에러가 납니다.
-                            <br>아래에 이미지 드래그 → <strong>자동으로 1920×1080 JPG 변환 → 다운로드</strong>. 외부 사이트 갈 필요 없음.
-                        </p>
-                        <div id="resizeDropZone" style="border:2px dashed #1c7ed6;border-radius:8px;padding:40px 20px;text-align:center;background:#f8f9fa;cursor:pointer;transition:all 0.2s;">
-                            <div style="font-size:3rem;margin-bottom:8px;">📥</div>
-                            <div style="font-weight:700;color:#1c7ed6;font-size:1rem;margin-bottom:4px;">여기에 이미지 드래그 (여러 개 가능)</div>
-                            <div style="font-size:0.8rem;color:#666;">또는 클릭해서 파일 선택</div>
-                            <input type="file" id="resizeFileInput" accept="image/*" multiple style="display:none;"/>
-                        </div>
-                        <div style="display:flex;gap:12px;align-items:center;margin-top:10px;flex-wrap:wrap;">
-                            <label style="font-size:0.82rem;display:flex;align-items:center;gap:6px;">
-                                최대 가로:
-                                <input type="number" id="resizeMaxWidth" value="1920" min="800" max="3840" style="width:80px;padding:4px 8px;border:1px solid #ced4da;border-radius:4px;"/>
-                                px
-                            </label>
-                            <label style="font-size:0.82rem;display:flex;align-items:center;gap:6px;">
-                                포맷:
-                                <select id="resizeFormat" style="padding:4px 8px;border:1px solid #ced4da;border-radius:4px;font-size:0.82rem;">
-                                    <option value="image/jpeg">JPG (권장)</option>
-                                    <option value="image/png">PNG (Lambda 에러시)</option>
-                                    <option value="image/webp">WebP (실험)</option>
-                                </select>
-                            </label>
-                            <label style="font-size:0.82rem;display:flex;align-items:center;gap:6px;" id="resizeQualityLabel">
-                                품질:
-                                <input type="range" id="resizeQuality" value="85" min="50" max="95" style="width:100px;"/>
-                                <span id="resizeQualityVal">85</span>%
-                            </label>
-                            <label style="font-size:0.82rem;display:flex;align-items:center;gap:4px;cursor:pointer;">
-                                <input type="checkbox" id="resizeAutoDownload" checked/>
-                                자동 다운로드
-                            </label>
-                            <button class="search-btn" onclick="_clearResizeResults()" style="margin-left:auto;padding:4px 12px;font-size:0.8rem;background:#6c757d;border-color:#6c757d;">결과 초기화</button>
-                        </div>
-                        <div style="margin-top:6px;font-size:0.75rem;color:#666;line-height:1.5;">
-                            💡 <strong>JPG</strong>가 기본 권장. Lambda 렌더링 에러 지속시 <strong>PNG</strong>로 시도 (파일 크기 큼).
-                        </div>
-                        <div id="resizeResults" style="margin-top:12px;display:flex;flex-direction:column;gap:6px;"></div>
-                    </div>
-                </div>
-
-                <div class="section" id="jsonRealSection" style="display:none;">
-                    <div class="section-title">2️⃣ 실사 이미지 교체 목록</div>
-                    <div class="section-content">
-                        <p style="font-size:0.85rem;color:#666;margin-bottom:12px;">
-                            셀팟에서 영상 생성 후, 아래 장면들만 구글에서 실제 사진으로 교체하세요.
-                            키워드 복사 → 구글 이미지 검색 → 다운 → 셀팟에서 해당 장면 배경 교체.
-                        </p>
-                        <div id="jsonRealList" style="margin-bottom:12px;"></div>
-                        <button class="search-btn" onclick="copyRealImageList(this)" style="width:100%;background:#fd7e14;border-color:#fd7e14;">📋 실사 목록 텍스트 복사</button>
-                    </div>
-                </div>
-
-                <div class="section" id="jsonGifAltSection" style="display:none;">
-                    <div class="section-title">3️⃣ GIF 교체 참고 목록 (Plan B)</div>
-                    <div class="section-content">
-                        <p style="font-size:0.85rem;color:#666;margin-bottom:12px;">
-                            AI 이미지가 마음에 안 드는 장면은 아래 키워드로 Klipy에서 GIF 검색해 교체할 수 있습니다.
-                            <strong style="color:#6f42c1;">선택 사항</strong>이므로 AI 이미지 만족스러우면 건너뛰세요.
-                        </p>
-                        <div id="jsonGifAltList" style="margin-bottom:12px;"></div>
-                        <button class="search-btn" onclick="copyGifAltList(this)" style="width:100%;background:#6f42c1;border-color:#6f42c1;">📋 GIF 목록 텍스트 복사</button>
-                    </div>
-                </div>
-
                 <div class="section" id="jsonCharacterSection" style="display:none;">
                     <div class="section-title">4️⃣ 캐릭터 수동 삽입 목록 (지식세포 스타일)</div>
                     <div class="section-content">
@@ -2321,18 +2252,6 @@
                         </p>
                         <button class="search-btn" onclick="copyAiPromptsList(this)" style="width:100%;margin-bottom:12px;background:#fd7e14;border-color:#fd7e14;">📋 AI 프롬프트 전체 복사 (젠스파크용)</button>
                         <textarea id="jsonAiPromptsOutput" readonly style="width:100%;min-height:200px;padding:12px;border:2px solid #e0e0e0;border-radius:8px;font-size:0.8rem;font-family:'Courier New',monospace;line-height:1.5;background:#1e1e1e;color:#d4d4d4;resize:vertical;"></textarea>
-                    </div>
-                </div>
-
-                <div class="section" id="jsonFreepikSection" style="display:none;">
-                    <div class="section-title">8️⃣ Freepik 검색어 추천 (셀팟 캐릭터 탭용)</div>
-                    <div class="section-content">
-                        <p style="font-size:0.85rem;color:#666;margin-bottom:12px;">
-                            국기·심볼·아이콘이 필요한 장면의 Freepik 검색어입니다.
-                            <strong style="color:#0dcaf0;">셀팟 캐릭터 탭 → Freepik 검색칸</strong>에 그대로 복붙하세요.
-                        </p>
-                        <div id="jsonFreepikList" style="margin-bottom:12px;"></div>
-                        <button class="search-btn" onclick="copyFreepikList(this)" style="width:100%;background:#0dcaf0;border-color:#0dcaf0;">📋 Freepik 검색어 전체 복사</button>
                     </div>
                 </div>
 
@@ -2372,18 +2291,6 @@
                     </div>
                 </div>
 
-                <div class="section" id="jsonLogoSection" style="display:none;">
-                    <div class="section-title">5️⃣ 브랜드 로고 자동 삽입 목록 (Logo.dev)</div>
-                    <div class="section-content">
-                        <p style="font-size:0.85rem;color:#666;margin-bottom:12px;">
-                            기업명 등장 장면은 Logo.dev가 자동으로 로고를 찾아줍니다.
-                            <strong style="color:#0d6efd;">배경 영상은 그대로 두고, 로고만 코너에 작은 오버레이</strong>로 들어갑니다.
-                            셀팟 AI에게 아래 목록을 전달하세요.
-                        </p>
-                        <div id="jsonLogoList" style="margin-bottom:12px;"></div>
-                        <button class="search-btn" onclick="copyLogoList(this)" style="width:100%;background:#0d6efd;border-color:#0d6efd;">📋 로고 목록 셀팟 명령어 복사</button>
-                    </div>
-                </div>
             </div>
 
         </div><!-- /process-json -->
@@ -5911,27 +5818,14 @@ ${script}
 
                 document.getElementById('jsonOutput').value = window._sellpotJsonData;
 
-                // 실사 목록 렌더링
-                _renderRealImageList(realScenes);
-
-                // GIF 교체 참고 목록 렌더링
-                _renderGifAltList(gifAltScenes);
-
                 // 캐릭터 수동 삽입 목록 렌더링
                 _renderCharacterList(characterScenes);
-
-                // 브랜드 로고 목록 렌더링
-                _renderLogoList(logoScenes);
 
                 // ⚛️ Remotion 코드 힌트 렌더 (필터는 위에서 완료)
                 _renderCodeGenHintList(codeGenHintScenes);
 
                 // AI 이미지 프롬프트 모음 (젠스파크용)
                 _renderAiPromptsList(jsonObj.scenes);
-
-                // Freepik 검색어 추천
-                const freepikScenes = jsonObj.scenes.filter(s => Array.isArray(s.freepikQueries) && s.freepikQueries.length > 0);
-                _renderFreepikList(freepikScenes);
 
                 // 효과음 검색어 추천
                 const sfxScenes = jsonObj.scenes.filter(s => Array.isArray(s.sfxKeywords) && s.sfxKeywords.length > 0);
@@ -7174,6 +7068,20 @@ ${sceneList}
                 rows += '</div>';
             }
             rows += '</div>';
+
+            // 🎬 그록 영상화 프롬프트 (AI 이미지 → 그록 image-to-video)
+            if (s.needsGrokVideo && s.grokVideoPrompt) {
+                const gvLabel = s.isHistoricalScene ? '역사 재현'
+                              : s.isMovingMap ? '지도 이동'
+                              : s.isSymbolicScene ? '상징·은유'
+                              : '영상화';
+                rows += '<div style="margin-top:6px;padding:8px 10px;background:#fff5f5;border-radius:6px;border:2px solid #e03131;">';
+                rows += '<div style="font-weight:700;font-size:0.78rem;color:#c92a2a;margin-bottom:4px;">🎬 그록 영상화 필요 <span style="background:#e03131;color:#fff;padding:1px 6px;border-radius:3px;font-size:0.7rem;margin-left:4px;">' + gvLabel + '</span> <span style="background:#fff;color:#c92a2a;border:1px solid #e03131;padding:1px 6px;border-radius:3px;font-size:0.7rem;margin-left:2px;">' + s.grokVideoDuration + '초</span></div>';
+                rows += '<div style="font-size:0.75rem;color:#495057;line-height:1.5;margin-bottom:4px;">' + _escapeHtml(s.grokVideoPrompt) + '</div>';
+                rows += '<button onclick="_copyText(' + "'" + _jsEscape(s.grokVideoPrompt) + "'" + ', this)" style="padding:3px 10px;font-size:0.72rem;border:1px solid #e03131;background:#fff;border-radius:3px;cursor:pointer;color:#c92a2a;font-weight:600;">📋 영상 프롬프트 복사</button>';
+                rows += '<div style="font-size:0.7rem;color:#868e96;margin-top:4px;">↳ 그록에 위 AI 이미지 업로드 → 이 프롬프트로 영상화 (' + s.grokVideoDuration + '초)</div>';
+                rows += '</div>';
+            }
 
             // 효과음
             if (s.sfxPrompt) {
