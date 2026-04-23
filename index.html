@@ -5714,6 +5714,23 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                     landmark: {
                         re: /백악관|크렘린|국회의사당|청와대|중앙은행|연방준비제도|Fed\s|IMF 본부|세계은행 본부|UN 본부|국방부 펜타곤/,
                         kw: ''  // 건물명 장면별 추출
+                    },
+                    // 2026-04-23 추가: 갱단·테러·사회 사건 (실제 뉴스 사진 존재)
+                    gangCrime: {
+                        re: /갱단|폭스트롯|MS-?13|야쿠자|마피아|총격 사건|폭탄 테러|납치 사건|암살 사건|카르텔|조직 폭력/,
+                        kw: 'news photo gang crime scene documentary'
+                    },
+                    socialScene: {
+                        re: /취약지역|빈민가|난민 캠프|난민촌|게토|슬럼|불법 거주|집단 폭력/,
+                        kw: 'documentary photo urban poverty immigration'
+                    },
+                    protestRally: {
+                        re: /시위대|촛불집회|항의 시위|대규모 시위|평화 행진|파업 현장|집회 현장/,
+                        kw: 'news photo protest rally street demonstration'
+                    },
+                    realPerson: {
+                        re: /뢰프벤|크리스테르손|라와 마지드|빈 살만|MBS|무함마드 빈 살만|젤렌스키|리시 수낙|마크롱|숄츠|메르켈 총리|폰데어라이엔/,
+                        kw: ''  // 인물명 장면별 추출
                     }
                 };
                 jsonObj.scenes.forEach(s => {
@@ -5752,7 +5769,7 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                         s.autoFlaggedReal = true;
                         if (!s.realSearchKeyword) {
                             // 나레이션에서 구체 키워드 추출 시도 (예: "스프루언스" → "USS Spruance")
-                            const specific = narr.match(/(스프루언스|알레이버크|니미츠|포드급|투스카|에버기븐|타이타닉|모스크바함|백악관|크렘린|청와대|국회의사당|F-?35|F-?22|토마호크|패트리엇)/);
+                            const specific = narr.match(/(스프루언스|알레이버크|니미츠|포드급|투스카|에버기븐|타이타닉|모스크바함|백악관|크렘린|청와대|국회의사당|F-?35|F-?22|토마호크|패트리엇|폭스트롯|뢰프벤|크리스테르손|라와 마지드|빈 살만|MBS|젤렌스키|마크롱|숄츠|메르켈|링케뷔|후스뷔|말뫼|스톡홀름)/);
                             if (specific) {
                                 const map = {
                                     '스프루언스': 'USS Spruance destroyer DDG',
@@ -5770,7 +5787,21 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                                     'F-35': 'F-35 Lightning II fighter DVIDS',
                                     'F-22': 'F-22 Raptor stealth fighter',
                                     '토마호크': 'Tomahawk cruise missile launch',
-                                    '패트리엇': 'Patriot missile system battery'
+                                    '패트리엇': 'Patriot missile system battery',
+                                    '폭스트롯': 'Foxtrot gang Sweden news photo',
+                                    '뢰프벤': 'Stefan Löfven Sweden Prime Minister',
+                                    '크리스테르손': 'Ulf Kristersson Sweden Prime Minister',
+                                    '라와 마지드': 'Rawa Majid Foxtrot gang leader',
+                                    '빈 살만': 'Mohammed bin Salman MBS Saudi Crown Prince',
+                                    'MBS': 'Mohammed bin Salman MBS Saudi Crown Prince',
+                                    '젤렌스키': 'Volodymyr Zelensky Ukraine President',
+                                    '마크롱': 'Emmanuel Macron France President',
+                                    '숄츠': 'Olaf Scholz Germany Chancellor',
+                                    '메르켈': 'Angela Merkel Germany Chancellor',
+                                    '링케뷔': 'Rinkeby Stockholm suburb Sweden',
+                                    '후스뷔': 'Husby Stockholm district Sweden',
+                                    '말뫼': 'Malmö Sweden city central station',
+                                    '스톡홀름': 'Stockholm Sweden capital'
                                 };
                                 s.realSearchKeyword = map[specific[0]] || matched.kw;
                             } else {
@@ -7090,8 +7121,12 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                 'japan':         /일본|도쿄|오사카|천황|메이지/g,
                 'iran':          /이란|테헤란|페르시아|호메이니/g,
                 'israel':        /이스라엘|예루살렘|네타냐후|팔레스타인/g,
-                'saudi arabia':  /사우디|리야드|무함마드/g,
-                'turkey':        /터키|이스탄불|오스만/g,
+                'saudi arabia':  /사우디|리야드|무함마드 빈 살만|MBS|네옴/g,
+                'turkey':        /튀르키예|터키|이스탄불|오스만|에르도안/g,
+                'sweden':        /스웨덴|스톡홀름|말뫼|뢰프벤|크리스테르손|링케뷔|후스뷔/g,
+                'denmark':       /덴마크|코펜하겐/g,
+                'norway':        /노르웨이|오슬로/g,
+                'finland':       /핀란드|헬싱키/g,
                 'egypt':         /이집트|카이로|파라오/g,
                 'india':         /인도|뉴델리|간디|모디/g,
                 'pakistan':      /파키스탄|이슬라마바드/g,
