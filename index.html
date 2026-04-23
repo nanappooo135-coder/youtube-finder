@@ -7711,12 +7711,21 @@ ${sceneList}
             // 우선순위 계층 (강한 순):
             //   1. needRealImage:true → 실사 무조건 1순위 (고유 장비·인물·건물)
             //   2. isMapScene/isDiagramScene/isInfographicScene/isListGridScene → AI 1순위
-            //   3. 그 외 → Gemini가 정한 bgSource 우대
+            //   3. 긴장 훅/분위기 전환 문장 → 스톡 우선 (AI가 다음 장면 스포)
+            //   4. 그 외 → Gemini가 정한 bgSource 우대
+
+            // 긴장 훅 감지: "보이지 않는·아무도 모르게·조용히·은밀히·물밑에서" 등 분위기 조성용
+            const isTensionHook = /(보이지 않는|안 보이는|아무도 모르|조용히|은밀히|물밑에서|숨어서|모르게 돌아가|뒤에서 돌아가|그림자 속|눈에 띄지 않|감지되지 않)/.test(narr);
+
             if (s.needRealImage === true) {
                 // 실사 필요 장면: real을 압도적 1순위로
                 scores.real = (scores.real || 0) + 20;
                 // 보조 2순위는 stock (실사가 없을 때 스톡으로 fallback)
                 scores.stock = (scores.stock || 0) + 5;
+            } else if (isTensionHook) {
+                // 긴장 훅: AI로 과도 설명 방지, 스톡 분위기 영상이 1순위
+                scores.stock = (scores.stock || 0) + 15;
+                scores.ai = (scores.ai || 0) + 3;
             } else if (s.isMapScene || s.isDiagramScene || s.isInfographicScene || s.isListGridScene || s.isSymbolicScene || s.isHistoricalScene) {
                 // 전용 AI 카테고리: ai가 1순위
                 scores.ai = (scores.ai || 0) + 15;
