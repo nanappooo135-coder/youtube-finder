@@ -2282,6 +2282,17 @@
                     </div>
                 </div>
 
+                <div class="section" id="jsonAiBatchSection" style="display:none;">
+                    <div class="section-title">🎨 AI 이미지 일괄 생성 장면 (1순위 AI)</div>
+                    <div class="section-content">
+                        <p style="font-size:0.85rem;color:#666;margin-bottom:12px;">
+                            1순위가 AI 이미지인 장면만 모았습니다. <strong style="color:#9333ea;">프리픽에 각 프롬프트 복붙 → 한 번에 다 생성 → 셀팟에 차례로 업로드</strong>하세요.
+                        </p>
+                        <div id="jsonAiBatchList" style="margin-bottom:12px;"></div>
+                        <button class="search-btn" onclick="copyAiBatchList(this)" style="width:100%;background:#9333ea;border-color:#9333ea;">📋 AI 프롬프트 전체 복사 (장면 번호 포함)</button>
+                    </div>
+                </div>
+
                 <div class="section" id="jsonMapSection" style="display:none;">
                     <div class="section-title">🗺️ 지도 장면 (AI + 한글 라벨)</div>
                     <div class="section-content">
@@ -6449,9 +6460,10 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                 const sfxScenes = jsonObj.scenes.filter(s => Array.isArray(s.sfxKeywords) && s.sfxKeywords.length > 0);
                 _renderSfxList(sfxScenes);
 
-                // 🗺️ 지도 / 🏛️ 몽타주 렌더 (필터는 위에서 완료)
+                // 🗺️ 지도 / 🏛️ 몽타주 / 🎨 AI 일괄 렌더 (필터는 위에서 완료)
                 _renderMapList(mapScenes);
                 _renderMontageList(montageScenes);
+                _renderAiBatchList(jsonObj.scenes);
 
                 // 🎬 장면별 작업 가이드 (jsonObj.scenes에 변환 후 적용)
                 _renderSceneGuide(jsonObj.scenes);
@@ -9778,6 +9790,82 @@ ${sceneList}
                 // 로고
                 if (s.needLogo && s.logoName) text += '🏢 로고: ' + s.logoName + '\n';
                 text += '\n';
+            });
+            safeCopy(text).then(() => {
+                const orig = btn.textContent;
+                btn.textContent = '✓ 복사됨!';
+                setTimeout(() => { btn.textContent = orig; }, 1500);
+            });
+        }
+
+        // 2026-04-23: AI 1순위 장면 일괄 생성 섹션
+        function _renderAiBatchList(allScenes) {
+            const sec = document.getElementById('jsonAiBatchSection');
+            const list = document.getElementById('jsonAiBatchList');
+            if (!sec || !list) return;
+            // 순위 1이 AI인 장면만 추출
+            const aiScenes = (allScenes || []).filter(s => {
+                if (typeof _rankImageSources !== 'function') return false;
+                const ranks = _rankImageSources(s);
+                return ranks && ranks[0] && ranks[0].type === 'ai';
+            });
+            if (aiScenes.length === 0) {
+                sec.style.display = 'none';
+                list.innerHTML = '';
+                return;
+            }
+            sec.style.display = '';
+            // 한글 강제 + 브랜드명 제거 후처리
+            const processed = aiScenes.map(s => ({
+                ...s,
+                aiPrompt: s.aiPrompt ? _enforceKoreanInAiPrompt(_stripBrandNames(s.aiPrompt), s) : ''
+            }));
+            window._sellpotAiBatchScenes = processed;
+
+            let html = '<div style="margin-bottom:10px;font-size:0.8rem;color:#6b21a8;"><strong>총 ' + processed.length + '개 장면</strong> — 프리픽에서 이 프롬프트들을 순서대로 생성하세요.</div>';
+            html += '<div style="display:flex;flex-direction:column;gap:10px;">';
+            processed.forEach(s => {
+                const summary = s.narration.length > 80 ? s.narration.substring(0, 80) + '...' : s.narration;
+                const prompt = s.aiPrompt || '(프롬프트 없음)';
+                // AI 카테고리 라벨
+                const cat = s.isMapScene ? '🗺️ 지도' :
+                            s.isInfographicScene ? '📊 인포그래픽' :
+                            s.isDiagramScene ? '🟫 다이어그램' :
+                            s.isListGridScene ? '🟠 나열 그리드' :
+                            s.isSymbolicScene ? '🎭 상징·은유' :
+                            s.isHistoricalScene ? '🏛️ 역사 재현' : '🎨 AI';
+                html += '<div style="padding:12px;background:#f3e8ff;border:1px solid #c084fc;border-radius:8px;">'
+                    + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'
+                    + '<span style="font-weight:700;color:#6b21a8;font-size:0.88rem;">🎨 장면 ' + s.id + ' <span style="color:#888;font-weight:400;font-size:0.75rem;">(' + cat + ')</span></span>'
+                    + '<button onclick="_copyText(' + "'" + _jsEscape(prompt) + "'" + ', this)" style="padding:4px 10px;font-size:0.72rem;background:#9333ea;color:#fff;border:none;border-radius:4px;cursor:pointer;">프롬프트 복사</button>'
+                    + '</div>'
+                    + '<div style="font-size:0.8rem;color:#333;margin-bottom:6px;">📝 ' + _escapeHtml(summary) + '</div>'
+                    + '<details style="margin-top:6px;"><summary style="cursor:pointer;font-size:0.75rem;color:#6b21a8;">프롬프트 전체 보기 ▼</summary>'
+                    + '<div style="font-size:0.75rem;color:#555;background:#fff;padding:8px;border-radius:6px;border:1px dashed #c084fc;white-space:pre-wrap;word-break:break-all;margin-top:4px;">' + _escapeHtml(prompt) + '</div>'
+                    + '</details>'
+                    + '</div>';
+            });
+            html += '</div>';
+            list.innerHTML = html;
+        }
+
+        function copyAiBatchList(btn) {
+            const scenes = window._sellpotAiBatchScenes || [];
+            if (scenes.length === 0) { alert('AI 1순위 장면이 없습니다.'); return; }
+            let text = '# 🎨 AI 이미지 일괄 생성 (프리픽용)\n\n';
+            text += '총 ' + scenes.length + '개 장면\n\n';
+            text += '═══════════════════════════════════\n\n';
+            scenes.forEach(s => {
+                const cat = s.isMapScene ? '🗺️ 지도' :
+                            s.isInfographicScene ? '📊 인포그래픽' :
+                            s.isDiagramScene ? '🟫 다이어그램' :
+                            s.isListGridScene ? '🟠 나열 그리드' :
+                            s.isSymbolicScene ? '🎭 상징·은유' :
+                            s.isHistoricalScene ? '🏛️ 역사 재현' : '🎨 AI';
+                text += '━━━ 장면 ' + s.id + ' (' + cat + ') ━━━\n';
+                text += '나레이션: ' + s.narration + '\n\n';
+                text += '프롬프트:\n' + (s.aiPrompt || '(없음)') + '\n\n';
+                text += '═══════════════════════════════════\n\n';
             });
             safeCopy(text).then(() => {
                 const orig = btn.textContent;
