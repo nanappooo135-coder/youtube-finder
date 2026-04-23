@@ -8838,38 +8838,37 @@ ${sceneList}
 
             // === 우선순위 7: 기본 제목·헤드라인 ===
 
-            // 극적 등장 키워드 → 타자기
+            // 2026-04-23: 오버레이 남발 방지 — 강한 신호 없으면 없음
+            // 과거: textOverlay만 있으면 헤드라인 자동 추가 → "과제 느낌" 부작용
+            // 현재: AI 이미지로 설명되는 장면엔 오버레이 생략. 아래 강한 조건만 통과.
+
+            // 극적 등장 (짧고 강한 임팩트) → 타자기
             if (narr.length < 15 && s.textOverlay && /!|극적|충격적/.test(narr + (s.textOverlay || ''))) {
                 return { category: '텍스트', type: '타자기', text: s.textOverlay, reason: '극적 등장' };
             }
 
-            // [13] 핵심 키워드 강조 — 은유·핵심 개념 키워드 (타이틀보다 먼저 잡아야 함)
-            if (s.textOverlay && s.textOverlay.length <= 15) {
+            // 핵심 은유 키워드 (시청자가 반드시 기억해야 할 개념)만 헤드라인
+            if (s.textOverlay && s.textOverlay.length <= 10) {
                 const hasKeyMetaphor = /씨를|목줄|근육|뿌리|출발선|사슬|봉쇄|격리|의존|마지막 기회|세대|대물림/.test(narr);
                 if (hasKeyMetaphor) {
-                    return { category: '텍스트', type: '헤드라인', text: s.textOverlay, reason: '핵심 키워드 강조' };
+                    return { category: '텍스트', type: '헤드라인', text: s.textOverlay, reason: '핵심 은유' };
                 }
             }
 
-            // 짧은 선언 (15자 이하 선언문) → 타이틀
-            if (narr.length <= 20 && s.textOverlay && s.textOverlay.length <= 12) {
-                return { category: '레이아웃', type: '타이틀', text: s.textOverlay, reason: '챕터 제목' };
-            }
-
-            // 짧은 나레이션 + textOverlay → 헤드라인 (폴백)
-            if (s.textOverlay && s.textOverlay.length <= 15 && narr.length <= 40) {
-                return { category: '텍스트', type: '헤드라인', text: s.textOverlay, reason: '짧은 장면 키워드' };
-            }
-
-            // [14] 구체 숫자+단위 (비율·배수·기간) — 헤드라인
+            // 구체 기간·배수 (놓치면 안 되는 핵심 수치)만 헤드라인
             const durationMatch = narr.match(/(\d+년(?:\s*동안|\s*넘게|\s*전)?)/);
             const multipleMatch = narr.match(/(\d+배|절반|반으로)/);
-            if ((durationMatch || multipleMatch) && s.textOverlay && s.textOverlay.length <= 12) {
-                return { category: '텍스트', type: '헤드라인', text: s.textOverlay, reason: '핵심 기간·배수' };
+            if ((durationMatch || multipleMatch) && s.textOverlay && s.textOverlay.length <= 10) {
+                return { category: '텍스트', type: '헤드라인', text: s.textOverlay, reason: '핵심 수치' };
             }
 
-            // 나머지 — 연결·설명 장면
-            return { type: 'none', reason: '일반 설명 — 오버레이 없이 전달 명확' };
+            // 챕터 시작 선언 (매우 짧은 선언문)만 타이틀 — 일반 문장은 제외
+            if (narr.length <= 12 && s.textOverlay && s.textOverlay.length <= 8 && !/[가-힣]{2}[요죠다이]$/.test(narr)) {
+                return { category: '레이아웃', type: '타이틀', text: s.textOverlay, reason: '챕터 선언' };
+            }
+
+            // 나머지 — 오버레이 없음 (나레이션+AI이미지로 충분)
+            return { type: 'none', reason: 'AI 이미지·스톡으로 전달 명확 (오버레이 불필요)' };
         }
 
         function _jsEscape(s) {
