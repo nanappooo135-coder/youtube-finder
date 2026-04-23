@@ -5693,6 +5693,19 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                 jsonObj.scenes.forEach(s => {
                     if (s.needRealImage === true) return; // 이미 플래그됨
                     const narr = s.narration || '';
+
+                    // 🚫 가정형·의문형·부정형 장면은 실사 자동플래깅 스킵
+                    // "쐈을까요·했을까요·투입했을까요" 같은 아직 안 일어난 가설
+                    const isHypothetical = /(을까요|할까요|했을까요|쐈을까요|던졌을까요|봉쇄했을까요|입었을까요|투입했을까요|공격했을까요)\?|\?$/.test(narr);
+                    const isListingOptions = (narr.match(/(을까요|할까요)/g) || []).length >= 2;
+                    if (isHypothetical || isListingOptions) {
+                        // 가설 나열(2개 이상)은 AI 카탈로그 그리드로 시각화 (3개 옵션 카드)
+                        if (isListingOptions && s.bgSource === 'ai') {
+                            s.isListGridScene = true;
+                        }
+                        return; // 실사 아닌 AI 그리드나 스톡 몽타주가 더 적합
+                    }
+
                     let matched = null;
                     for (const key in REAL_REQUIRED) {
                         if (REAL_REQUIRED[key].re.test(narr)) {
@@ -7465,6 +7478,18 @@ ${sceneList}
                         const googleUrl = 'https://www.google.com/search?tbm=isch&q=' + encodeURIComponent(rank.content);
                         rows += '🔍 <code style="background:#f8f9fa;padding:1px 5px;border-radius:3px;">' + _escapeHtml(rank.content) + '</code>';
                         rows += ' <a href="' + googleUrl + '" target="_blank" rel="noopener" style="color:#1971c2;text-decoration:none;font-size:0.72rem;margin-left:4px;">구글 검색 ↗</a>';
+                        // 대체 검색어 (매칭 실패 시 fallback)
+                        if (rank.alts && rank.alts.length > 0) {
+                            rows += '<div style="margin-top:3px;">';
+                            rank.alts.slice(0, 2).forEach((alt, idx) => {
+                                const altUrl = 'https://www.google.com/search?tbm=isch&q=' + encodeURIComponent(alt);
+                                rows += '<div style="color:#868e96;font-size:0.72rem;margin-top:1px;">';
+                                rows += '↳ 대체' + (idx+1) + ': <code style="background:#f8f9fa;padding:1px 4px;border-radius:3px;">' + _escapeHtml(alt) + '</code>';
+                                rows += ' <a href="' + altUrl + '" target="_blank" rel="noopener" style="color:#1971c2;text-decoration:none;font-size:0.68rem;">구글 ↗</a>';
+                                rows += '</div>';
+                            });
+                            rows += '</div>';
+                        }
                     } else if (rank.type === 'character') {
                         const googleUrl = 'https://www.google.com/search?tbm=isch&q=' + encodeURIComponent(rank.content);
                         rows += '🎭 <code style="background:#f8f9fa;padding:1px 5px;border-radius:3px;">' + _escapeHtml(rank.content) + '</code>';
@@ -7755,10 +7780,12 @@ ${sceneList}
             if (type === 'real') {
                 const kw = s.realSearchKeyword || _deriveRealKeyword(narr);
                 if (!kw) return null; // 적절한 영문 키워드 없음 → real 제외
+                const alts = _deriveRealAlts(kw, narr, s);
                 return {
                     type: 'real',
                     label: '실사 이미지 (구글)',
                     content: kw,
+                    alts: alts,
                     reason: _reasonFor('real', narr, score)
                 };
             }
@@ -8156,6 +8183,71 @@ ${sceneList}
             }
             // 기본
             return 'Cinematic documentary illustration with bold Korean text label (한글), dark dramatic background, 16:9, sophisticated editorial infographic style, clearly legible Korean typography as dominant element.';
+        }
+
+        // 2026-04-23: 실사 구글 검색 대체 키워드 2개 생성 (1순위 실패 시 fallback)
+        function _deriveRealAlts(primary, narr, s) {
+            const alts = [];
+            const p = (primary || '').toLowerCase();
+
+            // 군함·구축함 계열
+            if (/spruance|arleigh burke|ddg|destroyer/i.test(primary)) {
+                alts.push('US Navy destroyer underway Persian Gulf');
+                alts.push('Aegis warship deck VLS missile cells');
+            }
+            // 항모
+            else if (/carrier|cvn|nimitz|ford/i.test(primary)) {
+                alts.push('US Navy aircraft carrier flight deck');
+                alts.push('Carrier strike group formation');
+            }
+            // 잠수함
+            else if (/submarine|SSN|SSBN/i.test(primary)) {
+                alts.push('US Navy submarine surfacing ocean');
+                alts.push('Virginia class submarine underway');
+            }
+            // 전투기
+            else if (/F-35|F-22|raptor|lightning|fighter jet/i.test(primary)) {
+                alts.push('fighter jet flight line ramp');
+                alts.push('combat aircraft takeoff afterburner');
+            }
+            // 미사일·무기체계
+            else if (/tomahawk|patriot|missile|VLS|vertical launch/i.test(primary)) {
+                alts.push('missile launch night fire plume');
+                alts.push('Navy warship weapon system test');
+            }
+            // 실존 선박 (투스카·에버기븐 등)
+            else if (/tuska|ever given|titanic|moskva|cargo ship|container ship/i.test(primary)) {
+                alts.push('container ship bow aerial side view');
+                alts.push('merchant vessel boarding inspection Navy');
+            }
+            // 전차·기갑
+            else if (/abrams|tank|T-90|leopard/i.test(primary)) {
+                alts.push('main battle tank convoy desert');
+                alts.push('armored vehicle military exercise');
+            }
+            // 실존 인물 (portrait / official)
+            else if (/portrait|official|president|leader|emperor|king/i.test(primary)) {
+                // 원본에서 인물명 뽑아 다른 앵글
+                const nameMatch = primary.match(/([A-Z][a-z]+(?:\s[A-Z][a-z]+)?)\s/);
+                if (nameMatch) {
+                    alts.push(nameMatch[1] + ' speech press conference');
+                    alts.push(nameMatch[1] + ' historical photo archive');
+                }
+            }
+            // 건물·기관
+            else if (/headquarters|building|house|kremlin|capitol|palace/i.test(primary)) {
+                alts.push(primary.replace(/building|headquarters|house/i, 'aerial view'));
+                alts.push(primary + ' exterior night');
+            }
+            // 역사 장면·왕조 (고고학)
+            else if (/dynasty|empire|statue|historical painting/i.test(primary)) {
+                alts.push(primary.replace(/statue|painting/i, 'artifact museum'));
+                alts.push(primary + ' ancient archive illustration');
+            }
+
+            // 최대 2개만 반환 (중복 제거)
+            const unique = [...new Set(alts.filter(a => a && a.toLowerCase() !== p))];
+            return unique.slice(0, 2);
         }
 
         function _deriveRealKeyword(narr) {
