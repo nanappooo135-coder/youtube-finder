@@ -5691,22 +5691,28 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                     }
                 };
                 jsonObj.scenes.forEach(s => {
-                    if (s.needRealImage === true) return; // 이미 플래그됨
                     const narr = s.narration || '';
 
-                    // 🚫 가정형·의문형·부정형 장면은 실사 자동플래깅 스킵
-                    // "쐈을까요·했을까요·투입했을까요" 같은 아직 안 일어난 가설
-                    // + "왜 하필 이 배?" 같은 원인 탐구형 의문도 실사보단 AI가 낫다
+                    // 🚫 가정형·의문형·부정형 장면은 실사 플래깅 차단 + Gemini가 찍은 것도 해제
+                    // "쐈을까요·했을까요" 가설, "왜 하필 이 배?" 원인 탐구 의문 등
                     const isHypothetical = /(을까요|할까요|했을까요|쐈을까요|던졌을까요|봉쇄했을까요|입었을까요|투입했을까요|공격했을까요)\?|\?$/.test(narr);
                     const isQuestionSearch = /(왜 하필|왜 이|왜 그|도대체 왜|대체 왜|어떻게 해서|어째서)/.test(narr) && /\?/.test(narr);
                     const isListingOptions = (narr.match(/(을까요|할까요)/g) || []).length >= 2;
                     if (isHypothetical || isListingOptions || isQuestionSearch) {
-                        // 가설 나열(2개 이상) 또는 원인 탐구 의문은 AI 카탈로그 그리드로 시각화
+                        // 🔥 Gemini가 이미 needRealImage 찍어놨어도 강제 해제 (질문에 실사 부적합)
+                        if (s.needRealImage === true) {
+                            s.needRealImage = false;
+                            delete s.realSearchKeyword;
+                            s.autoUnflaggedReal = true;
+                        }
+                        // 가설 나열 또는 원인 탐구 의문은 AI 카탈로그 그리드로 시각화
                         if ((isListingOptions || isQuestionSearch) && s.bgSource === 'ai') {
                             s.isListGridScene = true;
                         }
-                        return; // 실사 아닌 AI 그리드나 스톡 몽타주가 더 적합
+                        return;
                     }
+
+                    if (s.needRealImage === true) return; // 이미 Gemini가 플래그한 장면 (질문 아님)
 
                     let matched = null;
                     for (const key in REAL_REQUIRED) {
@@ -5888,7 +5894,7 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                     if (s.isSymbolicScene) s.grokVideoDuration = 6;
                     else s.grokVideoDuration = 10;
 
-                    // 영상 프롬프트 생성 — 장면 내용 기반 맞춤 모션
+                    // 초기 fallback 프롬프트 (LLM 호출 실패 시 대비)
                     if (s.isHistoricalScene) {
                         s.grokVideoPrompt = _buildHistoricalVideoPrompt(narr, s.grokVideoDuration);
                     } else if (s.isMovingMap) {
@@ -5898,10 +5904,14 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                     }
                 });
 
-                // ═══ 장면별 맞춤 그록 영상 프롬프트 생성기 ═══
-                // 일반 템플릿 대신 나레이션 키워드로 실제 모션 추출해서 맞춤 지시 생성
-
-                // (함수 정의는 아래 _buildSymbolicVideoPrompt 등 참조 — 장면별로 모션 구체 기술)
+                // ═══ 2026-04-23: LLM 기반 맞춤 그록 프롬프트 배치 생성 ═══
+                // 하드코딩 템플릿 대신 Gemini Flash가 장면별로 맞춤 모션 프롬프트 직접 작성
+                // 템플릿으로 놓칠 수 있는 은유·동작도 자동 대응
+                try {
+                    await _generateGrokVideoPromptsLLM(jsonObj.scenes);
+                } catch (llmErr) {
+                    console.warn('그록 프롬프트 LLM 생성 실패, fallback 템플릿 유지:', llmErr.message);
+                }
 
                 // 🎭 캐릭터 자동 감지 fallback — Gemini가 needCharacter를 누락한 경우 narration에서 인물명 감지
                 const PERSON_NAMES = /트럼프|바이든|푸틴|시진핑|네타냐후|하메네이|젤렌스키|마크롱|숄츠|스타머|모디|김정은|윤석열|문재인|오바마|부시|클린턴|레이건|시리자|에르도안|MBS|빈살만|갈리바프|무니르|밴스|머스크|엘론머스크|베조스|저커버그|키신저|볼턴|폼페이오/;
@@ -7342,32 +7352,52 @@ ${sceneList}
         // 연속된 비슷한 장면들을 하나로 합칠 후보 그룹 찾기 (제안만, 자동 적용 X)
         function _canMergeScenes(a, b) {
             if (!a || !b) return false;
-            // 둘 다 같은 bgSource여야 (mixed 합치면 비디오 소스 충돌)
+
+            // 2026-04-23 전면 재설계: "기본 병합, 예외 차단" 철학
+            // 기본적으로 연속 두 문장은 합친다. 아래 하드 블록에만 해당하면 차단.
+
+            const narrA = (a.narration || '').trim();
+            const narrB = (b.narration || '').trim();
+            const combined = narrA + narrB;
+
+            // ═══ 절대 차단 규칙 (모든 케이스) ═══
+
+            // 합친 길이 80자 초과 = 스톡 영상 6~10초 초과 → 끊음
+            if (combined.length > 80) return false;
+
+            // 다음 문장이 명시적 주제 전환 (한편·반면·대조적으로) → 다른 이야기 시작
+            if (/^(한편|반면|대조적으로|이번엔|이번에는|이제는|한쪽에서는|다른 한편)/.test(narrB)) return false;
+
+            // 다음 문장이 강한 임팩트 선언 (자!·먼저·일단) → 구분 유지
+            if (/^(자!|자\s|먼저|일단|본격적으로|드디어|마침내)/.test(narrB)) return false;
+
+            // ═══ 짧은 문장 우선 병합 (사용자 요청 반영) ═══
+            // narrA 또는 narrB 중 하나가 ≤25자이면 bgSource·플래그 대부분 무시하고 병합
+            const hasShortSide = narrA.length <= 25 || narrB.length <= 25;
+            if (hasShortSide) {
+                // 짧은 쪽은 브리지·펀치라인·후속 설명 역할이므로 관대하게 병합
+                // 차단 예외: 지도/다이어그램 복합 이미지는 읽을 시간 필요
+                if ((a.isMapScene && a.mapLabels && a.mapLabels.length > 3) ||
+                    (b.isMapScene && b.mapLabels && b.mapLabels.length > 3)) return false;
+                if (a.isDiagramScene && b.isDiagramScene) return false;
+                return true;
+            }
+
+            // ═══ 긴 문장 간 병합 (기존 엄격 규칙 적용) ═══
+            // 둘 다 길면 시각적으로 다른 장면일 가능성 높음 → 플래그 체크 엄격
             if (a.bgSource !== b.bgSource) return false;
-            // 그록 영상화 필요 장면은 독립 유지 (임팩트 중요)
             if (a.needsGrokVideo || b.needsGrokVideo) return false;
-            // 인포그래픽 장면은 읽을 시간 필요 → 독립 유지
             if (a.isInfographicScene || b.isInfographicScene) return false;
-            // 단면·구조 다이어그램도 읽을 시간 필요 → 독립 유지
             if (a.isDiagramScene || b.isDiagramScene) return false;
-            // 실사 필요 장면(고유 장비·인물·건물)은 단독 유지 — 병합 시 실사 플래그 유실 방지
             if (a.needRealImage || b.needRealImage) return false;
-            // 지도 장면은 독립 유지
             if (a.isMapScene || b.isMapScene) return false;
-            // 캐릭터·로고 장면은 구성 복잡 → 독립 유지
             if (a.needCharacter || b.needCharacter) return false;
             if (a.needLogo || b.needLogo) return false;
-            // 몽타주·역사 자료는 독립
             if (a.isHistoricalMontage || b.isHistoricalMontage) return false;
             if (a.isHistoricalScene || b.isHistoricalScene) return false;
-            // 다음 문장이 전환어로 시작하면 끊음 (주제 전환 신호)
-            const narrB = (b.narration || '').trim();
-            if (/^(그런데|그러나|하지만|한편|그러자|그래서|따라서|반면|대신|다만|어쨌든|그렇다면|그럼|이제|이후|다음|여기서|그럼에도|그럴수록|그리고 이제|자|먼저|일단)/.test(narrB)) {
-                return false;
-            }
-            // 합친 길이 체크 — 스톡 영상 6~10초 안전 범위 (80자 ≈ 8초)
-            const combined = (a.narration || '') + (b.narration || '');
-            if (combined.length > 80) return false;
+            // 긴 문장엔 경미한 전환어도 차단 (주제 전환 가능성)
+            if (/^(그런데|그러나|하지만|그러자|그래서|따라서|대신|다만|어쨌든|그렇다면|그럼|이제|이후|여기서|그럼에도|그럴수록)/.test(narrB)) return false;
+
             return true;
         }
 
@@ -8120,8 +8150,78 @@ ${sceneList}
 
         // AI 프롬프트: 한글 라벨 강제 (최신 이미지 모델은 한글 잘 씀)
         // 핵심 한글 텍스트를 구체적으로 명시 → AI가 정확히 그리게 유도
-        // 2026-04-23: 장면별 맞춤 그록 영상 프롬프트 생성
-        // 나레이션에서 핵심 모션을 뽑아 구체적 영상 지시 생성 (일반 템플릿 대신)
+        // 2026-04-23: LLM 기반 그록 영상 프롬프트 배치 생성
+        // needsGrokVideo=true인 모든 장면을 한 번에 Gemini Flash로 전달해서
+        // 장면별 맞춤 모션 영문 프롬프트 받아옴
+        async function _generateGrokVideoPromptsLLM(scenes) {
+            const targets = scenes.filter(s => s.needsGrokVideo);
+            if (targets.length === 0) return;
+
+            const sceneList = targets.map(s => {
+                const category = s.isSymbolicScene ? '상징·은유' : s.isHistoricalScene ? '역사 재현' : s.isMovingMap ? '지도 이동' : '기타';
+                return `[장면 ${s.id}] (${category}, ${s.grokVideoDuration}초)\n나레이션: "${s.narration}"\nAI 이미지 컨셉: ${(s.aiPrompt || '').slice(0, 200)}...`;
+            }).join('\n\n');
+
+            const memo = window._contextMemo || '';
+            const prompt = `당신은 AI 정지 이미지를 짧은 영상으로 변환하는 영상 감독입니다. 아래 각 장면마다, **AI 이미지 위에 덧입힐 영상 모션**을 구체적으로 지시하세요.
+
+${memo ? '## 영상 전체 맥락\n' + memo + '\n\n' : ''}## 규칙
+1. 각 장면의 **나레이션 내용과 AI 이미지의 핵심 주체**를 정확히 매칭.
+2. 주체가 뭔지, 어떤 동작을 하는지, 결과가 뭔지 **3가지를 명시**.
+3. 크림 수채 톤 유지 (NOT dark cinematic, NOT neon, NOT 3D sci-fi).
+4. 영문 2~4문장, 마지막에 "X seconds." 포함.
+5. 카메라는 보통 고정(holds steady). 배경은 움직이지 않음.
+6. 나레이션이 은유면 그 은유의 실제 물리 동작을 기술 (예: "손금처럼 본다" → 손바닥이 펼쳐지며 그 안에 항구 지도가 드러남).
+
+## 장면 목록
+${sceneList}
+
+## 출력 형식 (정확히 이 JSON 형식으로만)
+\`\`\`json
+{"prompts": [
+  {"id": 1, "prompt": "영문 모션 지시 2~4문장. X seconds."},
+  {"id": 2, "prompt": "..."}
+]}
+\`\`\`
+각 장면 id에 해당하는 prompt만 출력. 잡담·설명 금지.`;
+
+            const r = await callGemini(prompt, { maxTokens: 8000, temperature: 0.3, model: 'gemini-2.5-flash' });
+            const text = (r.text || '').trim();
+
+            // JSON 파싱 (code fence 제거)
+            let parsed;
+            try {
+                const cleaned = text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+                parsed = JSON.parse(cleaned);
+            } catch (e) {
+                // 중괄호 추출 재시도
+                const first = text.indexOf('{');
+                const last = text.lastIndexOf('}');
+                if (first !== -1 && last > first) {
+                    parsed = JSON.parse(text.substring(first, last + 1));
+                } else {
+                    throw new Error('LLM 응답 JSON 파싱 실패');
+                }
+            }
+
+            if (!parsed.prompts || !Array.isArray(parsed.prompts)) {
+                throw new Error('prompts 배열 누락');
+            }
+
+            // 장면별 주입
+            const byId = new Map(parsed.prompts.map(p => [p.id, p.prompt]));
+            targets.forEach(s => {
+                const p = byId.get(s.id);
+                if (p && typeof p === 'string' && p.length > 20) {
+                    s.grokVideoPrompt = p;
+                    s.grokPromptSource = 'llm';
+                }
+            });
+            console.log('[그록 프롬프트 LLM] ' + parsed.prompts.length + '개 장면 맞춤 생성');
+        }
+
+        // 2026-04-23: 장면별 맞춤 그록 영상 프롬프트 생성 (fallback 템플릿)
+        // LLM 호출 실패 시 사용 — 나레이션에서 핵심 모션을 뽑아 구체적 영상 지시 생성
 
         function _buildSymbolicVideoPrompt(narr, duration) {
             const n = narr || '';
