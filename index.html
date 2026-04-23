@@ -7495,8 +7495,12 @@ ${sceneList}
 
             // ═══ 절대 차단 규칙 (모든 케이스) ═══
 
-            // 합친 길이 80자 초과 = 스톡 영상 6~10초 초과 → 끊음
-            if (combined.length > 80) return false;
+            // 2026-04-23: 길이 제한을 bgSource별로 차등
+            // - stock: 80자 (영상 루프 6~10초 한계)
+            // - ai/real: 정지 이미지라 길어도 됨 → 140자까지 허용
+            const bothStock = (a.bgSource === 'stock') && (b.bgSource === 'stock');
+            const lengthLimit = bothStock ? 80 : 140;
+            if (combined.length > lengthLimit) return false;
 
             // 다음 문장이 명시적 주제 전환 (한편·반면·대조적으로) → 다른 이야기 시작
             if (/^(한편|반면|대조적으로|이번엔|이번에는|이제는|한쪽에서는|다른 한편)/.test(narrB)) return false;
