@@ -5860,6 +5860,11 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                     if (!s.isHistoricalScene && !s.isMapScene && !s.isInfographicScene && !s.isDiagramScene) {
                         if (SYMBOLIC_STRONG.test(narr) || SYMBOLIC_STRONG.test(prompt)) {
                             s.isSymbolicScene = true;
+                            // 2026-04-23: 상징·은유도 크림 종이+수채 편집 톤으로 통일
+                            const SYMBOLIC_STYLE_PREFIX = 'Hand-painted symbolic illustration in warm editorial watercolor style. Vintage cream beige paper background (#F5EFD9) with subtle paper grain texture. Central metaphoric object (chess piece, domino, scale, broken glass, valve, heart, lock, chain, gear, etc.) rendered in muted earth tones (terracotta, sage green, navy blue, warm red #C62828 for emphasis) with soft watercolor edges and ink outline. Icons/props with hand-painted texture. Semi-transparent bold Korean label integrated into the composition (한글, sans-serif, dark brown or white). Minimal composition, empty space, editorial documentary aesthetic. NOT dark cinematic, NOT 3D render, NOT neon, NOT photorealistic, NOT cartoon. ALL labels in Korean (한글) — NO English, NO romanization. Cinematic 16:9. ';
+                            if (typeof s.aiPrompt === 'string' && !s.aiPrompt.startsWith('Hand-painted symbolic') && !s.aiPrompt.startsWith('Paper cut collage') && !s.aiPrompt.startsWith('Modern infographic') && !s.aiPrompt.startsWith('Flat 2D vector')) {
+                                s.aiPrompt = SYMBOLIC_STYLE_PREFIX + s.aiPrompt;
+                            }
                         }
                     }
                     // 지도 이동 여부
@@ -8146,7 +8151,7 @@ ${sceneList}
                     const quoted = koreanTexts.slice(0, 4).map(t => '"' + t.replace(/"/g, "'") + '"').join(', ');
                     koreanEnforce += ' REQUIRED Korean labels to render prominently and accurately: ' + quoted + '.';
                 }
-                koreanEnforce += ' Use bold, high-contrast Korean typography (Noto Sans KR style). All Korean characters must be perfectly formed, NO garbled text, NO invented characters, NO mixed scripts. Korean text must be the dominant visual element. Spell every Korean syllable precisely. 🚫 STRICTLY NO English words, NO romanization, NO Latin alphabet in labels/titles/captions — ONLY Korean (한글). Exception: numbers (0-9) and unit symbols (%, $, mb/d) are allowed.';
+                koreanEnforce += ' Use bold, high-contrast Korean typography (Noto Sans KR style). All Korean characters must be perfectly formed, NO garbled text, NO invented characters, NO mixed scripts. Korean text must be the dominant visual element. Spell every Korean syllable precisely. 🚫 STRICTLY NO English words, NO romanization, NO Latin alphabet anywhere in the image — not in titles, labels, captions, subtitles, footers, watermarks, or any decorative text. NO English subtitle or description at the bottom. NO bilingual text. ONLY Korean (한글). Exception: numbers (0-9) and unit symbols (%, $, mb/d, km, m, kg) are allowed. Any English sentence found in the image = FAILED output.';
 
                 out += koreanEnforce;
             }
