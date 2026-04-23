@@ -5872,6 +5872,56 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                     }
                 });
 
+                // 2026-04-23: 국가별 정책·지명·사건 구체 키워드 (모든 실사 장면에 후처리 적용)
+                // 너무 일반적인 키워드(gangCrime kw 등) 덮어쓰기
+                const SPECIFIC_CONTEXT_MAP = [
+                    // 덴마크 게토법 관련
+                    { re: /덴마크.*(게토|이민자|비서구|강제 이주|parallel)/, kw: 'Denmark ghetto law Mjolnerparken demolition news' },
+                    { re: /뮤엘너파르켄|몰너파르켄|Mjolnerparken/i, kw: 'Mjolnerparken Copenhagen demolition news' },
+                    { re: /팅빙|Tingbjerg/i, kw: 'Tingbjerg Denmark ghetto list' },
+                    // 스웨덴 취약지역·갱단
+                    { re: /스웨덴.*(취약지역|no-go|빈민)|취약지역.*스웨덴/, kw: 'Sweden vulnerable area no-go zone news' },
+                    { re: /스웨덴.*(갱단|폭스트롯|총격|폭발 사건|폭탄)|폭스트롯/, kw: 'Sweden Foxtrot gang shooting bombing news' },
+                    { re: /링케뷔|Rinkeby/i, kw: 'Rinkeby Stockholm suburb news photo' },
+                    { re: /후스뷔|Husby/i, kw: 'Husby Stockholm district news' },
+                    { re: /텐스타|Tensta/i, kw: 'Tensta Stockholm immigrant district' },
+                    // 독일
+                    { re: /독일.*(이민|난민|튀르크|시리아)/, kw: 'Germany refugee immigration news photo' },
+                    { re: /독일.*(시위|항의)/, kw: 'Germany protest rally news' },
+                    // 프랑스
+                    { re: /프랑스.*(시위|노란조끼|파업)/, kw: 'France yellow vests protest news' },
+                    { re: /프랑스.*(이민|방리외|banlieue)/, kw: 'France banlieue suburb immigration news' },
+                    // 영국
+                    { re: /영국.*(브렉시트|이민)/, kw: 'UK Brexit immigration news photo' },
+                    // 미국
+                    { re: /미국.*(총기 사건|대량 총격|총격 사건)/, kw: 'USA mass shooting gun violence news' },
+                    { re: /미국.*(이민|국경 장벽)/, kw: 'USA Mexico border immigration news' },
+                    // 우크라이나
+                    { re: /우크라이나.*(전쟁|침공|러시아)/, kw: 'Ukraine Russia war 2024 news photo' },
+                    // 이란·이스라엘
+                    { re: /이란.*(제재|핵 협상)/, kw: 'Iran nuclear sanctions news photo' },
+                    { re: /이스라엘.*(가자|하마스)/, kw: 'Israel Gaza Hamas war 2024 news' },
+                    // 중국
+                    { re: /홍콩 시위|톈안먼/, kw: 'Hong Kong Tiananmen protest news' },
+                    { re: /(위구르|신장)/, kw: 'Xinjiang Uyghur Chinese camp news' },
+                    // 일본
+                    { re: /(후쿠시마|원전 사고)/, kw: 'Fukushima nuclear plant accident news' },
+                    // 한국
+                    { re: /한국.*(탄핵|촛불)/, kw: 'Korea impeachment candlelight protest' },
+                    // 사우디
+                    { re: /사우디.*(네옴|빈 살만)|The Line/, kw: 'Saudi NEOM The Line MBS news' },
+                ];
+                jsonObj.scenes.forEach(s => {
+                    if (s.needRealImage !== true) return;
+                    const narr = s.narration || '';
+                    for (const ctx of SPECIFIC_CONTEXT_MAP) {
+                        if (ctx.re.test(narr)) {
+                            s.realSearchKeyword = ctx.kw;
+                            break;
+                        }
+                    }
+                });
+
                 // 실사 필요 장면 별도 저장 (자동 교정 후 재계산)
                 let realScenes = jsonObj.scenes.filter(s => s.needRealImage === true);
 
