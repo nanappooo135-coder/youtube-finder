@@ -5914,7 +5914,9 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
 
                 // 🟢 인포그래픽 장면 자동 감지 (수치·퍼센트·비교·흐름)
                 // 지도·역사 아닐 때만 태그. 그림은 파스텔 만화 플랫 벡터 인포그래픽.
-                const INFOGRAPHIC_STRONG = /\d+\s*%|\d+\s*퍼센트|\d+배|\d+\s*분의\s*\d+|\d+\s*명\s*중\s*\d+|비교해보면|구조를|메커니즘|흐름도|단계로|\bvs\b|대비하면/;
+                // 2026-04-23 확장: 순위/1위/최고 + AI 프롬프트에 차트 키워드도 감지
+                const INFOGRAPHIC_STRONG = /\d+\s*%|\d+\s*퍼센트|\d+배|\d+\s*분의\s*\d+|\d+\s*명\s*중\s*\d+|비교해보면|구조를|메커니즘|흐름도|단계로|\bvs\b|대비하면|\d+\s*위|1위|2위|3위|꼴찌|최다|최고|최하|최대|최소|순위|압도적/;
+                const INFOGRAPHIC_PROMPT_HINT = /\b(bar chart|line graph|pie chart|donut chart|area chart|infographic|stat chart|comparison chart|ranking chart)\b/i;
                 // 2026-04-23: 벤치마크 인포그래픽 스타일 (크림 종이 + 굵은 한글 + 강조 1개 빨강)
                 const INFOGRAPHIC_STYLE_PREFIX = 'Clean minimal infographic chart in Korean documentary YouTube style. 🚨 CRITICAL: FLAT CLEAN DESIGN — NOT watercolor, NOT hand-painted, NOT pencil sketch, NOT rough, NOT artistic. Precise geometric shapes, crisp clean lines, professional editorial design like a news broadcast infographic. Vintage cream beige paper background (#F5EFD9) with very subtle paper grain texture only in the background (paper texture must NOT bleed into the bars or chart elements). Bold thick BLACK Korean sans-serif title at top, centered, large bold type (한글 제목). Small subtitle in parentheses below, smaller font. Top-right small credit text "(자료: 출처명)". SOLID FLAT dark charcoal gray bars (#3A3A3A, NO texture, NO brush strokes, NO painterly edges — perfectly clean rectangles) with EXACTLY ONE accent bar in bold solid red (#C62828) to highlight the key data point. Horizontal dashed grid lines in light gray. Y-axis label and unit in small parentheses (예: "(mb/d)", "(%)", "(명)") with arrow pointing up. 🚨 X-AXIS COUNTRY LABELS — STRICT RULES: Use ONLY country flag icons (national flag images) for country comparisons. DO NOT write Korean country names as text below bars. If you must write country text, use ONLY these exact spellings (exact Korean names that actually exist): 미국·중국·일본·한국·러시아·독일·프랑스·영국·이탈리아·스페인·네덜란드·벨기에·스웨덴·노르웨이·덴마크·핀란드·폴란드·오스트리아·스위스·포르투갈·그리스·체코·헝가리·아일랜드·터키·이란·이라크·사우디·UAE·이집트·인도·브라질·캐나다·호주·멕시코·아르헨티나·베트남·태국·인도네시아·필리핀·말레이시아. ⛔ NEVER invent fake Korean words like "유일·비울·공상·조묵·머닌·만신·미죽·안제·조국·응용·연유·안지·유립" — these are NOT real country names. If unsure, use flag icon only with NO text. If not country comparison, use very short real Korean category words (2-4 chars). ALL titles, subtitles, credits, annotations in Korean (한글). Numbers and unit symbols (%, $, mb/d, km, m, 만, 억) allowed. NO English words. NO invented Korean words. Professional, clean, uncluttered. Cinematic 16:9. ';
                 jsonObj.scenes.forEach(s => {
@@ -5922,9 +5924,12 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                     if (s.isHistoricalScene === true) return;
                     if (s.bgSource !== 'ai' || typeof s.aiPrompt !== 'string') return;
                     const narr = s.narration || '';
-                    if (!INFOGRAPHIC_STRONG.test(narr)) return;
+                    // 나레이션 OR aiPrompt에 차트 신호 있으면 감지
+                    const narrMatch = INFOGRAPHIC_STRONG.test(narr);
+                    const promptMatch = INFOGRAPHIC_PROMPT_HINT.test(s.aiPrompt);
+                    if (!narrMatch && !promptMatch) return;
                     s.isInfographicScene = true;
-                    if (!s.aiPrompt.startsWith('Flat 2D vector infographic')) {
+                    if (!s.aiPrompt.startsWith('Clean minimal infographic chart')) {
                         s.aiPrompt = INFOGRAPHIC_STYLE_PREFIX + s.aiPrompt;
                     }
                 });
