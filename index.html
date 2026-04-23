@@ -5696,11 +5696,13 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
 
                     // 🚫 가정형·의문형·부정형 장면은 실사 자동플래깅 스킵
                     // "쐈을까요·했을까요·투입했을까요" 같은 아직 안 일어난 가설
+                    // + "왜 하필 이 배?" 같은 원인 탐구형 의문도 실사보단 AI가 낫다
                     const isHypothetical = /(을까요|할까요|했을까요|쐈을까요|던졌을까요|봉쇄했을까요|입었을까요|투입했을까요|공격했을까요)\?|\?$/.test(narr);
+                    const isQuestionSearch = /(왜 하필|왜 이|왜 그|도대체 왜|대체 왜|어떻게 해서|어째서)/.test(narr) && /\?/.test(narr);
                     const isListingOptions = (narr.match(/(을까요|할까요)/g) || []).length >= 2;
-                    if (isHypothetical || isListingOptions) {
-                        // 가설 나열(2개 이상)은 AI 카탈로그 그리드로 시각화 (3개 옵션 카드)
-                        if (isListingOptions && s.bgSource === 'ai') {
+                    if (isHypothetical || isListingOptions || isQuestionSearch) {
+                        // 가설 나열(2개 이상) 또는 원인 탐구 의문은 AI 카탈로그 그리드로 시각화
+                        if ((isListingOptions || isQuestionSearch) && s.bgSource === 'ai') {
                             s.isListGridScene = true;
                         }
                         return; // 실사 아닌 AI 그리드나 스톡 몽타주가 더 적합
@@ -8144,8 +8146,8 @@ ${sceneList}
             else if (/저울|균형|기울|한쪽/.test(n)) {
                 motion = 'The scale slowly tips to one side as an invisible weight is added. The tipping side descends, the other rises. Subtle shadow shift. Camera holds.';
             }
-            // 폭발·붕괴 → 안쪽에서 터짐
-            else if (/폭발|터|붕괴|무너/.test(n)) {
+            // 폭발·붕괴 → 안쪽에서 터짐 (구체 단어만 매칭, 조사 "부터/까지" 오탐 방지)
+            else if (/폭발|터짐|터져|터지|붕괴|무너|산산조각|박살/.test(n)) {
                 motion = 'The central object collapses or explodes outward from its center. Fragments fly slowly, then settle. A single dust cloud disperses. Background remains stable.';
             }
             // 화살·저격 → 발사/명중
