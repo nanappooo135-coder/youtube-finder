@@ -3615,8 +3615,27 @@ ${introPrompts}`;
 [대본]
 ${script}`;
 
-            const r = await callGemini(memoPrompt, { maxTokens: 2000, temperature: 0.2, model: 'gemini-2.5-flash' });
+            const r = await _callGeminiWithRetry(memoPrompt, { maxTokens: 2000, temperature: 0.2, model: 'gemini-2.5-flash' });
             return (r.text || '').trim();
+        }
+
+        // 2026-04-23: 503/429 자동 재시도 래퍼 (Flash 서버 과부하 대응)
+        async function _callGeminiWithRetry(prompt, opts, maxRetries = 2) {
+            let lastErr = null;
+            for (let attempt = 0; attempt <= maxRetries; attempt++) {
+                try {
+                    return await callGemini(prompt, opts);
+                } catch (e) {
+                    lastErr = e;
+                    const msg = (e.message || '').toLowerCase();
+                    const isTransient = msg.includes('503') || msg.includes('429') || msg.includes('overload') || msg.includes('service unavailable') || msg.includes('rate');
+                    if (!isTransient || attempt === maxRetries) throw e;
+                    const waitMs = 3000 * (attempt + 1); // 3s, 6s
+                    console.warn('[Gemini ' + (opts.model || 'default') + '] 과부하 ' + e.message.slice(0, 50) + ' → ' + (waitMs/1000) + '초 후 재시도 (' + (attempt+1) + '/' + maxRetries + ')');
+                    await new Promise(resolve => setTimeout(resolve, waitMs));
+                }
+            }
+            throw lastErr;
         }
 
         function _buildSellpotJsonPrompt(script, chunkMode, contextMemo) {
@@ -8218,7 +8237,7 @@ ${sceneList}
 \`\`\`
 각 장면 id에 해당하는 prompt만 출력. 잡담·설명 금지.`;
 
-            const r = await callGemini(prompt, { maxTokens: 8000, temperature: 0.3, model: 'gemini-2.5-flash' });
+            const r = await _callGeminiWithRetry(prompt, { maxTokens: 8000, temperature: 0.3, model: 'gemini-2.5-flash' });
             const text = (r.text || '').trim();
 
             // JSON 파싱 (code fence 제거)
