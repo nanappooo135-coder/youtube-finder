@@ -8139,9 +8139,24 @@ ${sceneList}
             else if (/사슬|쇠사슬|봉쇄|자물쇠|잠기|잠긴|차단|가로막/.test(n)) {
                 motion = 'Chains tighten and lock with a sharp metallic click, or a lock snaps shut. Subtle chain tension, a single bright flash on the lock mechanism. Camera slightly pushes in on the locking moment.';
             }
-            // 체스·전략 → 말 이동
+            // 체스·전략 → 상황에 따라 다른 모션
             else if (/체스|말|전략|포석|판/.test(n)) {
-                motion = 'One chess piece slides smoothly across the board to a new square, knocking over an opponent piece. The board and other pieces stay still. Subtle shadow moves with the piece.';
+                // A. 감시·추적 모드 (좌표 찍힘·추적·보이는 구조)
+                if (/좌표|추적|점으로 찍|감시|보이는|찍히는|보고 있|표시되|타깃|타겟|노출/.test(n)) {
+                    motion = 'A single red (opponent) chess piece makes a small move to an adjacent square. Immediately a glowing red targeting reticle/crosshair appears over it, pinning it to its new coordinate. Other white pieces remain perfectly still, watching. The board stays flat. Camera holds steady.';
+                }
+                // B. 공격·제거 모드 (잡으·쓰러·제거·정복)
+                else if (/잡으|쓰러|제거|정복|끝장|빼앗|공격/.test(n)) {
+                    motion = 'One chess piece slides smoothly across the board to a new square, knocking over an opponent piece which falls gently. The board and other pieces stay still. Subtle shadow moves with the attacking piece.';
+                }
+                // C. 포위·압박 모드 (묶·갇·포위·통제·둘러싸)
+                else if (/묶|갇|포위|통제|둘러싸|옥죄|조이|포진|자기 한 점/.test(n)) {
+                    motion = 'Faint glowing lines extend from all white pieces toward every red piece on the board, connecting them into a web of control. No pieces move. The red pieces faintly pulse, suggesting they are pinned. Camera holds wide.';
+                }
+                // D. 기본: 전략적 이동
+                else {
+                    motion = 'One chess piece slides thoughtfully across the board to a new strategic position. Other pieces remain still. A faint highlight follows the new position briefly.';
+                }
             }
             // 유리·깨짐 → 균열 확산
             else if (/유리|깨|부서|금이 가|균열|쪼개/.test(n)) {
