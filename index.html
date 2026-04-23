@@ -5912,9 +5912,21 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                 const MOVING_MAP_HINT = /경로|이동|흘러|향하|연결|→|지나가|통과|가로질|거쳐|돌아|향해|따라|단계/;
 
                 jsonObj.scenes.forEach(s => {
-                    if (s.bgSource !== 'ai') return;
                     const narr = s.narration || '';
                     const prompt = s.aiPrompt || '';
+
+                    // 2026-04-23: 강한 은유 키워드는 bgSource 무관하게 AI로 전환
+                    // Gemini가 stock/real로 잘못 찍어도 체스·도미노·사슬 같은 명확 은유는 AI 시각화가 맞음
+                    const hasStrongSymbolic = SYMBOLIC_STRONG.test(narr);
+                    if (hasStrongSymbolic && s.bgSource !== 'ai' && !s.isMapScene && !s.isInfographicScene && !s.isDiagramScene && !s.isListGridScene) {
+                        s.bgSource = 'ai';
+                        s.needRealImage = false;
+                        delete s.realSearchKeyword;
+                        if (!s.aiPrompt) {
+                            s.aiPrompt = 'Symbolic illustration representing: ' + narr.slice(0, 80);
+                        }
+                    }
+                    if (s.bgSource !== 'ai') return;
 
                     // 상징 감지 (다른 카테고리 아닐 때만)
                     if (!s.isHistoricalScene && !s.isMapScene && !s.isInfographicScene && !s.isDiagramScene) {
