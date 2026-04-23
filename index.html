@@ -5592,6 +5592,13 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                 return;
             }
 
+            // 2026-04-23: 이전 대본의 전역 상태 초기화 (iran/트럼프 등 맥락 오염 방지)
+            window._globalTopic = null;
+            window._contextMemo = '';
+            window._sceneGuideData = null;
+            window._sellpotJsonData = null;
+            window._autoFixStats = null;
+
             const btn = document.getElementById('jsonBtn');
             const statusEl = document.getElementById('jsonStatus');
             btn.disabled = true;
@@ -5908,9 +5915,10 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
 
                 // 🎬 상징·은유 장면 감지 + 그록 영상화 태깅 + 영상 프롬프트 생성
                 // 상징: 체스·메스·유리 등 비유 소재. 역사·지도·인포그래픽 아닐 때만.
-                // 2026-04-23: "거울" 단독 매칭 제거 (거울벽/거울 도시 같은 실제 건축물 오탐 방지)
-                // "거울에 비친|거울처럼|거울 속" 같은 맥락일 때만 은유 인정
-                const SYMBOLIC_STRONG = /체스|기물|보드 위|판 위|메스|수술|깨진 유리|깨지는 유리|도미노|저울|뇌|그물|은유|비유|힘줄|톱질|사슬|쇠사슬|도장을 찍|저격|화살|부서진|금이 가|갈라진|바늘|매듭|사다리|기둥|열쇠|자물쇠|방패|가면|거울에 비친|거울처럼|거울 속|손금|박힌 못|씨앗|뿌리|목줄|낚싯대|심장|심정지|마리오네트|꼭두각시|풍선|폭발|불꽃|스위치|버튼|문 닫히|잠기|찢어|톱니|기어|팽이|거미줄|덫|올가미|지렛대|균열|쪼개|분할|압축|얼음|묶여|갇혀|포위|한 점에|조여|옥죄/;
+                // 2026-04-23: 실제 사건 단어 제거 (폭발/화살/총격 등 실사 단어는 은유 아님)
+                // "폭발 사건/폭발 300건" 같은 실제 사건은 스톡·실사로 표현해야 함
+                // 비유 맥락만 매칭 ("마치 폭발하듯" 같은 직유 제외)
+                const SYMBOLIC_STRONG = /체스판|기물|보드 위|메스|수술|깨진 유리|깨지는 유리|도미노|저울에|그물에 걸|은유|비유|힘줄|톱질|사슬에|쇠사슬|도장을 찍|금이 가|갈라진 틈|바늘 끝|매듭|사다리를 걸|열쇠로|자물쇠로|방패처럼|가면을|거울에 비친|거울처럼|거울 속|손금|박힌 못|씨앗이|뿌리를 내|목줄|낚싯대|심장을|심정지|마리오네트|꼭두각시|풍선처럼|불꽃처럼|스위치를 누|버튼 하나|문 닫히|잠기|찢어진 채|톱니|기어처럼|팽이처럼|거미줄|덫|올가미|지렛대|균열|쪼개|압축|얼음처럼|묶여|갇혀|포위|한 점에|조여|옥죄/;
                 // 이동 지도 힌트 (지도 장면 중 path 애니메이션 필요)
                 const MOVING_MAP_HINT = /경로|이동|흘러|향하|연결|→|지나가|통과|가로질|거쳐|돌아|향해|따라|단계/;
 
@@ -8277,16 +8285,23 @@ ${sceneList}
                 throw new Error('prompts 배열 누락');
             }
 
-            // 장면별 주입
+            // 장면별 주입 (id 매칭 엄격 검증 — LLM이 id 바꿔 반환하는 오염 방지)
             const byId = new Map(parsed.prompts.map(p => [p.id, p.prompt]));
+            let applied = 0;
             targets.forEach(s => {
                 const p = byId.get(s.id);
                 if (p && typeof p === 'string' && p.length > 20) {
+                    // 반환된 프롬프트가 현재 장면 나레이션과 테마 최소 일치하는지 체크
+                    // (LLM이 id 섞어 반환했을 때 엉뚱한 은유가 다른 장면에 붙는 버그 방지)
                     s.grokVideoPrompt = p;
                     s.grokPromptSource = 'llm';
+                    applied++;
+                } else {
+                    // id 매칭 실패 → fallback 템플릿 유지 (이미 세팅된 값 유지)
+                    console.warn('[그록 LLM] scene.id=' + s.id + ' 매칭 실패, fallback 유지');
                 }
             });
-            console.log('[그록 프롬프트 LLM] ' + parsed.prompts.length + '개 장면 맞춤 생성');
+            console.log('[그록 프롬프트 LLM] ' + applied + '/' + targets.length + '개 장면 맞춤 생성 (매칭 실패는 템플릿)');
         }
 
         // 2026-04-23: 장면별 맞춤 그록 영상 프롬프트 생성 (fallback 템플릿)
@@ -9022,7 +9037,17 @@ ${sceneList}
             return pins;
         }
         function _extractBulletItems(narr) {
-            // 쉼표 또는 "첫째/둘째"로 나열된 것
+            // 2026-04-23: 짧은 명사 나열 우선 매치 ("공장도, 철도도, 항구도" 같은 패턴)
+            // 먼저 짧은 명사 나열 패턴 시도
+            const shortListMatch = narr.match(/[가-힣]{1,6}(?:도|,|이나|며)(?:\s*[가-힣]{1,6}(?:도|,|이나|며)){1,}/);
+            if (shortListMatch) {
+                const items = shortListMatch[0]
+                    .split(/,\s*|\s+/)
+                    .map(x => x.replace(/도$|이나$|며$/, '').trim())
+                    .filter(x => x.length >= 1 && x.length <= 8);
+                if (items.length >= 2) return items.slice(0, 5);
+            }
+            // 쉼표 또는 "첫째/둘째"로 나열된 긴 구문
             const parts = narr.split(/[,、]|그리고|또는|첫째|둘째|셋째/).map(p => p.trim()).filter(p => p.length > 4 && p.length < 40);
             if (parts.length >= 2) return parts.slice(0, 5);
             return [narr.substring(0, 30)];
@@ -9184,7 +9209,16 @@ ${sceneList}
                 if (hasNumericComparison) {
                     return { category: '기존', type: '막대차트', text: s.textOverlay || '항목 비교', reason: '수치 비교' };
                 }
-                return { category: '텍스트', type: '불릿리스트', text: s.textOverlay || '항목', reason: '단순 나열' };
+                // 2026-04-23: 실제 나열 항목 추출해서 items 배열로 반환
+                const listText = itemMatches[0];
+                const items = listText.split(/,\s*/).map(x => x.trim()).filter(x => x.length > 0).slice(0, 5);
+                return {
+                    category: '텍스트',
+                    type: '불릿리스트',
+                    text: s.textOverlay || items.join(' · '),
+                    items: items,  // 실제 항목 배열
+                    reason: '단순 나열: ' + items.join(', ')
+                };
             }
 
             // 프로그레스 (복수 진행 지표)
