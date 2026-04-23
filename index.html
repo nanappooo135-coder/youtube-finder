@@ -7282,8 +7282,8 @@ ${sceneList}
 
         // 수동 업그레이드 필요 장면인지 판별 (text_headline이 아닌 오버레이 추천)
         function _sceneNeedsManualUpgrade(s) {
-            const rec = _recommendOverlay28(s);
-            if (rec.type === 'none') return false;
+            const rec = _recommendOverlay28(s) || { type: 'none' };
+            if (!rec || rec.type === 'none') return false;
             // 헤드라인·타이틀은 text_headline류로 자동 적용 됨
             return !['헤드라인', '강조텍스트', '타이틀'].includes(rec.type);
         }
@@ -7318,9 +7318,10 @@ ${sceneList}
                     const pctM = Math.round((manualDone / manualScenes.length) * 100);
                     const scenesByType = {};
                     manualScenes.forEach(s => {
-                        const rec = _recommendOverlay28(s);
-                        if (!scenesByType[rec.type]) scenesByType[rec.type] = 0;
-                        scenesByType[rec.type]++;
+                        const rec = _recommendOverlay28(s) || { type: 'unknown' };
+                        const t = (rec && rec.type) || 'unknown';
+                        if (!scenesByType[t]) scenesByType[t] = 0;
+                        scenesByType[t]++;
                     });
                     const typeBreakdown = Object.entries(scenesByType)
                         .sort((a, b) => b[1] - a[1])
@@ -8698,8 +8699,8 @@ ${sceneList}
 
         // === 장면별 overlays 배열 자동 생성 (_recommendOverlay28 + _buildOverlayData) ===
         function _autoGenerateOverlays(s) {
-            const rec = _recommendOverlay28(s);
-            if (rec.type === 'none') return [];
+            const rec = _recommendOverlay28(s) || { type: 'none' };
+            if (!rec || rec.type === 'none') return [];
 
             // Korean name → Sellpot type value 매핑
             const sellpotType = _OVERLAY_KO_TO_TYPE[rec.type] || 'text_headline';
@@ -9106,6 +9107,7 @@ ${sceneList}
         // === 28종 오버레이 추천 (균형 모드) ===
         // 원칙: 강조·시각화 가치 있으면 추천. 단순 연결 문장만 "없음".
         function _recommendOverlay28(s) {
+            if (!s) return { type: 'none', reason: '장면 데이터 없음' };
             const narr = s.narration || '';
 
             // === 우선순위 1: 구체 수치·데이터 ===
