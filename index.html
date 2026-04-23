@@ -5766,17 +5766,50 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                 // 브랜드 로고 삽입 장면 (needLogo=true + logoName 존재)
                 const logoScenes = jsonObj.scenes.filter(s => s.needLogo === true && s.logoName);
 
-                // 🗺️ 지도 장면 — AI가 isMapScene 태그 누락 시 aiPrompt 키워드로 자동 감지 (fallback)
+                // 🗺️ 지도 장면 — AI가 isMapScene 태그 누락 시 aiPrompt + 나레이션 키워드로 자동 감지
                 // 강한 지도 신호가 있고 + 비교/차트/인포그래픽이 아닐 때만 태그
                 const MAP_STRONG = /\b(minimalist map|shipping route|world map|geographic map|animated map|map showing|map of|peninsula|strait|gulf of|the canal)\b/i;
                 const MAP_EXCLUDE = /\b(split screen|side-by-side|bar chart|donut chart|pie chart|line graph|infographic|pie_donut|flowchart)\b/i;
+                // 나레이션 기반 지도 신호 (2026-04-23 추가)
+                const MAP_NAR_STRONG = /(오만만|페르시아만|아라비아해|호르무즈|홍해|지중해|흑해|카스피해|인도양|태평양|대서양|반도|국경선|영토|해협|감시 범위|주변 수백 ?km|주변 수천 ?km|한반도|유럽|북미|남미|아시아|중동|중앙아시아|지정학)/;
                 jsonObj.scenes.forEach(s => {
                     if (s.isMapScene === true) return;
-                    if (s.bgSource !== 'ai' || typeof s.aiPrompt !== 'string') return;
+                    if (typeof s.aiPrompt !== 'string') return;
                     if (MAP_EXCLUDE.test(s.aiPrompt)) return;
-                    if (MAP_STRONG.test(s.aiPrompt)) {
+
+                    // aiPrompt에 지도 신호
+                    const hasMapPrompt = s.bgSource === 'ai' && MAP_STRONG.test(s.aiPrompt);
+                    // 나레이션에 지리 신호 + 공간 표현 (넓이·위치·범위)
+                    const narr = s.narration || '';
+                    const hasMapNar = MAP_NAR_STRONG.test(narr) && /(펼쳐지|범위|사이|둘러싸|걸쳐|포진|위치|한복판|주변)/.test(narr);
+
+                    if (hasMapPrompt || hasMapNar) {
                         s.isMapScene = true;
                         if (!Array.isArray(s.mapLabels)) s.mapLabels = [];
+                        // Gemini가 stock으로 찍었어도 지도 장면이면 bgSource를 ai로 교체
+                        if (hasMapNar && s.bgSource !== 'ai') {
+                            s.bgSource = 'ai';
+                            if (!s.aiPrompt) s.aiPrompt = 'Map illustration showing ' + narr.slice(0, 60);
+                        }
+                    }
+                });
+
+                // 🟠 나열 장면 — AI가 isListGridScene 태그 누락 시 나레이션에서 자동 감지
+                // 5가지 이상 명사 나열(쉼표로 구분) → 카탈로그 그리드
+                jsonObj.scenes.forEach(s => {
+                    if (s.isListGridScene === true) return;
+                    const narr = s.narration || '';
+                    // 쉼표로 4개 이상 나열 (ex: "위성, 레이더, 초계기, 급유기, 데이터링크")
+                    const commaItems = (narr.match(/[가-힣]{2,8}(?:, ?|,\s*)/g) || []).length;
+                    if (commaItems >= 4) {
+                        s.isListGridScene = true;
+                        // Gemini가 다른 소스 찍었어도 그리드 시각화가 더 적절하면 ai로 교체
+                        if (s.bgSource !== 'ai') {
+                            s.bgSource = 'ai';
+                            s.needRealImage = false; // 실사보다 그리드가 나열 전달에 유리
+                            delete s.realSearchKeyword;
+                            if (!s.aiPrompt) s.aiPrompt = 'Catalog grid showing ' + narr.slice(0, 60);
+                        }
                     }
                 });
                 // 스타일 prefix 자동 삽입 (세련된 다큐멘터리 인포그래픽)
@@ -5855,7 +5888,7 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
 
                 // 🎬 상징·은유 장면 감지 + 그록 영상화 태깅 + 영상 프롬프트 생성
                 // 상징: 체스·메스·유리 등 비유 소재. 역사·지도·인포그래픽 아닐 때만.
-                const SYMBOLIC_STRONG = /체스|메스|수술|유리|도미노|저울|뇌|그물|은유|비유|힘줄|톱질|사슬|쇠사슬|도장|저격|화살|깨진|부서진|금이|갈라|톱|바늘|매듭|사다리|기둥|열쇠|자물쇠|방패|가면|거울|손금|박힌 못|씨앗|뿌리|목줄|낚싯대|심장|심정지|마리오네트|인형|꼭두각시|풍선|폭발|불꽃|스위치|버튼|문 닫히|잠기|찢어|톱니|기어|팽이|거미줄|덫|올가미|지렛대|균열|쪼개|분할|압축|끓|얼음/;
+                const SYMBOLIC_STRONG = /체스|기물|보드 위|판 위|메스|수술|유리|도미노|저울|뇌|그물|은유|비유|힘줄|톱질|사슬|쇠사슬|도장|저격|화살|깨진|부서진|금이|갈라|톱|바늘|매듭|사다리|기둥|열쇠|자물쇠|방패|가면|거울|손금|박힌 못|씨앗|뿌리|목줄|낚싯대|심장|심정지|마리오네트|인형|꼭두각시|풍선|폭발|불꽃|스위치|버튼|문 닫히|잠기|찢어|톱니|기어|팽이|거미줄|덫|올가미|지렛대|균열|쪼개|분할|압축|끓|얼음|묶여|갇혀|포위|한 점에|조여|옥죄/;
                 // 이동 지도 힌트 (지도 장면 중 path 애니메이션 필요)
                 const MOVING_MAP_HINT = /경로|이동|흘러|향하|연결|→|지나가|통과|가로질|거쳐|돌아|향해|따라|단계/;
 
