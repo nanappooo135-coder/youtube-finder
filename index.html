@@ -7630,16 +7630,25 @@ ${sceneList}
                     rows += '<div style="margin-left:8px;margin-top:2px;font-size:0.75rem;color:#212529;word-break:break-word;">';
                     if (rank.type === 'real') {
                         const googleUrl = 'https://www.google.com/search?tbm=isch&q=' + encodeURIComponent(rank.content);
+                        const youtubeUrl = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(rank.content);
+                        const dvidsUrl = 'https://www.dvidshub.net/search/?q=' + encodeURIComponent(rank.content) + '&view=list';
                         rows += '🔍 <code style="background:#f8f9fa;padding:1px 5px;border-radius:3px;">' + _escapeHtml(rank.content) + '</code>';
-                        rows += ' <a href="' + googleUrl + '" target="_blank" rel="noopener" style="color:#1971c2;text-decoration:none;font-size:0.72rem;margin-left:4px;">구글 검색 ↗</a>';
+                        rows += ' <a href="' + googleUrl + '" target="_blank" rel="noopener" style="color:#1971c2;text-decoration:none;font-size:0.72rem;margin-left:4px;">📷 구글 ↗</a>';
+                        rows += ' <a href="' + youtubeUrl + '" target="_blank" rel="noopener" style="color:#e03131;text-decoration:none;font-size:0.72rem;margin-left:4px;">▶️ 유튜브 ↗</a>';
+                        // 군사·장비 키워드면 DVIDS 추가 (미군 공식 영상·사진, 퍼블릭 도메인)
+                        if (/navy|army|air force|military|destroyer|warship|missile|tank|aircraft|DVIDS|marine|soldier/i.test(rank.content)) {
+                            rows += ' <a href="' + dvidsUrl + '" target="_blank" rel="noopener" style="color:#2f9e44;text-decoration:none;font-size:0.72rem;margin-left:4px;">📺 DVIDS ↗</a>';
+                        }
                         // 대체 검색어 (매칭 실패 시 fallback)
                         if (rank.alts && rank.alts.length > 0) {
                             rows += '<div style="margin-top:3px;">';
                             rank.alts.slice(0, 2).forEach((alt, idx) => {
                                 const altUrl = 'https://www.google.com/search?tbm=isch&q=' + encodeURIComponent(alt);
+                                const altYt = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(alt);
                                 rows += '<div style="color:#868e96;font-size:0.72rem;margin-top:1px;">';
                                 rows += '↳ 대체' + (idx+1) + ': <code style="background:#f8f9fa;padding:1px 4px;border-radius:3px;">' + _escapeHtml(alt) + '</code>';
-                                rows += ' <a href="' + altUrl + '" target="_blank" rel="noopener" style="color:#1971c2;text-decoration:none;font-size:0.68rem;">구글 ↗</a>';
+                                rows += ' <a href="' + altUrl + '" target="_blank" rel="noopener" style="color:#1971c2;text-decoration:none;font-size:0.68rem;">📷 ↗</a>';
+                                rows += ' <a href="' + altYt + '" target="_blank" rel="noopener" style="color:#e03131;text-decoration:none;font-size:0.68rem;">▶️ ↗</a>';
                                 rows += '</div>';
                             });
                             rows += '</div>';
