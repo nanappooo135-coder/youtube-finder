@@ -3591,7 +3591,35 @@ ${introPrompts}`;
 
 
         // 셀팟 JSON 생성 프롬프트
-        function _buildSellpotJsonPrompt(script, chunkMode) {
+        // 2-pass: 대본 전체를 훑어 맥락 메모를 뽑는다 (주제·시대·지역·인물·시각 모티프·흐름)
+        async function _extractVideoContextMemo(script) {
+            const memoPrompt = `당신은 유튜브 영상 제작 PD입니다. 아래 대본 전체를 끝까지 읽고, **장면별 AI 이미지·스톡 키워드 선택에 실제로 쓰일 맥락 메모**를 한국어로 간결하게 작성하세요.
+
+형식 (정확히 이 6개 항목만, 각 항목 한두 줄):
+
+1. 핵심 주제 (한 줄):
+2. 시대·지역·핵심 인물:
+3. 전체 톤 (분석형/스토리형/설명형 중 택 + 이유 한 줄):
+4. 반복되는 시각 모티프 (3~6개, 쉼표로):
+5. 기승전결 흐름 (각 1줄):
+   - 도입:
+   - 전개:
+   - 절정:
+   - 결말:
+6. 시각적 일관성 주의사항 (이 영상에서 섞이면 안 되는 톤·소재·금지 키워드 2~3개):
+
+규칙:
+- 원문에 등장하지 않은 가상 인물·사건 추가 금지.
+- 형식 외 잡담·인사·서두 금지. 바로 1번부터 시작.
+
+[대본]
+${script}`;
+
+            const r = await callGemini(memoPrompt, { maxTokens: 2000, temperature: 0.2, model: 'gemini-2.5-flash' });
+            return (r.text || '').trim();
+        }
+
+        function _buildSellpotJsonPrompt(script, chunkMode, contextMemo) {
             const chunkRule = {
                 short: `**장면 분리 규칙: 한 문장 = 한 장면 (셀팟 공식 지침)**
 - 원칙: 나레이션의 **각 문장을 개별 장면으로 분리**
@@ -3602,17 +3630,44 @@ ${introPrompts}`;
 
 ## 🎯 소스 선택 — "내용 우선, 비율 억지 X"
 각 장면마다 **"이 나레이션에 가장 맞는 것"** 선택. 자연스러운 결과 범위:
-- **stock 40~60%**: 실제 장면·활동·풍경·산업 현장
-- **ai 15~25%**: 차트·지도·인포그래픽·은유·역사 재현
-- **실사 10~25%** (needRealImage): 실존 인물·역사 사진·특정 장소
-- **gif 5~15%**: 10자 이내 순수 감정 감탄만
+- **stock 50~65%**: 실제 장면·활동·풍경·산업 현장 (최우선)
+- **실사 20~35%** (needRealImage): 실존 인물·역사 사진·특정 장소 (적극 활용)
+- **ai 10~15%**: **인포그래픽·지도·역사 상징 전용** (그 외 장면에서 AI 금지)
+- **gif 5% 이하**: 10자 이내 순수 감정 감탄만
 
-### 📷 실사(needRealImage) 판단 규칙 (중요)
-**stock/ai로 대체 불가능하고 실제 사진이 필요한 경우에만**:
-- 실존 인물 (칭기즈칸 동상, 시진핑, 트럼프, 레닌 등)
-- 특정 사건 아카이브 (소련 붕괴, 달라이라마 방문)
-- 고유 장소·건물 (IMF 본부, 크렘린, 오유톨고이 광산)
-- 유물·기념물 (동상, 궁전, 상징물)
+**🚨 AI 이미지 사용 제한 (2026-04-23 강화)**
+벤치마크 채널(당신이몰랐던이야기·신사임당·지식브런치·지식한입) 분석 결과 실사+스톡이 압도적 다수. AI는 **대체 불가능한 경우에만**:
+- ✅ 허용: 인포그래픽(차트·구조도), 지도(isMapScene), 역사 재현(isHistoricalScene), 추상 상징
+- ❌ 금지: 일반 인물·활동·풍경·사건 — 이건 stock 또는 needRealImage로 해결
+
+### 📷 실사(needRealImage) 판단 규칙 (중요 — 2026-04-23 대폭 확장)
+**stock/ai로 대체 불가능하고 실제 사진이 필요한 경우. 아래 중 하나라도 해당하면 무조건 needRealImage:true**:
+
+**A. 실존 인물·단체**
+- 정치인·지도자 (트럼프, 시진핑, 네타냐후 등)
+- 역사 인물 (칭기즈칸·나폴레옹·황제·왕 등)
+- CEO·유명인·군 고위급
+
+**B. 특정 군사·산업 장비 (🔥 매우 중요)**
+- **구체명이 있는 군함·전투기·잠수함** (예: 스프루언스급 구축함, 알레이버크급, F-35, 니미츠 항모)
+- **미사일·무기체계 고유명** (토마호크, 패트리엇, 이지스, S-400)
+- **특정 산업 설비** (오유톨고이 광산, 사우디 아람코, TSMC 팹)
+- **실존 선박** (컨테이너선 이름·탱커 이름 — 투스카, 에버기븐 등)
+- ❗ "구축함" 언급 시 AI로 그리지 말 것. DVIDS 실사가 압도적으로 우수.
+
+**C. 특정 사건 아카이브**
+- 소련 붕괴, 9/11, 달라이라마 방문 등 역사적 순간
+
+**D. 고유 장소·건물**
+- IMF 본부, 크렘린, 백악관, 국회, 특정 항구·광산
+
+**E. 유물·기념물**
+- 동상, 궁전, 상징물, 공식 휘장
+
+**🚫 실사 누락 예방 체크 (대본 처리 시 반드시 검색):**
+- "구축함·전투기·항모·잠수함·미사일·전차" 단어 있으면 → **반드시 needRealImage:true**
+- "고유명 선박·장비명" 있으면 → **반드시 needRealImage:true**
+- 대본 전체에서 이런 키워드가 등장하는 **모든 장면**에 적용
 
 ### 🔍 realSearchKeyword 작성 규칙 (구글 이미지 매칭)
 - **영문 4~6단어** (짧으면 일반, 길면 매칭 실패)
@@ -3623,6 +3678,10 @@ ${introPrompts}`;
   - "Soviet Union collapse 1991 Moscow"
   - "IMF headquarters Washington DC building"
   - "Dalai Lama Mongolia visit 2016"
+  - "USS Spruance DDG-111 destroyer" (군함 구체 함번)
+  - "Arleigh Burke class destroyer VLS" (급 이름 + 장비)
+  - "Iranian container ship Tuska" (실존 선박 고유명)
+  - "Mk 41 VLS vertical launch system" (무기체계 정식명)
 - ❌ 나쁜 예:
   - "Asian leader" (일반화, 매칭 불가)
   - "ancient emperor" (이름 없음)
@@ -3656,6 +3715,14 @@ ${introPrompts}`;
 
             return `당신은 유튜브 영상 제작 파이프라인의 장면 구성 AI입니다.
 사용자가 나레이션 대본을 입력하면, 아래 규칙에 따라 장면(scene)으로 분리하고 JSON 형식으로 변환합니다.
+
+## 📌 영상 맥락 메모 (이미 파악 완료)
+
+본 요청에는 **1차 패스에서 추출한 영상 전체 맥락 메모가 [CONTEXT_MEMO] 블록으로 포함**되어 있을 수 있습니다.
+메모가 있으면 **모든 장면 결정(bgSource · bgQuery · aiPrompt · needRealImage · overlays · 오버레이 톤)**에 일관되게 반영하세요.
+- 메모에 명시된 주제·시대·지역·인물·시각 모티프를 모든 장면에 이어지게 할 것.
+- 갑자기 메모와 무관한 배경·키워드가 튀어나오지 말 것.
+- 메모가 없으면 기존 규칙대로 진행.
 
 ## ⚠️ 장면 분리 모드 (반드시 준수)
 
@@ -5438,9 +5505,30 @@ Freepik에 아이콘·3D 에셋이 풍부해서 **stock 영상 위에 얹으면 
 
 ---
 
+## 🚨 출력 직전 마지막 검증 (반드시 수행)
+
+JSON 출력하기 직전에, **모든 장면을 다시 한 번 스캔**하여 아래 키워드 중 하나라도 포함된 장면은 **무조건 needRealImage:true + realSearchKeyword** 추가했는지 확인:
+
+**필수 체크 키워드 (있으면 반드시 실사)**:
+- 군사 장비: 구축함 / 순양함 / 항모 / 잠수함 / 전투기 / 폭격기 / 드론 / 미사일 / 어뢰 / 탱크 / 전차 / 헬기 / VLS / 수직발사관 / 레이더 / 함포
+- 군함 고유명/급: 스프루언스 / 알레이버크 / 니미츠 / 포드급 / 이지스
+- 실존 선박: 투스카 / 에버기븐 / 타이타닉 등 고유명
+- 실존 무기체계: 토마호크 / 패트리엇 / S-400 / HIMARS
+- 실존 인물(정치인·지도자·CEO·장군)
+- 고유 건물·기관(백악관·크렘린·국회·특정 본사 등)
+
+**이 중 하나라도 나레이션에 있으면** → 그 장면의 bgSource는 "stock"으로 두되 **needRealImage:true + realSearchKeyword(영문 4~6단어 고유명 포함)**를 반드시 추가. 누락 0개 목표.
+
+예시:
+- 나레이션 "스프루언스 구축함" → needRealImage:true, realSearchKeyword:"USS Spruance DDG-111 destroyer"
+- 나레이션 "투스카 컨테이너선" → needRealImage:true, realSearchKeyword:"Iranian container ship Tuska"
+- 나레이션 "수직발사관" → needRealImage:true, realSearchKeyword:"Mk 41 VLS vertical launch system"
+
+---
+
 ## 대본
 
-${script}
+${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥락. 모든 장면 결정에 반영할 것]\n' + contextMemo + '\n[/CONTEXT_MEMO]\n\n' : ''}${script}
 
 ---
 
@@ -5451,7 +5539,7 @@ ${script}
 1. **스톡 우선 원칙 (80% 목표)**: 실사·실물이면 무조건 stock. AI는 5가지 조건 (과거/불가시/은유/지도/데이터)일 때만.
 2. **한 장면 한 메시지**: 한 장면에 정보 하나만. 여러 데이터 던지면 시청자 아무것도 기억 못 함.
 3. **codeGenHint 5~15%**: 남발 금지. 진짜 강조할 순간에만.
-4. **bgSource 비율 체크**: stock 80% / gif 10% / ai 10% 이하가 이상적.
+4. **bgSource 비율 체크**: stock 50~65% / 실사(needRealImage) 20~35% / ai 10~15% / gif 5% 이하. **AI는 인포그래픽·지도·역사 상징 전용**, 일반 장면에선 금지.
 5. **오버레이는 선택적 (40~60%)**: 핵심 메시지(숫자·키워드·결론·챕터) 있는 장면만. 연결·부가·긴 나레이션 장면엔 넣지 말 것.
 6. **bgQuery는 구체 장면, 비유 직역 금지**: "flipping card" 같은 추상 번역 대신 "reverse arrow direction" 같은 실제 Pexels 영상 있을 만한 키워드.
 
@@ -5497,7 +5585,20 @@ ${script}
             let text = '';
 
             try {
-                const prompt = _buildSellpotJsonPrompt(script, chunkMode);
+                // ═══ 0단계 (2-pass): 영상 전체 맥락 메모 추출 ═══
+                let contextMemo = '';
+                try {
+                    _showGeminiStatus('0단계: 대본 전체 맥락 분석 중... (5~15초)');
+                    contextMemo = await _extractVideoContextMemo(script);
+                    console.log('[맥락 메모]\n' + contextMemo);
+                    window._contextMemo = contextMemo;
+                } catch (memoErr) {
+                    console.warn('맥락 메모 추출 실패, 메모 없이 진행:', memoErr.message);
+                    contextMemo = '';
+                    window._contextMemo = '';
+                }
+
+                const prompt = _buildSellpotJsonPrompt(script, chunkMode, contextMemo);
 
                 // 1차: Gemini 시도 (무료) — callGemini는 Pro 실패 시 내부적으로 Flash로 자동 폴백함
                 // Claude 키가 있으면 Pro만 시도 후 실패하면 Claude로. 없으면 Pro→Flash 순서.
@@ -5557,6 +5658,81 @@ ${script}
                     throw new Error('scenes 배열이 없습니다.');
                 }
 
+                // 🔥 실사 자동 플래깅 (Gemini가 누락한 군사 장비·실존 선박·고유 건물)
+                // 2026-04-23: 프롬프트만으로 부족해서 클라이언트측 강제 감지 추가
+                const REAL_REQUIRED = {
+                    warship: {
+                        re: /구축함|순양함|항공모함|항모|잠수함|프리깃|호위함|이지스함|스프루언스|알레이버크|니미츠|포드급/,
+                        kw: 'US Navy destroyer warship DVIDS'
+                    },
+                    aircraft: {
+                        re: /전투기|폭격기|스텔스기|F-?16|F-?22|F-?35|B-?1|B-?2|B-?52|랩터|라이트닝/,
+                        kw: 'US Air Force fighter jet DVIDS'
+                    },
+                    missile: {
+                        re: /수직발사관|VLS|Mk\s?41|토마호크|패트리엇|THAAD|S-?400|이스칸데르|킨잘|함포/,
+                        kw: 'Mk 41 VLS vertical launch system Navy'
+                    },
+                    radar: {
+                        re: /이지스|SPY-?1|SPY-?6|AESA|조기경보기|E-?3|E-?7/,
+                        kw: 'Aegis SPY radar warship system'
+                    },
+                    tank: {
+                        re: /전차|M1\s?에이브람스|레오파드|K-?2|T-?90|T-?72/,
+                        kw: 'Abrams tank DVIDS military'
+                    },
+                    famousShip: {
+                        re: /투스카|에버기븐|에메랄드|블루문|타이타닉|러시아 슬라바|모스크바함/,
+                        kw: ''  // 선박명은 장면별로 나레이션에서 추출
+                    },
+                    landmark: {
+                        re: /백악관|크렘린|국회의사당|청와대|중앙은행|연방준비제도|Fed\s|IMF 본부|세계은행 본부|UN 본부|국방부 펜타곤/,
+                        kw: ''  // 건물명 장면별 추출
+                    }
+                };
+                jsonObj.scenes.forEach(s => {
+                    if (s.needRealImage === true) return; // 이미 플래그됨
+                    const narr = s.narration || '';
+                    let matched = null;
+                    for (const key in REAL_REQUIRED) {
+                        if (REAL_REQUIRED[key].re.test(narr)) {
+                            matched = REAL_REQUIRED[key];
+                            break;
+                        }
+                    }
+                    if (matched) {
+                        s.needRealImage = true;
+                        s.autoFlaggedReal = true;
+                        if (!s.realSearchKeyword) {
+                            // 나레이션에서 구체 키워드 추출 시도 (예: "스프루언스" → "USS Spruance")
+                            const specific = narr.match(/(스프루언스|알레이버크|니미츠|포드급|투스카|에버기븐|타이타닉|모스크바함|백악관|크렘린|청와대|국회의사당|F-?35|F-?22|토마호크|패트리엇)/);
+                            if (specific) {
+                                const map = {
+                                    '스프루언스': 'USS Spruance destroyer DDG',
+                                    '알레이버크': 'Arleigh Burke class destroyer DVIDS',
+                                    '니미츠': 'USS Nimitz aircraft carrier',
+                                    '포드급': 'USS Gerald R Ford carrier',
+                                    '투스카': 'Iranian container ship Tuska',
+                                    '에버기븐': 'Ever Given container ship Suez',
+                                    '타이타닉': 'RMS Titanic historical photo',
+                                    '모스크바함': 'Russian cruiser Moskva',
+                                    '백악관': 'White House Washington DC',
+                                    '크렘린': 'Kremlin Moscow Red Square',
+                                    '청와대': 'Blue House Seoul Korea',
+                                    '국회의사당': 'US Capitol building',
+                                    'F-35': 'F-35 Lightning II fighter DVIDS',
+                                    'F-22': 'F-22 Raptor stealth fighter',
+                                    '토마호크': 'Tomahawk cruise missile launch',
+                                    '패트리엇': 'Patriot missile system battery'
+                                };
+                                s.realSearchKeyword = map[specific[0]] || matched.kw;
+                            } else {
+                                s.realSearchKeyword = matched.kw;
+                            }
+                        }
+                    }
+                });
+
                 // 실사 필요 장면 별도 저장 (자동 교정 후 재계산)
                 let realScenes = jsonObj.scenes.filter(s => s.needRealImage === true);
 
@@ -5583,7 +5759,8 @@ ${script}
                     }
                 });
                 // 스타일 prefix 자동 삽입 (세련된 다큐멘터리 인포그래픽)
-                const MAP_STYLE_PREFIX = 'Modern infographic illustration style, warm cream beige background, soft pastel color palette with warm earth tones and muted blues, clean flat design, subtle paper texture, readable bold Korean labels in dark text, sophisticated editorial documentary aesthetic, professional and friendly, NOT dark, NOT gloomy, NOT photo-realistic, NOT childish cartoon, NO brand names, NO logos, NO watermarks, NO channel names, cinematic 16:9. ';
+                // 2026-04-23: 벤치마크 지도 스타일 (빈티지 양피지 + 수채 잉크 번짐 + 한글 국가명 핀)
+                const MAP_STYLE_PREFIX = 'Vintage antique atlas map illustration, watercolor and ink wash style. Dark navy blue ocean (#1E2B3A) with subtle ink splatter and water stain texture, teal green continents (#5FA39A) with hand-drawn country borders in dark brown ink. Aged parchment/paper border edges visible. ONE highlighted country/region with warm orange-sepia watercolor wash (#D98652) to draw attention, other countries stay teal. Small flag pin marker (national flag on a pin) placed on the highlighted country with a thick bold Korean country name label (한글, e.g. "미국", "러시아", "한국") in white on dark rounded badge. Optional themed icons (oil barrels, ships, coins, etc.) scattered as decorative elements relevant to the narrative. Textured, aged, editorial documentary aesthetic — NOT flat vector, NOT cartoon, NOT photorealistic, NOT clean modern. ALL labels and captions MUST be in Korean (한글) — NO English country names, NO romanization, NO Latin text. Cinematic 16:9. ';
                 jsonObj.scenes.forEach(s => {
                     if (s.isMapScene !== true || typeof s.aiPrompt !== 'string') return;
                     if (!s.aiPrompt.startsWith('Paper cut collage') && !s.aiPrompt.startsWith('Modern infographic illustration style')) {
@@ -5610,7 +5787,8 @@ ${script}
                 // 🟢 인포그래픽 장면 자동 감지 (수치·퍼센트·비교·흐름)
                 // 지도·역사 아닐 때만 태그. 그림은 파스텔 만화 플랫 벡터 인포그래픽.
                 const INFOGRAPHIC_STRONG = /\d+\s*%|\d+\s*퍼센트|\d+배|\d+\s*분의\s*\d+|\d+\s*명\s*중\s*\d+|비교해보면|구조를|메커니즘|흐름도|단계로|\bvs\b|대비하면/;
-                const INFOGRAPHIC_STYLE_PREFIX = 'Flat 2D vector infographic illustration in Korean educational YouTube channel style. Cream yellow background (#FAF3D0) with subtle crumpled paper texture. Cartoon icons with thick black outlines. Limited pastel palette (cream, red, purple, teal, navy). Bold Korean gothic sans-serif text. Educational documentary tone. NOT photorealistic, NOT anime, NOT childish cartoon. Cinematic 16:9. ';
+                // 2026-04-23: 벤치마크 인포그래픽 스타일 (크림 종이 + 굵은 한글 + 강조 1개 빨강)
+                const INFOGRAPHIC_STYLE_PREFIX = 'Clean minimal infographic in Korean documentary YouTube style. Background options (choose based on topic): (A) Vintage cream beige paper (#F5EFD9) with subtle paper grain, OR (B) Semi-transparent dark overlay on a relevant thematic photo (industry scene, national flag, related real-world footage) with 40-50% dark gradient for chart readability — use this when topic has a clear visual subject (country → flag, industry → site photo). Bold thick black or white Korean serif title at top (한글 제목, large bold, white text if photo background), subtitle in parentheses smaller. Data visualization (bar chart / line chart / area chart / pie / comparison): if bar → dark charcoal gray bars (#3A3A3A) with EXACTLY ONE accent bar in bold red (#C62828). If line/area → vivid solid fill colors per category with Korean legend box top-left. Horizontal dashed grid lines. Y-axis label and unit in Korean, X-axis years or Korean categories, axis arrow. Country flag icons as x-axis labels when comparing countries. Optional red triangle pointer + Korean annotation ("셰일혁명" style) marking key inflection points. ALL titles, labels, captions, legends, annotations MUST be in Korean (한글) — NO English words, NO romanization, NO Latin text except numbers and unit symbols (%, $, mb/d). Simple, editorial, professional, uncluttered. NOT cartoon, NOT childish. Cinematic 16:9. ';
                 jsonObj.scenes.forEach(s => {
                     if (s.isMapScene === true) return;
                     if (s.isHistoricalScene === true) return;
@@ -5620,6 +5798,37 @@ ${script}
                     s.isInfographicScene = true;
                     if (!s.aiPrompt.startsWith('Flat 2D vector infographic')) {
                         s.aiPrompt = INFOGRAPHIC_STYLE_PREFIX + s.aiPrompt;
+                    }
+                });
+
+                // 🟡 설명·단면·구조 다이어그램 (지층·단계·층 구조) — 2026-04-23 추가
+                // 벤치마크: 푸짐한경제학 지층 단면도 (크림 하늘 + 수채 질감 층 + 한글 라벨)
+                const DIAGRAM_STRONG = /지층|단면|층 구조|층이|내부 구조|속 구조|지하|상층|하층|땅속|땅 아래|지하로|깊숙이|층층이|위아래로|단계별로|구간별|단층/;
+                const DIAGRAM_STYLE_PREFIX = 'Cross-section diagram illustration in warm hand-painted watercolor style. Horizontal layered bands stacked vertically, each layer a different earthy color (cream sky #F5EFD9 at top, green grass band #4A7C59, sand/sediment tan #C9A876, stone textured beige with pebble pattern, deep brown soil #6B4423 at bottom) with subtle watercolor paper texture and soft brush edges. Each layer has ONE large bold Korean label (한글) centered horizontally — thick sans-serif, high contrast (white on dark layers, dark on light layers). Hand-painted aesthetic, NOT flat vector, NOT photorealistic, NOT 3D render. Editorial documentary tone, warm and clean. ALL labels MUST be in Korean (한글) — NO English, NO romanization, NO Latin text. Cinematic 16:9. ';
+                jsonObj.scenes.forEach(s => {
+                    if (s.isMapScene || s.isHistoricalScene || s.isInfographicScene) return;
+                    if (s.bgSource !== 'ai' || typeof s.aiPrompt !== 'string') return;
+                    const narr = s.narration || '';
+                    if (!DIAGRAM_STRONG.test(narr)) return;
+                    s.isDiagramScene = true;
+                    if (!s.aiPrompt.startsWith('Cross-section diagram')) {
+                        s.aiPrompt = DIAGRAM_STYLE_PREFIX + s.aiPrompt;
+                    }
+                });
+
+                // 🟠 나열·카탈로그 그리드 (여러 항목 설명) — 2026-04-23 추가
+                // 벤치마크: 푸짐한경제학 주류 6종 그리드 (크림 배경 + 밧줄 테두리 카드 + 한글 라벨)
+                // 감지: 항목 3개 이상 열거 (A, B, C / A와 B와 C / A·B·C / A도 B도 C도)
+                const LIST_STRONG = /[가-힣]{1,6}(?:,\s*|와\s|과\s|랑\s|이나\s|·)[가-힣]{1,6}(?:,\s*|와\s|과\s|랑\s|이나\s|·)[가-힣]{1,6}|[가-힣]+도\s+[가-힣]+고[,.]?\s*[가-힣]+도\s+[가-힣]+고|여러 종류|여러 가지|이런 것들|같은 것들|종류가/;
+                const LIST_STYLE_PREFIX = 'Catalog grid layout illustration on warm cream beige background (#F5EFD9) with subtle paper texture. 2x3 or 3x2 grid of framed photo cards, each card has a decorative braided rope/chain border (dark brown), rounded corners, slight drop shadow. Inside each card: a clean professional product photo with neutral background. Below each card: ONE bold Korean label (한글, thick sans-serif, dark brown text) centered on a darker cream strip. Editorial documentary tone, organized, clean, uncluttered. NOT cartoon, NOT flat vector, NOT photorealistic composite — it IS a grid of photos on parchment. ALL labels MUST be in Korean (한글) — NO English, NO romanization. Cinematic 16:9. ';
+                jsonObj.scenes.forEach(s => {
+                    if (s.isMapScene || s.isHistoricalScene || s.isInfographicScene || s.isDiagramScene) return;
+                    if (s.bgSource !== 'ai' || typeof s.aiPrompt !== 'string') return;
+                    const narr = s.narration || '';
+                    if (!LIST_STRONG.test(narr)) return;
+                    s.isListGridScene = true;
+                    if (!s.aiPrompt.startsWith('Catalog grid layout')) {
+                        s.aiPrompt = LIST_STYLE_PREFIX + s.aiPrompt;
                     }
                 });
 
@@ -5635,7 +5844,7 @@ ${script}
                     const prompt = s.aiPrompt || '';
 
                     // 상징 감지 (다른 카테고리 아닐 때만)
-                    if (!s.isHistoricalScene && !s.isMapScene && !s.isInfographicScene) {
+                    if (!s.isHistoricalScene && !s.isMapScene && !s.isInfographicScene && !s.isDiagramScene) {
                         if (SYMBOLIC_STRONG.test(narr) || SYMBOLIC_STRONG.test(prompt)) {
                             s.isSymbolicScene = true;
                         }
@@ -5790,6 +5999,10 @@ ${script}
                     }
                     if (toSkip.size > 0) {
                         jsonObj.scenes = jsonObj.scenes.filter(s => !toSkip.has(s.id));
+                        // 병합 후 id 순차 재번호 (4→6 점프 방지)
+                        jsonObj.scenes.forEach((s, idx) => {
+                            s.id = idx + 1;
+                        });
                     }
                 }
                 window._autoFixStats = {
@@ -5813,7 +6026,7 @@ ${script}
                         needLogo, logoName, logoPosition,
                         overlayUpgrade,
                         isMapScene, mapLabels,
-                        isHistoricalScene, isInfographicScene,
+                        isHistoricalScene, isInfographicScene, isDiagramScene,
                         isSymbolicScene, isMovingMap,
                         needsGrokVideo, grokVideoDuration, grokVideoPrompt,
                         autoFixedFromGif, autoFixedToReal, mergedFromIds,
@@ -7052,7 +7265,18 @@ ${sceneList}
                 }
             }
 
-            let html = topicBanner + '<div style="display:flex;flex-direction:column;gap:8px;">';
+            // 📋 2-pass 맥락 메모 패널 (Gemini Flash가 추출한 영상 전체 맥락)
+            let memoPanel = '';
+            const memo = window._contextMemo || '';
+            if (memo) {
+                const memoHtml = _escapeHtml(memo).replace(/\n/g, '<br>');
+                memoPanel = '<details style="margin-bottom:10px;border:2px solid #7c3aed;border-radius:6px;background:#f5f3ff;">'
+                    + '<summary style="padding:10px 14px;cursor:pointer;font-weight:700;font-size:0.88rem;color:#5b21b6;">📋 이 영상의 맥락 메모 (펼치기 / Gemini Flash 자동 분석)</summary>'
+                    + '<div style="padding:12px 16px;background:#fff;border-top:1px solid #ddd6fe;font-size:0.82rem;color:#1f2937;line-height:1.7;">' + memoHtml + '</div>'
+                    + '</details>';
+            }
+
+            let html = memoPanel + topicBanner + '<div style="display:flex;flex-direction:column;gap:8px;">';
             filtered.forEach(s => {
                 html += _renderSceneGuideCard(s);
             });
@@ -7099,6 +7323,10 @@ ${sceneList}
             if (a.needsGrokVideo || b.needsGrokVideo) return false;
             // 인포그래픽 장면은 읽을 시간 필요 → 독립 유지
             if (a.isInfographicScene || b.isInfographicScene) return false;
+            // 단면·구조 다이어그램도 읽을 시간 필요 → 독립 유지
+            if (a.isDiagramScene || b.isDiagramScene) return false;
+            // 실사 필요 장면(고유 장비·인물·건물)은 단독 유지 — 병합 시 실사 플래그 유실 방지
+            if (a.needRealImage || b.needRealImage) return false;
             // 지도 장면은 독립 유지
             if (a.isMapScene || b.isMapScene) return false;
             // 캐릭터·로고 장면은 구성 복잡 → 독립 유지
@@ -7112,9 +7340,9 @@ ${sceneList}
             if (/^(그런데|그러나|하지만|한편|그러자|그래서|따라서|반면|대신|다만|어쨌든|그렇다면|그럼|이제|이후|다음|여기서|그럼에도|그럴수록|그리고 이제|자|먼저|일단)/.test(narrB)) {
                 return false;
             }
-            // 합친 길이 체크 — 너무 길면 (150자 초과) 15초 넘음
+            // 합친 길이 체크 — 스톡 영상 6~10초 안전 범위 (80자 ≈ 8초)
             const combined = (a.narration || '') + (b.narration || '');
-            if (combined.length > 150) return false;
+            if (combined.length > 80) return false;
             return true;
         }
 
@@ -7125,9 +7353,9 @@ ${sceneList}
                 const s = scenes[i];
                 const prev = current.length > 0 ? current[current.length - 1] : null;
                 if (prev && _canMergeScenes(prev, s)) {
-                    // 그룹 전체 길이 체크 (합쳐서 150자 넘으면 그룹 종료)
+                    // 그룹 전체 길이 체크 (합쳐서 80자 넘으면 그룹 종료 — 스톡 안전 범위)
                     const totalLen = current.reduce((acc, c) => acc + (c.narration || '').length, 0) + (s.narration || '').length;
-                    if (totalLen <= 150) {
+                    if (totalLen <= 80) {
                         current.push(s);
                         continue;
                     }
@@ -7204,12 +7432,23 @@ ${sceneList}
             // 이미지 3순위
             rows += '<div style="margin-top:8px;padding:8px 10px;background:#fff;border-radius:6px;border:1px solid #e9ecef;">';
             rows += '<div style="font-weight:700;font-size:0.78rem;color:#495057;margin-bottom:6px;">🖼️ 이미지 추천 (순위)</div>';
-            // 4순위까지 표시 + 스톡이 top3에 없으면 보장
-            let display = imageRanks.slice(0, 4);
-            if (!display.find(r => r && r.type === 'stock')) {
-                const stockEntry = imageRanks.find(r => r && r.type === 'stock');
-                if (stockEntry) display.push(stockEntry);
-            }
+            // 4종 고정 표시: stock / real / ai / gif (character 제외)
+            // 나레이션 성격에 따라 점수 순으로 정렬되지만, 4종은 항상 모두 노출
+            const _FIXED_TYPES = ['stock', 'real', 'ai', 'gif'];
+            let display = imageRanks.filter(r => r && _FIXED_TYPES.includes(r.type));
+            _FIXED_TYPES.forEach(t => {
+                if (!display.find(r => r.type === t)) {
+                    const entry = _buildRankEntry(s, t, 0);
+                    if (entry) display.push(entry);
+                }
+            });
+            // 점수 재정렬 (imageRanks 원본 순서 기준)
+            display.sort((a, b) => {
+                const ai = imageRanks.findIndex(r => r && r.type === a.type);
+                const bi = imageRanks.findIndex(r => r && r.type === b.type);
+                return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+            });
+            display = display.slice(0, 4);
             display.forEach((rank, i) => {
                 const color = _RANK_COLORS[rank.type].border;
                 const emoji = _RANK_ICONS[rank.type];
@@ -7369,68 +7608,87 @@ ${sceneList}
         // === 이미지 소스 3순위 결정 ===
         function _rankImageSources(s) {
             const narr = s.narration || '';
-            const scores = { stock: 1, ai: 0, real: 0, character: 0, gif: 0 };
+            // 2026-04-23: 내용 기반 판정 — "이 장면엔 뭐가 어울리나"
+            // 기본값은 낮게 두고, 키워드 맞는 쪽에 크게 가중
+            const scores = { stock: 1, ai: 0, real: 1, character: 0, gif: 0 };
 
-            // 실존 인물
-            const realPersonRe = /(칭기즈칸|나폴레옹|링컨|간디|세종|박정희|김일성|김정일|이승만|트럼프|푸틴|네타냐후|시진핑|오바마|김정은|달라이라마|레닌|스탈린|고르바초프|마오쩌둥|덩샤오핑)/;
-            if (realPersonRe.test(narr)) { scores.real += 4; }
+            // ═══════ 실사(real) 우선 조건 ═══════
+            // 역사 장면·인물·그 시절 서민/상황 — 실사 이미지로 해결
+            const realPersonRe = /(칭기즈칸|나폴레옹|링컨|간디|세종|박정희|김일성|김정일|이승만|트럼프|푸틴|네타냐후|시진핑|오바마|김정은|달라이라마|레닌|스탈린|고르바초프|마오쩌둥|덩샤오핑|히틀러|무솔리니|처칠|루스벨트)/;
+            if (realPersonRe.test(narr)) { scores.real += 5; }
 
-            // 실존 지명·기관
-            if (/(울란바토르|베를린|도쿄|북경|상하이|모스크바|워싱턴|서울|평양|IMF|세계은행|백악관|크렘린|NATO|UN|EU)/.test(narr)) {
-                scores.real += 3; scores.stock += 1;
+            // 실존 지명·기관 (건물·장소)
+            if (/(울란바토르|베를린|도쿄|북경|상하이|모스크바|워싱턴|서울|평양|IMF|세계은행|백악관|크렘린|NATO|UN|EU|국회|청와대)/.test(narr)) {
+                scores.real += 4;
             }
 
-            // 역사 사건·왕조
-            if (/(청나라|조선|고려|신라|로마|이집트|라마 불교|산업혁명|냉전|공산주의|소련|독립 선언|숙청|사원)/.test(narr)) {
-                scores.real += 2; scores.ai += 2;
+            // 역사 사건·왕조·시대상 — 실사(사진·그림·유물) 최우선
+            if (/(청나라|조선|고려|신라|로마|이집트|라마 불교|산업혁명|냉전|공산주의|소련|독립 선언|숙청|사원|전쟁|식민|왕조|제국|황제|왕|군주)/.test(narr)) {
+                scores.real += 4;
             }
 
-            // 은유·비유·추상 (AI가 최고)
-            if (/(씨를 말리다|목줄|근육|뿌리|씨앗|역기|손아귀|숨줄|청년기|붕괴|도미노|제국|목 조르기|버튼|급소|봉쇄|사슬|줄 끊|증발|불태|무릎|무너짐|쪼개|갈라)/.test(narr)) {
-                scores.ai += 4; scores.gif += 1;
+            // 그 시절 서민·생활상 (옛날 사진·풍속화 스타일)
+            if (/(서민|농민|백성|민중|노동자|장사꾼|상인|시골|농촌|마을|가난|굶주|배고|그 시절|당시|옛날|예전)/.test(narr)) {
+                scores.real += 4;
             }
 
-            // 지도·국가 관계 (AI 지도)
-            if (/(국경|영토|내몽골|외몽골|완충지대|제3의 이웃|자원 부국|러시아와 중국 사이)/.test(narr)) {
-                scores.ai += 4;
+            // ═══════ AI 우선 조건 (인포그래픽·지도·수치 설명만) ═══════
+            // 지도·지정학
+            if (/(국경|영토|완충지대|위치|지리|반도|대륙|무역로|항로|해협|지도)/.test(narr)) {
+                scores.ai += 5;
             }
 
-            // 데이터·숫자 (AI infographic)
+            // 데이터·수치 (인포그래픽)
             const hasPct = /\d{1,3}\s*(?:%|퍼센트)/.test(narr);
             const hasMoney = /\$\s*[\d,]+|\d+\s*(조|억|만)\s*(원|달러)/.test(narr);
             const hasRank = /1위|2위|3위|꼴찌|순위|세계 \d/.test(narr);
-            const hasYears = /\d{4}년|\d+년대/.test(narr);
-            if (hasPct || hasMoney || hasRank) { scores.ai += 3; scores.stock += 1; }
-            if (hasYears && narr.length > 40) { scores.ai += 1; }
+            if (hasPct || hasMoney || hasRank) { scores.ai += 4; }
 
-            // 감정·반응 (GIF)
-            if (/(왜\?|어떻게|놀랍게|충격|허망|후회|절망|희망|기대|궁금|\?|!\?)/.test(narr) && narr.length < 50) {
+            // 구조·흐름 설명 (인포그래픽)
+            if (/(구조|흐름|단계|프로세스|시스템|관계도|비교|차이)/.test(narr)) {
+                scores.ai += 3;
+            }
+
+            // ═══════ 스톡 우선 조건 (실사로 못 찍는 추상·현대 일반) ═══════
+            // 추상·비유·은유 — 현대적 비유 영상으로 커버
+            if (/(씨를 말리다|목줄|근육|뿌리|씨앗|역기|손아귀|숨줄|붕괴|도미노|목 조르기|버튼|급소|봉쇄|사슬|줄 끊|증발|불태|무너짐|쪼개|갈라)/.test(narr)) {
+                scores.stock += 4;
+            }
+
+            // 구체 활동·현대 장면
+            if (/(공장|도시|거리|빌딩|사람들|관광객|학생|학교|아이|가족|회사|공항|비행기|선박|광산|건설|시장|상점|사무실|회의실)/.test(narr)) {
+                scores.stock += 4;
+            }
+
+            // 자연·풍경 (현대 촬영 가능)
+            if (/(산|강|바다|하늘|초원|사막|들판|동물|말|소|양|땅|풍경|나무|숲)/.test(narr)) {
+                scores.stock += 4;
+            }
+
+            // ═══════ GIF 조건 (짧은 감정 반응만) ═══════
+            if (/(왜\?|어떻게|놀랍게|충격|허망|후회|절망|희망|기대|궁금|\?|!\?)/.test(narr) && narr.length < 30) {
                 scores.gif += 3;
             }
-            if (/(꼴찌|바닥|정지|멈춤|끝|한계)/.test(narr)) scores.gif += 1;
 
-            // 캐릭터 삽입 (지식한잔/잡하게티 스타일)
-            if (/(정치인|대통령|지도자|협상|외교|회의|거래|설득|요구)/.test(narr)) {
-                scores.character += 3;
+            // 2026-04-23: 맥락 기반 최종 우선순위 결정
+            // 우선순위 계층 (강한 순):
+            //   1. needRealImage:true → 실사 무조건 1순위 (고유 장비·인물·건물)
+            //   2. isMapScene/isDiagramScene/isInfographicScene/isListGridScene → AI 1순위
+            //   3. 그 외 → Gemini가 정한 bgSource 우대
+            if (s.needRealImage === true) {
+                // 실사 필요 장면: real을 압도적 1순위로
+                scores.real = (scores.real || 0) + 20;
+                // 보조 2순위는 stock (실사가 없을 때 스톡으로 fallback)
+                scores.stock = (scores.stock || 0) + 5;
+            } else if (s.isMapScene || s.isDiagramScene || s.isInfographicScene || s.isListGridScene || s.isSymbolicScene || s.isHistoricalScene) {
+                // 전용 AI 카테고리: ai가 1순위
+                scores.ai = (scores.ai || 0) + 15;
+                scores.stock = (scores.stock || 0) + 3;
+            } else {
+                // 일반 장면: Gemini bgSource 존중
+                const cur = s.bgSource || 'stock';
+                scores[cur] = (scores[cur] || 0) + 10;
             }
-            if (/("[^"]{3,30}"|찍어주시면|약속|공약|선언)/.test(narr)) {
-                scores.character += 2;
-            }
-
-            // 구체 활동·장면 (Stock)
-            if (/(공장|도시|거리|빌딩|사람들|관광객|학생|학교|아이|가족|회사|공항|비행기|선박|광산|건설|시장|상점)/.test(narr)) {
-                scores.stock += 3;
-            }
-
-            // 자연·풍경
-            if (/(산|강|바다|하늘|초원|사막|들판|동물|말|소|양|땅|풍경)/.test(narr)) {
-                scores.stock += 3;
-            }
-
-            // 현재 JSON의 bgSource 강력 우대 (Gemini가 이미 분석한 결과 최우선)
-            // JSON ↔ 가이드 매칭 보장
-            const cur = s.bgSource || 'stock';
-            scores[cur] = (scores[cur] || 0) + 10;
 
             // 정렬
             const sorted = Object.entries(scores)
@@ -7861,7 +8119,7 @@ ${sceneList}
                     const quoted = koreanTexts.slice(0, 4).map(t => '"' + t.replace(/"/g, "'") + '"').join(', ');
                     koreanEnforce += ' REQUIRED Korean labels to render prominently and accurately: ' + quoted + '.';
                 }
-                koreanEnforce += ' Use bold, high-contrast Korean typography (Noto Sans KR style). All Korean characters must be perfectly formed, NO garbled text, NO invented characters, NO mixed scripts. Korean text must be the dominant visual element. Spell every Korean syllable precisely.';
+                koreanEnforce += ' Use bold, high-contrast Korean typography (Noto Sans KR style). All Korean characters must be perfectly formed, NO garbled text, NO invented characters, NO mixed scripts. Korean text must be the dominant visual element. Spell every Korean syllable precisely. 🚫 STRICTLY NO English words, NO romanization, NO Latin alphabet in labels/titles/captions — ONLY Korean (한글). Exception: numbers (0-9) and unit symbols (%, $, mb/d) are allowed.';
 
                 out += koreanEnforce;
             }
@@ -8562,9 +8820,20 @@ ${sceneList}
                 return { category: '레이아웃', type: '지도라벨', text: s.textOverlay || '지역', reason: '지도 위 지역 라벨' };
             }
 
-            // 카운트다운 (시간 카운팅)
-            if (/카운트다운|\d+초 남음|마지막 \d+/.test(narr)) {
-                return { category: '레이아웃', type: '카운트다운', text: s.textOverlay || '시간', reason: '카운트다운 연출' };
+            // 카운트다운 (시간 카운팅·임박·경과 시간)
+            // 2026-04-23 확장: 남은/앞둔/시간째/경과도 포함
+            if (/카운트다운|\d+초 남음|마지막 \d+|\d+일\s*(?:남|앞)|\d+시간\s*(?:째|남|앞|만에)|\d+분\s*(?:째|남|앞)|\d+주\s*(?:남|앞)|D-\d+|사흘\s*(?:앞|뒤|남)|이틀\s*(?:앞|뒤|남)/.test(narr)) {
+                // 시간 숫자 추출
+                const timeMatch = narr.match(/(\d+(?:시간|일|분|초|주|개월|년))/);
+                const label = timeMatch ? timeMatch[1] : (s.textOverlay || '시간');
+                return { category: '레이아웃', type: '카운트다운', text: label, reason: '시간 카운팅·임박·경과' };
+            }
+
+            // 물리 단위 수치 (길이·무게·속도) → 수치카드
+            // 2026-04-23 신규: 155m / 294m / 54,000톤 / 시속 60km 등
+            const physicalMatch = narr.match(/(\d{1,3}(?:[,\.]\d{3})*(?:\.\d+)?\s*(?:m(?:m|eter)?|cm|km|톤|t\s|kg|미터|킬로미터|마일|피트|야드|노트|knots|시속\s*\d+))/);
+            if (physicalMatch && !pctMatch && !wonMatch && !usdMatch) {
+                return { category: '기존', type: '수치카드', text: physicalMatch[1].trim(), reason: '물리 단위 강조' };
             }
 
             // === 우선순위 7: 기본 제목·헤드라인 ===
@@ -8683,10 +8952,24 @@ ${sceneList}
                 const summary = narr.length > 90 ? narr.substring(0, 90) + '...' : narr;
                 text += '━━━ 장면 ' + s.id + ' ━━━\n';
                 text += '📝 "' + summary + '"\n';
-                // 이미지 3순위
-                const ranks = _rankImageSources(s);
+                // 이미지 4순위 고정 (stock/real/ai/gif)
+                const allRanks = _rankImageSources(s);
+                const _FIXED = ['stock', 'real', 'ai', 'gif'];
+                let ranks = allRanks.filter(r => r && _FIXED.includes(r.type));
+                _FIXED.forEach(t => {
+                    if (!ranks.find(r => r.type === t)) {
+                        const entry = _buildRankEntry(s, t, 0);
+                        if (entry) ranks.push(entry);
+                    }
+                });
+                ranks.sort((a, b) => {
+                    const ai = allRanks.findIndex(r => r && r.type === a.type);
+                    const bi = allRanks.findIndex(r => r && r.type === b.type);
+                    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+                });
+                ranks = ranks.slice(0, 4);
                 text += '\n[이미지 추천]\n';
-                ranks.slice(0, 3).forEach((r, i) => {
+                ranks.forEach((r, i) => {
                     const star = (i === 0) ? ' ⭐' : '';
                     text += (i+1) + '순위' + star + ' ' + _RANK_ICONS[r.type] + ' ' + r.label;
                     if (r.reason) text += ' — ' + r.reason;
