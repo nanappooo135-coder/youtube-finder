@@ -5984,9 +5984,22 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                 // 2026-04-23: 프리픽 (Mystic/Flux) 기반 한글 지도 프롬프트
                 // 한글 사전 박아주면 프리픽이 정확히 한글로 렌더링 (Genspark는 못 뚫음 → 프리픽 전환)
                 const MAP_STYLE_PREFIX = 'Vintage antique atlas map illustration, watercolor and ink wash style. Dark navy blue ocean (#1E2B3A) with subtle ink splatter and water stain texture, teal green continents (#5FA39A) with hand-drawn country borders in dark brown ink. Aged parchment/paper border edges visible. ONE highlighted country/region with warm orange-sepia watercolor wash (#D98652) to draw attention, other countries stay teal. Small flag pin marker (national flag on a pin) placed on the highlighted country with a thick bold Korean country name label (한글) in white on dark rounded badge. Optional themed icons (oil barrels, ships, coins, arrows) scattered as decorative elements. Textured, aged, editorial documentary aesthetic — NOT flat vector, NOT cartoon, NOT photorealistic, NOT clean modern. 🚨 CRITICAL: ALL country/region/sea/strait/city labels MUST be in Korean Hangul (한글) ONLY. Use these exact Korean equivalents: USA→미국, Russia→러시아, China→중국, Japan→일본, Korea→한국, Iran→이란, Iraq→이라크, Israel→이스라엘, Saudi Arabia→사우디아라비아, UAE→아랍에미리트, Oman→오만, Pakistan→파키스탄, India→인도, Turkey→튀르키예, Syria→시리아, Lebanon→레바논, Egypt→이집트, Yemen→예멘, Qatar→카타르, Kuwait→쿠웨이트, Bahrain→바레인, Afghanistan→아프가니스탄, Germany→독일, France→프랑스, UK→영국, Italy→이탈리아, Spain→스페인, Ukraine→우크라이나, Gulf of Oman→오만만, Persian Gulf→페르시아만, Strait of Hormuz→호르무즈 해협, Arabian Sea→아라비아해, Red Sea→홍해, Mediterranean→지중해, Black Sea→흑해, Caspian→카스피해, Indian Ocean→인도양, Pacific→태평양, Atlantic→대서양, Muscat→무스카트, Dubai→두바이, Tehran→테헤란, Riyadh→리야드, Moscow→모스크바, Beijing→베이징, Seoul→서울, Tokyo→도쿄, Washington→워싱턴, Istanbul→이스탄불, Cairo→카이로, London→런던, Paris→파리, Madrid→마드리드. All labels in Korean only. Cinematic 16:9. ';
+                // 2026-04-23: 스타일 prefix 중복 방지 헬퍼 — 하나만 적용되도록
+                // 이미 다른 스타일이 붙어있으면 새 prefix 안 붙임
+                function _hasAnyStylePrefix(prompt) {
+                    if (typeof prompt !== 'string') return false;
+                    const markers = [
+                        'Vintage antique atlas map', 'Paper cut collage', 'Modern infographic illustration style',
+                        'Semi-realistic dark painterly', 'Clean minimal infographic chart', 'Clean minimal infographic',
+                        'Cross-section diagram', 'Catalog grid layout',
+                        'Hand-painted symbolic', 'Hand-painted warm editorial', 'Flat 2D vector infographic'
+                    ];
+                    return markers.some(m => prompt.startsWith(m));
+                }
+
                 jsonObj.scenes.forEach(s => {
                     if (s.isMapScene !== true || typeof s.aiPrompt !== 'string') return;
-                    if (!s.aiPrompt.startsWith('Paper cut collage') && !s.aiPrompt.startsWith('Modern infographic illustration style')) {
+                    if (!_hasAnyStylePrefix(s.aiPrompt)) {
                         s.aiPrompt = MAP_STYLE_PREFIX + s.aiPrompt;
                     }
                 });
@@ -6003,7 +6016,7 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                     const narr = s.narration || '';
                     if (!HISTORICAL_STRONG.test(narr)) return;
                     s.isHistoricalScene = true;
-                    if (!s.aiPrompt.startsWith('Semi-realistic dark painterly')) {
+                    if (!_hasAnyStylePrefix(s.aiPrompt)) {
                         s.aiPrompt = HISTORICAL_STYLE_PREFIX + s.aiPrompt;
                     }
                 });
@@ -6025,7 +6038,7 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                     const promptMatch = INFOGRAPHIC_PROMPT_HINT.test(s.aiPrompt);
                     if (!narrMatch && !promptMatch) return;
                     s.isInfographicScene = true;
-                    if (!s.aiPrompt.startsWith('Clean minimal infographic chart')) {
+                    if (!_hasAnyStylePrefix(s.aiPrompt)) {
                         s.aiPrompt = INFOGRAPHIC_STYLE_PREFIX + s.aiPrompt;
                     }
                 });
@@ -6040,7 +6053,7 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                     const narr = s.narration || '';
                     if (!DIAGRAM_STRONG.test(narr)) return;
                     s.isDiagramScene = true;
-                    if (!s.aiPrompt.startsWith('Cross-section diagram')) {
+                    if (!_hasAnyStylePrefix(s.aiPrompt)) {
                         s.aiPrompt = DIAGRAM_STYLE_PREFIX + s.aiPrompt;
                     }
                 });
@@ -6056,7 +6069,7 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                     const narr = s.narration || '';
                     if (!LIST_STRONG.test(narr)) return;
                     s.isListGridScene = true;
-                    if (!s.aiPrompt.startsWith('Catalog grid layout')) {
+                    if (!_hasAnyStylePrefix(s.aiPrompt)) {
                         s.aiPrompt = LIST_STYLE_PREFIX + s.aiPrompt;
                     }
                 });
@@ -6094,7 +6107,7 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                             // 2026-04-23: 상징·은유도 크림 종이+수채 편집 톤으로 통일
                             // 2026-04-23: 스타일만 기술, 구체 예시(chess/domino/gear) 제거 — 예시를 "그리라"고 오해 방지
                             const SYMBOLIC_STYLE_PREFIX = 'Hand-painted symbolic illustration in warm editorial watercolor style. Vintage cream beige paper background (#F5EFD9) with subtle paper grain texture. The metaphoric subject described below rendered in muted earth tones (terracotta, sage green, navy blue, warm red #C62828 for emphasis) with soft watercolor edges and ink outline. Hand-painted texture throughout. Semi-transparent bold Korean label integrated into the composition (한글, sans-serif, dark brown or white). Minimal composition, empty space, editorial documentary aesthetic. NOT dark cinematic, NOT 3D render, NOT neon, NOT photorealistic, NOT cartoon. Draw ONLY the specific metaphoric subject described in the following prompt — do not add chess, dominoes, gears, or any other symbols unless explicitly mentioned. ALL labels in Korean (한글) — NO English, NO romanization. Cinematic 16:9. ';
-                            if (typeof s.aiPrompt === 'string' && !s.aiPrompt.startsWith('Hand-painted symbolic') && !s.aiPrompt.startsWith('Paper cut collage') && !s.aiPrompt.startsWith('Modern infographic') && !s.aiPrompt.startsWith('Flat 2D vector')) {
+                            if (typeof s.aiPrompt === 'string' && !_hasAnyStylePrefix(s.aiPrompt)) {
                                 s.aiPrompt = SYMBOLIC_STYLE_PREFIX + s.aiPrompt;
                             }
                         }
