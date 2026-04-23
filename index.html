@@ -9357,6 +9357,18 @@ ${sceneList}
 
         // === 28종 오버레이 추천 (균형 모드) ===
         // 원칙: 강조·시각화 가치 있으면 추천. 단순 연결 문장만 "없음".
+        // 2026-04-23: 한글 수사 감지 헬퍼 — 한글 숫자도 오버레이 트리거
+        function _hasKoreanNumerals(narr) {
+            // 한글 수사 + 단위 조합 ("천팔백만 원", "삼백건", "예순다섯 군데")
+            return /(한|두|세|네|다섯|여섯|일곱|여덟|아홉|열|스물|서른|마흔|쉰|예순|일흔|여든|아흔|백|천|만|억|조)\s*(?:개|명|건|대|척|번|일|년|%|퍼센트|원|달러|배|가지|군데|곳)/.test(narr)
+                || /(일|이|삼|사|오|육|칠|팔|구|십|백|천|만|억|조)(?:천|백|십|만|억)(?:\S{0,3})\s*(?:명|건|대|척|번|일|년|%|원|달러|배|가지|군데|곳)/.test(narr);
+        }
+        function _extractKoreanNumeral(narr) {
+            // 구어체 한글 수사 + 단위 추출
+            const m = narr.match(/((?:한|두|세|네|다섯|여섯|일곱|여덟|아홉|열|스물|서른|마흔|쉰|예순|일흔|여든|아흔|백|천|만|억|조|수|수십|수백|수천|수만)[\s가-힣]{0,5}?(?:개|명|건|대|척|번|일|년|%|원|달러|배|가지|군데|곳))/);
+            return m ? m[1].trim() : '';
+        }
+
         function _recommendOverlay28(s) {
             if (!s) return { type: 'none', reason: '장면 데이터 없음' };
             const narr = s.narration || '';
@@ -9399,13 +9411,29 @@ ${sceneList}
             const bigNumMatch = narr.match(/(\d{2,}(?:만|억)\s*(?:명|개|대))/);
             if (bigNumMatch) return { category: '레이아웃', type: '전체숫자', text: bigNumMatch[1], reason: '큰 숫자 임팩트' };
 
+            // 한글 수사 (천팔백만 원, 삼백건, 예순다섯 군데)
+            if (_hasKoreanNumerals(narr)) {
+                const kn = _extractKoreanNumeral(narr) || (s.textOverlay || '핵심 수치');
+                return { category: '기존', type: '수치카드', text: kn, reason: '한글 수사' };
+            }
+
+            // 증감 확장 (두 배·세 배·35배·절반)
+            const magChange = narr.match(/(\d+\s*배(?:로)?|두 배|세 배|절반|반토막|두세 배|열 배|수십 배|수백 배)/);
+            if (magChange && /뛰|늘|증가|상승|커지|달리|올|두세|치솟|폭증|급증|뛰어/.test(narr)) {
+                return { category: '데이터', type: '증감수치', text: magChange[1], reason: '배수 증가' };
+            }
+            if (magChange && /줄|내리|감소|떨어|하락|반토막|폭락|급락|쪼그라/.test(narr)) {
+                return { category: '데이터', type: '증감수치', text: magChange[1], reason: '배수 감소' };
+            }
+
             // === 우선순위 2: 구조·비교 ===
 
-            // VS대결 (대립 구조)
-            const isVs = /\bvs\b|맞섰|대결|싸움|격돌|공격.*대응/.test(narr) ||
-                /한국.*(\d+|\$|만|억|원|달러).*몽골.*(\d+|\$|만|억|원|달러)/.test(narr);
+            // VS대결 (대립 구조·비교 구조)
+            // 2026-04-23 확장: "A는 X, B는 Y" 비교 / "우리는 달랐다" / "반면" / A vs B
+            const isVs = /\bvs\b|맞섰|대결|싸움|격돌|공격.*대응|한쪽.*다른 쪽|우리는 다르|옆집 수술대|대신|반면/.test(narr) ||
+                /[가-힣]{2,5}(?:는|은)\s+[^.]{3,20}(?:했|했다|였|였다)[,.][^.]{3,20}[가-힣]{2,5}(?:는|은)\s+[^.]{3,20}(?:했|했다|였|였다)/.test(narr);
             if (isVs) {
-                return { category: '데이터', type: 'VS대결', text: s.textOverlay || '대결', reason: '두 주체 대립' };
+                return { category: '데이터', type: 'VS대결', text: s.textOverlay || '비교', reason: '두 주체 대립·비교' };
             }
 
             // 랭킹 (복수 순위)
@@ -9422,10 +9450,15 @@ ${sceneList}
 
             // === 우선순위 3: 나열·흐름 ===
 
-            // 타임라인 (3+ 시점)
-            const yearCount = (narr.match(/\d{4}년|\d+년대|\d+년\s*(?:전|동안|넘게)/g) || []).length;
-            if (yearCount >= 3) {
+            // 타임라인 (3+ 시점) — 한글 연도 표기도 포함
+            // 2026-04-23: "이천십오년", "천구백육십구년" 같은 한글 연도도 카운트
+            const yearMatches = narr.match(/\d{4}년|\d+년대|\d+년\s*(?:전|동안|넘게)|(?:천구백|이천|이천이십|이천십)\S{0,5}년/g) || [];
+            if (yearMatches.length >= 3) {
                 return { category: '데이터', type: '타임라인', text: s.textOverlay || '연대기', reason: '시간 흐름 다단계' };
+            }
+            // 2시점만 있어도 Before/After 비교 → VS대결 또는 증감수치
+            if (yearMatches.length === 2 && /변|바뀌|변화|달라/.test(narr)) {
+                return { category: '데이터', type: 'VS대결', text: yearMatches[0] + ' → ' + yearMatches[1], reason: '시점 변화 비교' };
             }
 
             // 항목 나열 (3+ 콤마 구분)
@@ -9471,15 +9504,28 @@ ${sceneList}
 
             // === 우선순위 5: 구조 구분 ===
 
-            // 챕터구분 (영상 섹션 시작)
-            if (/^(\d+부|CHAPTER|파트 \d+|제\d+장)/.test(narr)) {
-                return { category: '레이아웃', type: '챕터구분', text: s.textOverlay || narr, reason: '챕터 시작' };
+            // 챕터구분 (영상 섹션 시작·단계 표현)
+            // 2026-04-23 확장: "첫 번째 단추", "두 번째 단계", "세 번째", "1단계/2단계"
+            if (/^(\d+부|CHAPTER|파트 \d+|제\d+장)/.test(narr) ||
+                /(첫 번째|두 번째|세 번째|네 번째|다섯 번째)\s*(?:단계|단추|기둥|이야기|축)/.test(narr) ||
+                /\d+\s*단계/.test(narr)) {
+                const chapMatch = narr.match(/(첫 번째|두 번째|세 번째|\d+단계|\d+부)\s*[가-힣]{0,10}/);
+                return { category: '레이아웃', type: '챕터구분', text: (chapMatch ? chapMatch[0] : (s.textOverlay || narr.slice(0, 15))), reason: '챕터·단계 시작' };
             }
 
-            // 인물 소개 → 네임택
-            if (/(기자|장관|대통령|총리|사령관|의원|교수|대표)$/.test(narr) ||
-                /(이 사람은|발표한|소개한).*\s*[가-힣]{2,4}/.test(narr)) {
-                return { category: '레이아웃', type: '네임택', text: s.textOverlay || '이름', reason: '인물 소개' };
+            // 인물 소개 → 네임택 (2026-04-23 확장: 인물명 + 직책·조직 매칭)
+            // "뢰프벤 총리", "크리스테르손이 연설했다", "라와 마지드가 갱단 두목", "무함마드 빈 살만 왕세자"
+            const personTitleMatch = narr.match(/([가-힣]{2,6})\s*(?:총리|대통령|장관|국왕|왕세자|군주|수반|청장|의장|대표|감독|회장|CEO|사장|장군|사령관|함장|교수|대사|소장|주교|교황)/);
+            if (personTitleMatch && !/나라|국가|정부/.test(personTitleMatch[0])) {
+                return { category: '레이아웃', type: '네임택', text: personTitleMatch[0], reason: '인물 소개' };
+            }
+            // 유명인명 단독 + 따옴표 직접 대사 → 네임택 (말풍선과 조합)
+            if (/(뢰프벤|크리스테르손|라와 마지드|빈 살만|MBS|트럼프|푸틴|시진핑|젤렌스키|메르켈|마크롱|네타냐후|하메네이)/.test(narr)) {
+                const who = narr.match(/(뢰프벤|크리스테르손|라와 마지드|빈 살만|MBS|트럼프|푸틴|시진핑|젤렌스키|메르켈|마크롱|네타냐후|하메네이)/);
+                // 따옴표 대사도 있으면 말풍선 우선, 없으면 네임택
+                if (who && !/["']/.test(narr)) {
+                    return { category: '레이아웃', type: '네임택', text: who[1], reason: '인물 언급' };
+                }
             }
 
             // === 우선순위 6: 지도·특수 ===
