@@ -5908,7 +5908,9 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
 
                 // 🎬 상징·은유 장면 감지 + 그록 영상화 태깅 + 영상 프롬프트 생성
                 // 상징: 체스·메스·유리 등 비유 소재. 역사·지도·인포그래픽 아닐 때만.
-                const SYMBOLIC_STRONG = /체스|기물|보드 위|판 위|메스|수술|유리|도미노|저울|뇌|그물|은유|비유|힘줄|톱질|사슬|쇠사슬|도장|저격|화살|깨진|부서진|금이|갈라|톱|바늘|매듭|사다리|기둥|열쇠|자물쇠|방패|가면|거울|손금|박힌 못|씨앗|뿌리|목줄|낚싯대|심장|심정지|마리오네트|인형|꼭두각시|풍선|폭발|불꽃|스위치|버튼|문 닫히|잠기|찢어|톱니|기어|팽이|거미줄|덫|올가미|지렛대|균열|쪼개|분할|압축|끓|얼음|묶여|갇혀|포위|한 점에|조여|옥죄/;
+                // 2026-04-23: "거울" 단독 매칭 제거 (거울벽/거울 도시 같은 실제 건축물 오탐 방지)
+                // "거울에 비친|거울처럼|거울 속" 같은 맥락일 때만 은유 인정
+                const SYMBOLIC_STRONG = /체스|기물|보드 위|판 위|메스|수술|깨진 유리|깨지는 유리|도미노|저울|뇌|그물|은유|비유|힘줄|톱질|사슬|쇠사슬|도장을 찍|저격|화살|부서진|금이 가|갈라진|바늘|매듭|사다리|기둥|열쇠|자물쇠|방패|가면|거울에 비친|거울처럼|거울 속|손금|박힌 못|씨앗|뿌리|목줄|낚싯대|심장|심정지|마리오네트|꼭두각시|풍선|폭발|불꽃|스위치|버튼|문 닫히|잠기|찢어|톱니|기어|팽이|거미줄|덫|올가미|지렛대|균열|쪼개|분할|압축|얼음|묶여|갇혀|포위|한 점에|조여|옥죄/;
                 // 이동 지도 힌트 (지도 장면 중 path 애니메이션 필요)
                 const MOVING_MAP_HINT = /경로|이동|흘러|향하|연결|→|지나가|통과|가로질|거쳐|돌아|향해|따라|단계/;
 
@@ -5934,7 +5936,8 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                         if (SYMBOLIC_STRONG.test(narr) || SYMBOLIC_STRONG.test(prompt)) {
                             s.isSymbolicScene = true;
                             // 2026-04-23: 상징·은유도 크림 종이+수채 편집 톤으로 통일
-                            const SYMBOLIC_STYLE_PREFIX = 'Hand-painted symbolic illustration in warm editorial watercolor style. Vintage cream beige paper background (#F5EFD9) with subtle paper grain texture. Central metaphoric object (chess piece, domino, scale, broken glass, valve, heart, lock, chain, gear, etc.) rendered in muted earth tones (terracotta, sage green, navy blue, warm red #C62828 for emphasis) with soft watercolor edges and ink outline. Icons/props with hand-painted texture. Semi-transparent bold Korean label integrated into the composition (한글, sans-serif, dark brown or white). Minimal composition, empty space, editorial documentary aesthetic. NOT dark cinematic, NOT 3D render, NOT neon, NOT photorealistic, NOT cartoon. ALL labels in Korean (한글) — NO English, NO romanization. Cinematic 16:9. ';
+                            // 2026-04-23: 스타일만 기술, 구체 예시(chess/domino/gear) 제거 — 예시를 "그리라"고 오해 방지
+                            const SYMBOLIC_STYLE_PREFIX = 'Hand-painted symbolic illustration in warm editorial watercolor style. Vintage cream beige paper background (#F5EFD9) with subtle paper grain texture. The metaphoric subject described below rendered in muted earth tones (terracotta, sage green, navy blue, warm red #C62828 for emphasis) with soft watercolor edges and ink outline. Hand-painted texture throughout. Semi-transparent bold Korean label integrated into the composition (한글, sans-serif, dark brown or white). Minimal composition, empty space, editorial documentary aesthetic. NOT dark cinematic, NOT 3D render, NOT neon, NOT photorealistic, NOT cartoon. Draw ONLY the specific metaphoric subject described in the following prompt — do not add chess, dominoes, gears, or any other symbols unless explicitly mentioned. ALL labels in Korean (한글) — NO English, NO romanization. Cinematic 16:9. ';
                             if (typeof s.aiPrompt === 'string' && !s.aiPrompt.startsWith('Hand-painted symbolic') && !s.aiPrompt.startsWith('Paper cut collage') && !s.aiPrompt.startsWith('Modern infographic') && !s.aiPrompt.startsWith('Flat 2D vector')) {
                                 s.aiPrompt = SYMBOLIC_STYLE_PREFIX + s.aiPrompt;
                             }
