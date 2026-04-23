@@ -3718,7 +3718,35 @@ ${script}`;
 - 명사 위주, 형용사는 1개 이내
 - "cinematic", "8K", "aerial drone" 같은 품질 설명자 제거
 - 좋은 예: "mining industry", "border crossing trucks", "empty factory"
-- 나쁜 예: "a shattered golden trophy labeled GDP Growth #1"`,
+- 나쁜 예: "a shattered golden trophy labeled GDP Growth #1"
+
+## 🚨 장면 유형별 키워드 전략 (매칭 정확도 향상 — 2026-04-23)
+
+### 전환·예고·도입 장면 (Transition/Teaser)
+다음 챕터로 넘어가는 훅 문장. 예: "다음 단계가 나라를 뒤집어 놓습니다", "진짜 비싼 무기는 따로 있어요", "여기서 이야기는 다음으로 넘어갑니다".
+- ❌ 리터럴 은유 번역 금지: "뒤집어" → "dominoes falling" (과한 시각화)
+- ✅ **분위기·긴장감 영상** 우선: "ominous dark path", "shadow stretching long", "slow camera through corridor", "silhouette walking forward"
+- ✅ 은유가 이미 다른 장면에서 주인공일 때는 전환에서 중복 사용 금지
+
+### 은유·상징 장면 (Metaphor/Symbolic)
+은유가 장면의 **주 시각 요소**일 때만 리터럴 번역 사용. 예: "도미노처럼 쓰러지는 연쇄 반응" (이건 장면 주인공 = 도미노).
+- ✅ "dominoes chain falling" OK — 이 장면은 진짜 도미노가 보여야 함
+- 단, 같은 대본에서 **비슷한 은유 중복 금지** (도미노 한 번만)
+
+### 설명·정보 장면 (Information)
+사실/수치/구조 전달. 여기선 **AI 이미지**가 1순위.
+- 스톡 키워드는 **fallback 보조**라 너무 구체적 찾지 말 것
+
+### 감성·묘사 장면 (Emotional/Atmospheric)
+인물 감정·분위기 묘사. 예: "조용히 고개를 숙였어요", "눈물을 흘렸습니다".
+- ✅ "quiet emotional moment", "person reflecting sad", "rain window sad"
+- ❌ 행동을 리터럴 번역하지 말 것 (고개 숙이는 스톡은 드물음)
+
+### 🔑 은유 리터럴 과잉 번역 방지 체크
+나레이션에 "뒤집다·뒤흔들다·무너지다·쓰러지다·폭발하다·터지다" 같은 **전환 은유 동사**가 있을 때:
+1. 이게 **주 시각 요소**인가? (YES → 리터럴 OK)
+2. 아니면 **수사적 표현**인가? (YES → 분위기 키워드로 대체)
+`,
                 normal: `**장면 분리 규칙: 보통 모드 (추천)**
 - 원칙: **1~2문장을 하나의 장면으로 묶는다.**
 - 같은 시각적 주제·같은 배경이 어울리는 문장들은 묶는다.
