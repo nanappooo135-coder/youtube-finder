@@ -5886,15 +5886,20 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                     if (s.isSymbolicScene) s.grokVideoDuration = 6;
                     else s.grokVideoDuration = 10;
 
-                    // 영상 프롬프트 생성
+                    // 영상 프롬프트 생성 — 장면 내용 기반 맞춤 모션
                     if (s.isHistoricalScene) {
-                        s.grokVideoPrompt = 'Subtle historical scene motion. Characters perform small natural actions (looking up from work, gesturing, breathing, subtle head turn). Environmental motion: candlelight flickers, dust motes drift through light beams, fabric moves with breath. Camera slowly pushes in. Cinematic, grounded, NO sudden movement. ' + s.grokVideoDuration + ' seconds.';
+                        s.grokVideoPrompt = _buildHistoricalVideoPrompt(narr, s.grokVideoDuration);
                     } else if (s.isMovingMap) {
-                        s.grokVideoPrompt = 'Animated glowing arrow or path draws smoothly across the map, connecting locations in sequence. Each location label fades in as the path reaches it. Subtle parallax on the map background. Clean, informative motion, NO sudden movement. ' + s.grokVideoDuration + ' seconds.';
+                        s.grokVideoPrompt = _buildMovingMapVideoPrompt(narr, s.grokVideoDuration);
                     } else if (s.isSymbolicScene) {
-                        s.grokVideoPrompt = 'The central symbolic object performs its key action slowly and deliberately (chess piece moves, scalpel cuts, glass cracks, scale tips, etc.). Background stays still. Color pulse or subtle glow emphasizes the moment of action. Camera holds steady. Dramatic but restrained. ' + s.grokVideoDuration + ' seconds.';
+                        s.grokVideoPrompt = _buildSymbolicVideoPrompt(narr, s.grokVideoDuration);
                     }
                 });
+
+                // ═══ 장면별 맞춤 그록 영상 프롬프트 생성기 ═══
+                // 일반 템플릿 대신 나레이션 키워드로 실제 모션 추출해서 맞춤 지시 생성
+
+                // (함수 정의는 아래 _buildSymbolicVideoPrompt 등 참조 — 장면별로 모션 구체 기술)
 
                 // 🎭 캐릭터 자동 감지 fallback — Gemini가 needCharacter를 누락한 경우 narration에서 인물명 감지
                 const PERSON_NAMES = /트럼프|바이든|푸틴|시진핑|네타냐후|하메네이|젤렌스키|마크롱|숄츠|스타머|모디|김정은|윤석열|문재인|오바마|부시|클린턴|레이건|시리자|에르도안|MBS|빈살만|갈리바프|무니르|밴스|머스크|엘론머스크|베조스|저커버그|키신저|볼턴|폼페이오/;
@@ -8104,6 +8109,99 @@ ${sceneList}
 
         // AI 프롬프트: 한글 라벨 강제 (최신 이미지 모델은 한글 잘 씀)
         // 핵심 한글 텍스트를 구체적으로 명시 → AI가 정확히 그리게 유도
+        // 2026-04-23: 장면별 맞춤 그록 영상 프롬프트 생성
+        // 나레이션에서 핵심 모션을 뽑아 구체적 영상 지시 생성 (일반 템플릿 대신)
+
+        function _buildSymbolicVideoPrompt(narr, duration) {
+            const n = narr || '';
+            let motion = '';
+
+            // 도미노·연쇄 → 순차 쓰러짐
+            if (/도미노|연쇄|차례차례|차례로|하나씩|연이어|줄줄이/.test(n)) {
+                motion = 'A line of dominoes falls in sequence from left to right, each tipping and hitting the next. The first object (ship icon) starts the chain. Each labeled element (flag, gas pump, etc.) reacts when struck — cracking, shaking, or tipping. Camera holds steady and wide.';
+            }
+            // 심장·엔진 정지 → 빛 꺼짐
+            else if (/심장|심정지|엔진|멈춤|정지|꺼|끄/.test(n)) {
+                motion = 'The glowing heart/engine pulses gently twice, then a single invisible touch triggers a final pulse that fades out. The glow dims to dark. Faint electrical sparks disperse. Camera holds still.';
+            }
+            // 사슬·봉쇄·자물쇠 → 잠김/끊김
+            else if (/사슬|쇠사슬|봉쇄|자물쇠|잠기|잠긴|차단|가로막/.test(n)) {
+                motion = 'Chains tighten and lock with a sharp metallic click, or a lock snaps shut. Subtle chain tension, a single bright flash on the lock mechanism. Camera slightly pushes in on the locking moment.';
+            }
+            // 체스·전략 → 말 이동
+            else if (/체스|말|전략|포석|판/.test(n)) {
+                motion = 'One chess piece slides smoothly across the board to a new square, knocking over an opponent piece. The board and other pieces stay still. Subtle shadow moves with the piece.';
+            }
+            // 유리·깨짐 → 균열 확산
+            else if (/유리|깨|부서|금이 가|균열|쪼개/.test(n)) {
+                motion = 'A hairline crack appears at one point on the glass, then rapidly spreads into a spider-web pattern. A single small shard falls. Sound implied, subtle highlight on the crack expansion.';
+            }
+            // 버튼·스위치 → 한번 누름
+            else if (/버튼|스위치|누르|클릭/.test(n)) {
+                motion = 'A finger (or implied force) presses the button once. The button depresses, a red light turns on (or off), and a single pulse ripples outward. Background stays still.';
+            }
+            // 저울·균형 → 기울어짐
+            else if (/저울|균형|기울|한쪽/.test(n)) {
+                motion = 'The scale slowly tips to one side as an invisible weight is added. The tipping side descends, the other rises. Subtle shadow shift. Camera holds.';
+            }
+            // 폭발·붕괴 → 안쪽에서 터짐
+            else if (/폭발|터|붕괴|무너/.test(n)) {
+                motion = 'The central object collapses or explodes outward from its center. Fragments fly slowly, then settle. A single dust cloud disperses. Background remains stable.';
+            }
+            // 화살·저격 → 발사/명중
+            else if (/화살|저격|쏘|발사|명중/.test(n)) {
+                motion = 'An arrow or projectile fires from one side, travels fast, and strikes the central target with a single impact pulse. Target vibrates briefly. Camera tracks the projectile subtly.';
+            }
+            // 씨앗·뿌리 → 성장/뽑힘
+            else if (/씨앗|뿌리|자라|성장|뽑/.test(n)) {
+                motion = 'A seed sprouts or roots slowly grow downward/outward, or existing roots are pulled up revealing bare soil. Subtle earth motion. Camera gently follows the movement.';
+            }
+            // 기본 fallback
+            else {
+                motion = 'The central symbolic object performs its key action slowly and deliberately (the main metaphoric motion implied by the scene). Background stays still. Color pulse or subtle glow emphasizes the moment of action. Camera holds steady.';
+            }
+
+            return motion + ' Cream paper background stays still. Hand-painted watercolor aesthetic maintained. No text changes. ' + duration + ' seconds total. Restrained, editorial, documentary tone.';
+        }
+
+        function _buildHistoricalVideoPrompt(narr, duration) {
+            const n = narr || '';
+            let motion = '';
+
+            if (/전쟁|전투|공격|돌격/.test(n)) {
+                motion = 'Soldiers in period armor move subtly — one raises a weapon, another turns head alert. Smoke drifts in background. Banners flutter. No violent clash, just tension held.';
+            } else if (/왕|황제|군주|통치|궁궐/.test(n)) {
+                motion = 'The ruler figure subtly turns head or gazes off screen. Courtiers in background breathe and shift minimally. Candles flicker, silk robes sway with breath. Slow push-in.';
+            } else if (/행진|이동|진군/.test(n)) {
+                motion = 'Marching column advances slowly across frame. Dust rises softly. Banners and spears sway with the rhythm. Camera holds wide.';
+            } else if (/농민|백성|서민|시장|상인/.test(n)) {
+                motion = 'Commoners continue their work — one stirs a pot, another hammers, a child runs briefly in background. Natural period daily motion. Light filters through shutters.';
+            } else {
+                motion = 'Subtle historical scene motion. Characters perform small natural actions (looking up, gesturing, breathing, subtle head turn). Environmental motion: candlelight flickers, dust motes drift through light beams, fabric moves with breath. Slow camera push-in.';
+            }
+
+            return motion + ' Cinematic, grounded, period-accurate, NO sudden movement. ' + duration + ' seconds.';
+        }
+
+        function _buildMovingMapVideoPrompt(narr, duration) {
+            const n = narr || '';
+            let motion = '';
+
+            if (/무역|수출|수입|물류|공급/.test(n)) {
+                motion = 'Animated shipping route draws as a glowing line from origin to destination port, with small boat/container icons following the path. Arrow tip reveals each port label as it passes.';
+            } else if (/침공|공습|파병|진격/.test(n)) {
+                motion = 'Red advance arrows draw progressively from aggressor territory into target zones. Affected regions shift color. Scale remains static.';
+            } else if (/국경|영토|확장|축소/.test(n)) {
+                motion = 'Borders of the highlighted country subtly expand or contract. Color fill animates smoothly. Labels adjust position.';
+            } else if (/경제|자원|석유|가스/.test(n)) {
+                motion = 'Resource flow lines (oil/gas/trade) pulse from producer to consumer countries. Glowing nodes light up as the flow reaches them.';
+            } else {
+                motion = 'Animated glowing arrow or path draws smoothly across the map, connecting locations in sequence. Each location label fades in as the path reaches it. Subtle parallax on the map background.';
+            }
+
+            return motion + ' Clean informative motion, ink-watercolor map style preserved, NO sudden movement. ' + duration + ' seconds.';
+        }
+
         function _enforceKoreanInAiPrompt(prompt, s) {
             if (!prompt) return prompt;
             const narr = s.narration || '';
