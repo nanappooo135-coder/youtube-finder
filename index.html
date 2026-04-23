@@ -3688,19 +3688,37 @@ ${script}`;
 - "고유명 선박·장비명" 있으면 → **반드시 needRealImage:true**
 - 대본 전체에서 이런 키워드가 등장하는 **모든 장면**에 적용
 
-### 🔍 realSearchKeyword 작성 규칙 (구글 이미지 매칭)
-- **영문 4~6단어** (짧으면 일반, 길면 매칭 실패)
-- **이름·장소·연도 구체적 포함**
-- ✅ 좋은 예:
-  - "Genghis Khan statue Ulaanbaatar Mongolia"
-  - "Xi Jinping official portrait photo"
-  - "Soviet Union collapse 1991 Moscow"
-  - "IMF headquarters Washington DC building"
-  - "Dalai Lama Mongolia visit 2016"
-  - "USS Spruance DDG-111 destroyer" (군함 구체 함번)
-  - "Arleigh Burke class destroyer VLS" (급 이름 + 장비)
-  - "Iranian container ship Tuska" (실존 선박 고유명)
-  - "Mk 41 VLS vertical launch system" (무기체계 정식명)
+### 🔍 realSearchKeyword 작성 규칙 (구글 이미지 매칭) — 2026-04-23 대폭 강화
+
+**필수 구성 요소** (빠뜨리지 말 것):
+1. **고유명** (인물 실명/장비 모델명/건물명/사건명) — **최소 1개 필수**
+2. **맥락 키워드** (연도, 장소, 사건 유형, 직책) — 1~2개
+3. **이미지 타입** (portrait, news photo, aerial view, official, speech, conference, documentary) — 1개
+4. **영문 5~8단어 권장** (4단어는 짧음, 8단어 넘으면 매칭 실패)
+
+**🚨 절대 금지 — 일반 키워드**:
+- ❌ "news photo gang crime scene documentary" (구체 없음 → 19세기 빈민가 사진 나옴)
+- ❌ "political leader speech" (이름 없음)
+- ❌ "European city street" (구체 없음)
+- ❌ "modern protest" (언제·어디 없음)
+- ❌ "refugee family" (어느 난민인지 없음)
+
+**✅ 좋은 예**:
+- "Stefan Löfven Sweden Prime Minister 2015 speech" (인물+국가+직책+연도+행위)
+- "Mjolnerparken Copenhagen demolition 2022 news" (고유지명+도시+사건+연도+유형)
+- "Stockholm Foxtrot gang shooting 2023" (도시+조직명+사건+연도)
+- "USS Spruance DDG-111 destroyer Persian Gulf" (함번+지역)
+- "Aleppo Syria civil war 2014 destruction" (도시+국가+사건+연도+결과)
+
+**인물·사건이 대본에 나오면 반드시 고유명 포함**:
+- "뢰프벤" → "Stefan Löfven" (이름 영문 + Sweden Prime Minister)
+- "라와 마지드" → "Rawa Majid Foxtrot gang leader"
+- "무함마드 빈 살만" → "Mohammed bin Salman MBS Saudi"
+- "링케뷔" → "Rinkeby Stockholm suburb"
+- "말뫼 중앙역" → "Malmö central station"
+
+**Nested context**: 장면 나레이션에 "스톡홀름 갱단"만 나와도 앞뒤 문맥에서 "폭스트롯" 나왔으면 합쳐서 → "Stockholm Foxtrot gang" 생성
+
 - ❌ 나쁜 예:
   - "Asian leader" (일반화, 매칭 불가)
   - "ancient emperor" (이름 없음)
@@ -3849,7 +3867,15 @@ ${chunkRule}
 - \"freepikAsset\": Freepik 아이콘/3D 에셋 검색어. { keyword, type } 형식. type은 "icon" 또는 "3D". 에셋이 정보 전달에 유용할 때만 추가.
 - \"characterLayout\": 캐릭터 배치 레이아웃. 12가지 프리셋 중 하나. 캐릭터 프리셋이 있는 경우에만 사용. (생략 가능)
 - \"characterAsset\": 사용할 캐릭터 프리셋 이름. characterLayout이 있을 때만 추가. (생략 가능)
-- \"aiPrompt\": bgSource가 "ai"일 때만 포함. 영문 프롬프트. 반드시 "dark background"와 "16:9" 포함
+- \"aiPrompt\": bgSource가 "ai"일 때만 포함. 영문 프롬프트. **3~6문장 상세 기술 필수**. 다음 요소를 빠짐없이 포함:
+  (1) **주 시각 요소** (chess piece, destroyer, bar chart, map of region 등 구체적 사물/구도)
+  (2) **색감·톤** (warm cream background, muted earth tones, bold red accent 등)
+  (3) **핵심 한글 라벨** (이미지에 반드시 나와야 할 한글 단어 1~3개 — 예: "미국", "170km", "재작년")
+  (4) **구도/레이아웃** (split screen, centered single subject, grid of 4, top-down map view 등)
+  (5) **금지 요소** (no English labels, no duplicate words, no HUD readouts 등)
+  (6) 반드시 "16:9" 포함
+  ❌ 나쁜 예 (너무 짧음): "Dominoes falling. Dark background, 16:9."
+  ✅ 좋은 예: "Split screen composition. Left panel: cracked Iranian flag with warm red tone, Korean label '이란' at top. Right panel: Chinese flag tipping sideways into shadow, Korean label '중국' at top. Cream beige watercolor paper background, hand-painted ink outlines, minimal editorial documentary style. No duplicate labels. Each Korean word appears once. 16:9 cinematic."
 - \"textOverlay\": 화면에 표시할 텍스트. 없으면 필드 자체를 생략 (셀팟이 읽는 필수 필드)
 - \"textPosition\": textOverlay가 있을 때만 포함 ("center" | "top" | "bottom" | "top-left" | "top-right")
 - \"sfxPrompt\": 효과음이 필요한 장면에만 포함. 영문 키워드. 짧게.
@@ -8943,18 +8969,50 @@ ${sceneList}
             const rec = _recommendOverlay28(s) || { type: 'none' };
             if (!rec || rec.type === 'none') return [];
 
-            // Korean name → Sellpot type value 매핑
+            const overlays = [];
+            // 주 오버레이
             const sellpotType = _OVERLAY_KO_TO_TYPE[rec.type] || 'text_headline';
             const data = _buildOverlayData(sellpotType, s);
-
-            // position 자동 배치
             const position = _determineOverlayPosition(sellpotType, s);
+            overlays.push({ type: sellpotType, data: data, position: position });
 
-            return [{
-                type: sellpotType,
-                data: data,
-                position: position
-            }];
+            // 2026-04-23: 보조 오버레이 추천 (장면에 여러 요소 있으면 추가)
+            const narr = s.narration || '';
+            // 인물 + 따옴표 대사 → 네임택 + 말풍선 같이 (말풍선이 주라면 네임택 보조)
+            if (sellpotType === 'speech_bubble' || sellpotType === 'speech_bubble_neon') {
+                const who = narr.match(/(뢰프벤|크리스테르손|라와 마지드|빈 살만|트럼프|푸틴|시진핑|젤렌스키|메르켈|마크롱|네타냐후)/);
+                if (who) {
+                    overlays.push({
+                        type: 'name_tag',
+                        data: { name: who[1], title: '', variant: 'bar', accentColor: '#C62828' },
+                        position: 'bottom'
+                    });
+                }
+            }
+            // 수치카드 + 추가 수치 있으면 전체숫자 보조
+            if (sellpotType === 'single_stat_card') {
+                const bigImpact = narr.match(/(\d{2,}\s*만\s*명|\d{3,}\s*건|\d+\s*배)/);
+                if (bigImpact && bigImpact[1] !== (rec.text || '')) {
+                    overlays.push({
+                        type: 'fullscreen_number',
+                        data: { number: bigImpact[1], subtitle: '', numberColor: '#C62828' },
+                        position: 'top-right'
+                    });
+                }
+            }
+            // 챕터구분 + 수치 있으면 수치 보조
+            if (sellpotType === 'chapter_divider') {
+                const numMatch = narr.match(/(\d+\s*(?:%|배|만|억|건|명|개))/);
+                if (numMatch) {
+                    overlays.push({
+                        type: 'single_stat_card',
+                        data: { text: numMatch[1], label: '' },
+                        position: 'center'
+                    });
+                }
+            }
+
+            return overlays;
         }
 
         function _determineOverlayPosition(type, s) {
