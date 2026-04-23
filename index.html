@@ -8220,6 +8220,24 @@ ${sceneList}
 
             let out = prompt;
 
+            // 2026-04-23: 다크 사이파이/HUD 스타일 자동 치환 (영어 HUD 뇌관 제거)
+            // "dark cinematic high-tech satellite view data visualization" 같은 키워드가
+            // AI 이미지 생성기에게 영어 HUD를 붙이라는 암묵 신호가 됨. 크림 편집 톤으로 전환.
+            const hasDarkCyber = /(dark (high-?tech|cinematic|technological)|high-?tech (documentary|satellite|surveillance)|satellite view perspective|data visualization|digital surveillance network|glowing grid lines|cinematic (visualization|data))/i.test(out);
+            if (hasDarkCyber && !/(Paper cut collage|Modern infographic|Flat 2D vector|Hand-painted symbolic|Cross-section diagram|Catalog grid|Vintage antique atlas)/i.test(out)) {
+                // 영어 HUD 뇌관 표현 제거
+                out = out.replace(/dark (high-?tech|cinematic|technological)[^.,]*/gi, 'warm editorial illustration');
+                out = out.replace(/high-?tech (documentary|satellite|surveillance)[^.,]*/gi, 'hand-painted editorial');
+                out = out.replace(/satellite view perspective/gi, 'top-down overview');
+                out = out.replace(/data visualization/gi, 'visual summary');
+                out = out.replace(/digital surveillance network/gi, 'network of watch-points');
+                out = out.replace(/glowing grid lines/gi, 'soft connecting lines');
+                out = out.replace(/cinematic (visualization|data)/gi, 'editorial illustration');
+                out = out.replace(/dark background/gi, 'cream beige paper background with subtle texture');
+                // 크림 편집 톤 강제 prefix
+                out = 'Hand-painted warm editorial illustration on vintage cream beige paper (#F5EFD9) with subtle paper grain texture. Muted earth tones (terracotta, sage green, navy blue, warm red accent). Hand-drawn ink outlines, soft watercolor fills. NO dark cinematic, NO 3D sci-fi HUD, NO glowing tech overlay boxes, NO coordinate numbers, NO English HUD readouts, NO monitor-style status panels. Clean minimal composition. ' + out;
+            }
+
             // 1. 기존의 "NO TEXT" 강제 문구 제거 (한글 허용하도록 반전)
             out = out.replace(/ABSOLUTELY NO TEXT[^.]*\.?/gi, '');
             out = out.replace(/NO TEXT,\s*NO LETTERS[^.]*\.?/gi, '');
