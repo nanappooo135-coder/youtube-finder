@@ -7660,10 +7660,10 @@ ${sceneList}
                         if (/navy|army|air force|military|destroyer|warship|missile|tank|aircraft|DVIDS|marine|soldier/i.test(rank.content)) {
                             rows += ' <a href="' + dvidsUrl + '" target="_blank" rel="noopener" style="color:#2f9e44;text-decoration:none;font-size:0.72rem;margin-left:4px;">📺 DVIDS ↗</a>';
                         }
-                        // 대체 검색어 (매칭 실패 시 fallback)
+                        // 대체 검색어 (매칭 실패 시 fallback) — 최대 3개
                         if (rank.alts && rank.alts.length > 0) {
                             rows += '<div style="margin-top:3px;">';
-                            rank.alts.slice(0, 2).forEach((alt, idx) => {
+                            rank.alts.slice(0, 3).forEach((alt, idx) => {
                                 const altUrl = 'https://www.google.com/search?tbm=isch&q=' + encodeURIComponent(alt);
                                 const altYt = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(alt);
                                 rows += '<div style="color:#868e96;font-size:0.72rem;margin-top:1px;">';
@@ -8622,13 +8622,19 @@ ${sceneList}
                 alts.push('main battle tank convoy desert');
                 alts.push('armored vehicle military exercise');
             }
-            // 실존 인물 (portrait / official)
-            else if (/portrait|official|president|leader|emperor|king/i.test(primary)) {
-                // 원본에서 인물명 뽑아 다른 앵글
-                const nameMatch = primary.match(/([A-Z][a-z]+(?:\s[A-Z][a-z]+)?)\s/);
-                if (nameMatch) {
-                    alts.push(nameMatch[1] + ' speech press conference');
-                    alts.push(nameMatch[1] + ' historical photo archive');
+            // 실존 인물 (총리·대통령·왕세자·지도자 등)
+            else if (/portrait|official|president|leader|emperor|king|prime minister|chancellor|crown prince|MBS|Löfven|Lofven|Kristersson|Majid|Zelensky|Macron|Scholz|Merkel|Trump|Biden|Xi|Putin|Netanyahu|Erdogan/i.test(primary)) {
+                // 원본에서 인물 영문명 뽑아 다른 앵글 (이름 + 성 패턴 매치)
+                const nameMatch = primary.match(/([A-Z][a-zA-Zöäüéèà]+(?:\s[A-Z][a-zA-Zöäüéèà]+)?)/);
+                const name = nameMatch ? nameMatch[1] : null;
+                if (name) {
+                    alts.push(name + ' speech press conference podium');
+                    alts.push(name + ' official portrait government');
+                    alts.push(name + ' interview news photo');
+                } else {
+                    // 이름 추출 실패 시 일반 대체어
+                    alts.push('political leader press conference speech');
+                    alts.push('government official portrait news');
                 }
             }
             // 건물·기관
@@ -8641,10 +8647,47 @@ ${sceneList}
                 alts.push(primary.replace(/statue|painting/i, 'artifact museum'));
                 alts.push(primary + ' ancient archive illustration');
             }
+            // 갱단·범죄 사건
+            else if (/gang|crime|foxtrot|cartel|mafia|yakuza/i.test(primary)) {
+                alts.push('youth gang members urban street news');
+                alts.push('police crime scene tape investigation photo');
+                alts.push('hooded figures dark alley documentary');
+            }
+            // 취약지역·빈민가·난민
+            else if (/no-go zone|suburb|slum|poverty|refugee|immigrant|vulnerable area|ghetto/i.test(primary)) {
+                alts.push('suburban apartment block exterior daily life');
+                alts.push('immigrant community documentary photo');
+                alts.push('urban poverty street scene news');
+            }
+            // 시위·집회
+            else if (/protest|rally|demonstration|march|strike/i.test(primary)) {
+                alts.push('street protest crowd signs photo');
+                alts.push('political rally people marching');
+                alts.push('demonstration police barrier aerial');
+            }
+            // 도시·지명 (일반 장소명)
+            else if (/Stockholm|Malmö|Rinkeby|Husby|Gothenburg|Copenhagen|Oslo|Helsinki|Berlin|Paris|London|Moscow|Tokyo|Seoul/i.test(primary)) {
+                const cityMatch = primary.match(/(Stockholm|Malmö|Rinkeby|Husby|Gothenburg|Copenhagen|Oslo|Helsinki|Berlin|Paris|London|Moscow|Tokyo|Seoul)/);
+                if (cityMatch) {
+                    const city = cityMatch[1];
+                    alts.push(city + ' aerial view city center');
+                    alts.push(city + ' street daily life photo');
+                    alts.push(city + ' landmark documentary');
+                }
+            }
+            // 매칭 안 된 일반 실사 (fallback)
+            else {
+                // 영문 첫 2~3단어로 주변 컨텍스트 생성
+                const firstWords = primary.split(/\s+/).slice(0, 3).join(' ');
+                if (firstWords) {
+                    alts.push(firstWords + ' documentary photo');
+                    alts.push(firstWords + ' news archive');
+                }
+            }
 
-            // 최대 2개만 반환 (중복 제거)
+            // 최대 3개 반환 (중복 제거)
             const unique = [...new Set(alts.filter(a => a && a.toLowerCase() !== p))];
-            return unique.slice(0, 2);
+            return unique.slice(0, 3);
         }
 
         function _deriveRealKeyword(narr) {
