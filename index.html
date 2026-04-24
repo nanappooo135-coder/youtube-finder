@@ -6368,8 +6368,10 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                 // 2026-04-24: Pattern 9 — 상징 클리셰 블랙리스트
                 // 도미노/체스/톱니/저울/가계도빨간X 등 뻔한 비유는 스톡·AI 양쪽 모두 차단
                 // 레퍼런스 복사 금지 원칙 (feedback_reference_copy_ban.md) 집행
-                const SYMBOLIC_CLICHE_BG = /(domino(es)?\s+(falling|chain)|chess\s+(piece|board|game)|interlocking\s+gears|spinning\s+gears|scales?\s+of\s+justice|family\s+tree\s+(with\s+)?red\s+x|red\s+x\s+on\s+family\s+tree)/i;
-                const SYMBOLIC_CLICHE_NARR = /(도미노처럼|체스판처럼|톱니처럼|저울처럼|가계도처럼)/;
+                // 2026-04-24 확장: 전면 블랙리스트 — 유튜브 영어 에디토리얼에서 남발되는 뻔한 은유 전부 차단
+                // 거미줄/그물/덫/사슬/저울/청구서/시계추/깨진유리/불꽃 등
+                const SYMBOLIC_CLICHE_BG = /(domino(es)?\s+(falling|chain)|chess\s+(piece|board|game)|interlocking\s+gears|spinning\s+gears|scales?\s+of\s+justice|family\s+tree\s+(with\s+)?red\s+x|red\s+x\s+on\s+family\s+tree|spider\s*web(\s+spreading|\s+trap)?|tangled\s+web|cobweb\s+spreading|fishing\s+net\s+trap|iron\s+chains?\s+breaking|broken\s+chains?|pendulum\s+swinging|hourglass\s+sand|shattered\s+glass\s+metaphor|candle\s+flame\s+fading|phoenix\s+rising|cracked\s+mirror|bleeding\s+wallet|empty\s+wallet\s+symbolic|stack\s+of\s+bills\s+symbolic|house\s+of\s+cards|tightrope\s+walker\s+metaphor|puppet\s+strings|iceberg\s+hidden|tip\s+of\s+iceberg\s+metaphor)/i;
+                const SYMBOLIC_CLICHE_NARR = /(도미노처럼|체스판처럼|톱니처럼|저울처럼|가계도처럼|거미줄처럼|그물처럼|덫처럼|사슬처럼|빙산의\s*일각처럼|꼭두각시처럼|카드로\s*쌓은\s*집처럼|화약고처럼)/;
                 jsonObj.scenes.forEach(s => {
                     const narr = s.narration || '';
                     // 스톡 쿼리에 클리셰 단어 → 중립 분위기 키워드로 교체
@@ -6384,7 +6386,7 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                     }
                     // AI 프롬프트에서 클리셰 구문 제거 (프롬프트 자체는 유지, 클리셰 표현만 문장 삭제)
                     if (typeof s.aiPrompt === 'string' && SYMBOLIC_CLICHE_BG.test(s.aiPrompt)) {
-                        s.aiPrompt = s.aiPrompt.replace(/[^.]*\b(domino(es)?|chess|interlocking gears|scales? of justice|family tree.*red x|red x.*family tree)[^.]*\./gi, '').trim();
+                        s.aiPrompt = s.aiPrompt.replace(/[^.]*\b(domino(es)?|chess|interlocking gears|scales? of justice|family tree.*red x|red x.*family tree|spider web|cobweb|tangled web|fishing net trap|iron chains? breaking|broken chains?|pendulum swinging|hourglass|shattered glass metaphor|candle flame fading|phoenix rising|cracked mirror|bleeding wallet|house of cards|puppet strings|iceberg hidden|tip of iceberg)[^.]*\./gi, '').trim();
                         if (!s.aiPrompt) s.aiPrompt = 'Hand-painted warm editorial illustration of the scene concept, minimal composition, cream paper background, cinematic 16:9.';
                         s.clicheScrubbed = true;
                     }
@@ -8866,8 +8868,10 @@ ${sceneList}
             out = out.replace(/Text will be added later via overlay\.?/gi, '');
 
             // 2. 추출할 한글 텍스트 준비
+            // 2026-04-24: textOverlay가 실제 나레이션 안에 등장하는 경우에만 AI 라벨로 주입
+            // (임의 요약 라벨이 이미지에 박혀서 원문과 불일치하는 버그 차단)
             const koreanTexts = [];
-            if (textOverlay) koreanTexts.push(textOverlay);
+            if (textOverlay && narr.includes(textOverlay)) koreanTexts.push(textOverlay);
 
             // 퍼센트
             const pctMatch = narr.match(/(\d{1,3}(?:\.\d+)?)\s*(?:%|퍼센트)/);
@@ -9783,8 +9787,11 @@ ${sceneList}
             }
 
             // 항목 나열 (3+ 콤마 구분)
+            // 2026-04-24: 수사의문(누가/왜/어떻게 등)이 2개 이상이면 불릿 금지 (rhetorical question)
+            //             또한 추상 관용 표현이면 자동 스킵
             const itemMatches = narr.match(/[가-힣]{1,6}(?:,\s*[가-힣]{1,6}){2,}/);
-            if (itemMatches) {
+            const rhetoricalCount = (narr.match(/(누가|왜|어떻게|무엇을|언제|어디서|뭘|얼마나)/g) || []).length;
+            if (itemMatches && rhetoricalCount < 2 && !isTrivialCountPhrase) {
                 const hasNumericComparison = /\d+\s*(?:배|%|천|만|억|조)|순위|최다|최대/.test(narr);
                 if (hasNumericComparison) {
                     return { category: '기존', type: '막대차트', text: s.textOverlay || '항목 비교', reason: '수치 비교' };
