@@ -5909,9 +5909,42 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                     }
                 });
 
+                // 🟣 역사 수용소·학살 비교 장면 감지 (2026-04-23)
+                // 예: "나치 절멸 수용소, 스탈린 굴라크, 우간다 이디 아민" → 역사 몽타주 or 카탈로그
+                const HISTORICAL_CAMP_COMPARE = /(?:나치|아우슈비츠|절멸 수용소|홀로코스트|스탈린|굴라크|Gulag|이디 아민|크메르 루주|킬링 필드|문화혁명|대약진|아파르트헤이트)/;
+                jsonObj.scenes.forEach(s => {
+                    const narr = s.narration || '';
+                    // 2가지 이상 역사 참혹 사건 나열 → 카탈로그 그리드
+                    const matches = (narr.match(new RegExp(HISTORICAL_CAMP_COMPARE.source, 'g')) || []).length;
+                    if (matches >= 2 && !s.isMapScene && !s.isInfographicScene && !s.isDiagramScene) {
+                        s.isListGridScene = true;
+                        if (s.bgSource !== 'ai') {
+                            s.bgSource = 'ai';
+                            s.needRealImage = false;
+                            delete s.realSearchKeyword;
+                        }
+                        if (!s.aiPrompt || !_hasAnyStylePrefix(s.aiPrompt)) {
+                            s.aiPrompt = (s.aiPrompt || 'Historical comparison grid: different historical camps and atrocities.');
+                        }
+                    }
+                });
+
                 // 2026-04-23: 국가별 정책·지명·사건 구체 키워드 (모든 실사 장면에 후처리 적용)
                 // 너무 일반적인 키워드(gangCrime kw 등) 덮어쓰기
                 const SPECIFIC_CONTEXT_MAP = [
+                    // 북한 수용소·인물 (2026-04-23 추가)
+                    { re: /강철환/, kw: 'Kang Cheol-hwan North Korea defector author portrait' },
+                    { re: /요덕|15호 관리소/, kw: 'Yodok Camp 15 North Korea satellite' },
+                    { re: /북한.*(정치범 수용소|수용소)|관리소/, kw: 'North Korea political prison camp satellite' },
+                    { re: /나치.*(수용소|강제수용소)|아우슈비츠/, kw: 'Auschwitz Nazi concentration camp archive' },
+                    { re: /스탈린.*굴라크|굴라크|Gulag/, kw: 'Soviet Gulag Stalin camp historical photo' },
+                    { re: /이디 아민|우간다 독재/, kw: 'Idi Amin Uganda dictator historical photo' },
+                    { re: /크메르 루주|킬링 필드/, kw: 'Khmer Rouge Killing Fields Cambodia' },
+                    { re: /김일성/, kw: 'Kim Il-sung North Korea founder historical' },
+                    { re: /김정일/, kw: 'Kim Jong-il North Korea leader portrait' },
+                    { re: /김정은/, kw: 'Kim Jong-un North Korea leader news photo' },
+                    { re: /8월 종파 사건|종파 사건/, kw: 'North Korea 1956 August faction incident' },
+                    { re: /마오쩌둥.*(하방|문화혁명)/, kw: 'Mao Zedong China Cultural Revolution' },
                     // 덴마크 게토법 관련
                     { re: /덴마크.*(게토|이민자|비서구|강제 이주|parallel)/, kw: 'Denmark ghetto law Mjolnerparken demolition news' },
                     { re: /뮤엘너파르켄|몰너파르켄|Mjolnerparken/i, kw: 'Mjolnerparken Copenhagen demolition news' },
@@ -6136,7 +6169,9 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                         s.needRealImage = false;
                         delete s.realSearchKeyword;
                         if (!s.aiPrompt) {
-                            s.aiPrompt = 'Symbolic illustration representing: ' + narr.slice(0, 80);
+                            // 2026-04-23: 나레이션 통째 복사 금지 (의문형·긴 문장 그대로 들어가서 AI 혼란)
+                            // 핵심 명사만 추출 or 일반 지시
+                            s.aiPrompt = 'Hand-drawn symbolic illustration of the central metaphor from the scene. Minimal composition, cream paper background, watercolor edges. 16:9.';
                         }
                     }
                     if (s.bgSource !== 'ai') return;
@@ -8041,8 +8076,9 @@ ${sceneList}
             //   3. 긴장 훅/분위기 전환 문장 → 스톡 우선 (AI가 다음 장면 스포)
             //   4. 그 외 → Gemini가 정한 bgSource 우대
 
-            // 긴장 훅 감지: "보이지 않는·아무도 모르게·조용히·은밀히·물밑에서" 등 분위기 조성용
-            const isTensionHook = /(보이지 않는|안 보이는|아무도 모르|조용히|은밀히|물밑에서|숨어서|모르게 돌아가|뒤에서 돌아가|그림자 속|눈에 띄지 않|감지되지 않)/.test(narr);
+            // 긴장 훅 감지: 분위기 조성용·의문·예고
+            // 2026-04-23 확장: "더 무서운 이야기", "왜 ~일까요", "정체가 뭘까" 등 미스터리 훅
+            const isTensionHook = /(보이지 않는|안 보이는|아무도 모르|조용히|은밀히|물밑에서|숨어서|모르게 돌아가|뒤에서 돌아가|그림자 속|눈에 띄지 않|감지되지 않|더 무서운|더 끔찍한|더 참혹한|무슨 일이|무슨 일일까|무슨 일이 벌어|이야기일까|정체가 뭘|정체가 뭐길래|왜.*일까요\?|왜 더)/.test(narr);
 
             if (s.needRealImage === true) {
                 // 실사 필요 장면: real을 압도적 1순위로
@@ -9431,12 +9467,22 @@ ${sceneList}
         function _hasKoreanNumerals(narr) {
             // 한글 수사 + 단위 조합 ("천팔백만 원", "삼백건", "예순다섯 군데")
             return /(한|두|세|네|다섯|여섯|일곱|여덟|아홉|열|스물|서른|마흔|쉰|예순|일흔|여든|아흔|백|천|만|억|조)\s*(?:개|명|건|대|척|번|일|년|%|퍼센트|원|달러|배|가지|군데|곳)/.test(narr)
-                || /(일|이|삼|사|오|육|칠|팔|구|십|백|천|만|억|조)(?:천|백|십|만|억)(?:\S{0,3})\s*(?:명|건|대|척|번|일|년|%|원|달러|배|가지|군데|곳)/.test(narr);
+                || /(일|이|삼|사|오|육|칠|팔|구|십|백|천|만|억|조)(?:천|백|십|만|억)(?:\S{0,3})\s*(?:명|건|대|척|번|일|년|%|원|달러|배|가지|군데|곳)/.test(narr)
+                || /\d+\s*만\s*\d+\s*(?:천|백|십)?\s*명/.test(narr); // "6만 5천 명" 같은 조합
         }
         function _extractKoreanNumeral(narr) {
-            // 구어체 한글 수사 + 단위 추출
-            const m = narr.match(/((?:한|두|세|네|다섯|여섯|일곱|여덟|아홉|열|스물|서른|마흔|쉰|예순|일흔|여든|아흔|백|천|만|억|조|수|수십|수백|수천|수만)[\s가-힣]{0,5}?(?:개|명|건|대|척|번|일|년|%|원|달러|배|가지|군데|곳))/);
-            return m ? m[1].trim() : '';
+            // 2026-04-23: 숫자+단위 조합 우선 (가장 구체적)
+            // "6만 5천 명", "16만 명", "3대" 등
+            const digitCombo = narr.match(/(\d+만\s*\d+천\s*\d*\s*(?:명|개|건|대|척|번|일|년|원|달러|배|가지|군데|곳))/)
+                || narr.match(/(\d+(?:\.\d+)?\s*(?:천|백|십|만|억|조)\s*(?:명|개|건|대|척|번|일|년|원|달러|배|가지|군데|곳))/);
+            if (digitCombo) return digitCombo[1].replace(/\s+/g, ' ').trim();
+            // 복합 한글 수사 (예순다섯, 서른다섯 같은 조합어 우선)
+            const complexKor = narr.match(/((?:스물|서른|마흔|쉰|예순|일흔|여든|아흔)\s*(?:하나|둘|셋|넷|다섯|여섯|일곱|여덟|아홉)?)\s*(?:개|명|건|대|척|번|일|년|가지|군데|곳)/);
+            if (complexKor) return complexKor[0].trim();
+            // 단순 한글 수사 (네 군데 / 세 명 / 두 배 등) — 긴 것부터 매칭
+            const simpleKor = narr.match(/(다섯|여섯|일곱|여덟|아홉|[한두세네열]|스물|서른|마흔|쉰|예순|일흔|여든|아흔|백|천|만|억)\s*(?:개|명|건|대|척|번|일|년|가지|군데|곳)/);
+            if (simpleKor) return simpleKor[0].trim();
+            return '';
         }
 
         function _recommendOverlay28(s) {
