@@ -6148,7 +6148,10 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                         'Semi-realistic dark painterly',
                         'FLAT CLEAN infographic chart', 'Clean minimal infographic chart', 'Clean minimal infographic',
                         'Cross-section diagram', 'Catalog grid layout',
-                        'Hand-painted symbolic', 'Hand-painted warm editorial', 'Flat 2D vector infographic'
+                        'Hand-painted symbolic', 'Hand-painted warm editorial', 'Flat 2D vector infographic',
+                        // 2026-04-24 v3: 새 에디토리얼 톤 프리픽스들
+                        'Bold modern editorial', 'Modern editorial infographic map',
+                        'Sophisticated editorial illustration', 'Dark dramatic editorial illustration'
                     ];
                     return markers.some(m => prompt.startsWith(m));
                 }
@@ -6301,14 +6304,24 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                     if (!s.isHistoricalScene && !s.isMapScene && !s.isInfographicScene && !s.isDiagramScene) {
                         if (SYMBOLIC_STRONG.test(narr) || SYMBOLIC_STRONG.test(prompt)) {
                             s.isSymbolicScene = true;
-                            // 2026-04-24 v2: 임팩트 강화 — 부드러운 수채 → 굵은 에디토리얼 일러스트
-                            // 사용자 피드백: "감성적인 여자가 보는 채널 아님. 색감 강하고 시안성 좋게"
-                            // 파스텔·뮤티드 어스톤·부드러운 수채엣지·여백 중심 제거
-                            // WSJ 오피니언·정치 만평 편집 톤. 주제 강한 실루엣.
-                            const SYMBOLIC_STYLE_PREFIX = 'Bold modern editorial illustration for documentary YouTube content. Cream paper background (#F5EFD9) with very subtle grain. The metaphoric subject described below rendered with THICK BOLD BLACK INK OUTLINES (2-3px, confident brush line) and SATURATED SOLID COLOR FILLS — pick 2-3 contrasting colors from this palette: deep saturated red (#C62828), deep navy blue (#1A2F4A), mustard ocher (#D4A437), forest green (#2D5A3D). High contrast, dramatic composition, strong silhouette. NOT soft watercolor, NOT pastel wash, NOT muted earth tones, NOT greeting-card emotional, NOT plastic AI render, NOT neon, NOT 3D, NOT cartoon. Hand-crafted feel preserved (visible ink brushwork) but visually bold and readable at thumbnail scale. Subject DOMINATES frame, NOT minimalist empty space. Typography (if any Korean label): thick bold modern sans-serif (Noto Sans KR Black), dark charcoal. Draw ONLY the specific metaphoric subject described below — do not add chess, dominoes, gears, spider webs, scales, or other generic symbols unless explicitly mentioned. All labels in Korean Hangul script only — NO English, NO romanization. Cinematic 16:9. ';
+                            // 2026-04-24 v3: 경제 저널리즘 에디토리얼 톤으로 재정비
+                            // 사용자 피드백 방향 종합:
+                            //   - "감성적 여자 채널 아님" → 파스텔·뮤티드 금지
+                            //   - "AI 현실 느낌 반감" → 포토리얼·플라스틱 금지
+                            //   - "애니 느낌은 너무 가지마" → 모에·카와이·카툰 금지
+                            //   - "경제 느낌 강한 진지한 톤" → Economist·Bloomberg·NYT Opinion 편집톤
+                            //   - "몰락·위기·심각한 상황" → 무거운 주제는 키아로스쿠로 다크 모드
+                            // 2종 분기:
+                            //   (a) HEAVY: 몰락·압제·공포·죽음 등 무거운 주제 → 다크 드라마틱
+                            //   (b) STANDARD: 일반 은유/설명 → 절제된 저널리즘 에디토리얼
+                            const HEAVY_SCENE = /몰락|붕괴|파산|실업|침체|공황|위기|파탄|압제|공포|끌려|잡혀|체포|연행|처벌|처형|학살|투옥|감금|탈출|죽|굶주|배고|두려워|떨면서|떨리는|몰려들|쫓겨|내몰|빼앗|빈곤|가난|부패|독재|숙청|강제/.test(narr);
+                            const SYMBOLIC_STYLE_HEAVY = 'Dark dramatic editorial illustration in the style of high-end economic journalism (Economist, Bloomberg Businessweek, NYT Opinion) with subtle graphic novel influence. DEEP CHARCOAL or NAVY ATMOSPHERIC BACKGROUND with strong chiaroscuro lighting — subject emerges from shadow. Confident thick ink linework with stylized (NOT anime cute, NOT photorealistic, NOT cartoon) proportions. Restrained palette dominated by dark tones with ONE saturated accent color emerging from shadow (deep blood red #C62828 or mustard ocher #D4A437). Heavy atmospheric grain texture, cinematic composition, strong dramatic silhouette. Tone: serious economic/political gravitas — decline, collapse, oppression, systemic failure. NOT soft watercolor, NOT pastel, NOT anime moe, NOT kawaii, NOT flat poster, NOT plastic AI render, NOT neon, NOT 3D. Hand-crafted editorial illustration feel — clearly drawn, not realistic. Draw ONLY the specific metaphoric subject described below — do not add chess, dominoes, gears, spider webs, scales, or other generic symbols unless explicitly mentioned. Korean labels in bold modern sans-serif if any. Cinematic 16:9. ';
+                            const SYMBOLIC_STYLE_STANDARD = 'Sophisticated editorial illustration in the style of high-end economic journalism (Economist, Bloomberg Businessweek, WSJ feature illustrations) with subtle graphic novel influence. Clean confident thick ink linework with stylized (NOT anime cute, NOT photorealistic, NOT cartoon) proportions. Restrained muted earth palette with ONE saturated accent color (deep red #C62828 or mustard ocher #D4A437 or deep navy). Background: subtle neutral paper tone (slightly warm off-white or cool light gray) with barely visible grain. Serious analytical tone — economic/political journalism gravitas. NOT soft watercolor, NOT pastel emotional, NOT anime moe, NOT kawaii, NOT flat poster, NOT plastic AI render, NOT neon, NOT 3D. Hand-crafted editorial illustration feel — clearly drawn, not realistic. Dramatic composition, strong silhouette, subject dominates frame. Draw ONLY the specific metaphoric subject described below — do not add chess, dominoes, gears, spider webs, scales, or other generic symbols unless explicitly mentioned. Korean labels in bold modern sans-serif if any. Cinematic 16:9. ';
+                            const SYMBOLIC_STYLE_PREFIX = HEAVY_SCENE ? SYMBOLIC_STYLE_HEAVY : SYMBOLIC_STYLE_STANDARD;
                             if (typeof s.aiPrompt === 'string' && !_hasAnyStylePrefix(s.aiPrompt)) {
                                 s.aiPrompt = SYMBOLIC_STYLE_PREFIX + s.aiPrompt;
                             }
+                            if (HEAVY_SCENE) s.isHeavyScene = true;
                         }
                     }
                     // 지도 이동 여부
@@ -6459,7 +6472,7 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                     // AI 프롬프트에서 클리셰 구문 제거 (프롬프트 자체는 유지, 클리셰 표현만 문장 삭제)
                     if (typeof s.aiPrompt === 'string' && SYMBOLIC_CLICHE_BG.test(s.aiPrompt)) {
                         s.aiPrompt = s.aiPrompt.replace(/[^.]*\b(domino(es)?|chess|interlocking gears|scales? of justice|family tree.*red x|red x.*family tree|spider web|cobweb|tangled web|fishing net trap|iron chains? breaking|broken chains?|pendulum swinging|hourglass|shattered glass metaphor|candle flame fading|phoenix rising|cracked mirror|bleeding wallet|house of cards|puppet strings|iceberg hidden|tip of iceberg)[^.]*\./gi, '').trim();
-                        if (!s.aiPrompt) s.aiPrompt = 'Bold modern editorial illustration of the scene concept. Cream paper background, thick black ink outlines, saturated solid colors (deep red / navy / ocher), strong composition. NOT soft watercolor, NOT pastel. Cinematic 16:9.';
+                        if (!s.aiPrompt) s.aiPrompt = 'Sophisticated editorial illustration in the style of economic journalism (Economist, Bloomberg, WSJ feature) with subtle graphic novel influence. Restrained muted palette with ONE saturated accent. Clean confident ink linework, stylized (NOT anime cute, NOT photorealistic, NOT cartoon) proportions. Hand-crafted editorial feel. Cinematic 16:9.';
                         s.clicheScrubbed = true;
                     }
                     // 나레이션에 '도미노처럼' 등 직유 있으면 해당 은유를 stock으로 보내되, 다른 장면에서 중복되면 알림
@@ -9044,15 +9057,17 @@ ${sceneList}
                 return 'Semi-realistic dark painterly digital illustration of the historical scene described in the scene context, in the style of muted concept art for atmospheric historical games (Dishonored, Frostpunk, A Plague Tale). Muted color palette, visible brushwork and matte painting texture, realistic human proportions, deep teal and umber shadows, grounded historical atmosphere, cinematic 16:9.';
             }
 
-            // 감정·심리 장면 → 굵은 에디토리얼 일러스트 (파스텔 감성 금지)
-            // 2026-04-24 v2: 사용자 피드백 — "감성적 채널 아님. 색감 강하고 시안성 좋게"
+            // 2026-04-24 v3: 경제 저널리즘 에디토리얼 톤 + HEAVY/STANDARD 분기
+            //   사용자 최종 방향: "경제 느낌 강한 진지한 저널리즘 삽화.
+            //                   애니 X, 포토리얼 X, 파스텔 X, 몰락·위기는 다크 드라마틱"
             const hasEmotion = /울면서|두려워|하얗게 질려|잠을 못|감당|떨면서|떨리는|조용히 흐느|흐느|흐르는 눈물|눈물이|공포|절망|두렵|공허|외로|그리운|보고 싶|견디지|무너|심장|숨이 멎|숨을 못/.test(narr);
-            if (hasEmotion) {
-                return 'Bold modern editorial illustration of the emotional moment described, documentary YouTube impact. Cream paper background (#F5EFD9) with subtle grain. Subject rendered with THICK BLACK INK OUTLINES and SATURATED SOLID COLOR FILLS — 2-3 contrasting colors from: deep red #C62828, deep navy #1A2F4A, mustard ocher #D4A437, forest green #2D5A3D. Strong silhouette, dramatic composition, subject dominates frame. NOT soft watercolor, NOT pastel, NOT muted earth tones, NOT greeting-card emotional, NOT plastic AI render. Hand-crafted editorial weight. Cinematic 16:9.';
+            const isHeavy = /몰락|붕괴|파산|실업|침체|공황|위기|파탄|압제|끌려|잡혀|처벌|처형|학살|투옥|감금|탈출|죽|굶주|배고|몰려들|쫓겨|내몰|빼앗|빈곤|가난|부패|독재|숙청|강제/.test(narr);
+            if (hasEmotion || isHeavy) {
+                return 'Dark dramatic editorial illustration in the style of high-end economic journalism (Economist, Bloomberg Businessweek, NYT Opinion) with subtle graphic novel influence. Deep charcoal or navy atmospheric background with strong chiaroscuro lighting — subject emerges from shadow. Confident thick ink linework, stylized (NOT anime cute, NOT photorealistic, NOT cartoon) proportions. Restrained dark palette with ONE saturated accent (deep blood red #C62828 or mustard ocher #D4A437). Heavy atmospheric grain, cinematic composition, serious economic/political gravitas tone. NOT soft watercolor, NOT pastel, NOT anime moe, NOT kawaii, NOT flat poster, NOT plastic AI render, NOT 3D. Hand-crafted editorial feel — clearly drawn, not realistic. Cinematic 16:9.';
             }
 
-            // 기본 — 중립적 편집 일러스트 (임팩트 톤)
-            return 'Bold modern editorial illustration representing the scene described, documentary YouTube impact. Cream paper background (#F5EFD9), thick black ink outlines, saturated solid colors (deep red/navy/ocher/forest green — pick 2-3 contrasting), strong composition. NOT soft watercolor, NOT pastel, NOT muted, NOT AI plastic. Hand-crafted editorial style, high readability. Cinematic 16:9. Include Korean Hangul text label only if a specific label is provided by the scene.';
+            // 기본 — 표준 경제 저널리즘 에디토리얼
+            return 'Sophisticated editorial illustration in the style of high-end economic journalism (Economist, Bloomberg Businessweek, WSJ feature) with subtle graphic novel influence. Clean confident thick ink linework, stylized (NOT anime cute, NOT photorealistic, NOT cartoon) proportions. Restrained muted earth palette with ONE saturated accent (deep red #C62828 or mustard ocher #D4A437 or deep navy). Subtle neutral paper background (slightly warm off-white or cool light gray) with barely visible grain. Serious analytical tone. NOT soft watercolor, NOT pastel emotional, NOT anime moe, NOT kawaii, NOT flat poster, NOT plastic AI render, NOT 3D. Hand-crafted editorial feel — clearly drawn, not realistic. Dramatic composition. Cinematic 16:9. Include Korean Hangul text label only if a specific label is provided by the scene.';
         }
 
         // 2026-04-23: 실사 구글 검색 대체 키워드 2개 생성 (1순위 실패 시 fallback)
