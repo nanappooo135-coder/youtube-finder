@@ -9185,7 +9185,7 @@ ${sceneList}
             // 2026-04-24 v4: 화이트리스트 확장 — _deriveAiPrompt가 생성하는 단순 인포그래픽 프리픽스도 포함
             //   과거: Minimalist infographic donut/Minimalist financial/Split screen VS 등이 빠져서
             //         soft watercolor 프리픽스가 덧붙어 스타일 충돌 발생
-            if (hasDarkCyber && !/(Paper cut collage|Modern infographic|Flat 2D vector|Hand-painted symbolic|Cross-section diagram|Catalog grid|Vintage antique atlas|Clean minimal infographic|Hand-painted warm editorial|FLAT CLEAN infographic|Clean flat infographic chart|Bold modern editorial|Modern editorial infographic map|Semi-realistic dark painterly|Sophisticated editorial illustration|Dark dramatic editorial illustration|Distressed archive documentary|Clean editorial pictogram|Minimalist infographic donut chart|Minimalist financial infographic|Split screen VS comparison|Sophisticated bar chart comparison|Stylized historical map|Symbolic metaphorical illustration|Cinematic documentary illustration)/i.test(out)) {
+            if (hasDarkCyber && !/(Paper cut collage|Modern infographic|Flat 2D vector|Hand-painted symbolic|Cross-section diagram|Catalog grid|Vintage antique atlas|Clean minimal infographic|Hand-painted warm editorial|FLAT CLEAN infographic|Clean flat infographic|Bold modern editorial|Modern editorial infographic map|Semi-realistic dark painterly|Sophisticated editorial illustration|Dark dramatic editorial illustration|Distressed archive documentary|Clean editorial pictogram|Clean editorial infographic|Minimalist infographic donut chart|Minimalist financial infographic|Split screen VS comparison|Sophisticated bar chart comparison|Stylized historical map|Symbolic metaphorical illustration|Cinematic documentary illustration)/i.test(out)) {
                 // 영어 HUD 뇌관 표현 제거
                 out = out.replace(/dark (high-?tech|cinematic|technological)[^.,]*/gi, 'warm editorial illustration');
                 out = out.replace(/high-?tech (documentary|satellite|surveillance)[^.,]*/gi, 'hand-painted editorial');
@@ -10459,6 +10459,16 @@ ${sceneList}
                     text += '[' + ov.category + '] ' + ov.type + (ov.text ? ' → "' + ov.text + '"' : '');
                     if (ov.reason) text += ' (' + ov.reason + ')';
                     text += '\n';
+                }
+                // 📊🗺️ 나노바나나2 차트/지도 프롬프트 (프리픽 2K · 한글 정확)
+                const nanobana = _buildNanobanaPrompt(s);
+                if (nanobana) {
+                    const nbKind = nanobana.kind === 'map' ? '🗺️ 지도' : '📊 차트';
+                    const nbStyleMeta = nanobana.stylesMap && nanobana.stylesMap[nanobana.style];
+                    const nbStyleLabel = nbStyleMeta ? (nbStyleMeta.name + ' — ' + nbStyleMeta.desc) : nanobana.style;
+                    text += '\n' + nbKind + ' 나노바나나2 2K [' + nbStyleLabel + ']\n';
+                    text += '   (프리픽 → 나노바나나2 → 2K → 아래 프롬프트 붙여넣기)\n';
+                    text += '   ' + nanobana.prompt + '\n';
                 }
                 // 🎬 그록 영상화 프롬프트
                 if (s.needsGrokVideo && s.grokVideoPrompt) {
