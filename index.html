@@ -2159,6 +2159,20 @@
                         한 문장 = 한 장면 원칙. 배경(stock/ai/gif), 오버레이 텍스트, 효과음 자동 지정.
                     </p>
 
+                    <!-- 2026-04-24: 채널 모드 셀렉터 -->
+                    <div style="margin-bottom:14px;padding:10px 14px;background:#f8f4ff;border:2px solid #9333ea;border-radius:8px;display:flex;align-items:center;gap:12px;">
+                        <span style="font-weight:700;color:#6b21a8;font-size:0.9rem;">📺 채널 모드</span>
+                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.88rem;">
+                            <input type="radio" name="channelMode" value="economics" onchange="_setChannelMode(this.value)" style="cursor:pointer;">
+                            <span>📊 경제학 <span style="color:#888;font-size:0.78rem;">(지도·차트·수치·다큐)</span></span>
+                        </label>
+                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.88rem;">
+                            <input type="radio" name="channelMode" value="psychology" onchange="_setChannelMode(this.value)" style="cursor:pointer;">
+                            <span>🧠 심리학 <span style="color:#888;font-size:0.78rem;">(감정·은유·웹툰 일러스트)</span></span>
+                        </label>
+                        <span id="channelModeStatus" style="margin-left:auto;font-size:0.75rem;color:#6b21a8;font-weight:600;"></span>
+                    </div>
+
                     <div class="input-group">
                         <label>대본 전체 <span style="color:#888;font-weight:400;">(script.txt 내용 그대로)</span></label>
                         <textarea id="jsonScript" rows="14" placeholder="대본 전체를 붙여넣으세요.&#10;&#10;예:&#10;지금 아프리카에 지도에는 없는데 대사관은 있고...&#10;&#10;소말릴란드라는 나라입니다. 30년 넘게..." style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;resize:vertical;font-family:inherit;line-height:1.6;"></textarea>
@@ -6095,6 +6109,11 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                 // 브랜드 로고 삽입 장면 (needLogo=true + logoName 존재)
                 const logoScenes = jsonObj.scenes.filter(s => s.needLogo === true && s.logoName);
 
+                // 🧠 심리 채널: 지도·차트·나열·역사 등 AI 카테고리 자동 감지 전부 skip
+                //   (심리 나레이션에 '벽·문·미로' 같은 은유 키워드가 들어갈 수 있는데
+                //    경제 키워드와 충돌해 잘못 분류되면 파이프라인이 엉킴)
+                const _isPsych = _isPsychologyMode();
+
                 // 🗺️ 지도 장면 — AI가 isMapScene 태그 누락 시 aiPrompt + 나레이션 키워드로 자동 감지
                 // 강한 지도 신호가 있고 + 비교/차트/인포그래픽이 아닐 때만 태그
                 const MAP_STRONG = /\b(minimalist map|shipping route|world map|geographic map|animated map|map showing|map of|peninsula|strait|gulf of|the canal)\b/i;
@@ -6108,6 +6127,7 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                 const CHOKEPOINT_NAMES = /(호르무즈|말라카|수에즈|바브[\s·]?엘[\s·]?만데브|파나마 운하|보스포루스|지브롤터|다르다넬스|덴마크 해협|베링 해협|대한 해협|쓰시마 해협)/;
                 const CHOKEPOINT_CONCEPT = /(초크\s?포인트|choke\s?point|목줄|급소|숨통|관문|길목|병목|지정학적 급소|중동의 목줄|에너지 통로|세계의 관문)/;
                 jsonObj.scenes.forEach(s => {
+                    if (_isPsych) return; // 🧠 심리 모드: 지도 승격 전면 차단
                     if (s.isMapScene === true) return;
                     if (typeof s.aiPrompt !== 'string') return;
                     if (MAP_EXCLUDE.test(s.aiPrompt)) return;
@@ -6144,6 +6164,7 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                 // 또한 한글 나레이션 원문을 영문 프롬프트 body에 삽입하지 않음 (프리픽이 한글 깨뜨림)
                 const _ACTION_EVENT_FOR_LIST = /(끌려|실려|잡혀|체포|연행|이송|추방|숙청|학살|처형|사망|죽이|죽었|빼앗|쫓겨|내몰|강제로|강제 이주|떨어져|떨어뜨)/;
                 jsonObj.scenes.forEach(s => {
+                    if (_isPsych) return; // 🧠 심리 모드: 나열 그리드 승격 차단
                     if (s.isListGridScene === true) return;
                     const narr = s.narration || '';
                     if (_ACTION_EVENT_FOR_LIST.test(narr)) return; // 🛑 액션/이벤트는 카탈로그 아님
@@ -6194,11 +6215,29 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                 }
 
                 jsonObj.scenes.forEach(s => {
+                    if (_isPsych) return; // 🧠 심리 모드: 지도 prefix 차단
                     if (s.isMapScene !== true || typeof s.aiPrompt !== 'string') return;
                     if (!_hasAnyStylePrefix(s.aiPrompt)) {
                         s.aiPrompt = MAP_STYLE_PREFIX + s.aiPrompt;
                     }
                 });
+                // 🧠 심리 모드: AI 장면 전부 웹툰 스타일 블록으로 강제 재작성
+                //   Gemini가 경제 프롬프트(editorial journalism·infographic) 찍어도 무효화.
+                //   이전 단계에서 map/chart/history 승격은 이미 차단됨 → 여기서 덮어쓰면 충돌 없음.
+                if (_isPsych) {
+                    jsonObj.scenes.forEach(s => {
+                        if (s.bgSource === 'ai') {
+                            s.aiPrompt = _derivePsychologyAiPrompt(s);
+                            // 경제 전용 플래그 모두 off
+                            s.isMapScene = false;
+                            s.isInfographicScene = false;
+                            s.isHistoricalScene = false;
+                            s.isDiagramScene = false;
+                            s.isListGridScene = false;
+                            s.isSymbolicScene = true; // 심리는 전부 은유/감정 장면으로 통일
+                        }
+                    });
+                }
                 const mapScenes = jsonObj.scenes.filter(s => s.isMapScene === true);
 
                 // 🟠 역사 장면 자동 감지 (연도·왕조·역사 인물·시대명)
@@ -6250,6 +6289,7 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                 }
 
                 jsonObj.scenes.forEach(s => {
+                    if (_isPsych) return; // 🧠 심리 모드: 역사 승격 차단
                     if (s.isMapScene === true) return;
                     if (s.isListGridScene === true) return; // 2026-04-23: 나열 장면은 역사 prefix 스킵 (스타일 충돌)
                     if (s.bgSource !== 'ai' || typeof s.aiPrompt !== 'string') return;
@@ -6300,6 +6340,7 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                 // 명시적 차트 표현만 매칭 (bar chart / pie chart / donut chart / line graph / ranking chart)
                 const EXPLICIT_CHART_RE = /\b(bar\s+chart|막대\s*차트|pie\s+chart|파이\s*차트|donut\s+chart|도넛\s*차트|line\s+(?:graph|chart)|선\s*그래프|라인\s*차트|ranking\s+(?:list|chart)|랭킹\s*(?:리스트|차트)|area\s+chart|histogram)\b/i;
                 jsonObj.scenes.forEach(s => {
+                    if (_isPsych) return; // 🧠 심리 모드: 차트 승격 차단
                     if (s.isMapScene === true) return;
                     if (s.isHistoricalScene === true) return;
                     if (s.bgSource !== 'ai' || typeof s.aiPrompt !== 'string') return;
@@ -7629,6 +7670,57 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
             if (el) el.innerHTML = '';
         }
 
+        // ═══════════════════════════════════════════════════════════
+        // 🧠 채널 모드 (2026-04-24): 경제학 vs 심리학 — 장르별 파이프라인 분기
+        //   경제: 지도·차트·다큐 에디토리얼·스톡 55~65%
+        //   심리: 감정·은유·웹툰 일러스트 고정 캐릭터·스톡 35~45%
+        // ═══════════════════════════════════════════════════════════
+        window._channelMode = (function() {
+            try {
+                const saved = localStorage.getItem('yt_channel_mode');
+                return (saved === 'psychology' || saved === 'economics') ? saved : 'economics';
+            } catch (e) { return 'economics'; }
+        })();
+
+        window._setChannelMode = function(mode) {
+            if (mode !== 'economics' && mode !== 'psychology') return;
+            window._channelMode = mode;
+            try { localStorage.setItem('yt_channel_mode', mode); } catch (e) {}
+            // UI 라디오 동기화
+            document.querySelectorAll('input[name="channelMode"]').forEach(r => {
+                r.checked = (r.value === mode);
+            });
+            const status = document.getElementById('channelModeStatus');
+            if (status) status.textContent = mode === 'psychology' ? '🧠 심리학 모드' : '📊 경제학 모드';
+            // 이미 생성된 JSON이 있으면 재렌더링
+            if (window._sceneGuideData && typeof _renderSceneGuideFromState === 'function') {
+                _renderSceneGuideFromState();
+            }
+        };
+
+        // 심리 채널 고정 웹툰 스타일 블록 (사용자 검증 완료 2026-04-24)
+        const PSYCHOLOGY_STYLE_BLOCK = `Hand-drawn colored pencil and watercolor illustration in the style of a Korean psychology webtoon. VISIBLE pencil crosshatching on all edges, watercolor fills with soft bleeding, warm cream paper texture clearly visible throughout the whole image. NOT 3D, NOT Pixar, NOT CGI, NOT photorealistic, NOT animated render, NOT claymation, NOT digital painting, NOT realistic human figures — this is a FLAT 2D hand-drawn illustration on paper, as if drawn with colored pencils and a watercolor brush.
+
+CHARACTER (mandatory — this is the ONLY character in every scene, single subject, never replace with realistic people):
+- HEAD: perfectly ROUND chubby ball-shaped head (not egg-shaped, not elongated, circular like a dumpling or mochi), warm off-white color
+- NO NOSE at all — face is flat between the eyes
+- EYES: two tiny solid black curved arcs (no whites, no pupils, no sparkles)
+- MOUTH: one small short curved line
+- CHEEKS: two soft pink blush circles
+- BODY: normal human proportions, muted earth-tone casual clothes (beige cardigan, olive hoodie, gray sweats — pick one per scene)
+- ONE character only per scene, never two people, never realistic humans, never anime girls
+
+Muted warm palette with one accent: warm lamp orange (#F4A460) for serene moods, muted teal-navy (#3A5060) for anxious/night moods. Cinematic 16:9.`;
+
+        function _isPsychologyMode() { return window._channelMode === 'psychology'; }
+
+        // 페이지 로드 후 UI 라디오 초기화
+        window.addEventListener('DOMContentLoaded', function() {
+            if (typeof window._setChannelMode === 'function') {
+                window._setChannelMode(window._channelMode);
+            }
+        });
+
         // ═══ 📊🗺️ 나노바나나2 차트/지도 프롬프트 템플릿 (프리픽 2K 전용) ═══
         // 2026-04-24 v11: 프리픽 나노바나나2 2K는 한글 렌더링이 정확해서
         //   셀팜 정밀모드급 품질을 비용 0원으로 달성 가능.
@@ -7716,6 +7808,8 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
             return `${styleBlock} Map title (if shown): "${title}". INTERNAL REFERENCE ONLY — the following narration is background context for you to decide what geography to draw. DO NOT render this narration text as visible subtitles, captions, or any text box on the image. Only place-name labels (countries, seas, straits, cities) and the title may appear as visible text. Narration (internal reference): "${data}". Extract ONLY geographic names from the narration. ${labelHint} All labels in Korean Hangul script, bold modern sans-serif typography, clearly readable on mobile. NO decorative icons (oil barrels, ships, coins) unless the narration explicitly mentions them. NO fake or invented Korean words — only real place names. Cinematic 16:9, 60fps. Bottom right corner: small semi-transparent label "출처: 지리정보시스템" in 10pt light gray Korean sans-serif.`;
         }
         function _buildNanobanaPrompt(s) {
+            // 🧠 심리 채널에선 차트·지도가 거의 안 나오므로 나노바나나2 자체 비활성
+            if (_isPsychologyMode()) return null;
             const isMap = s.isMapScene === true;
             const isChart = s.isInfographicScene === true;
             if (!isMap && !isChart) return null;
@@ -8512,6 +8606,10 @@ ${sceneList}
         // === 이미지 소스 3순위 결정 ===
         function _rankImageSources(s) {
             const narr = s.narration || '';
+            // 🧠 심리 채널 모드: 완전히 다른 가중치 테이블 사용
+            if (_isPsychologyMode()) {
+                return _rankImageSourcesPsychology(s);
+            }
             // 2026-04-23: 내용 기반 판정 — "이 장면엔 뭐가 어울리나"
             // 기본값은 낮게 두고, 키워드 맞는 쪽에 크게 가중
             const scores = { stock: 1, ai: 0, real: 1, character: 0, gif: 0 };
@@ -8642,6 +8740,85 @@ ${sceneList}
                 }
             }
             return sorted;  // 전체 반환 (표시단에서 slice 처리)
+        }
+
+        // 🧠 심리 채널 전용 랭킹 — 감정/내면/관계 중심
+        //   역할 분리: 외부 상황(지하철·샤워·침대·식탁) → stock, 내면(머릿속·감정·개념) → ai 웹툰
+        //   real(실사 인물)·map/chart는 거의 안 씀
+        function _rankImageSourcesPsychology(s) {
+            const narr = s.narration || '';
+            const scores = { stock: 1, ai: 1, real: 0, character: 0, gif: 0 };
+
+            // ═══ AI(웹툰 일러스트) 우선 조건 — 내면·감정·개념 ═══
+            // 머릿속·생각·기억·무의식
+            if (/(머릿속|생각이|생각을|떠올|반추|되새|되뇌|맴돌|재생|반복|증식|주문|속삭|무의식|내면|마음속|가슴속|뇌에서|머리에서|꺼지지 않|사라지지 않)/.test(narr)) {
+                scores.ai += 6;
+            }
+            // 감정 상태 (추상)
+            if (/(불안|초조|우울|공허|무력|외로움|외롭|허전|절망|두려움|두렵|공포|분노|화가|슬픔|슬프|답답|막막|죄책감|수치|부끄러|부끄럼|열등감|자책|후회|자존감|자기혐오|번아웃|소진)/.test(narr)) {
+                scores.ai += 5;
+            }
+            // 심리 개념·이론
+            if (/(인지부조화|방어기제|애착|트라우마|회피|투사|억압|동일시|합리화|반추|과각성|각성|조건화|강화|학습된 무기력|자기효능|자기개념|스키마|자동사고|왜곡된 생각|인지왜곡)/.test(narr)) {
+                scores.ai += 6;
+            }
+            // 은유·상징
+            if (/(가면|거울|문|벽|미로|감옥|사슬|뿌리|그림자|무대|관객|역할|껍질|껍데기|상자|구덩이|터널|빛과 어둠)/.test(narr)) {
+                scores.ai += 5;
+            }
+
+            // ═══ 스톡 우선 조건 — 외부 상황·행동·장소 ═══
+            // 일상 공간
+            if (/(지하철|버스|택시|엘리베이터|카페|커피|사무실|회사|회의|퇴근|출근|집|방|침대|화장실|샤워|욕실|주방|식탁|거실|소파|책상|창문|거리|공원|산책|지하|계단)/.test(narr)) {
+                scores.stock += 4;
+            }
+            // 몸 신호·행동
+            if (/(숨이|호흡|심박|심장이 뛰|가슴이|손이 떨|눈물이|눈을 감|눈을 뜨|잠들|잠이|천장|누워|앉아|서서|걷다가|걷고 있|멍하니|뒤척|뒤척이)/.test(narr)) {
+                scores.stock += 3;
+            }
+            // 관계·사람 (타인 등장)
+            if (/(팀장|상사|부장|동료|친구|가족|엄마|아빠|부모|배우자|연인|남친|여친|아이|아들|딸|지인|사람들 앞|군중|많은 사람)/.test(narr)) {
+                scores.stock += 3;
+            }
+            // 시간·시각 (분위기)
+            if (/(새벽|밤|저녁|아침|한밤중|두 시|세 시|네 시|02:00|03:00|04:00|05:00)/.test(narr)) {
+                scores.stock += 2;
+            }
+
+            // ═══ GIF (짧은 감정 반응만, 경제와 동일 기준) ═══
+            if (/(놀라|헉|황당|어이없|웃긴|웃음|\?$|!$)/.test(narr) && narr.length <= 30) {
+                scores.gif += 3;
+            }
+
+            // ═══ 최종 계층 ═══
+            // 긴장 훅(분위기 조성·예고) → 스톡
+            const isTensionHook = /(보이지 않는|조용히|은밀히|물밑에서|숨어서|모르게|뒤에서)/.test(narr);
+            if (isTensionHook) scores.stock += 8;
+
+            // 정렬
+            const sorted = Object.entries(scores)
+                .sort((a, b) => b[1] - a[1])
+                .filter(([_, score]) => score > 0)
+                .map(([type, score]) => _buildRankEntry(s, type, score))
+                .filter(r => r !== null);
+
+            // 최소 3순위 보장 (stock + ai)
+            if (sorted.length < 3) {
+                ['stock', 'ai'].forEach(t => {
+                    if (!sorted.find(r => r.type === t)) {
+                        const entry = _buildRankEntry(s, t, 0);
+                        if (entry) sorted.push(entry);
+                    }
+                });
+            }
+            // GIF 과잉 차단
+            const GIF_ELIGIBLE = narr.length <= 30 && /(놀라|헉|황당|어이없|웃음|\?$|!$)/.test(narr);
+            if (!GIF_ELIGIBLE) {
+                for (let i = sorted.length - 1; i >= 0; i--) {
+                    if (sorted[i].type === 'gif') sorted.splice(i, 1);
+                }
+            }
+            return sorted;
         }
 
         // 순위 엔트리 생성
@@ -8853,6 +9030,10 @@ ${sceneList}
 
         // === 각 타입별 콘텐츠 유도 ===
         function _deriveStockKeyword(narr) {
+            // 🧠 심리 모드: 감정·관계·일상 공간 키워드 풀
+            if (_isPsychologyMode()) {
+                return _deriveStockKeywordPsychology(narr);
+            }
             // 우선순위: 구체 > 추상 개념 > 은유 > 일반
             // ⚠️ 정규식 오탐 주의 (아이디어→아이, 상업→상, 등)
 
@@ -8971,6 +9152,69 @@ ${sceneList}
             if (/성장|발전|번영|호황/.test(narr)) return 'booming growing economy construction';
             // ⚠️ 마지막 폴백 (구체 매칭 실패) — 추상 장면 표시자
             return '__FALLBACK__';
+        }
+
+        // 🧠 심리 채널 스톡 키워드 — 감정 무드샷·일상 공간·관계 중심
+        function _deriveStockKeywordPsychology(narr) {
+            const n = narr;
+            // 공간 × 분위기 조합 우선
+            if (/지하철|전철/.test(n)) return 'subway train commuter pensive night';
+            if (/버스/.test(n)) return 'bus window rainy evening pensive';
+            if (/엘리베이터/.test(n)) return 'person alone elevator silent';
+            if (/카페|커피숍/.test(n)) return 'quiet cafe alone coffee window';
+            if (/회의실|회의/.test(n)) return 'office meeting room tense faces';
+            if (/사무실|회사|팀장|상사/.test(n)) return 'office worker stressed desk';
+            if (/퇴근길|퇴근/.test(n)) return 'evening commute tired office worker';
+            if (/샤워|욕실/.test(n)) return 'shower water pouring silhouette slow motion';
+            if (/침대|잠자|누워|천장|불면/.test(n)) return 'insomnia staring ceiling bedroom night';
+            if (/식탁|밥을|저녁을/.test(n)) return 'person eating alone dining table';
+            if (/거실|소파/.test(n)) return 'person sitting sofa living room alone';
+            if (/창문|창밖/.test(n)) return 'person silhouette window rain city';
+            if (/거리|길을|산책/.test(n)) return 'lonely night street walking silhouette';
+            if (/공원/.test(n)) return 'park bench alone evening silhouette';
+            if (/계단/.test(n)) return 'staircase walking down slow';
+            if (/책상|공부/.test(n)) return 'desk late night study lamp';
+
+            // 몸 신호·신체 언어
+            if (/심장|심박|가슴이/.test(n)) return 'heartbeat chest tight close up';
+            if (/숨이|호흡/.test(n)) return 'deep breath chest close up';
+            if (/손이 떨|떨리는 손|긴장/.test(n)) return 'trembling hands close up anxious';
+            if (/눈물|울면서|흐느/.test(n)) return 'woman crying tears close up';
+            if (/눈을 감|눈 감/.test(n)) return 'eyes closed face close up thoughtful';
+            if (/한숨/.test(n)) return 'sighing exhale close up';
+            if (/멍하니|멍하게/.test(n)) return 'blank empty stare close up';
+            if (/뒤척|잠이 오지 않/.test(n)) return 'tossing turning bed cannot sleep';
+
+            // 감정 상태
+            if (/불안|초조/.test(n)) return 'anxiety pensive woman face close up';
+            if (/우울|공허|무기력/.test(n)) return 'depression lonely silhouette window';
+            if (/외로움|외로|고독/.test(n)) return 'lonely person alone city crowd';
+            if (/분노|화가|짜증/.test(n)) return 'frustrated angry face close up';
+            if (/두려움|두렵|공포/.test(n)) return 'fearful worried face shadow';
+            if (/부끄러|수치|민망/.test(n)) return 'embarrassed ashamed looking down';
+            if (/자책|후회/.test(n)) return 'regretful thoughtful looking away';
+
+            // 관계
+            if (/팀장|상사|부장/.test(n)) return 'strict boss office meeting';
+            if (/동료/.test(n)) return 'coworkers office conversation';
+            if (/친구/.test(n)) return 'friends talking casual conversation';
+            if (/가족|엄마|아빠|부모/.test(n)) return 'family dinner table conversation';
+            if (/연인|남친|여친|배우자/.test(n)) return 'couple silent tension evening';
+            if (/사람들 앞|많은 사람|군중/.test(n)) return 'crowd faces social anxiety';
+            if (/혼자/.test(n)) return 'alone silhouette window pensive';
+
+            // 시간 (분위기 백업)
+            if (/새벽|한밤중|두 시|세 시/.test(n)) return 'late night insomnia cityscape window';
+            if (/밤|저녁/.test(n)) return 'evening mood cinematic slow motion';
+            if (/아침/.test(n)) return 'morning light window waking up';
+
+            // 행동
+            if (/걷|산책/.test(n)) return 'walking slowly alone silhouette';
+            if (/달리|뛰|운동/.test(n)) return 'running treadmill gym slow motion';
+            if (/씻|세수/.test(n)) return 'washing face mirror close up';
+
+            // 폴백
+            return 'cinematic emotional portrait pensive slow motion';
         }
 
         // 스톡 대체 검색어 — 항상 3개 의미있는 대안 반환
@@ -9343,6 +9587,11 @@ ${sceneList}
         function _deriveAiPrompt(s) {
             const narr = s.narration || '';
 
+            // 🧠 심리 채널 모드: 고정 웹툰 스타일 블록 + 장면별 동작 묘사
+            if (_isPsychologyMode()) {
+                return _derivePsychologyAiPrompt(s);
+            }
+
             // 2026-04-24 v5: 단일 숫자 강조 장면은 AI 이미지 금지 — 스톡+수치카드 오버레이가 정답
             //   과거: 퍼센트 1개·금액 1개만 있어도 AI 인포그래픽 생성 → SF HUD 톤 남발
             //   원칙: AI는 스톡+오버레이로 표현 불가능할 때만 (복수 숫자 비교·차트·지도·상징)
@@ -9402,6 +9651,104 @@ ${sceneList}
 
             // 기본 — 표준 경제 저널리즘 에디토리얼
             return 'Sophisticated editorial illustration in the style of high-end economic journalism (Economist, Bloomberg Businessweek, WSJ feature) with subtle graphic novel influence. Clean confident thick ink linework, stylized (NOT anime cute, NOT photorealistic, NOT cartoon) proportions. Restrained muted earth palette with ONE saturated accent (deep red #C62828 or mustard ocher #D4A437 or deep navy). Subtle neutral paper background (slightly warm off-white or cool light gray) with barely visible grain. Serious analytical tone. NOT soft watercolor, NOT pastel emotional, NOT anime moe, NOT kawaii, NOT flat poster, NOT plastic AI render, NOT 3D. Hand-crafted editorial feel — clearly drawn, not realistic. Dramatic composition. Cinematic 16:9. Include Korean Hangul text label only if a specific label is provided by the scene.';
+        }
+
+        // 🧠 심리 채널 AI 프롬프트 빌더
+        //   고정 스타일 블록 + 장면 동작 묘사. 나레이션에서 핵심 요소(장소·행동·감정)만 추출.
+        function _derivePsychologyAiPrompt(s) {
+            const narr = s.narration || '';
+            const n = narr;
+
+            // 장면 맥락 추출 (장소·행동·감정을 영어로 매핑)
+            const loc = _extractPsychLocation(n);
+            const mood = _extractPsychMood(n);
+            const action = _extractPsychAction(n);
+
+            // 나레이션에 따옴표로 감긴 한글 인용문이 있으면 말풍선 텍스트로 주입
+            const quoteMatch = n.match(/["""]([^"""]{2,40})["""]/);
+            const quoteText = quoteMatch ? quoteMatch[1] : null;
+
+            let sceneDesc = 'Scene: the round-headed character ';
+            sceneDesc += action;
+            if (loc) sceneDesc += ' in ' + loc;
+            if (mood.bgPalette) sceneDesc += '. ' + mood.bgPalette;
+            if (mood.expression) sceneDesc += ' Character expression: ' + mood.expression + '.';
+            if (quoteText) {
+                sceneDesc += ' Above the character\'s head, ONE hand-drawn thought bubble (soft pencil outline, watercolor fill) containing the Korean text: "' + quoteText + '".';
+            }
+            sceneDesc += ' Detailed hand-drawn background.';
+
+            return PSYCHOLOGY_STYLE_BLOCK + '\n\n' + sceneDesc;
+        }
+
+        function _extractPsychLocation(n) {
+            if (/지하철|전철/.test(n)) return 'a subway train at night with blurred city lights through the window';
+            if (/버스/.test(n)) return 'a bus seat looking out the window';
+            if (/엘리베이터/.test(n)) return 'a small elevator, standing alone';
+            if (/카페|커피숍/.test(n)) return 'a quiet cafe corner with a cup on the table';
+            if (/회의|회의실/.test(n)) return 'a meeting room, sitting at a conference table';
+            if (/사무실|회사/.test(n)) return 'an open-plan office at a desk';
+            if (/퇴근길|퇴근/.test(n)) return 'a crowded evening commute scene';
+            if (/샤워|욕실|화장실/.test(n)) return 'a home bathroom with steam rising';
+            if (/침대|잠자|누워|천장/.test(n)) return 'a dimly lit bedroom lying in bed';
+            if (/식탁|밥을|저녁을|식사/.test(n)) return 'a small kitchen table with a bowl of food';
+            if (/거실|소파/.test(n)) return 'a cozy living room sitting on a sofa';
+            if (/책상|공부|숙제/.test(n)) return 'a desk with a notebook and lamp, evening light';
+            if (/창문|창밖/.test(n)) return 'next to a window, gazing outside';
+            if (/거리|길을|산책|공원/.test(n)) return 'a quiet evening street or park path';
+            if (/집|방/.test(n)) return 'a small home interior';
+            return '';
+        }
+
+        function _extractPsychMood(n) {
+            // 어두운·불안 (뮤트 네이비 팔레트)
+            if (/(불안|초조|두려|공포|절망|답답|공허|우울|외로|슬프|무기력|번아웃|밤|새벽|한밤중|두 시|세 시|네 시)/.test(n)) {
+                return {
+                    bgPalette: 'Dominant muted teal-navy (#3A5060) night palette with warm lamp orange (#F4A460) accent',
+                    expression: 'eyes as small downward curved arcs, mouth a tiny flat line, subtle worried look'
+                };
+            }
+            // 반추·생각 반복 (중립 다크)
+            if (/(머릿속|생각이|떠올|반추|맴돌|재생|반복|증식|꺼지지 않)/.test(n)) {
+                return {
+                    bgPalette: 'Muted warm interior lighting, slight haze around the head',
+                    expression: 'eyes tired and unfocused, mouth a small flat line'
+                };
+            }
+            // 분노·짜증
+            if (/(화가|분노|짜증|열받|억울)/.test(n)) {
+                return {
+                    bgPalette: 'Warm cream background with faint red tint',
+                    expression: 'furrowed brow arcs, small determined mouth, pink blush slightly stronger'
+                };
+            }
+            // 평온·회복·긍정 (따뜻한 오렌지)
+            if (/(편안|안정|회복|나아지|괜찮|다행|안도|위로)/.test(n)) {
+                return {
+                    bgPalette: 'Dominant warm cream (#FAF3E0) palette with warm lamp orange (#F4A460) accent',
+                    expression: 'gentle smile mouth, eyes as soft upward arcs'
+                };
+            }
+            // 기본 — 중립
+            return {
+                bgPalette: 'Warm cream paper palette',
+                expression: 'neutral soft expression'
+            };
+        }
+
+        function _extractPsychAction(n) {
+            if (/이어폰|음악을 틀|헤드폰/.test(n)) return 'sitting with earphones in, one hand near the cord, staring blankly';
+            if (/샤워|씻/.test(n)) return 'standing under a shower head, water pouring down, head tilted down';
+            if (/천장을 보|천장 응시|누워|잠을 못/.test(n)) return 'lying flat on back in bed, eyes open staring upward, blanket up to the chest';
+            if (/밥을 먹|식사를|숟가락|젓가락/.test(n)) return 'sitting at the table with chopsticks paused mid-air, blank expression';
+            if (/걷고|걷다가|산책/.test(n)) return 'walking slowly with shoulders slightly slumped, hands in pockets';
+            if (/앉아|앉은/.test(n)) return 'sitting quietly with hands in lap';
+            if (/서서|서 있/.test(n)) return 'standing still';
+            if (/손으로 얼굴|얼굴을 감싸/.test(n)) return 'covering face with both hands';
+            if (/눈을 감|눈 감/.test(n)) return 'eyes closed, head slightly tilted';
+            if (/기지개|스트레칭/.test(n)) return 'stretching arms above head';
+            // 기본: 생각하는 동작
+            return 'standing thoughtfully, one hand lightly touching the chin or cheek';
         }
 
         // 2026-04-23: 실사 구글 검색 대체 키워드 2개 생성 (1순위 실패 시 fallback)
@@ -10117,8 +10464,64 @@ ${sceneList}
             return '';
         }
 
+        // 🧠 심리 채널 오버레이 — 숫자·랭킹 대신 인용·감정 강조
+        function _recommendOverlayPsychology(s) {
+            const narr = s.narration || '';
+            // 따옴표 인용 → 말풍선
+            const quoteMatch = narr.match(/["""]([^"""]{2,30})["""]/);
+            if (quoteMatch) {
+                return {
+                    category: '인용',
+                    type: 'speech_bubble_sketch',
+                    text: quoteMatch[1],
+                    reason: '인용문 (타인 말·내면 목소리) — 스케치 말풍선'
+                };
+            }
+            // 시간 강조 (새벽 두 시 / 02:00 / 오전 3시 등)
+            const timeMatch = narr.match(/(새벽\s*\d+시|\d+시\s*\d+분|\d{1,2}:\d{2}|오전\s*\d+시|오후\s*\d+시|한밤중|한밤\s*두 시|한밤\s*세 시|두 시|세 시|네 시)/);
+            if (timeMatch) {
+                return {
+                    category: '강조',
+                    type: 'text_headline',
+                    text: timeMatch[1],
+                    reason: '시간 강조 (분위기·불면 맥락)'
+                };
+            }
+            // 감정 키워드 단독 (짧은 선언 문장)
+            if (narr.length <= 20) {
+                const emoKw = narr.match(/(불안|초조|우울|공허|외로움|두려움|분노|후회|절망|자책|수치)/);
+                if (emoKw) {
+                    return {
+                        category: '강조',
+                        type: 'text_headline',
+                        text: emoKw[1],
+                        reason: '감정 키워드 강조'
+                    };
+                }
+            }
+            // 심리 개념어 (인지부조화·방어기제·반추 등)
+            const conceptMatch = narr.match(/(인지부조화|방어기제|애착|트라우마|반추|과각성|학습된 무기력|자기효능|인지왜곡|자동사고|스키마)/);
+            if (conceptMatch) {
+                return {
+                    category: '강조',
+                    type: 'text_headline',
+                    text: conceptMatch[1],
+                    reason: '심리 개념 용어 강조'
+                };
+            }
+            // 기본: 오버레이 없음 (심리 채널은 담담한 나레이션이 본문)
+            return {
+                type: 'none',
+                reason: '심리 채널 기본 — 오버레이 없이 나레이션 전달'
+            };
+        }
+
         function _recommendOverlay28(s) {
             if (!s) return { type: 'none', reason: '장면 데이터 없음' };
+            // 🧠 심리 채널: 인용·감정 강조 중심 오버레이
+            if (_isPsychologyMode()) {
+                return _recommendOverlayPsychology(s);
+            }
             const narr = s.narration || '';
 
             // 2026-04-24: Pattern 11 — 오버레이 과잉 추천 차단 필터
