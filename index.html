@@ -6266,11 +6266,11 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                 //     - "Exception: numbers 0-9 and unit symbols (%, $, km, kg, m) allowed"
                 //       → AI가 허용 단위 리스트를 실제 라벨로 렌더해 "$km, 4kg, m" 박히는 버그
                 //   축약·명료화로 AI가 구체 지시 놓치지 않도록 프롬프트 길이 단축
-                // 2026-04-24 v6: 대폭 축소 — AI가 1700자 프롬프트에 과부하되어 가짜 한글 타이틀·X축 카테고리 생성하는 버그 차단
-                //   "Title: ..." 지시 삭제 (AI가 없는 제목 억지로 만듦)
-                //   "X-axis labels: ..." 지시 삭제 (AI가 시키지 않은 카테고리 과잉 생성)
-                //   시나리오 예시 삭제, 반복 제거
-                const INFOGRAPHIC_STYLE_PREFIX_BASE = 'Clean flat infographic chart, Korean documentary editorial style. Cream beige paper background (#F5EFD9). Solid flat dark charcoal bars; exactly ONE bar in saturated red (#C62828). Thin dashed gray grid lines. Bold Korean sans-serif labels and numbers. Minimal, professional. Cinematic 16:9. Render ONLY the specific bars, labels, and numbers described below — do not add extra bars, categories, or a title unless the scene specifies one. ';
+                // 2026-04-24 v8: 다중 막대 템플릿 강제 해제 — scene이 "2 bars"라고 해도
+                //   "EACH bar" 표현이 AI에게 다중 막대 암묵 지시가 되어 가짜 X축 라벨 생성
+                //   수정: 구조(막대 개수·X축 카테고리)는 scene이 결정. 프리픽스는 스타일만.
+                //        명시적 경고: "scene이 N bars 지정 → EXACTLY N bars, 가짜 카테고리 금지"
+                const INFOGRAPHIC_STYLE_PREFIX_BASE = 'Clean flat infographic chart, Korean documentary editorial style. Cream beige paper background (#F5EFD9), subtle grain only in empty area. Solid flat dark charcoal bar color (#3A3A3A); highlighted bar in saturated red (#C62828). Horizontal dashed light gray grid lines. Y-axis: thin upward arrow on the left (no value markings). Numbers and Korean Hangul labels shown ONLY where the scene description specifies them (bold black sans-serif above bar for numbers, below bar for labels). Minimal, professional. NOT watercolor, NOT hand-painted, NOT sketchy. Cinematic 16:9. ⚠️ STRICT STRUCTURE RULE: Render EXACTLY the number of bars the scene specifies (if scene says "two bars", render EXACTLY 2 bars — never 5, 6, or 7). Do NOT invent additional bars, categories, titles, or X-axis labels that the scene does not describe. Do NOT fill empty space with fake Korean category names. ';
                 // 국가 비교 차트에만 붙이는 추가 지시
                 const INFOGRAPHIC_COUNTRY_HINT = 'X-axis uses national flag icons next to each country bar. ';
                 function _isCountryComparisonScene(narr, aiPrompt) {
@@ -6284,8 +6284,11 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                 //   → 돈자루 비교 장면에 "X-axis labels" 지시가 섞여 가짜 한글 X축이 생성되던 버그 차단
                 //   대신 가벼운 편집 톤 프리픽스만 적용
                 const PICTOGRAM_STYLE_PREFIX = 'Clean editorial pictogram infographic, Korean documentary YouTube style. Simple flat icons (money bags, buildings, people, arrows) with bold Korean labels. Neutral cream beige paper background (#F5EFD9) with subtle grain. Dark charcoal + ONE saturated red accent (#C62828). Professional, minimal. NO bar chart axes, NO grid lines — this is a pictogram illustration, not a chart. Korean Hangul labels only. Cinematic 16:9. Render ONLY what the scene description specifies — do NOT invent extra labels or axis categories. ';
+                // 2026-04-24 v7: pictogram 감지 확장 — scale/ratio 시각화 키워드 대폭 추가
+                //   "container labeled... blocks fitting inside" 같은 scale 비교 pictogram이
+                //   기본 막대차트 프리픽스와 상충해 가짜 X축 카테고리 생성하던 버그 차단
                 function _isPictogramPrompt(prompt) {
-                    return /money bag|treasure chest|building icon|icons? for|pictogram|split.?screen|side.?by.?side.*icon|stack of|pile of/i.test(prompt || '');
+                    return /money bag|treasure chest|building icon|icons? for|pictogram|split.?screen|side.?by.?side.*icon|stack of|pile of|container labeled|blocks? (?:labeled|fitting|filling|inside|inside it)|fitting inside|nested inside|filled with|scale (?:comparison|representation)|visual (?:representation|comparison) of scale|proportional comparison|smaller blocks? (?:inside|representing)|one large.{0,30}(?:four|multiple|several) small|grid of (?:icons?|photos?|blocks?|cards?)/i.test(prompt || '');
                 }
                 jsonObj.scenes.forEach(s => {
                     if (s.isMapScene === true) return;
@@ -9063,7 +9066,7 @@ ${sceneList}
             // 2026-04-24 v4: 화이트리스트 확장 — _deriveAiPrompt가 생성하는 단순 인포그래픽 프리픽스도 포함
             //   과거: Minimalist infographic donut/Minimalist financial/Split screen VS 등이 빠져서
             //         soft watercolor 프리픽스가 덧붙어 스타일 충돌 발생
-            if (hasDarkCyber && !/(Paper cut collage|Modern infographic|Flat 2D vector|Hand-painted symbolic|Cross-section diagram|Catalog grid|Vintage antique atlas|Clean minimal infographic|Hand-painted warm editorial|FLAT CLEAN infographic|Bold modern editorial|Modern editorial infographic map|Semi-realistic dark painterly|Sophisticated editorial illustration|Dark dramatic editorial illustration|Distressed archive documentary|Minimalist infographic donut chart|Minimalist financial infographic|Split screen VS comparison|Stylized historical map|Symbolic metaphorical illustration|Cinematic documentary illustration)/i.test(out)) {
+            if (hasDarkCyber && !/(Paper cut collage|Modern infographic|Flat 2D vector|Hand-painted symbolic|Cross-section diagram|Catalog grid|Vintage antique atlas|Clean minimal infographic|Hand-painted warm editorial|FLAT CLEAN infographic|Clean flat infographic chart|Bold modern editorial|Modern editorial infographic map|Semi-realistic dark painterly|Sophisticated editorial illustration|Dark dramatic editorial illustration|Distressed archive documentary|Clean editorial pictogram|Minimalist infographic donut chart|Minimalist financial infographic|Split screen VS comparison|Sophisticated bar chart comparison|Stylized historical map|Symbolic metaphorical illustration|Cinematic documentary illustration)/i.test(out)) {
                 // 영어 HUD 뇌관 표현 제거
                 out = out.replace(/dark (high-?tech|cinematic|technological)[^.,]*/gi, 'warm editorial illustration');
                 out = out.replace(/high-?tech (documentary|satellite|surveillance)[^.,]*/gi, 'hand-painted editorial');
