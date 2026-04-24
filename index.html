@@ -6137,11 +6137,15 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                 // 감지: 항목 3개 이상 열거 (A, B, C / A와 B와 C / A·B·C / A도 B도 C도)
                 const LIST_STRONG = /[가-힣]{1,6}(?:,\s*|와\s|과\s|랑\s|이나\s|·)[가-힣]{1,6}(?:,\s*|와\s|과\s|랑\s|이나\s|·)[가-힣]{1,6}|[가-힣]+도\s+[가-힣]+고[,.]?\s*[가-힣]+도\s+[가-힣]+고|여러 종류|여러 가지|이런 것들|같은 것들|종류가/;
                 const LIST_STYLE_PREFIX = 'Catalog grid layout illustration on warm cream beige background (#F5EFD9) with subtle paper texture. 2x3 or 3x2 grid of framed photo cards, each card has a decorative braided rope/chain border (dark brown), rounded corners, slight drop shadow. Inside each card: a clean professional product photo with neutral background. Below each card: ONE bold Korean label (한글, thick sans-serif, dark brown text) centered on a darker cream strip. Editorial documentary tone, organized, clean, uncluttered. NOT cartoon, NOT flat vector, NOT photorealistic composite — it IS a grid of photos on parchment. ALL labels MUST be in Korean (한글) — NO English, NO romanization. Cinematic 16:9. ';
+                // 2026-04-23: 액션·이벤트 맥락 제외 (끌려가/잡혀가/죽었다 등은 카탈로그 부적합)
+                const ACTION_EVENT_CONTEXT = /(끌려|실려|잡혀|체포|연행|이송|추방|숙청|학살|처형|사망|죽|죽였|죽어|빼앗|쫓겨|내몰|강제로|강제 이주)/;
                 jsonObj.scenes.forEach(s => {
                     if (s.isMapScene || s.isHistoricalScene || s.isInfographicScene || s.isDiagramScene) return;
                     if (s.bgSource !== 'ai' || typeof s.aiPrompt !== 'string') return;
                     const narr = s.narration || '';
                     if (!LIST_STRONG.test(narr)) return;
+                    // 액션·이벤트 문맥이면 카탈로그 그리드 아님 (상징·역사 스타일로 넘김)
+                    if (ACTION_EVENT_CONTEXT.test(narr)) return;
                     s.isListGridScene = true;
                     if (!_hasAnyStylePrefix(s.aiPrompt)) {
                         s.aiPrompt = LIST_STYLE_PREFIX + s.aiPrompt;
