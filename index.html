@@ -9089,8 +9089,21 @@ ${sceneList}
             // 2. 추출할 한글 텍스트 준비
             // 2026-04-24: textOverlay가 실제 나레이션 안에 등장하는 경우에만 AI 라벨로 주입
             // (임의 요약 라벨이 이미지에 박혀서 원문과 불일치하는 버그 차단)
+            // 2026-04-24 v9: 장면 유형별 textOverlay 주입 필터
+            //   과거 버그: "진짜 이유" 같은 나레이션 강조 문구가 지도 위에 배너로 박힘
+            //   원인: 모든 장면에 textOverlay를 REQUIRED label로 강제 주입 → 지도에 부적합 라벨
+            //   수정: 지도·인포그래픽·상징은 고유 라벨만 허용, 나레이션 강조 문구는 REQUIRED에서 제외
             const koreanTexts = [];
-            if (textOverlay && narr.includes(textOverlay)) koreanTexts.push(textOverlay);
+            // 지도·상징 장면: 나레이션 강조 문구 주입 금지 (mapLabels·지명만 고유 라벨)
+            // 인포그래픽 장면: 수치·퍼센트는 아래에서 따로 주입, textOverlay는 제외
+            const _skipOverlayInject = s.isMapScene === true
+                || s.isSymbolicScene === true
+                || s.isInfographicScene === true
+                || s.isHistoricalScene === true;
+            if (textOverlay && narr.includes(textOverlay) && !_skipOverlayInject) {
+                // 일반 장면: 짧은 라벨형(10자 이하)만 허용 — 긴 문장은 라벨이 아니라 설명이므로 배너화 부적합
+                if (textOverlay.length <= 10) koreanTexts.push(textOverlay);
+            }
 
             // 퍼센트
             const pctMatch = narr.match(/(\d{1,3}(?:\.\d+)?)\s*(?:%|퍼센트)/);
