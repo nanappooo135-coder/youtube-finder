@@ -5822,6 +5822,19 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                         re: /스탈린|히틀러|마오쩌둥|레닌|이디 아민|폴 포트|김일성|김정일|무솔리니|프랑코|카스트로|사담 후세인|차우셰스쿠|호네커/,
                         kw: ''  // 장면별 인물명 추출 (아래 specific 매핑 참고)
                     },
+                    // 2026-04-24 v6: 한국 현대 대기업·CEO·산업시설 (뉴스 사진 풍부)
+                    koreanConglomerate: {
+                        re: /삼성전자|삼성그룹|삼성 본사|삼성 사옥|SK하이닉스|SK 본사|SK그룹|현대차|현대자동차|현대모비스|LG전자|LG디스플레이|LG에너지솔루션|포스코|한화|롯데|기아차|SK텔레콤/,
+                        kw: ''  // 장면별 매핑으로 구체화
+                    },
+                    semiconductorFacility: {
+                        re: /반도체 공장|반도체 생산|파운드리 공장|클린룸|웨이퍼|FAB|전장부품 공장|조립 라인|반도체 라인|생산 라인|전장 공장/,
+                        kw: 'semiconductor fab cleanroom wafer production'
+                    },
+                    koreanCEO: {
+                        re: /이재용|최태원|정의선|구광모|신동빈|김승연|허태수|한성숙|이해진|조원태|박정원|조현준/,
+                        kw: ''  // 장면별 매핑
+                    },
                     // 2026-04-24: Pattern 1 — 20세기 참상·수용소·대학살 (아카이브 사진 필수)
                     historicalAtrocity: {
                         re: /나치(의 |\s)?절멸|아우슈비츠|홀로코스트|강제수용소|굴라크|Gulag|크메르 루주|킬링 필드|킬링필드|문화혁명|하방 운동|하방운동|대약진 운동|대약진운동|8월 종파 사건|종파 사건|아파르트헤이트|르완다 대학살|캄보디아 대학살|스레브레니차/,
@@ -5885,7 +5898,7 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                                 return;
                             }
                             // 나레이션에서 구체 키워드 추출 시도 (예: "스프루언스" → "USS Spruance")
-                            const specific = narr.match(/(스프루언스|알레이버크|니미츠|포드급|투스카|에버기븐|타이타닉|모스크바함|백악관|크렘린|청와대|국회의사당|F-?35|F-?22|토마호크|패트리엇|폭스트롯|뢰프벤|크리스테르손|라와 마지드|빈 살만|MBS|젤렌스키|마크롱|숄츠|메르켈|링케뷔|후스뷔|말뫼|스톡홀름|스탈린|히틀러|마오쩌둥|레닌|이디 아민|폴 포트|김일성|김정일|무솔리니|프랑코|카스트로|사담 후세인|차우셰스쿠|호네커|아우슈비츠|굴라크|홀로코스트|크메르 루주|킬링 필드|킬링필드|문화혁명|하방 운동|하방운동|대약진 운동|대약진운동|8월 종파 사건|종파 사건|요덕|15호 관리소|정치범 수용소)/);
+                            const specific = narr.match(/(스프루언스|알레이버크|니미츠|포드급|투스카|에버기븐|타이타닉|모스크바함|백악관|크렘린|청와대|국회의사당|F-?35|F-?22|토마호크|패트리엇|폭스트롯|뢰프벤|크리스테르손|라와 마지드|빈 살만|MBS|젤렌스키|마크롱|숄츠|메르켈|링케뷔|후스뷔|말뫼|스톡홀름|스탈린|히틀러|마오쩌둥|레닌|이디 아민|폴 포트|김일성|김정일|무솔리니|프랑코|카스트로|사담 후세인|차우셰스쿠|호네커|아우슈비츠|굴라크|홀로코스트|크메르 루주|킬링 필드|킬링필드|문화혁명|하방 운동|하방운동|대약진 운동|대약진운동|8월 종파 사건|종파 사건|요덕|15호 관리소|정치범 수용소|삼성전자|삼성 본사|SK하이닉스|SK 본사|현대차|현대자동차|LG전자|LG디스플레이|포스코|이재용|최태원|정의선|구광모|신동빈|하만|반도체 공장|파운드리 공장|클린룸|웨이퍼)/);
                             if (specific) {
                                 const map = {
                                     '스프루언스': 'USS Spruance destroyer DDG',
@@ -6241,7 +6254,11 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                 //     - "Exception: numbers 0-9 and unit symbols (%, $, km, kg, m) allowed"
                 //       → AI가 허용 단위 리스트를 실제 라벨로 렌더해 "$km, 4kg, m" 박히는 버그
                 //   축약·명료화로 AI가 구체 지시 놓치지 않도록 프롬프트 길이 단축
-                const INFOGRAPHIC_STYLE_PREFIX_BASE = 'FLAT CLEAN infographic chart, Korean documentary YouTube editorial style, news broadcast quality. NOT watercolor, NOT hand-painted, NOT sketchy. Precise geometric shapes, crisp clean lines. Background: vintage cream beige paper (#F5EFD9), very subtle grain in empty area only. Title: bold thick black Korean sans-serif at top. Bars: SOLID FLAT rectangles in dark charcoal gray (#3A3A3A); EXACTLY ONE bar highlighted in bold solid red (#C62828). Horizontal dashed light gray grid lines. Y-axis: thin upward arrow on the left. X-axis labels: short real Korean category words (2-4 chars each) — never invent Korean words. Numbers in bold black sans-serif above each bar. All text in Korean Hangul script. Professional, clean, minimal. Cinematic 16:9. IMPORTANT: Render ONLY the chart/title/data described below — do NOT add placeholder text, do NOT render unit symbols (km, kg, m, $) as standalone labels, do NOT add extra country flags unless the scene compares countries. ';
+                // 2026-04-24 v6: 대폭 축소 — AI가 1700자 프롬프트에 과부하되어 가짜 한글 타이틀·X축 카테고리 생성하는 버그 차단
+                //   "Title: ..." 지시 삭제 (AI가 없는 제목 억지로 만듦)
+                //   "X-axis labels: ..." 지시 삭제 (AI가 시키지 않은 카테고리 과잉 생성)
+                //   시나리오 예시 삭제, 반복 제거
+                const INFOGRAPHIC_STYLE_PREFIX_BASE = 'Clean flat infographic chart, Korean documentary editorial style. Cream beige paper background (#F5EFD9). Solid flat dark charcoal bars; exactly ONE bar in saturated red (#C62828). Thin dashed gray grid lines. Bold Korean sans-serif labels and numbers. Minimal, professional. Cinematic 16:9. Render ONLY the specific bars, labels, and numbers described below — do not add extra bars, categories, or a title unless the scene specifies one. ';
                 // 국가 비교 차트에만 붙이는 추가 지시
                 const INFOGRAPHIC_COUNTRY_HINT = 'X-axis uses national flag icons next to each country bar. ';
                 function _isCountryComparisonScene(narr, aiPrompt) {
@@ -6249,6 +6266,14 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                     // 나레이션에 국가명 2개 이상 OR AI 프롬프트에 명시적 국가 비교 언급
                     const promptHit = aiPrompt && /(country|국가)\s+comparison|comparing\s+countries/i.test(aiPrompt);
                     return countryHits >= 2 || promptHit;
+                }
+                // 2026-04-24 v5: Gemini가 pictogram/money bag/icons/split screen 같은
+                //   non-bar-chart 시각화를 지정하면 INFOGRAPHIC_STYLE_PREFIX(막대차트 강제)를 붙이지 않음
+                //   → 돈자루 비교 장면에 "X-axis labels" 지시가 섞여 가짜 한글 X축이 생성되던 버그 차단
+                //   대신 가벼운 편집 톤 프리픽스만 적용
+                const PICTOGRAM_STYLE_PREFIX = 'Clean editorial pictogram infographic, Korean documentary YouTube style. Simple flat icons (money bags, buildings, people, arrows) with bold Korean labels. Neutral cream beige paper background (#F5EFD9) with subtle grain. Dark charcoal + ONE saturated red accent (#C62828). Professional, minimal. NO bar chart axes, NO grid lines — this is a pictogram illustration, not a chart. Korean Hangul labels only. Cinematic 16:9. Render ONLY what the scene description specifies — do NOT invent extra labels or axis categories. ';
+                function _isPictogramPrompt(prompt) {
+                    return /money bag|treasure chest|building icon|icons? for|pictogram|split.?screen|side.?by.?side.*icon|stack of|pile of/i.test(prompt || '');
                 }
                 jsonObj.scenes.forEach(s => {
                     if (s.isMapScene === true) return;
@@ -6261,8 +6286,13 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                     if (!narrMatch && !promptMatch) return;
                     s.isInfographicScene = true;
                     if (!_hasAnyStylePrefix(s.aiPrompt)) {
-                        const countryHint = _isCountryComparisonScene(narr, s.aiPrompt) ? INFOGRAPHIC_COUNTRY_HINT : '';
-                        s.aiPrompt = INFOGRAPHIC_STYLE_PREFIX_BASE + countryHint + s.aiPrompt;
+                        // Gemini가 픽토그램·아이콘·스플릿 시각화 지정 시 막대차트 프리픽스 금지
+                        if (_isPictogramPrompt(s.aiPrompt)) {
+                            s.aiPrompt = PICTOGRAM_STYLE_PREFIX + s.aiPrompt;
+                        } else {
+                            const countryHint = _isCountryComparisonScene(narr, s.aiPrompt) ? INFOGRAPHIC_COUNTRY_HINT : '';
+                            s.aiPrompt = INFOGRAPHIC_STYLE_PREFIX_BASE + countryHint + s.aiPrompt;
+                        }
                     }
                 });
                 // 호환성 유지 — 다른 경로가 참조하는 기존 상수명
@@ -6398,6 +6428,36 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                 } catch (llmErr) {
                     console.warn('그록 프롬프트 LLM 생성 실패, fallback 템플릿 유지:', llmErr.message);
                 }
+
+                // 2026-04-24 v5: 단일 숫자 강조 장면 → bgSource 강제 'stock' 전환
+                //   과거 버그: Gemini가 "45조원 한 숫자 강조" 장면에 bgSource='ai' 지정하면
+                //            _rankImageSources가 scores[cur]+=10으로 AI를 1순위 유지
+                //   수정: 수치가 1개뿐이고 차트·지도·은유 플래그 없는 장면은 bgSource='stock'로 전환
+                //        스톡+수치카드 오버레이가 이런 장면의 정답
+                jsonObj.scenes.forEach(s => {
+                    if (s.bgSource !== 'ai') return;
+                    if (s.isMapScene || s.isHistoricalScene || s.isSymbolicScene || s.isInfographicScene
+                        || s.isDiagramScene || s.isListGridScene || s.isHistoricalMontage
+                        || s.needCharacter || s.needLogo) return;
+                    const narr = s.narration || '';
+                    const pctCount = (narr.match(/\d{1,3}\s*(?:%|퍼센트)/g) || []).length;
+                    const moneyCount = (narr.match(/\$\s*[\d,]+|\d+\s*(?:조|억|만)\s*(?:원|달러)/g) || []).length;
+                    const numCount = pctCount + moneyCount;
+                    // 단일 숫자만 있는 AI 장면 → 스톡으로 전환
+                    if (numCount === 1 && typeof s.aiPrompt === 'string') {
+                        // AI 프롬프트가 단순 "한 숫자 glowing"형인지 확인
+                        const isSimpleNumberPrompt = s.aiPrompt.length < 300
+                            || /single.*number|bold.*number|glow|spotlight|floating|metallic.*text/i.test(s.aiPrompt);
+                        if (isSimpleNumberPrompt) {
+                            s.bgSource = 'stock';
+                            s.autoFixedSingleNumberToStock = true;
+                            // 분위기 스톡 쿼리 기본값
+                            if (!s.bgQuery || /[가-힣]/.test(s.bgQuery)) {
+                                s.bgQuery = 'dark cinematic mood background';
+                            }
+                        }
+                    }
+                });
 
                 // 🎭 캐릭터 자동 감지 fallback — Gemini가 needCharacter를 누락한 경우 narration에서 인물명 감지
                 const PERSON_NAMES = /트럼프|바이든|푸틴|시진핑|네타냐후|하메네이|젤렌스키|마크롱|숄츠|스타머|모디|김정은|윤석열|문재인|오바마|부시|클린턴|레이건|시리자|에르도안|MBS|빈살만|갈리바프|무니르|밴스|머스크|엘론머스크|베조스|저커버그|키신저|볼턴|폼페이오/;
@@ -9059,11 +9119,16 @@ ${sceneList}
                 //   숫자와 단위는 문맥에 맞게만 써도 충분 — 허용 목록 나열 불필요
                 koreanEnforce += ' Use bold Korean typography (Noto Sans KR). All characters perfectly formed, NO garbled Korean, NO invented Korean words, NO mixed scripts. 🚫 NO English/Latin alphabet in labels. NO HUD readouts, NO English tech status boxes. 🛑 NO fake/invented Korean words — only real Korean words. 🚫 NO DUPLICATE LABELS — each label appears EXACTLY ONCE. For split-screen/multi-panel: ONE label per panel at TOP only, bottom area illustration only.';
 
-                // 2026-04-24 v3: 국가명 리스트 트리거 조건 엄격화
-                // 과거: narration에 "북한" "중국" 한 단어만 있어도 전 장면에 국가명 47개 리스트 첨부 → 프롬프트 뻥튀기
-                // 수정: 진짜 지도/국가비교 장면에만 (isMapScene 또는 AI 프롬프트에 map/flag/country border 키워드)
-                const needsCountryList = s.isMapScene === true ||
-                    (s.aiPrompt && /(map|flag(\s|s\b)|country\s+(border|label|name)|continent|region\s+label|atlas|geographic)/i.test(s.aiPrompt));
+                // 2026-04-24 v5: 국가명 리스트 트리거 false positive 수정
+                //   과거 버그: 프롬프트 안에 "do NOT add country flags unless..." 같은 부정 문구의
+                //            "flags" 단어가 regex에 매칭돼 국가 리스트가 또 주입됨
+                //   수정: isMapScene이거나 AI 프롬프트에 **긍정 문맥**의 지도·비교 시그널이 있을 때만
+                const _hasPositiveMapSignal = s.aiPrompt && (
+                    /\b(atlas\s+map|geographic\s+map|world\s+map|map\s+of\s+|comparing\s+countries|country\s+comparison)\b/i.test(s.aiPrompt)
+                    || /\bflag\s+icons?\s+(next\s+to|on\s+each)/i.test(s.aiPrompt)   // 실제 국기 아이콘 사용 지시
+                    || /\b(country\s+borders|region\s+labels)\b/i.test(s.aiPrompt)
+                );
+                const needsCountryList = s.isMapScene === true || _hasPositiveMapSignal;
                 if (needsCountryList) {
                     koreanEnforce += ' 📍 Allowed Korean country names: 미국·중국·일본·한국·북한·러시아·독일·프랑스·영국·이탈리아·스페인·네덜란드·벨기에·스웨덴·노르웨이·덴마크·핀란드·폴란드·오스트리아·스위스·우크라이나·튀르키예·이란·이라크·이스라엘·사우디아라비아·UAE·오만·카타르·쿠웨이트·예멘·이집트·소말리아·남아공·인도·파키스탄·아프가니스탄·태국·베트남·인도네시아·필리핀·싱가포르·대만·홍콩·몽골·브라질·아르헨티나·멕시코·캐나다·호주. If unsure about Korean spelling, use flag icon only. NEVER invent names like "유일·비울·공상·조묵·머닌".';
                 }
