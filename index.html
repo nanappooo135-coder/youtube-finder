@@ -6438,10 +6438,11 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                 // 레퍼런스 복사 금지 원칙 (feedback_reference_copy_ban.md) 집행
                 // 2026-04-24 확장: 전면 블랙리스트 — 유튜브 영어 에디토리얼에서 남발되는 뻔한 은유 전부 차단
                 // 거미줄/그물/덫/사슬/저울/청구서/시계추/깨진유리/불꽃 등
-                // 2026-04-24 v3: 가계도 혈통/핏줄 번짐 semantic 변형 추가
-                //   "family tree + red line/veins/blood/spreading/tainted/connecting all members" 등
-                //   연좌제·혈통·3대 처벌 주제 대본에서 Gemini가 매번 시도하는 클리셰
-                const SYMBOLIC_CLICHE_BG = /(domino(es)?\s+(falling|chain)|chess\s+(piece|board|game)|interlocking\s+gears|spinning\s+gears|scales?\s+of\s+justice|family\s+tree\s+(with\s+)?red\s+x|red\s+x\s+on\s+family\s+tree|family\s+tree[^.]{0,120}(red\s+(line|vein|thread|rope|blood|taint)|veins?\s+of\s+(red|blood)|blood(\s+spreading|\s+flowing)|tainted\s+with|connecting\s+all\s+(family|members)|ominous\s+(line|red|connection))|(red\s+(line|vein|thread|rope|blood|taint)|veins?\s+of\s+(red|blood)|blood(\s+spreading|\s+flowing)|tainted\s+with|connecting\s+all\s+(family|members)|ominous\s+(line|red|connection))[^.]{0,120}family\s+tree|spider\s*web(\s+spreading|\s+trap)?|tangled\s+web|cobweb\s+spreading|fishing\s+net\s+trap|iron\s+chains?\s+breaking|broken\s+chains?|pendulum\s+swinging|hourglass\s+sand|shattered\s+glass\s+metaphor|candle\s+flame\s+fading|phoenix\s+rising|cracked\s+mirror|bleeding\s+wallet|empty\s+wallet\s+symbolic|stack\s+of\s+bills\s+symbolic|house\s+of\s+cards|tightrope\s+walker\s+metaphor|puppet\s+strings|iceberg\s+hidden|tip\s+of\s+iceberg\s+metaphor)/i;
+                // 2026-04-24 v4: 가계도 + 빨간 선/핏줄 변형은 블랙리스트에서 제외
+                //   연좌제·3대 처벌·혈통 주제에선 이 시각화가 "레퍼런스 복사"가 아닌 "주제에 맞는 네이티브 표현"
+                //   (사용자 피드백 2026-04-24: 실제 출력 이미지가 연좌제 전달에 효과적 — 차단 X)
+                //   단 "family tree with red x" 같은 진짜 도식 클리셰는 유지
+                const SYMBOLIC_CLICHE_BG = /(domino(es)?\s+(falling|chain)|chess\s+(piece|board|game)|interlocking\s+gears|spinning\s+gears|scales?\s+of\s+justice|family\s+tree\s+(with\s+)?red\s+x|red\s+x\s+on\s+family\s+tree|spider\s*web(\s+spreading|\s+trap)?|tangled\s+web|cobweb\s+spreading|fishing\s+net\s+trap|iron\s+chains?\s+breaking|broken\s+chains?|pendulum\s+swinging|hourglass\s+sand|shattered\s+glass\s+metaphor|candle\s+flame\s+fading|phoenix\s+rising|cracked\s+mirror|bleeding\s+wallet|empty\s+wallet\s+symbolic|stack\s+of\s+bills\s+symbolic|house\s+of\s+cards|tightrope\s+walker\s+metaphor|puppet\s+strings|iceberg\s+hidden|tip\s+of\s+iceberg\s+metaphor)/i;
                 const SYMBOLIC_CLICHE_NARR = /(도미노처럼|체스판처럼|톱니처럼|저울처럼|가계도처럼|거미줄처럼|그물처럼|덫처럼|사슬처럼|빙산의\s*일각처럼|꼭두각시처럼|카드로\s*쌓은\s*집처럼|화약고처럼)/;
                 jsonObj.scenes.forEach(s => {
                     const narr = s.narration || '';
@@ -6457,7 +6458,7 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                     }
                     // AI 프롬프트에서 클리셰 구문 제거 (프롬프트 자체는 유지, 클리셰 표현만 문장 삭제)
                     if (typeof s.aiPrompt === 'string' && SYMBOLIC_CLICHE_BG.test(s.aiPrompt)) {
-                        s.aiPrompt = s.aiPrompt.replace(/[^.]*\b(domino(es)?|chess|interlocking gears|scales? of justice|family tree[^.]*(red x|red line|red vein|blood spreading|tainted|ominous line|connecting all)|(red x|red line|red vein|blood spreading|tainted|ominous line|connecting all)[^.]*family tree|spider web|cobweb|tangled web|fishing net trap|iron chains? breaking|broken chains?|pendulum swinging|hourglass|shattered glass metaphor|candle flame fading|phoenix rising|cracked mirror|bleeding wallet|house of cards|puppet strings|iceberg hidden|tip of iceberg)[^.]*\./gi, '').trim();
+                        s.aiPrompt = s.aiPrompt.replace(/[^.]*\b(domino(es)?|chess|interlocking gears|scales? of justice|family tree.*red x|red x.*family tree|spider web|cobweb|tangled web|fishing net trap|iron chains? breaking|broken chains?|pendulum swinging|hourglass|shattered glass metaphor|candle flame fading|phoenix rising|cracked mirror|bleeding wallet|house of cards|puppet strings|iceberg hidden|tip of iceberg)[^.]*\./gi, '').trim();
                         if (!s.aiPrompt) s.aiPrompt = 'Bold modern editorial illustration of the scene concept. Cream paper background, thick black ink outlines, saturated solid colors (deep red / navy / ocher), strong composition. NOT soft watercolor, NOT pastel. Cinematic 16:9.';
                         s.clicheScrubbed = true;
                     }
