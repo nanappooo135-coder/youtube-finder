@@ -10557,10 +10557,26 @@ ${sceneList}
             }
             sec.style.display = '';
             // 한글 강제 + 브랜드명 제거 후처리
-            const processed = aiScenes.map(s => ({
-                ...s,
-                aiPrompt: s.aiPrompt ? _enforceKoreanInAiPrompt(_stripBrandNames(s.aiPrompt), s) : ''
-            }));
+            // 2026-04-24: 차트/지도 장면은 나노바나나2 2K 전용 프롬프트로 자동 교체
+            const processed = aiScenes.map(s => {
+                const nb = (typeof _buildNanobanaPrompt === 'function') ? _buildNanobanaPrompt(s) : null;
+                if (nb) {
+                    const styleMeta = nb.stylesMap[nb.style];
+                    return {
+                        ...s,
+                        aiPrompt: nb.prompt,
+                        _isNanobana: true,
+                        _nanobanaKind: nb.kind,
+                        _nanobanaStyleName: styleMeta ? styleMeta.name : nb.style,
+                        _nanobanaStyleDesc: styleMeta ? styleMeta.desc : '',
+                        _nanobanaReason: nb.reason || ''
+                    };
+                }
+                return {
+                    ...s,
+                    aiPrompt: s.aiPrompt ? _enforceKoreanInAiPrompt(_stripBrandNames(s.aiPrompt), s) : ''
+                };
+            });
             window._sellpotAiBatchScenes = processed;
 
             let html = '<div style="margin-bottom:10px;font-size:0.8rem;color:#6b21a8;"><strong>총 ' + processed.length + '개 장면</strong> — 프리픽에서 이 프롬프트들을 순서대로 생성하세요.</div>';
@@ -10575,13 +10591,24 @@ ${sceneList}
                             s.isListGridScene ? '🟠 나열 그리드' :
                             s.isSymbolicScene ? '🎭 상징·은유' :
                             s.isHistoricalScene ? '🏛️ 역사 재현' : '🎨 AI';
+                // 나노바나나2 배지
+                const nbBadge = s._isNanobana
+                    ? '<span style="background:#7c3aed;color:#fff;padding:1px 6px;border-radius:3px;font-size:0.68rem;margin-left:4px;">나노바나나2 2K</span>'
+                    : '';
                 html += '<div style="padding:12px;background:#f3e8ff;border:1px solid #c084fc;border-radius:8px;">'
                     + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'
-                    + '<span style="font-weight:700;color:#6b21a8;font-size:0.88rem;">🎨 장면 ' + s.id + ' <span style="color:#888;font-weight:400;font-size:0.75rem;">(' + cat + ')</span></span>'
+                    + '<span style="font-weight:700;color:#6b21a8;font-size:0.88rem;">🎨 장면 ' + s.id + ' <span style="color:#888;font-weight:400;font-size:0.75rem;">(' + cat + ')</span>' + nbBadge + '</span>'
                     + '<button onclick="_copyText(' + "'" + _jsEscape(prompt) + "'" + ', this)" style="padding:4px 10px;font-size:0.72rem;background:#9333ea;color:#fff;border:none;border-radius:4px;cursor:pointer;">프롬프트 복사</button>'
                     + '</div>'
-                    + '<div style="font-size:0.8rem;color:#333;margin-bottom:6px;">📝 ' + _escapeHtml(summary) + '</div>'
-                    + '<details style="margin-top:6px;"><summary style="cursor:pointer;font-size:0.75rem;color:#6b21a8;">프롬프트 전체 보기 ▼</summary>'
+                    + '<div style="font-size:0.8rem;color:#333;margin-bottom:6px;">📝 ' + _escapeHtml(summary) + '</div>';
+                if (s._isNanobana) {
+                    html += '<div style="padding:5px 8px;background:#fff8e1;border-left:3px solid #f59e0b;border-radius:3px;font-size:0.72rem;color:#78350f;margin-bottom:6px;">'
+                        + '⭐ <strong>추천 스타일: ' + _escapeHtml(s._nanobanaStyleName) + '</strong>'
+                        + (s._nanobanaStyleDesc ? ' <span style="color:#92400e;">(' + _escapeHtml(s._nanobanaStyleDesc) + ')</span>' : '')
+                        + (s._nanobanaReason ? '<br><span style="color:#92400e;">— ' + _escapeHtml(s._nanobanaReason) + '</span>' : '')
+                        + '</div>';
+                }
+                html += '<details style="margin-top:6px;"><summary style="cursor:pointer;font-size:0.75rem;color:#6b21a8;">프롬프트 전체 보기 ▼</summary>'
                     + '<div style="font-size:0.75rem;color:#555;background:#fff;padding:8px;border-radius:6px;border:1px dashed #c084fc;white-space:pre-wrap;word-break:break-all;margin-top:4px;">' + _escapeHtml(prompt) + '</div>'
                     + '</details>'
                     + '</div>';
@@ -10603,9 +10630,14 @@ ${sceneList}
                             s.isListGridScene ? '🟠 나열 그리드' :
                             s.isSymbolicScene ? '🎭 상징·은유' :
                             s.isHistoricalScene ? '🏛️ 역사 재현' : '🎨 AI';
-                text += '━━━ 장면 ' + s.id + ' (' + cat + ') ━━━\n';
-                text += '나레이션: ' + s.narration + '\n\n';
-                text += '프롬프트:\n' + (s.aiPrompt || '(없음)') + '\n\n';
+                const nbTag = s._isNanobana ? ' [나노바나나2 2K]' : '';
+                text += '━━━ 장면 ' + s.id + ' (' + cat + ')' + nbTag + ' ━━━\n';
+                text += '나레이션: ' + s.narration + '\n';
+                if (s._isNanobana) {
+                    text += '⭐ 추천 스타일: ' + s._nanobanaStyleName + (s._nanobanaStyleDesc ? ' (' + s._nanobanaStyleDesc + ')' : '') + '\n';
+                    if (s._nanobanaReason) text += '   — ' + s._nanobanaReason + '\n';
+                }
+                text += '\n프롬프트:\n' + (s.aiPrompt || '(없음)') + '\n\n';
                 text += '═══════════════════════════════════\n\n';
             });
             safeCopy(text).then(() => {
