@@ -6166,7 +6166,24 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
 
                 // 🟠 역사 장면 자동 감지 (연도·왕조·역사 인물·시대명)
                 // 지도 아닐 때만 태그. 그림은 어두운 매트 페인팅(Dishonored/Frostpunk 톤) 스타일로.
-                const HISTORICAL_STRONG = /\d{3,4}년(?!대)|19세기|20세기|18세기|17세기|16세기|15세기|중세|고대|조선|고려|신라|백제|고구려|로마제국|명나라|청나라|한나라|당나라|원나라|송나라|에도|메이지|다이쇼|산업혁명|대공황|세계대전|한국전쟁|베트남전|냉전|석유파동|브레튼우즈|금본위|아편전쟁|나폴레옹|링컨|처칠|루즈벨트|스탈린|세종|정조|흥선대원군|이성계|고종|광해군|영조/;
+                // 2026-04-24 v4: 미래 연도 오분류 버그 수정
+                //   과거: \d{3,4}년(?!대) 가 "2030년", "2040년" 같은 미래도 역사로 찍음
+                //   수정: 현재 연도(2026년) 기준 이전만 역사. 이후는 미래 전망으로 매트페인팅 적용 X
+                const HISTORICAL_STRONG_RE = /(\d{3,4})년(?!대)|19세기|20세기|18세기|17세기|16세기|15세기|중세|고대|조선|고려|신라|백제|고구려|로마제국|명나라|청나라|한나라|당나라|원나라|송나라|에도|메이지|다이쇼|산업혁명|대공황|세계대전|한국전쟁|베트남전|냉전|석유파동|브레튼우즈|금본위|아편전쟁|나폴레옹|링컨|처칠|루즈벨트|스탈린|세종|정조|흥선대원군|이성계|고종|광해군|영조/;
+                const CURRENT_YEAR = new Date().getFullYear();
+                function HISTORICAL_STRONG_test(narr) {
+                    if (!HISTORICAL_STRONG_RE.test(narr)) return false;
+                    // 연도가 있는 경우: 과거 연도(현재 연도 미만)가 최소 1개 있어야 역사로 판정
+                    const years = Array.from(narr.matchAll(/(\d{3,4})년(?!대)/g)).map(m => parseInt(m[1], 10));
+                    if (years.length > 0) {
+                        const hasPast = years.some(y => y < CURRENT_YEAR);
+                        if (!hasPast) return false; // 미래 연도만 있으면 역사 아님
+                        return true;
+                    }
+                    // 연도 외 역사 키워드(왕조/인물/사건)만 매칭된 경우
+                    return true;
+                }
+                const HISTORICAL_STRONG = { test: HISTORICAL_STRONG_test };
                 const HISTORICAL_STYLE_PREFIX = 'Semi-realistic dark painterly digital illustration, style of muted concept art for atmospheric historical games (Dishonored, The Order 1886, Frostpunk, A Plague Tale). NOT fantasy, NOT anime, NOT photorealistic. Muted color palette, visible brushwork and matte painting texture on all surfaces, realistic human proportions and serious documentary-like facial expressions, deep teal and umber shadows, grounded historical atmosphere, no magical glow, no high-saturation fantasy colors, painterly matte finish, historically accurate costume and props, cinematic 16:9. ';
                 // 2026-04-24 v3: 역사 장면 중복 이미지 위험 방지
                 // 과거: 모든 역사 장면에 동일 generic HISTORICAL_STYLE_PREFIX만 붙어서
@@ -8944,7 +8961,10 @@ ${sceneList}
             // 2026-04-24 v2: 화이트리스트 확장 — 이미 지정 스타일이 붙었으면 sci-fi 스크럽 프리픽스 중복 삽입 금지
             //   (과거: FLAT CLEAN infographic / Bold modern editorial / Semi-realistic dark painterly 등이 화이트리스트에 없어서
             //    기존 프리픽스와 상충하는 "Hand-painted warm editorial" 프리픽스가 또 덧붙어 AI 혼란 유발)
-            if (hasDarkCyber && !/(Paper cut collage|Modern infographic|Flat 2D vector|Hand-painted symbolic|Cross-section diagram|Catalog grid|Vintage antique atlas|Clean minimal infographic|Hand-painted warm editorial|FLAT CLEAN infographic|Bold modern editorial|Modern editorial infographic map|Semi-realistic dark painterly)/i.test(out)) {
+            // 2026-04-24 v4: 화이트리스트 확장 — _deriveAiPrompt가 생성하는 단순 인포그래픽 프리픽스도 포함
+            //   과거: Minimalist infographic donut/Minimalist financial/Split screen VS 등이 빠져서
+            //         soft watercolor 프리픽스가 덧붙어 스타일 충돌 발생
+            if (hasDarkCyber && !/(Paper cut collage|Modern infographic|Flat 2D vector|Hand-painted symbolic|Cross-section diagram|Catalog grid|Vintage antique atlas|Clean minimal infographic|Hand-painted warm editorial|FLAT CLEAN infographic|Bold modern editorial|Modern editorial infographic map|Semi-realistic dark painterly|Sophisticated editorial illustration|Dark dramatic editorial illustration|Distressed archive documentary|Minimalist infographic donut chart|Minimalist financial infographic|Split screen VS comparison|Stylized historical map|Symbolic metaphorical illustration|Cinematic documentary illustration)/i.test(out)) {
                 // 영어 HUD 뇌관 표현 제거
                 out = out.replace(/dark (high-?tech|cinematic|technological)[^.,]*/gi, 'warm editorial illustration');
                 out = out.replace(/high-?tech (documentary|satellite|surveillance)[^.,]*/gi, 'hand-painted editorial');
@@ -9803,6 +9823,25 @@ ${sceneList}
             const isConnectorSentence = narr.length >= 30 && !/(\d|%|퍼센트|배|%|\$|명|건|개)/.test(narr) &&
                 /(그런데|그러자|근데|그래서|그리고|하지만)/.test(narr);
 
+            // 2026-04-24 v4: 나레이터 가상 인용(rhetorical quote) 감지
+            //   "귀족노조 혼났네 하고 넘어가고 싶은데" / "네, 그러시죠 할 수 있는 크기" 같은
+            //   가정법 수사 표현은 실제 인물 발언이 아니므로 말풍선 금지
+            function _isRhetoricalQuote(narr, quoteText) {
+                if (!quoteText) return false;
+                const idx = narr.indexOf(quoteText);
+                if (idx === -1) return false;
+                const after = narr.slice(idx + quoteText.length, idx + quoteText.length + 30);
+                // 따옴표 뒤에 수사·가정법 수식어가 붙으면 rhetorical
+                return /^["']?\s*(하고|이라고|라고)?\s*(넘어가|할 수 있는|싶은데|싶죠|치면|하면 되는|하고 말|하면 끝|하려는|했으면)/.test(after);
+            }
+
+            // 2026-04-24 v4: 추상 수사("역대 최대", "사상 최고" 등 단독)는 수치카드 부적합
+            //   실제 숫자가 없으면 헤드라인이나 없음으로 가야 함
+            function _isAbstractSuperlative(text) {
+                if (!text) return false;
+                return /^(역대\s*최대|역대\s*최고|역대\s*최다|사상\s*최대|사상\s*최고|사상\s*최초|전례\s*없는)$/.test(text.trim());
+            }
+
             // === 우선순위 1: 구체 수치·데이터 ===
 
             // 퍼센트
@@ -9843,10 +9882,15 @@ ${sceneList}
 
             // 한글 수사 (천팔백만 원, 삼백건, 예순다섯 군데)
             // 2026-04-24: 추상 관용 표현(한 마디·3대·한 사람 등)은 수치카드 금지
+            // 2026-04-24 v4: 추상 수사(역대 최대·사상 최고 단독)도 수치카드 부적합 — 헤드라인 처리는 아래서
             if (_hasKoreanNumerals(narr) && !isTrivialCountPhrase) {
                 const kn = _extractKoreanNumeral(narr) || (s.textOverlay || '');
                 // 추출한 수사에 의미 있는 단위가 붙었을 때만 카드 (단순 '한·두·세'는 스킵)
-                if (kn && !/^(한|두|세|네)\s*(개|명|번|곳|가지|대|마디|사람|장소|집|곳|자리|줄)$/.test(kn.trim())) {
+                // 추상 수사("역대 최대" 단독) 스킵
+                if (kn
+                    && !/^(한|두|세|네)\s*(개|명|번|곳|가지|대|마디|사람|장소|집|곳|자리|줄)$/.test(kn.trim())
+                    && !_isAbstractSuperlative(kn)
+                    && !_isAbstractSuperlative(s.textOverlay)) {
                     return { category: '기존', type: '수치카드', text: kn, reason: '한글 수사' };
                 }
             }
@@ -9864,10 +9908,17 @@ ${sceneList}
 
             // VS대결 (대립 구조·비교 구조)
             // 2026-04-23 확장: "A는 X, B는 Y" 비교 / "우리는 달랐다" / "반면" / A vs B
+            // 2026-04-24 v4: VS text는 최소 "A vs B" 구조여야 — 단일 키워드("거부" 단독) 금지
             const isVs = /\bvs\b|맞섰|대결|싸움|격돌|공격.*대응|한쪽.*다른 쪽|우리는 다르|옆집 수술대|대신|반면/.test(narr) ||
                 /[가-힣]{2,5}(?:는|은)\s+[^.]{3,20}(?:했|했다|였|였다)[,.][^.]{3,20}[가-힣]{2,5}(?:는|은)\s+[^.]{3,20}(?:했|했다|였|였다)/.test(narr);
             if (isVs) {
-                return { category: '데이터', type: 'VS대결', text: s.textOverlay || '비교', reason: '두 주체 대립·비교' };
+                const vsText = s.textOverlay || '';
+                // A vs B 구조 검증: "→", "vs", "와/과", "대비" 포함해야 유효한 VS 텍스트
+                const hasVsStructure = /→|\bvs\b|\s(?:와|과|대|대비|vs)\s|대결/i.test(vsText);
+                if (vsText && hasVsStructure) {
+                    return { category: '데이터', type: 'VS대결', text: vsText, reason: '두 주체 대립·비교' };
+                }
+                // textOverlay가 없거나 단일 키워드면 VS대결 스킵 (아래 다른 경로로 내려감)
             }
 
             // 랭킹 (복수 순위)
@@ -9925,8 +9976,11 @@ ${sceneList}
             // === 우선순위 4: 문장·대사 ===
 
             // 인용문·대사 → 말풍선 (기본)
+            // 2026-04-24 v4: 나레이터 가상 인용(rhetorical) 차단
+            //   "귀족노조 혼났네 하고 넘어가고 싶은데" / "네, 그러시죠 할 수 있는 크기" 같은
+            //   가정법 수식어가 따옴표 뒤에 붙으면 실제 발언 아님 → 말풍선 금지
             const quoteMatch = narr.match(/["']([^"']{5,40})["']/);
-            if (quoteMatch) {
+            if (quoteMatch && !_isRhetoricalQuote(narr, quoteMatch[1])) {
                 // 긴박·경고 → 네온 말풍선
                 if (/위험|긴급|경고|충격/.test(narr)) {
                     return { category: '말풍선', type: '말풍선(네온)', text: quoteMatch[1], reason: '긴급 발언' };
