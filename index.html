@@ -7624,18 +7624,32 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
             'E_vintage':      { name: 'E. Vintage Atlas',            desc: '식민·제국·냉전 역사' }
         };
         function _pickNanobanaChartStyle(narr) {
-            if (/몰락|붕괴|파산|실업|침체|공황|위기|파탄|봉쇄|차단|폭락|공격|위협|절반.*날아/.test(narr)) return 'B_bloomberg';
-            if (/\d{3,4}년|과거|옛날|그 시절|당시|19세기|20세기|18세기|수십 년 전/.test(narr)) return 'C_vintage';
-            if (/인구|가구|국민|소비자|\d+\s*명당|세대|가족 수/.test(narr)) return 'E_pictogram';
-            if (/개념|구조|원리|방식|시스템|메커니즘|정의|의미/.test(narr)) return 'D_minimalist';
-            return 'A_editorial';
+            return _pickNanobanaChartStyleDetail(narr).style;
+        }
+        function _pickNanobanaChartStyleDetail(narr) {
+            if (/몰락|붕괴|파산|실업|침체|공황|위기|파탄|봉쇄|차단|폭락|공격|위협|절반.*날아/.test(narr))
+                return { style: 'B_bloomberg', reason: '위기·몰락 키워드 → 다크 블룸버그 톤이 임팩트 최고' };
+            if (/\d{3,4}년|과거|옛날|그 시절|당시|19세기|20세기|18세기|수십 년 전/.test(narr))
+                return { style: 'C_vintage', reason: '과거·역사 키워드 → 빈티지 신문 지면이 어울림' };
+            if (/인구|가구|국민|소비자|\d+\s*명당|세대|가족 수/.test(narr))
+                return { style: 'E_pictogram', reason: '인구·소비 키워드 → 픽토그램 아이콘이 체감 전달력 우수' };
+            if (/개념|구조|원리|방식|시스템|메커니즘|정의|의미/.test(narr))
+                return { style: 'D_minimalist', reason: '개념·구조 설명 → 미니멀리스트가 가독성 최고' };
+            return { style: 'A_editorial', reason: '일반 분석 → 기본 에디토리얼(Economist/WSJ)' };
         }
         function _pickNanobanaMapStyle(narr) {
-            if (/군사|전략|봉쇄|작전|공격|기지|위협|반군|드론|미사일|함대/.test(narr)) return 'B_intelligence';
-            if (/항로|무역|운송|화물|공급망|컨테이너|수출|수입|해운|선박/.test(narr)) return 'C_route';
-            if (/(\d+\s*km|좁은|포인트|길목|급소|병목)|해협\s*(?:의|은|이|가)\s*(?:폭|넓이)/.test(narr)) return 'D_chokepoint';
-            if (/식민|제국|냉전|과거 영토|옛 영토|\d{3,4}년대 지도/.test(narr)) return 'E_vintage';
-            return 'A_editorial';
+            return _pickNanobanaMapStyleDetail(narr).style;
+        }
+        function _pickNanobanaMapStyleDetail(narr) {
+            if (/군사|전략|봉쇄|작전|공격|기지|위협|반군|드론|미사일|함대/.test(narr))
+                return { style: 'B_intelligence', reason: '군사·전략 키워드 → 다크 인텔리전스 브리핑 톤' };
+            if (/항로|무역|운송|화물|공급망|컨테이너|수출|수입|해운|선박/.test(narr))
+                return { style: 'C_route', reason: '무역·항로 키워드 → 라우트 플로우 지도' };
+            if (/(\d+\s*km|좁은|포인트|길목|급소|병목)|해협\s*(?:의|은|이|가)\s*(?:폭|넓이)/.test(narr))
+                return { style: 'D_chokepoint', reason: '해협·병목 키워드 → 초크포인트 근접 지도' };
+            if (/식민|제국|냉전|과거 영토|옛 영토|\d{3,4}년대 지도/.test(narr))
+                return { style: 'E_vintage', reason: '식민·제국·냉전 → 빈티지 아틀라스' };
+            return { style: 'A_editorial', reason: '일반 지리 → 기본 모던 에디토리얼(Economist/FT)' };
         }
         function _buildNanobanaChartPrompt(s) {
             const narr = s.narration || '';
@@ -7681,10 +7695,15 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
             const isMap = s.isMapScene === true;
             const isChart = s.isInfographicScene === true;
             if (!isMap && !isChart) return null;
+            const narr = s.narration || '';
             if (isMap) {
-                return { kind: 'map', style: s.nanobanaStyle || _pickNanobanaMapStyle(s.narration || ''), prompt: _buildNanobanaMapPrompt(s), stylesMap: NANOBANA_MAP_STYLES };
+                const rec = _pickNanobanaMapStyleDetail(narr);
+                const style = s.nanobanaStyle || rec.style;
+                return { kind: 'map', style: style, recommended: rec.style, reason: rec.reason, prompt: _buildNanobanaMapPrompt(s), stylesMap: NANOBANA_MAP_STYLES };
             } else {
-                return { kind: 'chart', style: s.nanobanaStyle || _pickNanobanaChartStyle(s.narration || ''), prompt: _buildNanobanaChartPrompt(s), stylesMap: NANOBANA_CHART_STYLES };
+                const rec = _pickNanobanaChartStyleDetail(narr);
+                const style = s.nanobanaStyle || rec.style;
+                return { kind: 'chart', style: style, recommended: rec.style, reason: rec.reason, prompt: _buildNanobanaChartPrompt(s), stylesMap: NANOBANA_CHART_STYLES };
             }
         }
         // 사용자가 드롭다운으로 스타일 변경 시 호출
@@ -8365,13 +8384,22 @@ ${sceneList}
                 rows += kindLabel + ' <span style="background:' + accent + ';color:#fff;padding:1px 6px;border-radius:3px;font-size:0.7rem;margin-left:4px;">나노바나나2 2K</span>';
                 rows += ' <span style="color:#868e96;font-weight:400;font-size:0.72rem;">프리픽 전용 · 비용 0원 · 한글 정확</span>';
                 rows += '</div>';
+                // ⭐ 추천 스타일 배지 + 이유
+                const recMeta = nanobana.stylesMap[nanobana.recommended];
+                if (recMeta) {
+                    rows += '<div style="margin-top:4px;padding:5px 8px;background:#fff8e1;border-left:3px solid #f59e0b;border-radius:3px;font-size:0.72rem;color:#78350f;">';
+                    rows += '⭐ <strong>추천: ' + _escapeHtml(recMeta.name) + '</strong>';
+                    if (nanobana.reason) rows += ' <span style="color:#92400e;">— ' + _escapeHtml(nanobana.reason) + '</span>';
+                    rows += '</div>';
+                }
                 // 스타일 드롭다운
                 rows += '<div style="margin-top:4px;margin-bottom:6px;font-size:0.72rem;">';
                 rows += '<label style="color:#495057;">스타일: </label>';
                 rows += '<select onchange="_setNanobanaStyle(' + s.id + ', this.value)" style="padding:2px 4px;font-size:0.72rem;border:1px solid ' + accent + ';border-radius:3px;">';
                 Object.entries(nanobana.stylesMap).forEach(([key, meta]) => {
                     const selected = key === nanobana.style ? ' selected' : '';
-                    rows += '<option value="' + key + '"' + selected + '>' + _escapeHtml(meta.name) + ' — ' + _escapeHtml(meta.desc) + '</option>';
+                    const star = key === nanobana.recommended ? ' ⭐' : '';
+                    rows += '<option value="' + key + '"' + selected + '>' + _escapeHtml(meta.name) + star + ' — ' + _escapeHtml(meta.desc) + '</option>';
                 });
                 rows += '</select>';
                 rows += '</div>';
@@ -10479,7 +10507,13 @@ ${sceneList}
                     const nbKind = nanobana.kind === 'map' ? '🗺️ 지도' : '📊 차트';
                     const nbStyleMeta = nanobana.stylesMap && nanobana.stylesMap[nanobana.style];
                     const nbStyleLabel = nbStyleMeta ? (nbStyleMeta.name + ' — ' + nbStyleMeta.desc) : nanobana.style;
+                    const nbRecMeta = nanobana.stylesMap && nanobana.stylesMap[nanobana.recommended];
+                    const isUsingRec = nanobana.style === nanobana.recommended;
                     text += '\n' + nbKind + ' 나노바나나2 2K [' + nbStyleLabel + ']\n';
+                    if (nbRecMeta) {
+                        const mark = isUsingRec ? '⭐ 추천' : '⭐ 추천: ' + nbRecMeta.name + ' (현재 수동 선택)';
+                        text += '   ' + mark + (nanobana.reason ? ' — ' + nanobana.reason : '') + '\n';
+                    }
                     text += '   (프리픽 → 나노바나나2 → 2K → 아래 프롬프트 붙여넣기)\n';
                     text += '   ' + nanobana.prompt + '\n';
                 }
