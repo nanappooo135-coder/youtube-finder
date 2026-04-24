@@ -5012,7 +5012,7 @@ stock bgQuery 생성 후 자문:
 ## overlays 배열 상세 규칙 (셀팟 100% 자동화 — 텍스트 전용)
 
 **⚠️ 매우 중요한 원칙 (실험 결과 검증됨)**:
-- 셀팟 v1.0.13 기준 **7가지 타입** 자동 인식 (text_headline, text_quote, title_card, single_stat_card, versus_stat, pie_donut, bar_chart_comparison, timeline_horizontal, ranking_list)
+- 셀팟 v1.0.13 기준 타입 자동 인식 (text_headline, title_card, single_stat_card, versus_stat, pie_donut, bar_chart_comparison, timeline_horizontal, ranking_list, speech_bubble)
 - 셀팟 AI가 나레이션 읽고 data를 자동으로 채움 → **type만 정확히 지정**하면 됨
 - 한 장면에 **반드시 1개 오버레이만**. 2개 이상이면 텍스트가 겹쳐서 깨짐.
 
@@ -5080,25 +5080,26 @@ stock bgQuery 생성 후 자문:
 - **data**: { text } 또는 { text, author } 또는 { mainTitle, subtitle }
 - 한 장면에 1개만. 절대 여러 개 X.
 
-### 사용 가능한 타입 7가지 (실전 검증됨 — 셀팟 자동 인식)
+### 사용 가능한 타입 (실전 검증됨 — 셀팟 자동 인식)
 
-내용 유형에 맞게 **다양하게 사용**. 셀팟 AI가 나레이션 읽고 data 자동 채움.
+내용 유형에 맞게 **역할에 맞을 때만 사용**. 셀팟 AI가 나레이션 읽고 data 자동 채움.
+⚠️ text_quote(인용문)는 셀팟 미지원 — 절대 사용 금지. 인용 발언은 speech_bubble(말풍선)로.
 
 | type | 쓰는 경우 | 한글명 |
 |------|----------|--------|
-| **text_headline** | 짧은 키워드·핵심 문구 강조 | 헤드라인 |
-| **text_quote** | 인용문·실제 발언 | 인용문 |
+| **text_headline** | 짧은 키워드·핵심 문구 강조 (2~4자) | 헤드라인 |
 | **title_card** | 챕터·섹션 시작 (영상당 3~5개) | 타이틀 |
 | **single_stat_card** | **거대 숫자 강조** (70%, 200만 등 1개 수치) | 수치카드 |
 | **versus_stat** | **A vs B 비교** (좌우 대결·대립) | VS대결 |
 | **pie_donut** | **비율·점유율** (85% vs 15% 같은 도넛) | 도넛차트 |
 | **bar_chart_comparison** | **3개 이상 항목 비교** (막대 차트) | 막대차트 |
-| **timeline_horizontal** | **시간순 이벤트** (연도별 사건 3~5개) | 타임라인 |
+| **timeline_horizontal** | **시간순 이벤트** (연도별 사건 2~5개) | 타임라인 |
 | **ranking_list** | **순위 나열** (1위·2위·3위) | 랭킹 |
+| **speech_bubble** | **인물의 실제 발언·명언·역사적 한마디** | 말풍선 |
 
 ### data 구조 (타입별)
 
-- **text_headline / text_quote / title_card**: data 구조는 { "text": "..." } 또는 { "text": "...", "author": "..." } 또는 { "mainTitle": "...", "subtitle": "..." }
+- **text_headline / title_card / speech_bubble**: data 구조는 { "text": "..." } 또는 { "text": "...", "author": "..." } 또는 { "mainTitle": "...", "subtitle": "..." }
 - **single_stat_card / versus_stat / pie_donut / bar_chart_comparison / timeline_horizontal / ranking_list**: **반드시 data.text 포함** (셀팟 폴백용). 예: { "text": "70% 중동 의존도" } 또는 { "text": "미국 70% vs 한국 15%" }. 셀팟 AI가 이 text 기반으로 전용 시각화 생성.
 
 ### 타입 선택 예시
@@ -5167,7 +5168,7 @@ stock bgQuery 생성 후 자문:
 \`\`\`json
 {
   "overlays": [
-    { "type": "text_quote", "data": { "text": "35년을 기다렸다", "author": "바시르 고트" } }
+    { "type": "speech_bubble", "data": { "text": "35년을 기다렸다", "author": "바시르 고트" } }
   ]
 }
 \`\`\`
@@ -5184,7 +5185,7 @@ stock bgQuery 생성 후 자문:
 ### ⚠️ 절대 원칙
 
 1. **한 장면에 overlays는 0개 또는 1개만**. 여러 개 절대 금지 (겹쳐서 깨짐).
-2. **type은 7가지 중 선택**: text_headline / text_quote / title_card / single_stat_card / versus_stat / pie_donut / bar_chart_comparison / timeline_horizontal / ranking_list. 내용에 맞게 다양하게 사용.
+2. **type은 목록에서 선택**: text_headline / title_card / single_stat_card / versus_stat / pie_donut / bar_chart_comparison / timeline_horizontal / ranking_list / speech_bubble. text_quote는 셀팟 미지원이므로 절대 사용 금지. 인용 발언은 speech_bubble로.
 3. 단순 키워드 강조는 text_headline, 숫자·데이터·비교는 전용 타입 (single_stat_card, versus_stat 등).
 4. **bgSource는 stock** 권장 (배경 영상 위에 오버레이 얹기).
 
@@ -6126,14 +6127,18 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                 // 스타일 prefix 자동 삽입 (세련된 다큐멘터리 인포그래픽)
                 // 2026-04-23: 프리픽 (Mystic/Flux) 기반 한글 지도 프롬프트
                 // 한글 사전 박아주면 프리픽이 정확히 한글로 렌더링 (Genspark는 못 뚫음 → 프리픽 전환)
-                // 2026-04-24: MAP_STYLE_PREFIX 전면 재작성 — 토픽 중립
+                // 2026-04-24 v2: MAP_STYLE_PREFIX 전면 재작성 — 모던 에디토리얼 스타일
                 // 🔴 과거 문제:
-                //   1. 프롬프트 내 "(한글)" 괄호 리터럴 → AI가 "한글"을 핀 라벨 텍스트로 렌더
-                //   2. 중동 국가 매핑 표(Iran→이란, Oman→오만...) 하드코딩 → 모든 지도가 중동 톤
-                //   3. "oil barrels, ships, coins" 디폴트 장식 → 관계없는 장면에 석유통 박힘
-                //   4. 색상 단일 프리셋(#1E2B3A/#5FA39A/#D98652) → 모든 지도 동일 색감
-                // ✅ 수정: 국가 매핑 제거 (scene.mapLabels로 주입), 장식 제거, 색상 지시어 완화
-                const MAP_STYLE_PREFIX = 'Vintage antique atlas map illustration in warm editorial watercolor and ink wash style. Muted aged-parchment palette with hand-drawn country borders in dark brown ink. Subtle water stain and ink splatter texture on the ocean area. Aged parchment paper edges visible. Exactly ONE highlighted region drawn in a warm accent watercolor wash to draw attention, all other countries in a desaturated base tone. Textured, aged, editorial documentary aesthetic — NOT flat vector, NOT cartoon, NOT photorealistic, NOT clean modern infographic. Do NOT add generic decorative icons (oil barrels, ships, coins, arrows) unless the scene explicitly mentions them. 🚨 CRITICAL LABEL RULES: Render ONLY the country, region, sea, strait, or city names that are explicitly listed in the scene description below — do NOT add extra countries. Every label must be written in Korean Hangul script (do not write the bare word meaning "Korean script" as a label — write actual place names only). Thick bold sans-serif typography. Never print example placeholder words as labels. Cinematic 16:9. ';
+                //   1. "vintage antique / watercolor / parchment" → 조선시대 고지도 느낌 (현대 컨텐츠에 부적합)
+                //   2. 베이지-세피아 톤 / 잉크 얼룩 / 수채 번짐 → 가독성 낮고 임팩트 약함
+                //   3. 손글씨 스타일 타이포 → 모바일 썸네일에서 안 읽힘
+                // ✅ 수정: 이코노미스트·FT·블룸버그 편집톤. 솔리드 컬러 + 굵은 산세리프 + 선명한 빨강 강조
+                //   - 바다: 딥 티얼/네이비 솔리드
+                //   - 육지: 연한 뉴트럴 그레이 (높은 대비)
+                //   - 강조: 선명한 빨강 #C62828
+                //   - 타이포: 굵은 모던 산세리프 (Noto Sans KR Bold)
+                //   - 텍스처 최소화 (플랫 or 아주 은은한 그레인만)
+                const MAP_STYLE_PREFIX = 'Modern editorial infographic map, YouTube documentary thumbnail quality. Clean flat design with HIGH CONTRAST and VIVID readable colors. Ocean: solid deep teal blue (#1F4E5F) with no watercolor stains, no paper texture. Land: soft light neutral gray (#E8E5DD) with crisp thin dark country borders (#2A2A2A, 1-2px). Background: clean off-white (#FAFAF5), subtle paper grain barely visible. Exactly ONE highlighted region in BOLD SATURATED RED (#C62828) — pure solid fill, no watercolor, no gradient. All other land stays neutral gray. Modern flat icons only when explicitly needed (small filled pins, simple prison/watchtower symbols in solid dark red). Typography: BOLD MODERN SANS-SERIF (Noto Sans KR Bold or equivalent weight), large readable size, dark charcoal #1A1A1A or pure white on dark areas. NO hand-drawn styling, NO watercolor brush edges, NO sepia tones, NO parchment, NO ink splatter, NO antique atlas feel, NO vintage aging. This is a CONTEMPORARY editorial map (think The Economist, Financial Times, Bloomberg, NYT map graphics). Do NOT add decorative icons (oil barrels, ships, coins, arrows) unless the scene explicitly mentions them. 🚨 CRITICAL LABEL RULES: Render ONLY the country, region, sea, strait, or city names that are explicitly listed in the scene description below — do NOT add extra countries. Every label must be written in Korean Hangul script (do not write the bare word meaning "Korean script" as a label — write actual place names only). Thick bold sans-serif typography, clearly readable on mobile. Never print example placeholder words as labels. Cinematic 16:9. ';
                 // 2026-04-23: 스타일 prefix 중복 방지 헬퍼 — 하나만 적용되도록
                 // 이미 다른 스타일이 붙어있으면 새 prefix 안 붙임
                 function _hasAnyStylePrefix(prompt) {
@@ -6264,9 +6269,11 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                     if (!s.isHistoricalScene && !s.isMapScene && !s.isInfographicScene && !s.isDiagramScene) {
                         if (SYMBOLIC_STRONG.test(narr) || SYMBOLIC_STRONG.test(prompt)) {
                             s.isSymbolicScene = true;
-                            // 2026-04-23: 상징·은유도 크림 종이+수채 편집 톤으로 통일
-                            // 2026-04-23: 스타일만 기술, 구체 예시(chess/domino/gear) 제거 — 예시를 "그리라"고 오해 방지
-                            const SYMBOLIC_STYLE_PREFIX = 'Hand-painted symbolic illustration in warm editorial watercolor style. Vintage cream beige paper background (#F5EFD9) with subtle paper grain texture. The metaphoric subject described below rendered in muted earth tones (terracotta, sage green, navy blue, warm red #C62828 for emphasis) with soft watercolor edges and ink outline. Hand-painted texture throughout. Semi-transparent bold Korean label integrated into the composition (한글, sans-serif, dark brown or white). Minimal composition, empty space, editorial documentary aesthetic. NOT dark cinematic, NOT 3D render, NOT neon, NOT photorealistic, NOT cartoon. Draw ONLY the specific metaphoric subject described in the following prompt — do not add chess, dominoes, gears, or any other symbols unless explicitly mentioned. ALL labels in Korean (한글) — NO English, NO romanization. Cinematic 16:9. ';
+                            // 2026-04-24 v2: 임팩트 강화 — 부드러운 수채 → 굵은 에디토리얼 일러스트
+                            // 사용자 피드백: "감성적인 여자가 보는 채널 아님. 색감 강하고 시안성 좋게"
+                            // 파스텔·뮤티드 어스톤·부드러운 수채엣지·여백 중심 제거
+                            // WSJ 오피니언·정치 만평 편집 톤. 주제 강한 실루엣.
+                            const SYMBOLIC_STYLE_PREFIX = 'Bold modern editorial illustration for documentary YouTube content. Cream paper background (#F5EFD9) with very subtle grain. The metaphoric subject described below rendered with THICK BOLD BLACK INK OUTLINES (2-3px, confident brush line) and SATURATED SOLID COLOR FILLS — pick 2-3 contrasting colors from this palette: deep saturated red (#C62828), deep navy blue (#1A2F4A), mustard ocher (#D4A437), forest green (#2D5A3D). High contrast, dramatic composition, strong silhouette. NOT soft watercolor, NOT pastel wash, NOT muted earth tones, NOT greeting-card emotional, NOT plastic AI render, NOT neon, NOT 3D, NOT cartoon. Hand-crafted feel preserved (visible ink brushwork) but visually bold and readable at thumbnail scale. Subject DOMINATES frame, NOT minimalist empty space. Typography (if any Korean label): thick bold modern sans-serif (Noto Sans KR Black), dark charcoal. Draw ONLY the specific metaphoric subject described below — do not add chess, dominoes, gears, spider webs, scales, or other generic symbols unless explicitly mentioned. All labels in Korean Hangul script only — NO English, NO romanization. Cinematic 16:9. ';
                             if (typeof s.aiPrompt === 'string' && !_hasAnyStylePrefix(s.aiPrompt)) {
                                 s.aiPrompt = SYMBOLIC_STYLE_PREFIX + s.aiPrompt;
                             }
@@ -6340,13 +6347,42 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                 // ⚛️ Remotion 코드 힌트 장면
                 const codeGenHintScenes = jsonObj.scenes.filter(s => s.codeGenHint && s.codeGenHint.pattern);
 
+                // 2026-04-24: 지도 라벨 중복 제거 (Gemini가 같은 지명을 배열에 2회 넣거나,
+                //   나레이션·프롬프트·mapLabels 3군데에 같은 단어가 있으면 AI가 라벨을 2번 찍는 버그)
+                jsonObj.scenes.forEach(s => {
+                    if (Array.isArray(s.mapLabels)) {
+                        const seen = new Set();
+                        s.mapLabels = s.mapLabels.filter(l => {
+                            if (typeof l !== 'string') return false;
+                            const k = l.trim();
+                            if (!k || seen.has(k)) return false;
+                            seen.add(k);
+                            return true;
+                        });
+                    }
+                });
+
+                // 2026-04-24: text_quote(인용문) → speech_bubble(말풍선) 자동 변환
+                // 셀팟에서 인용문 오버레이가 동작하지 않는 것으로 확인 (2026-04-24 사용자 피드백)
+                // Gemini가 text_quote를 출력해도 여기서 강제 치환
+                jsonObj.scenes.forEach(s => {
+                    if (Array.isArray(s.overlays)) {
+                        s.overlays = s.overlays.map(ov => {
+                            if (ov && ov.type === 'text_quote') {
+                                return { ...ov, type: 'speech_bubble' };
+                            }
+                            return ov;
+                        });
+                    }
+                });
+
                 // overlays 배열 → textOverlay 무조건 생성 (셀팟 호환 — 모든 장면에 최소 오버레이 보장)
                 jsonObj.scenes.forEach(s => {
                     if (typeof s.textOverlay === 'string' && s.textOverlay.trim()) return;
                     if (Array.isArray(s.overlays) && s.overlays.length > 0) {
                         const first = s.overlays[0];
                         if (first && first.data) {
-                            if ((first.type === 'text_headline' || first.type === 'text_quote') && first.data.text) {
+                            if ((first.type === 'text_headline' || first.type === 'speech_bubble') && first.data.text) {
                                 s.textOverlay = first.data.text;
                             } else if (first.type === 'title_card' && first.data.mainTitle) {
                                 s.textOverlay = first.data.mainTitle;
@@ -6387,7 +6423,7 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                     // AI 프롬프트에서 클리셰 구문 제거 (프롬프트 자체는 유지, 클리셰 표현만 문장 삭제)
                     if (typeof s.aiPrompt === 'string' && SYMBOLIC_CLICHE_BG.test(s.aiPrompt)) {
                         s.aiPrompt = s.aiPrompt.replace(/[^.]*\b(domino(es)?|chess|interlocking gears|scales? of justice|family tree.*red x|red x.*family tree|spider web|cobweb|tangled web|fishing net trap|iron chains? breaking|broken chains?|pendulum swinging|hourglass|shattered glass metaphor|candle flame fading|phoenix rising|cracked mirror|bleeding wallet|house of cards|puppet strings|iceberg hidden|tip of iceberg)[^.]*\./gi, '').trim();
-                        if (!s.aiPrompt) s.aiPrompt = 'Hand-painted warm editorial illustration of the scene concept, minimal composition, cream paper background, cinematic 16:9.';
+                        if (!s.aiPrompt) s.aiPrompt = 'Bold modern editorial illustration of the scene concept. Cream paper background, thick black ink outlines, saturated solid colors (deep red / navy / ocher), strong composition. NOT soft watercolor, NOT pastel. Cinematic 16:9.';
                         s.clicheScrubbed = true;
                     }
                     // 나레이션에 '도미노처럼' 등 직유 있으면 해당 은유를 stock으로 보내되, 다른 장면에서 중복되면 알림
@@ -7234,16 +7270,17 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
         // 🎬 장면별 작업 가이드
         window._sceneGuideData = null;
 
+        // 2026-04-24: text_quote 제거 — 셀팟 미지원, 말풍선(speech_bubble)으로 통일
         const _OVERLAY_TYPE_KO = {
             'text_headline': '헤드라인',
-            'text_quote': '인용문',
             'title_card': '타이틀',
             'single_stat_card': '수치카드',
             'versus_stat': 'VS대결',
             'pie_donut': '도넛차트',
             'bar_chart_comparison': '막대차트',
             'timeline_horizontal': '타임라인',
-            'ranking_list': '랭킹'
+            'ranking_list': '랭킹',
+            'speech_bubble': '말풍선'
         };
 
         function _sceneNeedsManual(s) {
@@ -7253,7 +7290,7 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
             if (s.needLogo === true) return true;
             if (Array.isArray(s.overlays) && s.overlays.length > 0) {
                 const t = s.overlays[0] && s.overlays[0].type;
-                if (t && t !== 'text_headline' && t !== 'text_quote') return true;
+                if (t && t !== 'text_headline' && t !== 'speech_bubble') return true;
             }
             return false;
         }
@@ -8847,7 +8884,10 @@ ${sceneList}
             // AI 이미지 생성기에게 영어 HUD를 붙이라는 암묵 신호가 됨. 크림 편집 톤으로 전환.
             // 단, 이미 지정 스타일(인포그래픽·지도·다이어그램·그리드 등)이 적용된 프롬프트는 건드리지 않음
             const hasDarkCyber = /(dark (high-?tech|cinematic|technological)|high-?tech (documentary|satellite|surveillance)|satellite view perspective|data visualization|digital surveillance network|glowing grid lines|cinematic (visualization|data))/i.test(out);
-            if (hasDarkCyber && !/(Paper cut collage|Modern infographic|Flat 2D vector|Hand-painted symbolic|Cross-section diagram|Catalog grid|Vintage antique atlas|Clean minimal infographic|Hand-painted warm editorial)/i.test(out)) {
+            // 2026-04-24 v2: 화이트리스트 확장 — 이미 지정 스타일이 붙었으면 sci-fi 스크럽 프리픽스 중복 삽입 금지
+            //   (과거: FLAT CLEAN infographic / Bold modern editorial / Semi-realistic dark painterly 등이 화이트리스트에 없어서
+            //    기존 프리픽스와 상충하는 "Hand-painted warm editorial" 프리픽스가 또 덧붙어 AI 혼란 유발)
+            if (hasDarkCyber && !/(Paper cut collage|Modern infographic|Flat 2D vector|Hand-painted symbolic|Cross-section diagram|Catalog grid|Vintage antique atlas|Clean minimal infographic|Hand-painted warm editorial|FLAT CLEAN infographic|Bold modern editorial|Modern editorial infographic map|Semi-realistic dark painterly)/i.test(out)) {
                 // 영어 HUD 뇌관 표현 제거
                 out = out.replace(/dark (high-?tech|cinematic|technological)[^.,]*/gi, 'warm editorial illustration');
                 out = out.replace(/high-?tech (documentary|satellite|surveillance)[^.,]*/gi, 'hand-painted editorial');
@@ -8884,8 +8924,12 @@ ${sceneList}
                 koreanTexts.push(wonMatch[1]);
             }
             // 순위
+            // 2026-04-24: "최대/최고"가 수량 부사로 쓰일 때는 순위 키워드 아님 (예: "최대 12군데", "최고 100명")
+            // 오판하면 지도·인포그래픽에 "최대"/"최고"가 라벨로 박히는 버그 발생
             const rankMatch = narr.match(/(\d위|꼴찌|최고|최대)/);
-            if (rankMatch && !koreanTexts.some(t => t.includes(rankMatch[1]))) {
+            const rankAmbiguous = rankMatch && /^(최대|최고)$/.test(rankMatch[1]) &&
+                new RegExp(rankMatch[1] + '\\s*\\d+\\s*(?:개|명|군데|건|번|대|곳|가지|년|시간|분|초)').test(narr);
+            if (rankMatch && !rankAmbiguous && !koreanTexts.some(t => t.includes(rankMatch[1]))) {
                 koreanTexts.push(rankMatch[1]);
             }
             // 연도 (2개 이상)
@@ -8899,8 +8943,10 @@ ${sceneList}
                 out = out.replace(/\.\s*$/, '').trim();
 
                 let koreanEnforce = ' 🔥 MANDATORY KOREAN TEXT REQUIREMENT: The image MUST contain clearly readable Korean text (한글).';
-                if (koreanTexts.length > 0) {
-                    const quoted = koreanTexts.slice(0, 4).map(t => '"' + t.replace(/"/g, "'") + '"').join(', ');
+                // 2026-04-24: koreanTexts 중복 제거 (같은 단어가 2번 REQUIRED label로 주입되면 AI가 2번 렌더)
+                const uniqueKoreanTexts = [...new Set(koreanTexts.map(t => t.trim()).filter(Boolean))];
+                if (uniqueKoreanTexts.length > 0) {
+                    const quoted = uniqueKoreanTexts.slice(0, 4).map(t => '"' + t.replace(/"/g, "'") + '"').join(', ');
                     koreanEnforce += ' REQUIRED Korean labels to render prominently and accurately: ' + quoted + '.';
                 }
                 // 2026-04-23: 프롬프트 비대화 방지 — 핵심 규칙은 짧게, 국가 목록은 지도·국가 비교 장면에만
@@ -8958,14 +9004,15 @@ ${sceneList}
                 return 'Semi-realistic dark painterly digital illustration of the historical scene described in the scene context, in the style of muted concept art for atmospheric historical games (Dishonored, Frostpunk, A Plague Tale). Muted color palette, visible brushwork and matte painting texture, realistic human proportions, deep teal and umber shadows, grounded historical atmosphere, cinematic 16:9.';
             }
 
-            // 감정·심리 장면 → 감성 편집 일러스트 (인포그래픽 금지)
+            // 감정·심리 장면 → 굵은 에디토리얼 일러스트 (파스텔 감성 금지)
+            // 2026-04-24 v2: 사용자 피드백 — "감성적 채널 아님. 색감 강하고 시안성 좋게"
             const hasEmotion = /울면서|두려워|하얗게 질려|잠을 못|감당|떨면서|떨리는|조용히 흐느|흐느|흐르는 눈물|눈물이|공포|절망|두렵|공허|외로|그리운|보고 싶|견디지|무너|심장|숨이 멎|숨을 못/.test(narr);
             if (hasEmotion) {
-                return 'Hand-painted warm editorial illustration of the emotional moment described in the scene, muted earth tones, soft watercolor edges, minimal composition, empty space, cinematic 16:9. NOT infographic, NOT chart, NOT data visualization. Editorial documentary aesthetic focused on mood.';
+                return 'Bold modern editorial illustration of the emotional moment described, documentary YouTube impact. Cream paper background (#F5EFD9) with subtle grain. Subject rendered with THICK BLACK INK OUTLINES and SATURATED SOLID COLOR FILLS — 2-3 contrasting colors from: deep red #C62828, deep navy #1A2F4A, mustard ocher #D4A437, forest green #2D5A3D. Strong silhouette, dramatic composition, subject dominates frame. NOT soft watercolor, NOT pastel, NOT muted earth tones, NOT greeting-card emotional, NOT plastic AI render. Hand-crafted editorial weight. Cinematic 16:9.';
             }
 
-            // 기본 — 중립적 편집 일러스트 (인포그래픽 단어 제거, 과탐 방지)
-            return 'Hand-painted warm editorial illustration representing the scene described, muted earth tones, soft brush edges, cinematic 16:9, documentary editorial aesthetic. NOT infographic, NOT chart. Only include Korean text labels if a specific label is provided by the scene — otherwise no labels.';
+            // 기본 — 중립적 편집 일러스트 (임팩트 톤)
+            return 'Bold modern editorial illustration representing the scene described, documentary YouTube impact. Cream paper background (#F5EFD9), thick black ink outlines, saturated solid colors (deep red/navy/ocher/forest green — pick 2-3 contrasting), strong composition. NOT soft watercolor, NOT pastel, NOT muted, NOT AI plastic. Hand-crafted editorial style, high readability. Cinematic 16:9. Include Korean Hangul text label only if a specific label is provided by the scene.';
         }
 
         // 2026-04-23: 실사 구글 검색 대체 키워드 2개 생성 (1순위 실패 시 fallback)
@@ -9630,7 +9677,8 @@ ${sceneList}
             '타자기': 'text_typewriter',
             '불릿리스트': 'text_bullet_reveal',
             '좌우분할': 'text_split_screen',
-            '인용문': 'text_quote',
+            // 2026-04-24: 인용문(text_quote) 제거 — 셀팟에서 동작 안 함 (사용자 확인)
+            //   기존에 인용문으로 가던 장면은 말풍선으로 통일
             '수치카드': 'single_stat_card',
             '대비수치': 'dual_stat_vertical',
             '가로수치': 'stat_counter_row',
