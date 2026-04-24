@@ -6101,6 +6101,12 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                 const MAP_EXCLUDE = /\b(split screen|side-by-side|bar chart|donut chart|pie chart|line graph|infographic|pie_donut|flowchart)\b/i;
                 // 나레이션 기반 지도 신호 (2026-04-23 추가)
                 const MAP_NAR_STRONG = /(오만만|페르시아만|아라비아해|호르무즈|홍해|지중해|흑해|카스피해|인도양|태평양|대서양|반도|국경선|영토|해협|감시 범위|주변 수백 ?km|주변 수천 ?km|한반도|유럽|북미|남미|아시아|중동|중앙아시아|지정학)/;
+                // 🚨 초크포인트 장면 — 공간 표현 없어도 단독 승격 (2026-04-24)
+                //   증상: "이란 앞바다의 호르무즈 해협" 같은 간단 소개 장면이
+                //         symbolic AI로 찍혀 무관한 탐정/톱니바퀴 은유 이미지 생성됨.
+                //   원칙: 초크포인트·해협 고유명사는 반드시 실제 지도로 정확도 우선.
+                const CHOKEPOINT_NAMES = /(호르무즈|말라카|수에즈|바브[\s·]?엘[\s·]?만데브|파나마 운하|보스포루스|지브롤터|다르다넬스|덴마크 해협|베링 해협|대한 해협|쓰시마 해협)/;
+                const CHOKEPOINT_CONCEPT = /(초크\s?포인트|choke\s?point|목줄|급소|숨통|관문|길목|병목|지정학적 급소|중동의 목줄|에너지 통로|세계의 관문)/;
                 jsonObj.scenes.forEach(s => {
                     if (s.isMapScene === true) return;
                     if (typeof s.aiPrompt !== 'string') return;
@@ -6111,12 +6117,18 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                     // 나레이션에 지리 신호 + 공간 표현 (넓이·위치·범위)
                     const narr = s.narration || '';
                     const hasMapNar = MAP_NAR_STRONG.test(narr) && /(펼쳐지|범위|사이|둘러싸|걸쳐|포진|위치|한복판|주변)/.test(narr);
+                    // 초크포인트 단독 승격: 고유명사 단독 OR 초크포인트 개념어 단독
+                    const hasChokepoint = CHOKEPOINT_NAMES.test(narr) || CHOKEPOINT_CONCEPT.test(narr);
 
-                    if (hasMapPrompt || hasMapNar) {
+                    if (hasMapPrompt || hasMapNar || hasChokepoint) {
                         s.isMapScene = true;
                         if (!Array.isArray(s.mapLabels)) s.mapLabels = [];
+                        // 초크포인트 장면은 D_chokepoint 스타일 강제 (근접 초크포인트 지도)
+                        if (hasChokepoint) {
+                            s.nanobanaStyle = 'D_chokepoint';
+                        }
                         // Gemini가 stock으로 찍었어도 지도 장면이면 bgSource를 ai로 교체
-                        if (hasMapNar && s.bgSource !== 'ai') {
+                        if ((hasMapNar || hasChokepoint) && s.bgSource !== 'ai') {
                             s.bgSource = 'ai';
                             // 2026-04-24: 한글 나레이션 원문 삽입 금지 (프리픽이 한글 본문 처리 못 함)
                             if (!s.aiPrompt) s.aiPrompt = 'Map illustration focused on the geographic regions described in the scene.';
