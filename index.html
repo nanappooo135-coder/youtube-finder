@@ -7605,6 +7605,97 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
             if (el) el.innerHTML = '';
         }
 
+        // ═══ 📊🗺️ 나노바나나2 차트/지도 프롬프트 템플릿 (프리픽 2K 전용) ═══
+        // 2026-04-24 v11: 프리픽 나노바나나2 2K는 한글 렌더링이 정확해서
+        //   셀팜 정밀모드급 품질을 비용 0원으로 달성 가능.
+        //   차트 5종 + 지도 5종, 장면 맥락에 따라 자동 라우팅.
+        const NANOBANA_CHART_STYLES = {
+            'A_editorial':  { name: 'A. Editorial (기본)',    desc: '일반 분석 — Economist/WSJ' },
+            'B_bloomberg':  { name: 'B. Dark Bloomberg',       desc: '위기·몰락·봉쇄 임팩트' },
+            'C_vintage':    { name: 'C. Vintage Newspaper',    desc: '역사·과거 데이터' },
+            'D_minimalist': { name: 'D. Modern Minimalist',    desc: '개념·교육·중립' },
+            'E_pictogram':  { name: 'E. Pictogram Icon',       desc: '사회·인구·소비' }
+        };
+        const NANOBANA_MAP_STYLES = {
+            'A_editorial':    { name: 'A. Modern Editorial (기본)', desc: 'Economist/FT 스타일' },
+            'B_intelligence': { name: 'B. Dark Intelligence',         desc: '군사·전략·위기' },
+            'C_route':        { name: 'C. Shipping Route Flow',      desc: '무역·항로·물류' },
+            'D_chokepoint':   { name: 'D. Strategic Chokepoint',     desc: '해협·좁은 지점 포커스' },
+            'E_vintage':      { name: 'E. Vintage Atlas',            desc: '식민·제국·냉전 역사' }
+        };
+        function _pickNanobanaChartStyle(narr) {
+            if (/몰락|붕괴|파산|실업|침체|공황|위기|파탄|봉쇄|차단|폭락|공격|위협|절반.*날아/.test(narr)) return 'B_bloomberg';
+            if (/\d{3,4}년|과거|옛날|그 시절|당시|19세기|20세기|18세기|수십 년 전/.test(narr)) return 'C_vintage';
+            if (/인구|가구|국민|소비자|\d+\s*명당|세대|가족 수/.test(narr)) return 'E_pictogram';
+            if (/개념|구조|원리|방식|시스템|메커니즘|정의|의미/.test(narr)) return 'D_minimalist';
+            return 'A_editorial';
+        }
+        function _pickNanobanaMapStyle(narr) {
+            if (/군사|전략|봉쇄|작전|공격|기지|위협|반군|드론|미사일|함대/.test(narr)) return 'B_intelligence';
+            if (/항로|무역|운송|화물|공급망|컨테이너|수출|수입|해운|선박/.test(narr)) return 'C_route';
+            if (/(\d+\s*km|좁은|포인트|길목|급소|병목)|해협\s*(?:의|은|이|가)\s*(?:폭|넓이)/.test(narr)) return 'D_chokepoint';
+            if (/식민|제국|냉전|과거 영토|옛 영토|\d{3,4}년대 지도/.test(narr)) return 'E_vintage';
+            return 'A_editorial';
+        }
+        function _buildNanobanaChartPrompt(s) {
+            const narr = s.narration || '';
+            const title = (s.textOverlay && s.textOverlay.length <= 40)
+                ? s.textOverlay
+                : narr.split(/[.!?]/)[0].slice(0, 50);
+            const style = s.nanobanaStyle || _pickNanobanaChartStyle(narr);
+            const data = narr.replace(/"/g, "'").slice(0, 400);
+            const styleBlocks = {
+                'A_editorial': 'warm cream beige background (#F5EFD9) with subtle paper grain. Title in bold black Korean sans-serif at top center. Dark charcoal gray (#3A3A3A) as primary color; ONE saturated red (#C62828) accent for emphasis. Light gray dashed gridlines. Minimal financial editorial aesthetic (The Economist/WSJ feature).',
+                'B_bloomberg': 'deep dark navy background (#0A1929) with subtle digital noise. Title in bold white Korean sans-serif at top center with subtle teal glow. Muted steel gray (#3D4A5C) primary with thin teal outlines; ONE saturated amber (#FFB800) accent. Thin teal dashed gridlines. Bloomberg terminal dark mode aesthetic.',
+                'C_vintage': 'aged cream newspaper paper background (#E8DFC8) with paper texture and subtle yellowing. Title in bold black Korean SERIF font (Nanum Myeongjo style) at top center. Ink black (#1A1A1A) primary; deep vermilion red (#A01818) accent like stamp ink. Fine black hairline gridlines. 1970s NYT editorial aesthetic.',
+                'D_minimalist': 'pure off-white background (#FAFAFA) with ample whitespace. Title in medium weight modern Korean sans-serif at top center. Pale warm gray (#C8C8C0) primary; ONE coral (#E85A5A) accent. Almost invisible hairline gridlines. Modern minimalist educational aesthetic (FT online/Kurzgesagt-lite).',
+                'E_pictogram': 'warm cream beige background (#F5EFD9) with subtle paper grain. Title in bold black Korean sans-serif at top center. Dark charcoal gray (#3A3A3A) primary; ONE saturated red (#C62828) accent. Central visualization: pictogram grid of flat stylized icons (people, ships, coins — choose icons that match the narration subject). Hand-drawn thick ink outline style, simple flat editorial cartoon (NYT op-ed feel).'
+            };
+            const styleBlock = styleBlocks[style];
+            return `A cinematic animation of a chart on ${styleBlock} Title: "${title}". Data context (extract values and categories from this narration, render them accurately as Korean labels and numbers — do NOT invent extra data): "${data}". Render EXACTLY the chart type the data supports (2 numbers = 2 bars; ratio = donut; years = line; list = ranking). Do NOT mix chart types. Do NOT invent fake Korean category names. Bold Korean Hangul labels rendered precisely — all Korean text from the narration must appear exactly as written, no invented words. Smooth 1.5-second growth animation, then hold steady. No camera movement. 60fps. Cinematic 16:9. Bottom right corner: small semi-transparent label "출처: 본 영상 조사" in 10pt light gray Korean sans-serif.`;
+        }
+        function _buildNanobanaMapPrompt(s) {
+            const narr = s.narration || '';
+            const style = s.nanobanaStyle || _pickNanobanaMapStyle(narr);
+            const mapLabels = Array.isArray(s.mapLabels) && s.mapLabels.length > 0
+                ? s.mapLabels.filter(l => typeof l === 'string').join(', ')
+                : '';
+            const title = (s.textOverlay && s.textOverlay.length <= 40)
+                ? s.textOverlay
+                : narr.split(/[.!?]/)[0].slice(0, 50);
+            const data = narr.replace(/"/g, "'").slice(0, 400);
+            const styleBlocks = {
+                'A_editorial': 'A cinematic modern editorial infographic map (The Economist/FT/Bloomberg style). Warm off-white background (#FAFAF5). Ocean in solid deep teal blue (#1F4E5F). Land masses in soft light neutral gray (#E8E5DD) with crisp thin dark country borders. The target region highlighted in BOLD SATURATED RED (#C62828) pure solid fill. All other land stays neutral gray. Korean labels in bold modern sans-serif (Noto Sans KR Bold). Smooth 2-second zoom to focus region, then hold. No camera movement after zoom.',
+                'B_intelligence': 'A cinematic strategic intelligence briefing map on deep dark navy background (#0A1929) with subtle digital grid overlay. Ocean in darker navy (#050F1E). Country outlines in thin cool teal (#2EB8B8) glowing 1px strokes with faint outer glow. Land fill in dark desaturated charcoal (#1A2332). Target region glows with amber-red (#FF6B35) fill. Korean labels in bold white sans-serif. Pulsing red marker on key points. Subtle sweep scan line animation from left to right over 2 seconds, then steady glow hold. Tactical military briefing aesthetic (Pentagon situation room).',
+                'C_route': 'A cinematic modern route flow map on soft cream off-white background (#FAFAF5). Ocean in solid deep teal (#1F4E5F). Land in warm neutral tan (#D9D0BC). Animated curved thick lines (4px) draw smoothly showing shipping/trade routes — primary route in saturated red (#C62828), alternate in deep navy (#1A2F4A). Strategic chokepoints marked with small red pulsing pins. Korean route labels in bold sans-serif. 3-second route drawing animation then hold. Modern trade publication aesthetic (WSJ/Bloomberg).',
+                'D_chokepoint': 'A cinematic close-up strategic map view on dark charcoal background (#0D1B2A). Top-down satellite perspective tightly focused on the key geographic feature the narration describes. Ocean in deep dark teal (#0F3A4A). Land in warm dark earth brown (#3A2A1E). Target feature highlighted with thin red outline (#C62828) and dashed red measuring line where distances are mentioned. Korean region labels in bold white. Small white compass rose in top left. Smooth 2-second slow zoom tightening onto the feature, then hold with subtle red pulse on key measurement.',
+                'E_vintage': 'A cinematic vintage-influenced but clean readable atlas map on aged parchment cream background (#E8DFC8) with subtle yellowing and fine paper grain. Ocean in muted blue-green (#6B9B8A). Land in warm beige (#D9C7A6) with dark brown borders (#5C4A32). Target region highlighted in deep vermilion (#A01818). Korean labels in bold modern sans-serif (NOT handwritten, NOT medieval). Small decorative compass rose in top left. Thin elegant border frame. Smooth 2-second fade-in with subtle page texture settling. 1960s-70s National Geographic/Time magazine aesthetic (modernized, NOT ancient).'
+            };
+            const styleBlock = styleBlocks[style];
+            const labelHint = mapLabels
+                ? `Render EXACTLY these Korean region labels and no others: ${mapLabels}. Do NOT add extra country names.`
+                : 'Render ONLY the country, region, sea, strait, or city names explicitly mentioned in the narration below. Do NOT add extra countries.';
+            return `${styleBlock} Map title (if shown): "${title}". Narration context (extract geography from this — countries, seas, straits, distances — and render them accurately): "${data}". ${labelHint} All labels in Korean Hangul script, bold modern sans-serif typography, clearly readable on mobile. NO decorative icons (oil barrels, ships, coins) unless the narration explicitly mentions them. NO fake or invented Korean words — only real place names. Cinematic 16:9, 60fps. Bottom right corner: small semi-transparent label "출처: 지리정보시스템" in 10pt light gray Korean sans-serif.`;
+        }
+        function _buildNanobanaPrompt(s) {
+            const isMap = s.isMapScene === true;
+            const isChart = s.isInfographicScene === true;
+            if (!isMap && !isChart) return null;
+            if (isMap) {
+                return { kind: 'map', style: s.nanobanaStyle || _pickNanobanaMapStyle(s.narration || ''), prompt: _buildNanobanaMapPrompt(s), stylesMap: NANOBANA_MAP_STYLES };
+            } else {
+                return { kind: 'chart', style: s.nanobanaStyle || _pickNanobanaChartStyle(s.narration || ''), prompt: _buildNanobanaChartPrompt(s), stylesMap: NANOBANA_CHART_STYLES };
+            }
+        }
+        // 사용자가 드롭다운으로 스타일 변경 시 호출
+        window._setNanobanaStyle = function(sceneId, styleKey) {
+            const scenes = window._sceneGuideData || [];
+            const scene = scenes.find(x => x.id === sceneId);
+            if (!scene) return;
+            scene.nanobanaStyle = styleKey;
+            _renderSceneGuideFromState();
+        };
+
         function _renderSceneGuide(scenes) {
             window._sceneGuideData = scenes;
             // 전체 대본 맥락 추출 (주제·국가·시대 등)
@@ -8263,6 +8354,36 @@ ${sceneList}
                 rows += '</div>';
             }
             rows += '</div>';
+
+            // 📊🗺️ 나노바나나2 차트/지도 프롬프트 (프리픽 2K 전용, 한글 렌더 정확)
+            const nanobana = _buildNanobanaPrompt(s);
+            if (nanobana) {
+                const kindLabel = nanobana.kind === 'map' ? '🗺️ 지도' : '📊 차트';
+                const accent = nanobana.kind === 'map' ? '#1c7ed6' : '#7c3aed';
+                rows += '<div style="margin-top:6px;padding:8px 10px;background:#f8f9ff;border-radius:6px;border:2px solid ' + accent + ';">';
+                rows += '<div style="font-weight:700;font-size:0.78rem;color:' + accent + ';margin-bottom:4px;">';
+                rows += kindLabel + ' <span style="background:' + accent + ';color:#fff;padding:1px 6px;border-radius:3px;font-size:0.7rem;margin-left:4px;">나노바나나2 2K</span>';
+                rows += ' <span style="color:#868e96;font-weight:400;font-size:0.72rem;">프리픽 전용 · 비용 0원 · 한글 정확</span>';
+                rows += '</div>';
+                // 스타일 드롭다운
+                rows += '<div style="margin-top:4px;margin-bottom:6px;font-size:0.72rem;">';
+                rows += '<label style="color:#495057;">스타일: </label>';
+                rows += '<select onchange="_setNanobanaStyle(' + s.id + ', this.value)" style="padding:2px 4px;font-size:0.72rem;border:1px solid ' + accent + ';border-radius:3px;">';
+                Object.entries(nanobana.stylesMap).forEach(([key, meta]) => {
+                    const selected = key === nanobana.style ? ' selected' : '';
+                    rows += '<option value="' + key + '"' + selected + '>' + _escapeHtml(meta.name) + ' — ' + _escapeHtml(meta.desc) + '</option>';
+                });
+                rows += '</select>';
+                rows += '</div>';
+                // 프롬프트 미리보기 (접기)
+                const preview = nanobana.prompt.length > 150 ? nanobana.prompt.substring(0, 150) + '...' : nanobana.prompt;
+                rows += '<div style="font-size:0.72rem;color:#495057;line-height:1.4;margin-bottom:6px;background:#fff;padding:6px;border-radius:3px;">';
+                rows += _escapeHtml(preview);
+                rows += '</div>';
+                rows += '<button onclick="_copyText(' + "'" + _jsEscape(nanobana.prompt) + "'" + ', this)" style="padding:4px 12px;font-size:0.75rem;border:1px solid ' + accent + ';background:' + accent + ';color:#fff;border-radius:3px;cursor:pointer;font-weight:600;">📋 프롬프트 전체 복사</button>';
+                rows += '<div style="font-size:0.7rem;color:#868e96;margin-top:4px;">↳ 프리픽 → 나노바나나2 → 2K 해상도 → 위 프롬프트 복붙</div>';
+                rows += '</div>';
+            }
 
             // 🎬 그록 영상화 프롬프트 (AI 이미지 → 그록 image-to-video)
             if (s.needsGrokVideo && s.grokVideoPrompt) {
