@@ -3694,9 +3694,21 @@ ${script}`;
 **E. 유물·기념물**
 - 동상, 궁전, 상징물, 공식 휘장
 
+**F. 한국 현대 대기업·CEO·산업시설 (2026-04-24 추가 — 뉴스 사진 풍부, AI보다 압도적)**
+- **그룹·본사**: 삼성전자/삼성 본사, SK하이닉스, 현대차/현대자동차, LG전자, LG디스플레이, 포스코, 한화, 롯데, CJ, GS, 기아차 → `needRealImage:true`
+- **CEO·총수**: 이재용, 최태원, 정의선, 구광모, 신동빈, 김승연, 허태수, 이해진, 조원태 → `needRealImage:true` + 한글 이름의 영문 풀네임 검색 키워드
+- **산업 시설**: 반도체 공장·클린룸·웨이퍼·파운드리·조립 라인·전장 공장·배터리 공장 → `needRealImage:true`
+- **노조·시위·파업** (구체 기업 + 현장): 삼성 노조 총파업, 현대차 노조 파업 → `needRealImage:true` + 뉴스 현장 사진
+- 예:
+  - "삼성전자 본사" → "Samsung Electronics headquarters Suwon building photo"
+  - "SK하이닉스 클린룸" → "SK Hynix semiconductor fab cleanroom photo"
+  - "이재용 회장" → "Lee Jae-yong Samsung chairman photo"
+  - "삼성 노조 파업" → "Samsung labor union strike rally news photo"
+
 **🚫 실사 누락 예방 체크 (대본 처리 시 반드시 검색):**
 - "구축함·전투기·항모·잠수함·미사일·전차" 단어 있으면 → **반드시 needRealImage:true**
 - "고유명 선박·장비명" 있으면 → **반드시 needRealImage:true**
+- **한국 대기업 구체 본사·공장·CEO** 언급 시 → **반드시 needRealImage:true**
 - 대본 전체에서 이런 키워드가 등장하는 **모든 장면**에 적용
 
 ### 🔍 realSearchKeyword 작성 규칙 (구글 이미지 매칭) — 2026-04-23 대폭 강화
