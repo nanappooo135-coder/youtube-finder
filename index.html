@@ -6165,6 +6165,33 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                 // 지도 아닐 때만 태그. 그림은 어두운 매트 페인팅(Dishonored/Frostpunk 톤) 스타일로.
                 const HISTORICAL_STRONG = /\d{3,4}년(?!대)|19세기|20세기|18세기|17세기|16세기|15세기|중세|고대|조선|고려|신라|백제|고구려|로마제국|명나라|청나라|한나라|당나라|원나라|송나라|에도|메이지|다이쇼|산업혁명|대공황|세계대전|한국전쟁|베트남전|냉전|석유파동|브레튼우즈|금본위|아편전쟁|나폴레옹|링컨|처칠|루즈벨트|스탈린|세종|정조|흥선대원군|이성계|고종|광해군|영조/;
                 const HISTORICAL_STYLE_PREFIX = 'Semi-realistic dark painterly digital illustration, style of muted concept art for atmospheric historical games (Dishonored, The Order 1886, Frostpunk, A Plague Tale). NOT fantasy, NOT anime, NOT photorealistic. Muted color palette, visible brushwork and matte painting texture on all surfaces, realistic human proportions and serious documentary-like facial expressions, deep teal and umber shadows, grounded historical atmosphere, no magical glow, no high-saturation fantasy colors, painterly matte finish, historically accurate costume and props, cinematic 16:9. ';
+                // 2026-04-24 v3: 역사 장면 중복 이미지 위험 방지
+                // 과거: 모든 역사 장면에 동일 generic HISTORICAL_STYLE_PREFIX만 붙어서
+                //       Gemini가 장면별 구체 프롬프트를 안 만들면 AI가 5개 장면 전부 똑같은 그림 생성
+                // 수정: narration에서 핵심 명사(연도·지명·인물·사물)를 자동 추출해 SUBJECT: 라인 삽입
+                function _extractHistoricalSubject(narr) {
+                    const tokens = [];
+                    // 연도 (절대)
+                    const year = narr.match(/\d{3,4}년(?!대)/);
+                    if (year) tokens.push(year[0]);
+                    // 연대
+                    const decade = narr.match(/\d+년대/);
+                    if (decade) tokens.push(decade[0]);
+                    // 장소 (한국 지명)
+                    const place = narr.match(/(평양|서울|부산|대구|인천|광주|요덕|개천|화성|북창|청진|함경남도|함경북도|평안북도|평안남도|강원도|경기도|경상도|전라도|충청도|황해도)/);
+                    if (place) tokens.push(place[0]);
+                    // 인물 (역사 인물)
+                    const person = narr.match(/(강철환|김일성|김정일|김정은|박정희|이승만|세종|정조|영조|이성계|흥선대원군|스탈린|히틀러|마오쩌둥|레닌|처칠|루즈벨트|나폴레옹)/);
+                    if (person) tokens.push(person[0]);
+                    // 사물·소품 (역사 장면 흔한 소재)
+                    const objects = narr.match(/(트럭|기차|철조망|수용소|감시탑|공장|광산|배|비행기|총|칼|책|문서|편지|사진|깃발)/g);
+                    if (objects) tokens.push(...objects.slice(0, 2));
+                    // 상황 동사
+                    const action = narr.match(/(끌려가|실려|쫓겨나|도망치|탈출|처형|숙청|투옥|연행|이송|행진)/);
+                    if (action) tokens.push(action[0]);
+                    return [...new Set(tokens)].slice(0, 5);
+                }
+
                 jsonObj.scenes.forEach(s => {
                     if (s.isMapScene === true) return;
                     if (s.isListGridScene === true) return; // 2026-04-23: 나열 장면은 역사 prefix 스킵 (스타일 충돌)
@@ -6173,7 +6200,12 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                     if (!HISTORICAL_STRONG.test(narr)) return;
                     s.isHistoricalScene = true;
                     if (!_hasAnyStylePrefix(s.aiPrompt)) {
-                        s.aiPrompt = HISTORICAL_STYLE_PREFIX + s.aiPrompt;
+                        // 장면별 핵심 명사를 SUBJECT 라인으로 주입 (중복 이미지 방지)
+                        const subjectTokens = _extractHistoricalSubject(narr);
+                        const subjectLine = subjectTokens.length > 0
+                            ? 'SCENE SUBJECT (render these specific elements): ' + subjectTokens.join(', ') + '. '
+                            : '';
+                        s.aiPrompt = HISTORICAL_STYLE_PREFIX + subjectLine + s.aiPrompt;
                     }
                 });
 
@@ -6406,7 +6438,10 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                 // 레퍼런스 복사 금지 원칙 (feedback_reference_copy_ban.md) 집행
                 // 2026-04-24 확장: 전면 블랙리스트 — 유튜브 영어 에디토리얼에서 남발되는 뻔한 은유 전부 차단
                 // 거미줄/그물/덫/사슬/저울/청구서/시계추/깨진유리/불꽃 등
-                const SYMBOLIC_CLICHE_BG = /(domino(es)?\s+(falling|chain)|chess\s+(piece|board|game)|interlocking\s+gears|spinning\s+gears|scales?\s+of\s+justice|family\s+tree\s+(with\s+)?red\s+x|red\s+x\s+on\s+family\s+tree|spider\s*web(\s+spreading|\s+trap)?|tangled\s+web|cobweb\s+spreading|fishing\s+net\s+trap|iron\s+chains?\s+breaking|broken\s+chains?|pendulum\s+swinging|hourglass\s+sand|shattered\s+glass\s+metaphor|candle\s+flame\s+fading|phoenix\s+rising|cracked\s+mirror|bleeding\s+wallet|empty\s+wallet\s+symbolic|stack\s+of\s+bills\s+symbolic|house\s+of\s+cards|tightrope\s+walker\s+metaphor|puppet\s+strings|iceberg\s+hidden|tip\s+of\s+iceberg\s+metaphor)/i;
+                // 2026-04-24 v3: 가계도 혈통/핏줄 번짐 semantic 변형 추가
+                //   "family tree + red line/veins/blood/spreading/tainted/connecting all members" 등
+                //   연좌제·혈통·3대 처벌 주제 대본에서 Gemini가 매번 시도하는 클리셰
+                const SYMBOLIC_CLICHE_BG = /(domino(es)?\s+(falling|chain)|chess\s+(piece|board|game)|interlocking\s+gears|spinning\s+gears|scales?\s+of\s+justice|family\s+tree\s+(with\s+)?red\s+x|red\s+x\s+on\s+family\s+tree|family\s+tree[^.]{0,120}(red\s+(line|vein|thread|rope|blood|taint)|veins?\s+of\s+(red|blood)|blood(\s+spreading|\s+flowing)|tainted\s+with|connecting\s+all\s+(family|members)|ominous\s+(line|red|connection))|(red\s+(line|vein|thread|rope|blood|taint)|veins?\s+of\s+(red|blood)|blood(\s+spreading|\s+flowing)|tainted\s+with|connecting\s+all\s+(family|members)|ominous\s+(line|red|connection))[^.]{0,120}family\s+tree|spider\s*web(\s+spreading|\s+trap)?|tangled\s+web|cobweb\s+spreading|fishing\s+net\s+trap|iron\s+chains?\s+breaking|broken\s+chains?|pendulum\s+swinging|hourglass\s+sand|shattered\s+glass\s+metaphor|candle\s+flame\s+fading|phoenix\s+rising|cracked\s+mirror|bleeding\s+wallet|empty\s+wallet\s+symbolic|stack\s+of\s+bills\s+symbolic|house\s+of\s+cards|tightrope\s+walker\s+metaphor|puppet\s+strings|iceberg\s+hidden|tip\s+of\s+iceberg\s+metaphor)/i;
                 const SYMBOLIC_CLICHE_NARR = /(도미노처럼|체스판처럼|톱니처럼|저울처럼|가계도처럼|거미줄처럼|그물처럼|덫처럼|사슬처럼|빙산의\s*일각처럼|꼭두각시처럼|카드로\s*쌓은\s*집처럼|화약고처럼)/;
                 jsonObj.scenes.forEach(s => {
                     const narr = s.narration || '';
@@ -6422,7 +6457,7 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                     }
                     // AI 프롬프트에서 클리셰 구문 제거 (프롬프트 자체는 유지, 클리셰 표현만 문장 삭제)
                     if (typeof s.aiPrompt === 'string' && SYMBOLIC_CLICHE_BG.test(s.aiPrompt)) {
-                        s.aiPrompt = s.aiPrompt.replace(/[^.]*\b(domino(es)?|chess|interlocking gears|scales? of justice|family tree.*red x|red x.*family tree|spider web|cobweb|tangled web|fishing net trap|iron chains? breaking|broken chains?|pendulum swinging|hourglass|shattered glass metaphor|candle flame fading|phoenix rising|cracked mirror|bleeding wallet|house of cards|puppet strings|iceberg hidden|tip of iceberg)[^.]*\./gi, '').trim();
+                        s.aiPrompt = s.aiPrompt.replace(/[^.]*\b(domino(es)?|chess|interlocking gears|scales? of justice|family tree[^.]*(red x|red line|red vein|blood spreading|tainted|ominous line|connecting all)|(red x|red line|red vein|blood spreading|tainted|ominous line|connecting all)[^.]*family tree|spider web|cobweb|tangled web|fishing net trap|iron chains? breaking|broken chains?|pendulum swinging|hourglass|shattered glass metaphor|candle flame fading|phoenix rising|cracked mirror|bleeding wallet|house of cards|puppet strings|iceberg hidden|tip of iceberg)[^.]*\./gi, '').trim();
                         if (!s.aiPrompt) s.aiPrompt = 'Bold modern editorial illustration of the scene concept. Cream paper background, thick black ink outlines, saturated solid colors (deep red / navy / ocher), strong composition. NOT soft watercolor, NOT pastel. Cinematic 16:9.';
                         s.clicheScrubbed = true;
                     }
@@ -8397,18 +8432,20 @@ ${sceneList}
             if (/map|지도|국경|영토|내몽골|외몽골|완충지대|geopolitical|border/.test(p) ||
                 /국경|내몽골|외몽골|완충지대|제3의 이웃|끼여/.test(narr)) return '일반 — 지도 (Paper Cut)';
 
-            // 2026-04-24: Pattern 8 — 인포그래픽 과탐 축소
-            // 과거: prompt에 "infographic" 단어가 포함되면 무조건 "인포그래픽" 라벨
-            //       → generic fallback ("sophisticated editorial infographic style") 때문에 모든 장면이 인포그래픽으로 표시
-            // 수정: (a) "infographic"만으론 약함 — chart/bar/graph/data 같은 차트 전용 키워드 공존해야만 인포그래픽
-            //       (b) 이미 역사·은유·나열 카테고리로 태그된 장면은 먼저 체크
-            // [일반] 역사 재현 → Cinematic / 매트 페인팅 스타일 (먼저 체크)
+            // 2026-04-24 v3: Pattern 8 확장 — symbolic 우선순위 상향, 인포그래픽 과탐 축소
+            // (도장/서류/인장/낙인·봉인 같은 오브젝트 중심 상징 장면이 "인물" 라벨로 오분류되던 버그 수정)
+
+            // [일반] 상징 오브젝트 — 도장·서류·낙인·봉인·인장·표식 (person·portrait보다 먼저 체크)
+            if (/rubber stamp|ink stamp|official seal|wax seal|brand(ing)? iron|mark(ing)?\s+stamp|classification mark|document.*stamped|stamped.*document/i.test(p) ||
+                /(반동|낙인|도장|봉인|인장|표식|찍혀|찍히는)/.test(narr)) return '일반 — 은유·상징 (Editorial)';
+
+            // [일반] 역사 재현 → Cinematic / 매트 페인팅 스타일
             if (/historical|dynasty|ancient|19th|medieval|painting style|matte painting|dishonored|frostpunk/i.test(p) ||
                 /청나라|조선|고려|신라|로마|산업혁명|세계대전|\d{3,4}년/.test(narr)) return '일반 — 역사 재현 (매트페인팅)';
 
-            // [일반] 은유 → Editorial / 수채 스타일
-            if (/symbolic|metaphor|allegorical|hand-painted symbolic|editorial watercolor/i.test(p) ||
-                /씨를 말|목줄|근육|뿌리|역기|손아귀|숨줄|사슬|쇠사슬|도장을|금이 가|깨진 유리|가면|거울|덫|올가미/.test(narr)) return '일반 — 은유 (Editorial)';
+            // [일반] 은유 → Editorial 스타일
+            if (/symbolic|metaphor|allegorical|hand-painted symbolic|editorial watercolor|bold modern editorial/i.test(p) ||
+                /씨를 말|목줄|근육|뿌리|역기|손아귀|숨줄|사슬|쇠사슬|금이 가|깨진 유리|가면|거울|덫|올가미/.test(narr)) return '일반 — 은유 (Editorial)';
 
             // [일반] 인포그래픽 → 차트 전용 키워드 공존 시에만
             const hasChartPrompt = /\b(bar chart|pie chart|donut chart|line graph|area chart|ranking chart|comparison chart|flat clean infographic)\b/i.test(p);
@@ -8952,9 +8989,11 @@ ${sceneList}
                 // 2026-04-23: 프롬프트 비대화 방지 — 핵심 규칙은 짧게, 국가 목록은 지도·국가 비교 장면에만
                 koreanEnforce += ' Use bold Korean typography (Noto Sans KR). All characters perfectly formed, NO garbled text, NO invented/fake characters, NO mixed scripts. Korean text dominant. 🚫 NO English/Latin alphabet anywhere (titles/labels/captions/subtitles/footers). NO bilingual text. NO HUD readouts, NO monitor overlays, NO tech status boxes in English ("SCANNING", "TARGET", etc). Exception: numbers 0-9 and unit symbols (%, $, km, kg, m) allowed. 🛑 NO fake/invented Korean words — only real Korean words that exist. 🚫 NO DUPLICATE LABELS — each Korean word appears EXACTLY ONCE. NEVER repeat the same word in multiple positions. For split-screen/multi-panel: each panel has ONE label at TOP only, bottom area is illustration only (no text). Duplicated labels = FAILED output.';
 
-                // 국가·지명이 나오는 장면에만 구체 국가명 리스트 추가 (지도·국가 비교 등)
-                const needsCountryList = /(지도|국가|나라|USA|러시아|중국|일본|이란|이스라엘|북한|남한|미국|사우디|유럽|중동|아프리카)/.test(narr)
-                    || (s.aiPrompt && /(map|country|flag|continent|region|border)/i.test(s.aiPrompt));
+                // 2026-04-24 v3: 국가명 리스트 트리거 조건 엄격화
+                // 과거: narration에 "북한" "중국" 한 단어만 있어도 전 장면에 국가명 47개 리스트 첨부 → 프롬프트 뻥튀기
+                // 수정: 진짜 지도/국가비교 장면에만 (isMapScene 또는 AI 프롬프트에 map/flag/country border 키워드)
+                const needsCountryList = s.isMapScene === true ||
+                    (s.aiPrompt && /(map|flag(\s|s\b)|country\s+(border|label|name)|continent|region\s+label|atlas|geographic)/i.test(s.aiPrompt));
                 if (needsCountryList) {
                     koreanEnforce += ' 📍 Allowed Korean country names: 미국·중국·일본·한국·북한·러시아·독일·프랑스·영국·이탈리아·스페인·네덜란드·벨기에·스웨덴·노르웨이·덴마크·핀란드·폴란드·오스트리아·스위스·우크라이나·튀르키예·이란·이라크·이스라엘·사우디아라비아·UAE·오만·카타르·쿠웨이트·예멘·이집트·소말리아·남아공·인도·파키스탄·아프가니스탄·태국·베트남·인도네시아·필리핀·싱가포르·대만·홍콩·몽골·브라질·아르헨티나·멕시코·캐나다·호주. If unsure about Korean spelling, use flag icon only. NEVER invent names like "유일·비울·공상·조묵·머닌".';
                 }
