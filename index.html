@@ -8477,8 +8477,13 @@ ${sceneList}
                 /(반동|낙인|도장|봉인|인장|표식|찍혀|찍히는)/.test(narr)) return '일반 — 은유·상징 (Editorial)';
 
             // [일반] 역사 재현 → Cinematic / 매트 페인팅 스타일
+            // 2026-04-24 v4: 미래 연도(2030년·2040년 등)는 역사 아님 — 현재 연도 기준 과거 연도만
+            const _subYears = Array.from(narr.matchAll(/(\d{3,4})년(?!대)/g)).map(m => parseInt(m[1], 10));
+            const _subCur = new Date().getFullYear();
+            const _hasSubPastYear = _subYears.some(y => y < _subCur);
             if (/historical|dynasty|ancient|19th|medieval|painting style|matte painting|dishonored|frostpunk/i.test(p) ||
-                /청나라|조선|고려|신라|로마|산업혁명|세계대전|\d{3,4}년/.test(narr)) return '일반 — 역사 재현 (매트페인팅)';
+                /청나라|조선|고려|신라|로마|산업혁명|세계대전/.test(narr) ||
+                _hasSubPastYear) return '일반 — 역사 재현 (매트페인팅)';
 
             // [일반] 은유 → Editorial 스타일
             if (/symbolic|metaphor|allegorical|hand-painted symbolic|editorial watercolor|bold modern editorial/i.test(p) ||
@@ -9077,7 +9082,12 @@ ${sceneList}
             // 수정: 나레이션 맥락에 따라 (감정·역사·일반) 서로 다른 폴백 라우팅
 
             // 역사 재현 (연도 + 인물/장소) → 어두운 매트 페인팅
-            const hasYear = /\d{3,4}년|19세기|20세기|18세기|17세기|16세기|15세기|중세|고대/.test(narr);
+            // 2026-04-24 v4: 미래 연도 오분류 차단 — 현재 연도 이후는 역사 아님
+            const _curYear = new Date().getFullYear();
+            const _years = Array.from(narr.matchAll(/(\d{3,4})년(?!대)/g)).map(m => parseInt(m[1], 10));
+            const hasPastYear = _years.some(y => y < _curYear);
+            const hasCenturyOrEra = /19세기|20세기|18세기|17세기|16세기|15세기|중세|고대/.test(narr);
+            const hasYear = hasPastYear || hasCenturyOrEra;
             const hasHistEra = /조선|고려|신라|백제|고구려|로마제국|명나라|청나라|한나라|당나라|원나라|송나라|에도|메이지|다이쇼|산업혁명|세계대전|한국전쟁|베트남전|냉전|석유파동|아편전쟁|나폴레옹|링컨|처칠|루즈벨트/.test(narr);
             if (hasYear || hasHistEra) {
                 return 'Semi-realistic dark painterly digital illustration of the historical scene described in the scene context, in the style of muted concept art for atmospheric historical games (Dishonored, Frostpunk, A Plague Tale). Muted color palette, visible brushwork and matte painting texture, realistic human proportions, deep teal and umber shadows, grounded historical atmosphere, cinematic 16:9.';
