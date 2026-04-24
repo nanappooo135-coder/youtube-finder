@@ -7373,9 +7373,21 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
             imgText += '**절대 이 번호 라벨을 이미지에 렌더링하지 마세요.** 라벨 다음 줄부터가 실제 이미지 프롬프트입니다.\n\n';
             imgText += '---\n\n';
             aiScenes.forEach(s => {
-                const processed = _enforceKoreanInAiPrompt(_stripBrandNames(s.aiPrompt), s);
-                imgText += '### ' + s.id + '번 장면\n';
-                imgText += processed + '\n\n';
+                // 2026-04-24: 차트/지도 장면은 나노바나나2 2K 전용 프롬프트 사용
+                //   (기존 범용 프롬프트 + _enforceKoreanInAiPrompt 조합은 너무 길고
+                //    style 지시가 중복·충돌해서 한글 타이틀이 깨지는 버그 발생)
+                const nb = (typeof _buildNanobanaPrompt === 'function') ? _buildNanobanaPrompt(s) : null;
+                let prompt;
+                if (nb) {
+                    const styleMeta = nb.stylesMap[nb.style];
+                    const styleLabel = styleMeta ? (styleMeta.name + ' — ' + styleMeta.desc) : nb.style;
+                    imgText += '### ' + s.id + '번 장면 [나노바나나2 2K · ' + styleLabel + ']\n';
+                    prompt = nb.prompt;
+                } else {
+                    imgText += '### ' + s.id + '번 장면\n';
+                    prompt = _enforceKoreanInAiPrompt(_stripBrandNames(s.aiPrompt), s);
+                }
+                imgText += prompt + '\n\n';
                 imgText += '---\n\n';
             });
             imgOut.value = imgText.trim();
