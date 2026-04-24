@@ -10341,7 +10341,20 @@ ${sceneList}
         }
 
         function _jsEscape(s) {
-            return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n');
+            // 2026-04-24: HTML 속성(onclick="...") 안의 JS 문자열('...')에 들어갈 문자열.
+            //   - 백슬래시/작은따옴표/개행 → JS 이스케이프
+            //   - 큰따옴표/앰퍼샌드/꺾쇠 → HTML 엔티티(onclick 속성 경계 보호)
+            //   나노바나나2 프롬프트에 Title: "..."/출처: "..." 큰따옴표가 있어서
+            //   과거엔 onclick 속성이 조기 종료돼 복사 버튼이 먹통이 됨.
+            return String(s)
+                .replace(/\\/g, '\\\\')
+                .replace(/\r/g, '')
+                .replace(/\n/g, '\\n')
+                .replace(/'/g, "\\'")
+                .replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
         }
 
         // 나레이션 기반 배경 대체 후보 추천 (AI vs 실사 vs stock)
