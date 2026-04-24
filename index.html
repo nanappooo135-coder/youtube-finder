@@ -9661,6 +9661,12 @@ ${sceneList}
             const narr = s.narration || '';
             const n = narr;
 
+            // 🧠 심층 설명(뇌 부위·신경전달물질·심리 이론) → 다이어그램 모드
+            const diagram = _detectPsychDiagram(n);
+            if (diagram) {
+                return _buildPsychDiagramPrompt(diagram, n);
+            }
+
             // 장면 맥락 추출 (장소·행동·감정을 영어로 매핑)
             const loc = _extractPsychLocation(n);
             const mood = _extractPsychMood(n);
@@ -9681,6 +9687,65 @@ ${sceneList}
             sceneDesc += ' Detailed hand-drawn background.';
 
             return PSYCHOLOGY_STYLE_BLOCK + '\n\n' + sceneDesc;
+        }
+
+        // 심층 설명 장면 감지 — 뇌 부위·신경·심리 이론 키워드
+        function _detectPsychDiagram(n) {
+            // 뇌 해부학
+            const brainParts = n.match(/(전전두엽|편도체|해마|시상하부|변연계|측두엽|전두엽|후두엽|두정엽|뇌간|소뇌|기저핵|선조체|시상|뇌하수체|대뇌피질|뇌량)/g);
+            if (brainParts && brainParts.length > 0) {
+                return { kind: 'brain_anatomy', labels: [...new Set(brainParts)] };
+            }
+            // 신경전달물질·호르몬
+            const neuro = n.match(/(뉴런|시냅스|도파민|세로토닌|옥시토신|코르티솔|아드레날린|노르에피네프린|엔도르핀|GABA|글루타메이트|멜라토닌)/g);
+            if (neuro && neuro.length > 0) {
+                return { kind: 'neurotransmitter', labels: [...new Set(neuro)] };
+            }
+            // 4분면·유형 구분 (애착·MBTI·빅5)
+            if (/(애착\s*유형|안정형|회피형|불안형|혼란형|MBTI|외향.*내향|감각.*직관|빅5|개방성|성실성|외향성|친화성|신경성)/.test(n)) {
+                return { kind: 'quadrant', labels: [] };
+            }
+            // 심리 이론·메커니즘 (다이어그램 적합)
+            const theories = n.match(/(인지부조화|방어기제|투사|합리화|승화|억압|반동형성|동일시|부인|전이|역전이|조건화|강화|소거|학습된 무기력|자기효능감|스키마|자동사고|인지왜곡|매슬로\s*욕구|프로이트의\s*(?:이드|자아|초자아)|융의\s*원형|아들러의\s*열등감)/);
+            if (theories) {
+                return { kind: 'theory_mechanism', term: theories[1] || theories[0] };
+            }
+            // 명시적 구조·과정·단계 표현
+            if (/(\d+단계|\d+\s*가지\s*유형|의\s*(?:구조|메커니즘|작용|과정|원리))/.test(n)) {
+                return { kind: 'process_flow', labels: [] };
+            }
+            return null;
+        }
+
+        function _buildPsychDiagramPrompt(diagram, narr) {
+            let diagramDesc = '';
+            switch (diagram.kind) {
+                case 'brain_anatomy': {
+                    const labels = diagram.labels.join(', ');
+                    diagramDesc = `Diagram scene: a large clearly-drawn side-view cross-section of a human brain as the main focus of the frame (not a character). Hand-drawn colored pencil and watercolor style, same warm cream paper background. Specific brain regions highlighted and labeled in bold Korean Hangul pencil text with thin arrows pointing to each part. Labels to render (Korean only, nothing else): ${labels}. Each label uses the same hand-drawn pencil typography, clearly readable. Soft watercolor fill distinguishes each region with muted warm colors. The round-headed mascot character appears SMALL in the bottom-left corner (about 15% of frame width) as a friendly guide pointing at the brain with one hand. NO title text, NO caption, ONLY the anatomical Korean labels.`;
+                    break;
+                }
+                case 'neurotransmitter': {
+                    const labels = diagram.labels.join(', ');
+                    diagramDesc = `Diagram scene: a simple hand-drawn pencil diagram of two neurons with a synaptic gap between them as the main focus. Tiny colored pencil circles (neurotransmitter molecules) crossing the synapse. Same hand-drawn colored pencil and watercolor style on warm cream paper. Korean Hangul pencil labels pointing to key parts. Labels to render (Korean only): ${labels}, 시냅스, 수용체. The round-headed mascot appears SMALL in the bottom-left corner as a friendly guide. NO title text.`;
+                    break;
+                }
+                case 'quadrant': {
+                    diagramDesc = `Diagram scene: a 2x2 quadrant chart as the main focus, hand-drawn in colored pencil and watercolor on warm cream paper. Two soft pencil-drawn axis lines dividing the frame into four quadrants. Each quadrant contains a small hand-drawn illustration representing one type (simple pencil sketch icons), plus a bold Korean Hangul label in the corner of that quadrant. Extract the type names from the narration and use them as Korean labels. The round-headed mascot appears SMALL in the bottom-left corner looking at the chart. NO title text at the top.`;
+                    break;
+                }
+                case 'theory_mechanism': {
+                    const term = diagram.term;
+                    diagramDesc = `Diagram scene: a hand-drawn conceptual diagram illustrating the psychology concept "${term}" as the main focus. Two or three simple pencil-sketched boxes or circles connected by thin arrows, showing the mechanism. Same warm cream paper and pencil+watercolor style. Bold Korean Hangul label for the concept term next to the diagram. Use only Korean words mentioned in the scene narration for any other labels. The round-headed mascot appears SMALL in the bottom-left corner pointing at the diagram with one hand. NO title text, NO extra captions — only the concept labels inside/next to the diagram shapes.`;
+                    break;
+                }
+                case 'process_flow':
+                default: {
+                    diagramDesc = `Diagram scene: a hand-drawn horizontal flow diagram as the main focus — three to four pencil-sketched circles or boxes connected by thin arrows, left-to-right. Each box has a bold Korean Hangul pencil label extracted from the scene narration (use only phrases that appear in the narration). Same colored pencil and watercolor style on warm cream paper. The round-headed mascot appears SMALL in the bottom-left corner as a friendly guide. NO title text at the top.`;
+                    break;
+                }
+            }
+            return PSYCHOLOGY_STYLE_BLOCK + '\n\n' + diagramDesc;
         }
 
         function _extractPsychLocation(n) {
