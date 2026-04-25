@@ -9507,6 +9507,10 @@ ${sceneList}
 
         function _enforceKoreanInAiPrompt(prompt, s) {
             if (!prompt) return prompt;
+            // 심리학 채널: 텍스트 없는 순수 일러스트가 정답이므로 한글 강제 OFF
+            if (typeof _isPsychologyMode === 'function' && _isPsychologyMode()) {
+                return prompt;
+            }
             const narr = s.narration || '';
             const textOverlay = (s.textOverlay || '').trim();
 
