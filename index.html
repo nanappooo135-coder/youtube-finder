@@ -6486,6 +6486,20 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                     }
                 });
 
+                // 심리학 모드: 모든 AI 1순위 장면에 needsGrokVideo 자동 설정
+                //   사용자 워크플로우: 모든 장면을 이미지 → Grok 영상화 → 셀팟 업로드
+                if (typeof _isPsychologyMode === 'function' && _isPsychologyMode()) {
+                    jsonObj.scenes.forEach(s => {
+                        const ranks = _rankImageSources(s);
+                        if (ranks && ranks[0] && ranks[0].type === 'ai') {
+                            s.needsGrokVideo = true;
+                            s.isSymbolicScene = true; // 그록 프롬프트 빌더에서 사용
+                            const dur = (typeof s.sceneDuration === 'number') ? s.sceneDuration : 6;
+                            s.grokVideoDuration = dur >= 8 ? 10 : 6;
+                        }
+                    });
+                }
+
                 // ═══ 2026-04-23: LLM 기반 맞춤 그록 프롬프트 배치 생성 ═══
                 // 하드코딩 템플릿 대신 Gemini Flash가 장면별로 맞춤 모션 프롬프트 직접 작성
                 // 템플릿으로 놓칠 수 있는 은유·동작도 자동 대응
@@ -7410,7 +7424,19 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
             const sec = document.getElementById('jsonAiPromptsSection');
             const imgOut = document.getElementById('jsonImagePromptsOutput');
             const vidOut = document.getElementById('jsonVideoPromptsOutput');
-            const aiScenes = (allScenes || []).filter(s => s.bgSource === 'ai' && s.aiPrompt);
+            // 심리학 모드: 1순위 AI 장면 모두 포함 (rank 기반)
+            let aiScenes;
+            if (typeof _isPsychologyMode === 'function' && _isPsychologyMode()) {
+                aiScenes = (allScenes || []).filter(s => {
+                    const ranks = _rankImageSources(s);
+                    return ranks && ranks[0] && ranks[0].type === 'ai';
+                }).map(s => {
+                    const ranks = _rankImageSources(s);
+                    return Object.assign({}, s, { aiPrompt: ranks[0].content });
+                });
+            } else {
+                aiScenes = (allScenes || []).filter(s => s.bgSource === 'ai' && s.aiPrompt);
+            }
             if (aiScenes.length === 0) {
                 sec.style.display = 'none';
                 if (imgOut) imgOut.value = '';
