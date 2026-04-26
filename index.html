@@ -15698,12 +15698,11 @@ JSON만 출력하세요. 코드블록 마커 금지.`;
             const sellpotText = scenes.map(s => s.text).join('\n\n\n');
             document.getElementById('spOut_sellpot').value = sellpotText;
 
-            // 2) 나노바나나2 — type=ai만, 각 장면 프롬프트 앞에 그림체 자동 prepend
-            const styleBlock = (result.stylePrompt || '').trim();
+            // 2) 나노바나나2 — type=ai만
             const nanoLines = scenes
                 .filter(s => s.type === 'ai' && s.nano_prompt)
-                .map(s => `[장면 ${s.sceneNo}] ${s.type === 'intro' ? '(도입부)' : ''}\n${styleBlock}\n\n${s.nano_prompt}\n`)
-                .join('\n────────────────────────────────────\n\n');
+                .map(s => `[장면 ${s.sceneNo}] ${s.type === 'intro' ? '(도입부)' : ''}\n${s.nano_prompt}\n`)
+                .join('\n');
             document.getElementById('spOut_nano').value = nanoLines || '(AI 이미지 장면 없음)';
 
             // 3) 그록 영상 — type=ai만, 6초/10초 표시
