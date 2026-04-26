@@ -15621,7 +15621,13 @@ ${stylePrompt}
 - bodyIndices: 이 묶음에 포함된 본문 문장 인덱스 배열 (예: [1,2,3] = B1+B2+B3)
 - duration: 10 (본문 고정)
 - type: ai | real | claude_design
-- nano_prompt: (ai만) 영문. 위 그림체를 자연스럽게 녹임. 묶음의 **공통 시각 모먼트 1개**를 명확히 묘사. 모든 문장을 다 그리려 하지 말 것. 대사·자막 금지.
+- nano_prompt: (ai만) 영문. 위 그림체를 자연스럽게 녹임.
+  **★ 가장 중요 — 한 장면 = 한 그림만 ★**
+  묶음에 문장이 여러 개여도 **그중 가장 강력한 시각 1컷만** 그릴 것.
+  여러 시각을 나열하지 말 것 (예: "AND then", "또는", "split-screen", "두 장면" 금지).
+  하나의 명확한 캐릭터/구도/순간/감정만 묘사. 단일 프레임의 정지 사진처럼.
+  모든 내용을 다 담으려 하지 말 것. 대표 1컷만.
+  대사·자막·캡션 금지.
 - grok_prompt: (ai만) 영문. **반드시 포함**: "maintain the original 2D illustrated style from the input image, NO photorealism, NO live-action drift, NO style change, subtle camera movement only". 10초 길이에 맞는 자연스러운 카메라/캐릭터 움직임. 과장 금지.
 - real_keyword: (real만) 구글 이미지 검색용 한글.
 - real_subject: (real만) 한 줄 설명.
