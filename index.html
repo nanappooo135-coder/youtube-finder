@@ -2380,7 +2380,7 @@
 
                     <!-- N문장 선택 -->
                     <div style="margin-bottom:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                        <span style="font-weight:700;font-size:0.9rem;color:#444;">📦 본문 묶음</span>
+                        <span style="font-weight:700;font-size:0.9rem;color:#444;">📦 본문 묶음 <span style="font-weight:400;font-size:0.75rem;color:#888;">(기본 힌트 — Gemini가 응집도 보고 자동 조정)</span></span>
                         <button class="search-btn sp-n-btn" data-n="4" onclick="_spSetN(4)" style="padding:8px 16px;font-size:0.9rem;background:#e9ecef;border-color:#ced4da;color:#495057;">4문장</button>
                         <button class="search-btn sp-n-btn active-n" data-n="5" onclick="_spSetN(5)" style="padding:8px 16px;font-size:0.9rem;background:#9333ea;border-color:#9333ea;">5문장</button>
                         <button class="search-btn sp-n-btn" data-n="6" onclick="_spSetN(6)" style="padding:8px 16px;font-size:0.9rem;background:#e9ecef;border-color:#ced4da;color:#495057;">6문장</button>
@@ -15490,7 +15490,7 @@ overall mood: bright, psychologically safe illustration, uplifting and reassurin
             if (el) {
                 el.textContent = sentences.length === 0
                     ? ''
-                    : `📊 ${body.length.toLocaleString()}자 · ${sentences.length}문장 · ${_spN}문장 묶음 → 본문 ${scenes}장면`;
+                    : `📊 ${body.length.toLocaleString()}자 · ${sentences.length}문장 · 약 ${_spN}문장 힌트 → 본문 ~${scenes}장면 (Gemini 자동 조정으로 ±20~40% 변동)`;
             }
             const hint = document.getElementById('spNHint');
             if (hint && sentences.length > 0) {
@@ -15565,27 +15565,13 @@ overall mood: bright, psychologically safe illustration, uplifting and reassurin
                 return;
             }
 
-            const bodyChunks = _spChunkBody(bodySentences, _spN); // [[s1,s2,...], ...]
-
-            // 모든 장면을 통합 리스트로 (인덱스 = 1부터)
-            // type: 'intro' | 'body'
-            const allScenes = [];
-            introScenes.forEach((s, i) => {
-                allScenes.push({
-                    sceneNo: allScenes.length + 1,
-                    type: 'intro',
-                    duration: s.duration,
-                    text: s.text,
-                });
-            });
-            bodyChunks.forEach((chunk, i) => {
-                allScenes.push({
-                    sceneNo: allScenes.length + 1,
-                    type: 'body',
-                    duration: 10, // 본문 고정 10초
-                    text: chunk.join(' '),
-                });
-            });
+            // 도입부는 사용자가 정한 그대로 (1줄 = 1장면)
+            const introSceneList = introScenes.map((s, i) => ({
+                sceneNo: i + 1,
+                type: 'intro',
+                duration: s.duration,
+                text: s.text,
+            }));
 
             btn.disabled = true;
             btn.textContent = '⏳ Gemini Pro 분석 중...';
@@ -15595,39 +15581,62 @@ overall mood: bright, psychologically safe illustration, uplifting and reassurin
                 const fullScript = (introRaw + '\n\n' + bodyRaw).trim();
                 const channelLabel = _spChannel === 'psychology' ? '심리학' : '경제';
 
-                const prompt = `당신은 유튜브 ${channelLabel} 채널의 영상 제작 디렉터입니다. 아래 대본 전체를 읽고 맥락을 완전히 이해한 뒤, 각 장면별로 시각화 방법을 결정해야 합니다.
+                // 본문 문장에 인덱스 부여 (B1, B2, ...)
+                const numberedBody = bodySentences.map((s, i) => `B${i+1}. ${s}`).join('\n');
+                // 도입부는 그대로 (이미 사용자가 정함)
+                const introBlock = introSceneList.length === 0 ? '(없음)' :
+                    introSceneList.map(s => `[도입부 장면 ${s.sceneNo}] (${s.duration}초)\n${s.text}`).join('\n\n');
+
+                const startBodyNo = introSceneList.length + 1;
+
+                const prompt = `당신은 유튜브 ${channelLabel} 채널의 영상 제작 디렉터입니다. 아래 대본 전체를 읽고 맥락을 완전히 이해한 뒤, 본문을 **응집도 있는 장면 단위로 자동 묶기** + **각 장면별 시각화 방법 결정**을 해야 합니다.
 
 === 전체 대본 (맥락 이해용) ===
 ${fullScript}
 
-=== 장면 분할 결과 (이 순서대로 분석) ===
-${allScenes.map(s => `[장면 ${s.sceneNo}] (${s.type === 'intro' ? '도입부' : '본문'}, ${s.duration}초)\n${s.text}`).join('\n\n')}
+=== 도입부 (이미 분할됨, 그대로 두세요) ===
+${introBlock}
+
+=== 본문 문장 (B1, B2, ... 순서대로. 당신이 묶음을 결정) ===
+${numberedBody}
 
 === 그림체 규약 (AI 일러스트·Claude Design 모두 이 톤 유지) ===
 ${stylePrompt}
 
-=== 작업 지시 ===
-각 장면을 다음 4가지 타입 중 하나로 분류:
-1. **ai** — AI 일러스트(나노바나나2). 일반 장면, 감정·내면·비유·일상 상황. 한국 ${channelLabel} 영상의 기본.
-2. **real** — 실사(구글 이미지 검색). 실존 인물(이름이 명시된 학자/정치인/유명인), 실제 책 《》, 유명 기관·장소만. AI로 그리면 부정확해서 신뢰도 떨어지는 경우만.
-3. **claude_design** — Claude Design 인포그래픽. 도식·차트·통계·법칙·호흡법·뇌 구조·N가지 비교·단계 흐름 등 "설명·구조" 장면.
-4. **gif** — 사용 금지 (이번 워크플로우는 GIF 제외).
+=== 본문 묶음 규칙 (중요) ===
+- **사용자 힌트**: 약 ${_spN}문장 단위로 묶는 것을 기본. 단, 아래 우선순위가 더 중요:
+- **응집도 우선**: 한 장면 = 하나의 시각적 순간/주제. 묶음 안 문장들이 **같은 시각으로 표현 가능**해야 함.
+- **주제 전환 시 분할**: 묶음 중간에 다른 시각/장소/감정/통계로 넘어가면 거기서 끊어 새 장면.
+- **너무 길게 늘이지 말 것**: 최대 7문장 초과 금지. 너무 짧지도 않게(최소 2문장 권장, 단 1문장이 결정적이면 단독 가능).
+- **Claude Design 후보(도식·통계·N가지·법칙·호흡법·뇌구조)** 는 그 설명 범위 전체를 한 묶음으로.
+- **실사(실존 인물/책/기관) 후보**는 그 인물/책 언급 부분만 묶음.
 
-각 장면에 대해 출력:
+=== 장면 타입 분류 ===
+1. **ai** — AI 일러스트(나노바나나2). 일반 장면, 감정·내면·비유·일상 상황. 기본값.
+2. **real** — 실사(구글 이미지). 실존 인물(이름 명시된 학자/정치인/유명인), 실제 책 《》, 유명 기관·장소만.
+3. **claude_design** — Claude Design 인포그래픽. 도식·차트·통계·법칙·호흡법·뇌 구조·N가지 비교·단계 흐름.
+
+=== 각 본문 장면 출력 ===
+- sceneNo: 도입부 ${introSceneList.length}개 다음부터 ${startBodyNo}, ${startBodyNo+1}, ... 순차
+- bodyIndices: 이 묶음에 포함된 본문 문장 인덱스 배열 (예: [1,2,3] = B1+B2+B3)
+- duration: 10 (본문 고정)
 - type: ai | real | claude_design
-- nano_prompt: (type=ai인 경우만) 나노바나나2/젠스파크용 영문 이미지 프롬프트. 위 그림체 규약을 자연스럽게 녹여서. 장면 내용을 구체적으로 묘사. 대사·자막·캡션 텍스트 금지.
-- grok_prompt: (type=ai인 경우만) 그록 image-to-video용 영문 영상 프롬프트. **반드시 다음 스타일 고정 문구 포함**: "maintain the original 2D illustrated style from the input image, NO photorealism, NO live-action drift, NO style change, subtle camera movement only". 각 장면의 표시된 길이(6초 또는 10초)에 맞게 적절한 카메라/캐릭터 동작 묘사. 과장 금지, 장면 내용에 정확히 일치하는 자연스러운 움직임만.
-- real_keyword: (type=real인 경우만) 구글 이미지 검색용 한글 키워드 (예: "에드워드 데시 심리학자", "그릿 책 표지").
-- real_subject: (type=real인 경우만) 무엇/누구의 실사인지 한 줄 설명.
-- claude_prompt: (type=claude_design인 경우만) Claude Design용 한글 프롬프트. 어떤 도식·차트·구조인지 명확히. **위 그림체 규약의 색감·톤을 인포그래픽에도 반영** (예: 심리학이면 따뜻한 크림색·연한 라벤더·세이지, 경제면 editorial 톤). 16:9 비율로 전체 화면 자연스럽게 활용.
-- claude_kind: (type=claude_design인 경우만) 도식 종류 라벨 (예: "박스 호흡 도식", "2x2 사분면", "단계 흐름 카드", "뇌 구조", "통계 비교").
+- nano_prompt: (ai만) 영문. 위 그림체를 자연스럽게 녹임. 묶음의 **공통 시각 모먼트 1개**를 명확히 묘사. 모든 문장을 다 그리려 하지 말 것. 대사·자막 금지.
+- grok_prompt: (ai만) 영문. **반드시 포함**: "maintain the original 2D illustrated style from the input image, NO photorealism, NO live-action drift, NO style change, subtle camera movement only". 10초 길이에 맞는 자연스러운 카메라/캐릭터 움직임. 과장 금지.
+- real_keyword: (real만) 구글 이미지 검색용 한글.
+- real_subject: (real만) 한 줄 설명.
+- claude_prompt: (claude_design만) 한글. 위 그림체 색감·톤 반영. 16:9 전체 화면.
+- claude_kind: (claude_design만) 도식 종류 라벨.
+
+=== 도입부 장면 출력 (그대로) ===
+도입부 장면도 똑같이 분류 + 프롬프트 생성. bodyIndices는 빈 배열 [].
 
 === 출력 형식 (JSON만, 다른 설명 없이) ===
 {
   "scenes": [
-    {"sceneNo": 1, "type": "ai", "nano_prompt": "...", "grok_prompt": "..."},
-    {"sceneNo": 2, "type": "real", "real_keyword": "...", "real_subject": "..."},
-    {"sceneNo": 3, "type": "claude_design", "claude_prompt": "...", "claude_kind": "..."}
+    {"sceneNo": 1, "type": "ai", "duration": 6, "isIntro": true, "bodyIndices": [], "nano_prompt": "...", "grok_prompt": "..."},
+    {"sceneNo": ${startBodyNo}, "type": "ai", "duration": 10, "isIntro": false, "bodyIndices": [1,2,3], "nano_prompt": "...", "grok_prompt": "..."},
+    {"sceneNo": ${startBodyNo+1}, "type": "claude_design", "duration": 10, "isIntro": false, "bodyIndices": [4,5,6,7], "claude_prompt": "...", "claude_kind": "..."}
   ]
 }
 
@@ -15652,10 +15661,23 @@ JSON만 출력하세요. 코드블록 마커 금지.`;
                 }
 
                 const geminiScenes = parsed.scenes || [];
-                // allScenes에 Gemini 분류 결과 머지
-                const merged = allScenes.map(s => {
-                    const g = geminiScenes.find(x => x.sceneNo === s.sceneNo) || {};
-                    return { ...s, ...g };
+                // 도입부는 사용자 입력 텍스트로 텍스트 채우고, 본문은 bodyIndices로 원본 문장 조립
+                const merged = geminiScenes.map(g => {
+                    let text = '';
+                    let duration = g.duration || 10;
+                    if (g.isIntro || (g.bodyIndices && g.bodyIndices.length === 0 && g.sceneNo <= introSceneList.length)) {
+                        const introMatch = introSceneList.find(i => i.sceneNo === g.sceneNo);
+                        if (introMatch) {
+                            text = introMatch.text;
+                            duration = introMatch.duration;
+                        }
+                    } else if (g.bodyIndices && g.bodyIndices.length > 0) {
+                        text = g.bodyIndices
+                            .map(idx => bodySentences[idx - 1])
+                            .filter(Boolean)
+                            .join(' ');
+                    }
+                    return { ...g, text, duration };
                 });
 
                 _spLastResult = { scenes: merged, channel: _spChannel, stylePrompt };
