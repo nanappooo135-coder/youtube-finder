@@ -1389,6 +1389,7 @@
             <button class="process-btn inactive" id="procBtn_factcheck" onclick="switchProcess('factcheck')">팩트검증</button>
             <button class="process-btn inactive" id="procBtn_visual" onclick="switchProcess('visual')">시각화</button>
             <button class="process-btn inactive" id="procBtn_json" onclick="switchProcess('json')">JSON</button>
+            <button class="process-btn inactive" id="procBtn_sellpot" onclick="switchProcess('sellpot')">셀팟 기본</button>
             <button class="process-btn inactive" id="procBtn_tts" onclick="switchProcess('tts')">TTS변환</button>
             <button class="process-btn inactive" id="procBtn_ref" onclick="switchProcess('ref')">레퍼런스</button>
             <button class="process-btn inactive" id="procBtn_trend" onclick="switchProcess('trend')">🔥트렌드</button>
@@ -2335,6 +2336,118 @@
 
         </div><!-- /process-json -->
 
+        <!-- ===== 프로세스: 셀팟 기본 (나레이션만 모드) ===== -->
+        <div id="process-sellpot" style="display:none;">
+            <div class="section">
+                <div class="section-title">🎬 셀팟 기본 변환 (나레이션만 모드)</div>
+                <div class="section-content">
+                    <p style="font-size:0.85rem;color:#666;margin-bottom:12px;">
+                        대본을 N문장씩 묶어 <strong>빈 줄 2개로 장면 구분</strong>해서 셀팟 "기본" 모드에 붙여넣을 수 있게 변환합니다.
+                        Gemini Pro가 전체 맥락을 학습하고 장면별로 <strong>AI 일러스트 / 실사 / Claude Design</strong> 분류 + 이미지·영상 프롬프트까지 생성합니다.
+                    </p>
+
+                    <!-- 채널 선택 -->
+                    <div style="margin-bottom:12px;padding:10px 14px;background:#f8f4ff;border:2px solid #9333ea;border-radius:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                        <span style="font-weight:700;color:#6b21a8;font-size:0.9rem;">📺 채널</span>
+                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.88rem;">
+                            <input type="radio" name="spChannel" value="economics" checked onchange="_spOnChannelChange(this.value)">
+                            <span>📊 경제</span>
+                        </label>
+                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.88rem;">
+                            <input type="radio" name="spChannel" value="psychology" onchange="_spOnChannelChange(this.value)">
+                            <span>🧠 심리학</span>
+                        </label>
+                    </div>
+
+                    <!-- 그림체 프롬프트 -->
+                    <div class="input-group">
+                        <label>🎨 그림체 프롬프트 <span style="color:#888;font-weight:400;">(채널 기본값 자동, 직접 수정 가능 — AI 이미지 + Claude Design에 모두 적용)</span></label>
+                        <textarea id="spStylePrompt" rows="6" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:0.78rem;font-family:'Courier New',monospace;line-height:1.5;resize:vertical;"></textarea>
+                    </div>
+
+                    <!-- 도입부 -->
+                    <div class="input-group">
+                        <label>🎯 도입부 <span style="color:#888;font-weight:400;">(줄바꿈 = 1장면. 줄 앞에 <code>6|</code> 또는 <code>10|</code> 길이 지정, 없으면 6초)</span></label>
+                        <textarea id="spIntro" rows="6" placeholder="6| 첫 후킹 문장입니다.&#10;10| 좀 더 길게 끌고 가는 문장이에요.&#10;6| 짧고 강한 임팩트 한 방." style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:0.88rem;line-height:1.6;resize:vertical;"></textarea>
+                    </div>
+
+                    <!-- 본문 -->
+                    <div class="input-group">
+                        <label>📝 본문 대본 <span style="color:#888;font-weight:400;">(마침표 . 기준으로 문장 분리됨)</span></label>
+                        <textarea id="spBody" rows="14" placeholder="본문 대본을 여기에 붙여넣으세요. 마침표를 기준으로 문장이 분리되고, 아래에서 선택한 N문장씩 묶입니다." style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;line-height:1.6;resize:vertical;"></textarea>
+                        <div id="spBodyStats" style="margin-top:6px;font-size:0.78rem;color:#888;"></div>
+                    </div>
+
+                    <!-- N문장 선택 -->
+                    <div style="margin-bottom:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                        <span style="font-weight:700;font-size:0.9rem;color:#444;">📦 본문 묶음</span>
+                        <button class="search-btn sp-n-btn" data-n="4" onclick="_spSetN(4)" style="padding:8px 16px;font-size:0.9rem;background:#e9ecef;border-color:#ced4da;color:#495057;">4문장</button>
+                        <button class="search-btn sp-n-btn active-n" data-n="5" onclick="_spSetN(5)" style="padding:8px 16px;font-size:0.9rem;background:#9333ea;border-color:#9333ea;">5문장</button>
+                        <button class="search-btn sp-n-btn" data-n="6" onclick="_spSetN(6)" style="padding:8px 16px;font-size:0.9rem;background:#e9ecef;border-color:#ced4da;color:#495057;">6문장</button>
+                        <span id="spNHint" style="margin-left:auto;font-size:0.78rem;color:#666;"></span>
+                    </div>
+
+                    <button id="spConvertBtn" class="search-btn" onclick="spConvert()" style="width:100%;font-size:1.05rem;padding:14px;background:#7048e8;border-color:#7048e8;">
+                        🚀 변환 시작 (Gemini Pro 맥락 분석)
+                    </button>
+                    <div id="spStatus" style="margin-top:8px;font-size:0.85rem;color:#888;"></div>
+                </div>
+            </div>
+
+            <!-- 결과 5탭 -->
+            <div id="spResultSection" style="display:none;">
+                <div class="section">
+                    <div class="section-content">
+                        <div id="spSummary" style="margin-bottom:12px;padding:12px;background:#f5f5f5;border-radius:8px;font-size:0.9rem;"></div>
+
+                        <!-- 결과 탭 헤더 -->
+                        <div style="display:flex;gap:4px;margin-bottom:12px;border-bottom:2px solid #dee2e6;flex-wrap:wrap;">
+                            <button class="sp-result-tab active" data-tab="sellpot" onclick="_spSwitchResultTab('sellpot')" style="padding:10px 16px;background:#7048e8;color:#fff;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">📋 셀팟 붙여넣기</button>
+                            <button class="sp-result-tab" data-tab="nano" onclick="_spSwitchResultTab('nano')" style="padding:10px 16px;background:#f1f3f5;color:#495057;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">🍌 나노바나나2</button>
+                            <button class="sp-result-tab" data-tab="grok" onclick="_spSwitchResultTab('grok')" style="padding:10px 16px;background:#f1f3f5;color:#495057;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">🎬 그록 영상</button>
+                            <button class="sp-result-tab" data-tab="real" onclick="_spSwitchResultTab('real')" style="padding:10px 16px;background:#f1f3f5;color:#495057;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">📷 실사 검색</button>
+                            <button class="sp-result-tab" data-tab="claude" onclick="_spSwitchResultTab('claude')" style="padding:10px 16px;background:#f1f3f5;color:#495057;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">📊 Claude Design</button>
+                        </div>
+
+                        <!-- 셀팟 붙여넣기 탭 -->
+                        <div id="spTab_sellpot" class="sp-result-pane">
+                            <p style="font-size:0.78rem;color:#666;margin-bottom:8px;">셀팟 "기본" 모드에 그대로 붙여넣으세요. 빈 줄 2개 = 새 장면 구분.</p>
+                            <button class="search-btn" onclick="_spCopy('spOut_sellpot', this)" style="width:100%;margin-bottom:8px;background:#7048e8;border-color:#7048e8;">📋 셀팟용 텍스트 전체 복사</button>
+                            <textarea id="spOut_sellpot" readonly style="width:100%;min-height:400px;padding:14px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.88rem;line-height:1.7;background:#fafafa;resize:vertical;"></textarea>
+                        </div>
+
+                        <!-- 나노바나나2 탭 -->
+                        <div id="spTab_nano" class="sp-result-pane" style="display:none;">
+                            <p style="font-size:0.78rem;color:#666;margin-bottom:8px;">나노바나나2/젠스파크/프리픽에 한 번에 붙여 일괄 생성. 장면 번호 포함.</p>
+                            <button class="search-btn" onclick="_spCopy('spOut_nano', this)" style="width:100%;margin-bottom:8px;background:#fd7e14;border-color:#fd7e14;">🍌 이미지 프롬프트 전체 복사</button>
+                            <textarea id="spOut_nano" readonly style="width:100%;min-height:400px;padding:14px;border:2px solid #ffd8a8;border-radius:10px;font-size:0.78rem;font-family:'Courier New',monospace;line-height:1.5;background:#1e1e1e;color:#d4d4d4;resize:vertical;"></textarea>
+                        </div>
+
+                        <!-- 그록 영상 탭 -->
+                        <div id="spTab_grok" class="sp-result-pane" style="display:none;">
+                            <p style="font-size:0.78rem;color:#666;margin-bottom:8px;">이미지 → 그록 → 영상화. 6초/10초 자동 매칭, 애니→실사 드리프트 방지 문구 포함.</p>
+                            <button class="search-btn" onclick="_spCopy('spOut_grok', this)" style="width:100%;margin-bottom:8px;background:#e03131;border-color:#e03131;">🎬 영상 프롬프트 전체 복사</button>
+                            <textarea id="spOut_grok" readonly style="width:100%;min-height:400px;padding:14px;border:2px solid #ffa8a8;border-radius:10px;font-size:0.78rem;font-family:'Courier New',monospace;line-height:1.5;background:#1e1e1e;color:#d4d4d4;resize:vertical;"></textarea>
+                        </div>
+
+                        <!-- 실사 검색 탭 -->
+                        <div id="spTab_real" class="sp-result-pane" style="display:none;">
+                            <p style="font-size:0.78rem;color:#666;margin-bottom:8px;">실존 인물·책·기관 등장 장면. 구글 이미지에 키워드 검색.</p>
+                            <button class="search-btn" onclick="_spCopy('spOut_real', this)" style="width:100%;margin-bottom:8px;background:#8b4513;border-color:#8b4513;">📷 실사 키워드 전체 복사</button>
+                            <textarea id="spOut_real" readonly style="width:100%;min-height:300px;padding:14px;border:2px solid #d2b48c;border-radius:10px;font-size:0.85rem;line-height:1.6;background:#fafafa;resize:vertical;"></textarea>
+                        </div>
+
+                        <!-- Claude Design 탭 -->
+                        <div id="spTab_claude" class="sp-result-pane" style="display:none;">
+                            <p style="font-size:0.78rem;color:#666;margin-bottom:8px;">도식·차트·호흡법·뇌구조·통계 장면. Claude Design에 프롬프트 복붙해서 인포그래픽 생성. 채널 그림체 톤 반영됨.</p>
+                            <button class="search-btn" onclick="_spCopy('spOut_claude', this)" style="width:100%;margin-bottom:8px;background:#17a2b8;border-color:#17a2b8;">📊 Claude Design 프롬프트 전체 복사</button>
+                            <textarea id="spOut_claude" readonly style="width:100%;min-height:300px;padding:14px;border:2px solid #99e9f2;border-radius:10px;font-size:0.85rem;line-height:1.6;background:#fafafa;resize:vertical;"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div><!-- /process-sellpot -->
+
         <!-- ===== 프로세스: TTS 변환 ===== -->
         <div id="process-tts" style="display:none;">
             <div class="section">
@@ -3211,6 +3324,7 @@
             document.getElementById('process-thumbtext').style.display = proc === 'thumbtext' ? '' : 'none';
             document.getElementById('process-visual').style.display = proc === 'visual' ? '' : 'none';
             document.getElementById('process-json').style.display = proc === 'json' ? '' : 'none';
+            document.getElementById('process-sellpot').style.display = proc === 'sellpot' ? '' : 'none';
             document.getElementById('process-review').style.display = proc === 'review' ? '' : 'none';
             document.getElementById('process-factcheck').style.display = proc === 'factcheck' ? '' : 'none';
             document.getElementById('process-title').style.display = proc === 'title' ? '' : 'none';
@@ -3223,6 +3337,7 @@
             if (proc === 'review') checkFcServer('rvServerStatus');
             if (proc === 'factcheck') checkFcServer();
             if (proc === 'trend') { fetchIssueRadar(); fetchGoogleTrends(); fetchEconYoutube(); }
+            if (proc === 'sellpot') _spInit();
         }
 
         // API 상태 확인 (서버 불필요 — API 키 존재 여부만 체크)
@@ -15254,6 +15369,366 @@ Example format:
 
         // HTML 파싱 완료 후 상태 UI 초기 표시
         document.addEventListener('DOMContentLoaded', updateCloudStatusUI);
+    </script>
+
+    <script>
+        // ============================================================
+        // 셀팟 기본 변환 (나레이션만 모드) — N문장 묶음 + Gemini 분석
+        // ============================================================
+
+        const SP_STYLE_ECONOMICS = `STYLE BASE (ALWAYS APPLY):
+semi-realistic 2D editorial illustration style,
+fully illustrated and hand-drawn,
+NOT rendered, NOT photorealistic,
+NOT animation-style, NOT anime-style,
+
+clean but human linework with slight imperfections,
+flat or graphic color fills with controlled tonal variation,
+3D rendering prohibited,
+CGI prohibited,
+Pixar style prohibited,
+Unreal Engine style prohibited,
+no photorealistic material simulation,
+no plastic or glossy surface realism.
+
+COLOR & VISUAL TONE:
+balanced warm-cool color palette,
+both painterly and graphic poster-style looks are allowed,
+clear, bold color separation is allowed when appropriate,
+higher contrast compositions are allowed,
+designed, editorial, or poster-like clarity is acceptable,
+lighting effects may be stylized and expressive.
+
+CHARACTER RULES (CRITICAL):
+1) REAL PUBLIC FIGURES (EXPLICITLY NAMED): keep recognizable likeness, semi-realistic editorial portrait style.
+
+2) ALL OTHER PEOPLE (NO REAL NAME GIVEN):
+All unnamed individuals (soldiers, civilians, residents, protesters, journalists, officials, diplomats, workers, crowds, anonymous politicians) MUST be rendered as simplified semi-realistic human figures.
+- natural human body proportions, realistic head-to-body ratio
+- arms and legs with visible volume, moderate limb thickness (NOT thin lines)
+- solid 2D illustrated anatomy, simplified detail but structurally accurate body form
+- subtle muscle or fabric fold indication allowed (non-photorealistic)
+Face: simplified but natural facial structure, visible eyes/nose/mouth (not dot-only), soft jawline, restrained expressions (serious, neutral, focused, calm), never cartoonish, never chibi.
+STRICTLY PROHIBITED: classic stick figure, round floating head with line body, line-only limbs, ultra-thin arms or legs.
+Hair: simplified natural hair mass, flat color with minimal shading, no strand realism.
+Clothing: functional civilian or military-style clothing, cold-weather gear allowed, NO logos, NO readable text, NO fictional symbols.
+
+OVERALL MOOD & INTENT:
+Serious, analytical, geopolitical, documentary tone.
+Avoid: hero worship, romanticization, sentimental framing, propaganda-style imagery, emotional manipulation.`;
+
+        const SP_STYLE_PSYCHOLOGY = `semi-realistic 2D editorial illustration style, hand-drawn pencil sketch feeling, clearly illustrated, not rendered, not photographic, visible pencil linework with natural grain and softness, pencil sketch outlines combined with gentle colored-pencil shading, mostly flat base colors with soft pencil-based shading only, subtle canvas or drawing-paper texture visible in background and shadows, no text, no letters, no numbers, no typography, no written words anywhere in the image, NO 3D, NO CGI, NO anime, NO fantasy style, NO Pixar, NO Unreal Engine, NO glossy or plastic surfaces, NO photorealism.
+
+characters: simple off-white round-headed character (not pure white, slightly warm cream tone), clearly 2D illustrated (not a 3D sphere), human-like cartoon proportions, simplified human proportions (slightly stylized, not realistic anatomy), minimal facial features: small dot or oval eyes, simple mouth line, subtle eyebrows for emotion, expressions are restrained and calm (worried, thoughtful, neutral, quietly focused), NOT exaggerated, NOT chibi, NOT mascot-like.
+
+body & pose: simplified but human-like limbs, natural proportions, gentle, everyday body language, observational poses, NOT heroic, NOT dramatic.
+
+clothing rule (STRICT): ONLY modern South Korean everyday clothing. Allowed: t-shirts, sweaters, hoodies, cardigans, shirts, jeans, slacks, skirts, simple jackets, padding jackets, coats, sneakers, loafers, flat shoes. NOT allowed: robes, gowns, bathrobes, kimonos, hanbok, traditional clothing, ceremonial outfits, historical garments, fantasy or symbolic costumes.
+
+background & environment: modern South Korean everyday environments, Korean apartments, small living rooms, bedrooms, local cafes, offices, classrooms, streets, contemporary Korean urban and residential scenery, wide compositions with clear depth and scale, backgrounds feel illustrated but spatially believable.
+
+lighting & light emphasis: bright natural or artificial light sources clearly present (sunlight through windows, warm sunset light, soft moonlight, streetlights, car headlights, indoor lamps). Light-emitting areas are visually emphasized with richer color, higher saturation, and brighter highlights, while non-lit areas remain soft and balanced. Light creates gentle color bloom and warmth, using colored-pencil style highlight emphasis (not realistic glow or rendering). Contrast is controlled but light sources feel vivid and lively.
+
+color tone: overall bright and warm palette, light creams, warm beiges, soft wood tones, muted greens and gentle blues for shadows, BUT areas touched by light show clearer, more vivid color intensity, no neon, no harsh glare, no dark or gloomy mood.
+
+overall mood: bright, psychologically safe illustration, uplifting and reassuring, emotionally warm rather than dramatic, feels like a modern Korean psychology illustration where light gently guides the viewer's attention.`;
+
+        let _spN = 5;
+        let _spChannel = 'economics';
+        let _spInited = false;
+        let _spLastResult = null;
+
+        function _spInit() {
+            if (_spInited) return;
+            _spInited = true;
+            const checked = document.querySelector('input[name="spChannel"]:checked');
+            if (checked) _spChannel = checked.value;
+            _spOnChannelChange(_spChannel);
+            const bodyEl = document.getElementById('spBody');
+            if (bodyEl) {
+                bodyEl.addEventListener('input', _spUpdateBodyStats);
+                _spUpdateBodyStats();
+            }
+        }
+
+        function _spOnChannelChange(ch) {
+            _spChannel = ch;
+            const ta = document.getElementById('spStylePrompt');
+            if (!ta) return;
+            // 사용자가 이미 수정했으면 덮어쓰지 않음 (둘 중 어느 기본값과도 다르면 유지)
+            const cur = ta.value.trim();
+            const isDefault = cur === '' || cur === SP_STYLE_ECONOMICS.trim() || cur === SP_STYLE_PSYCHOLOGY.trim();
+            if (isDefault) {
+                ta.value = ch === 'psychology' ? SP_STYLE_PSYCHOLOGY : SP_STYLE_ECONOMICS;
+            }
+        }
+
+        function _spSetN(n) {
+            _spN = n;
+            document.querySelectorAll('.sp-n-btn').forEach(b => {
+                const isActive = parseInt(b.dataset.n) === n;
+                b.style.background = isActive ? '#9333ea' : '#e9ecef';
+                b.style.borderColor = isActive ? '#9333ea' : '#ced4da';
+                b.style.color = isActive ? '#fff' : '#495057';
+            });
+            _spUpdateBodyStats();
+        }
+
+        function _spSplitSentences(text) {
+            // 마침표(. ! ?) 기준으로 문장 분리. 줄바꿈은 무시.
+            const cleaned = (text || '').replace(/\s+/g, ' ').trim();
+            if (!cleaned) return [];
+            const parts = cleaned.split(/(?<=[.!?])\s+/);
+            return parts.map(s => s.trim()).filter(s => s.length > 0);
+        }
+
+        function _spUpdateBodyStats() {
+            const body = document.getElementById('spBody')?.value || '';
+            const sentences = _spSplitSentences(body);
+            const scenes = Math.ceil(sentences.length / _spN);
+            const el = document.getElementById('spBodyStats');
+            if (el) {
+                el.textContent = sentences.length === 0
+                    ? ''
+                    : `📊 ${body.length.toLocaleString()}자 · ${sentences.length}문장 · ${_spN}문장 묶음 → 본문 ${scenes}장면`;
+            }
+            const hint = document.getElementById('spNHint');
+            if (hint && sentences.length > 0) {
+                hint.textContent = `→ ${scenes}장면`;
+            }
+        }
+
+        function _spParseIntro(text) {
+            // 줄바꿈 = 1장면, 줄 앞에 6| 또는 10| (없으면 6초)
+            return (text || '').split(/\r?\n/).map(line => {
+                const trimmed = line.trim();
+                if (!trimmed) return null;
+                const m = trimmed.match(/^(6|10)\s*\|\s*(.+)$/);
+                if (m) return { duration: parseInt(m[1]), text: m[2].trim() };
+                return { duration: 6, text: trimmed };
+            }).filter(x => x);
+        }
+
+        function _spChunkBody(sentences, n) {
+            const chunks = [];
+            for (let i = 0; i < sentences.length; i += n) {
+                chunks.push(sentences.slice(i, i + n));
+            }
+            return chunks;
+        }
+
+        function _spSwitchResultTab(tab) {
+            document.querySelectorAll('.sp-result-tab').forEach(b => {
+                const active = b.dataset.tab === tab;
+                b.style.background = active ? '#7048e8' : '#f1f3f5';
+                b.style.color = active ? '#fff' : '#495057';
+                b.classList.toggle('active', active);
+            });
+            document.querySelectorAll('.sp-result-pane').forEach(p => p.style.display = 'none');
+            const pane = document.getElementById('spTab_' + tab);
+            if (pane) pane.style.display = '';
+        }
+
+        function _spCopy(elId, btn) {
+            const el = document.getElementById(elId);
+            if (!el) return;
+            el.select();
+            document.execCommand('copy');
+            const orig = btn.textContent;
+            btn.textContent = '✅ 복사됨!';
+            setTimeout(() => btn.textContent = orig, 1500);
+        }
+
+        // ============================================================
+        // 변환 메인 — Gemini Pro에 전체 대본 맥락 + 장면 분류 요청
+        // ============================================================
+
+        async function spConvert() {
+            const btn = document.getElementById('spConvertBtn');
+            const status = document.getElementById('spStatus');
+            _geminiStatusEl = status;
+
+            if (!GEMINI_API_KEYS.length || !GEMINI_API_KEYS[0]) {
+                alert('Gemini API 키가 설정되지 않았습니다. 주제찾기 탭에서 먼저 등록하세요.');
+                return;
+            }
+
+            const stylePrompt = document.getElementById('spStylePrompt').value.trim();
+            const introRaw = document.getElementById('spIntro').value;
+            const bodyRaw = document.getElementById('spBody').value;
+
+            const introScenes = _spParseIntro(introRaw); // [{duration, text}]
+            const bodySentences = _spSplitSentences(bodyRaw);
+
+            if (introScenes.length === 0 && bodySentences.length === 0) {
+                alert('도입부 또는 본문 대본을 입력해주세요.');
+                return;
+            }
+
+            const bodyChunks = _spChunkBody(bodySentences, _spN); // [[s1,s2,...], ...]
+
+            // 모든 장면을 통합 리스트로 (인덱스 = 1부터)
+            // type: 'intro' | 'body'
+            const allScenes = [];
+            introScenes.forEach((s, i) => {
+                allScenes.push({
+                    sceneNo: allScenes.length + 1,
+                    type: 'intro',
+                    duration: s.duration,
+                    text: s.text,
+                });
+            });
+            bodyChunks.forEach((chunk, i) => {
+                allScenes.push({
+                    sceneNo: allScenes.length + 1,
+                    type: 'body',
+                    duration: 10, // 본문 고정 10초
+                    text: chunk.join(' '),
+                });
+            });
+
+            btn.disabled = true;
+            btn.textContent = '⏳ Gemini Pro 분석 중...';
+            status.innerHTML = '<div class="spinner"></div> 전체 대본 맥락 학습 중...';
+
+            try {
+                const fullScript = (introRaw + '\n\n' + bodyRaw).trim();
+                const channelLabel = _spChannel === 'psychology' ? '심리학' : '경제';
+
+                const prompt = `당신은 유튜브 ${channelLabel} 채널의 영상 제작 디렉터입니다. 아래 대본 전체를 읽고 맥락을 완전히 이해한 뒤, 각 장면별로 시각화 방법을 결정해야 합니다.
+
+=== 전체 대본 (맥락 이해용) ===
+${fullScript}
+
+=== 장면 분할 결과 (이 순서대로 분석) ===
+${allScenes.map(s => `[장면 ${s.sceneNo}] (${s.type === 'intro' ? '도입부' : '본문'}, ${s.duration}초)\n${s.text}`).join('\n\n')}
+
+=== 그림체 규약 (AI 일러스트·Claude Design 모두 이 톤 유지) ===
+${stylePrompt}
+
+=== 작업 지시 ===
+각 장면을 다음 4가지 타입 중 하나로 분류:
+1. **ai** — AI 일러스트(나노바나나2). 일반 장면, 감정·내면·비유·일상 상황. 한국 ${channelLabel} 영상의 기본.
+2. **real** — 실사(구글 이미지 검색). 실존 인물(이름이 명시된 학자/정치인/유명인), 실제 책 《》, 유명 기관·장소만. AI로 그리면 부정확해서 신뢰도 떨어지는 경우만.
+3. **claude_design** — Claude Design 인포그래픽. 도식·차트·통계·법칙·호흡법·뇌 구조·N가지 비교·단계 흐름 등 "설명·구조" 장면.
+4. **gif** — 사용 금지 (이번 워크플로우는 GIF 제외).
+
+각 장면에 대해 출력:
+- type: ai | real | claude_design
+- nano_prompt: (type=ai인 경우만) 나노바나나2/젠스파크용 영문 이미지 프롬프트. 위 그림체 규약을 자연스럽게 녹여서. 장면 내용을 구체적으로 묘사. 대사·자막·캡션 텍스트 금지.
+- grok_prompt: (type=ai인 경우만) 그록 image-to-video용 영문 영상 프롬프트. **반드시 다음 스타일 고정 문구 포함**: "maintain the original 2D illustrated style from the input image, NO photorealism, NO live-action drift, NO style change, subtle camera movement only". 각 장면의 표시된 길이(6초 또는 10초)에 맞게 적절한 카메라/캐릭터 동작 묘사. 과장 금지, 장면 내용에 정확히 일치하는 자연스러운 움직임만.
+- real_keyword: (type=real인 경우만) 구글 이미지 검색용 한글 키워드 (예: "에드워드 데시 심리학자", "그릿 책 표지").
+- real_subject: (type=real인 경우만) 무엇/누구의 실사인지 한 줄 설명.
+- claude_prompt: (type=claude_design인 경우만) Claude Design용 한글 프롬프트. 어떤 도식·차트·구조인지 명확히. **위 그림체 규약의 색감·톤을 인포그래픽에도 반영** (예: 심리학이면 따뜻한 크림색·연한 라벤더·세이지, 경제면 editorial 톤). 자막 공간(하단 1/4) 비워둘 것 명시.
+- claude_kind: (type=claude_design인 경우만) 도식 종류 라벨 (예: "박스 호흡 도식", "2x2 사분면", "단계 흐름 카드", "뇌 구조", "통계 비교").
+
+=== 출력 형식 (JSON만, 다른 설명 없이) ===
+{
+  "scenes": [
+    {"sceneNo": 1, "type": "ai", "nano_prompt": "...", "grok_prompt": "..."},
+    {"sceneNo": 2, "type": "real", "real_keyword": "...", "real_subject": "..."},
+    {"sceneNo": 3, "type": "claude_design", "claude_prompt": "...", "claude_kind": "..."}
+  ]
+}
+
+JSON만 출력하세요. 코드블록 마커 금지.`;
+
+                status.innerHTML = '<div class="spinner"></div> Gemini Pro 호출 중... (대본 길이에 따라 30~90초)';
+                const r = await callGemini(prompt, { maxTokens: 32768, temperature: 0.4, model: 'gemini-2.5-pro' });
+
+                // JSON 파싱
+                let txt = r.text.trim();
+                txt = txt.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '');
+                const firstBrace = txt.indexOf('{');
+                const lastBrace = txt.lastIndexOf('}');
+                if (firstBrace >= 0 && lastBrace > firstBrace) {
+                    txt = txt.substring(firstBrace, lastBrace + 1);
+                }
+                let parsed;
+                try {
+                    parsed = JSON.parse(txt);
+                } catch (e) {
+                    throw new Error('Gemini 응답 JSON 파싱 실패: ' + e.message + '\n\n원본 일부: ' + r.text.slice(0, 500));
+                }
+
+                const geminiScenes = parsed.scenes || [];
+                // allScenes에 Gemini 분류 결과 머지
+                const merged = allScenes.map(s => {
+                    const g = geminiScenes.find(x => x.sceneNo === s.sceneNo) || {};
+                    return { ...s, ...g };
+                });
+
+                _spLastResult = { scenes: merged, channel: _spChannel, stylePrompt };
+                _spRenderResults(_spLastResult);
+
+                status.innerHTML = `<span style="color:#28a745;">✅ ${merged.length}장면 변환 완료 (모델: ${r.usage?.model || 'gemini-2.5-pro'})</span>`;
+                document.getElementById('spResultSection').style.display = '';
+                document.getElementById('spResultSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+            } catch (e) {
+                status.innerHTML = `<span style="color:#dc3545;">❌ 실패: ${e.message}</span>`;
+                console.error(e);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🚀 변환 시작 (Gemini Pro 맥락 분석)';
+            }
+        }
+
+        // ============================================================
+        // 결과 렌더링 — 5탭
+        // ============================================================
+        function _spRenderResults(result) {
+            const scenes = result.scenes;
+            const counts = { ai: 0, real: 0, claude_design: 0, unknown: 0 };
+            scenes.forEach(s => {
+                if (counts[s.type] !== undefined) counts[s.type]++;
+                else counts.unknown++;
+            });
+
+            // 요약
+            document.getElementById('spSummary').innerHTML = `
+                <strong>📊 변환 결과:</strong> 총 ${scenes.length}장면 ·
+                🎨 AI 일러스트 ${counts.ai}개 ·
+                📷 실사 ${counts.real}개 ·
+                📊 Claude Design ${counts.claude_design}개
+                ${counts.unknown ? ` · ⚠️ 미분류 ${counts.unknown}개` : ''}
+            `;
+
+            // 1) 셀팟 붙여넣기 — 모든 장면의 나레이션을 빈 줄 2개로 구분
+            const sellpotText = scenes.map(s => s.text).join('\n\n\n');
+            document.getElementById('spOut_sellpot').value = sellpotText;
+
+            // 2) 나노바나나2 — type=ai만
+            const nanoLines = scenes
+                .filter(s => s.type === 'ai' && s.nano_prompt)
+                .map(s => `[장면 ${s.sceneNo}] ${s.type === 'intro' ? '(도입부)' : ''}\n${s.nano_prompt}\n`)
+                .join('\n');
+            document.getElementById('spOut_nano').value = nanoLines || '(AI 이미지 장면 없음)';
+
+            // 3) 그록 영상 — type=ai만, 6초/10초 표시
+            const grokLines = scenes
+                .filter(s => s.type === 'ai' && s.grok_prompt)
+                .map(s => `[장면 ${s.sceneNo}] ⏱ ${s.duration}초\n${s.grok_prompt}\n`)
+                .join('\n');
+            document.getElementById('spOut_grok').value = grokLines || '(AI 영상 장면 없음)';
+
+            // 4) 실사 검색 — type=real만
+            const realLines = scenes
+                .filter(s => s.type === 'real')
+                .map(s => `[장면 ${s.sceneNo}] ${s.real_subject || ''}\n  🔍 검색어: ${s.real_keyword || ''}\n`)
+                .join('\n');
+            document.getElementById('spOut_real').value = realLines || '(실사 장면 없음)';
+
+            // 5) Claude Design — type=claude_design만
+            const claudeLines = scenes
+                .filter(s => s.type === 'claude_design')
+                .map(s => `[장면 ${s.sceneNo}] (${s.claude_kind || '인포그래픽'})\n${s.claude_prompt || ''}\n`)
+                .join('\n');
+            document.getElementById('spOut_claude').value = claudeLines || '(Claude Design 장면 없음)';
+
+            // 첫 탭으로
+            _spSwitchResultTab('sellpot');
+        }
     </script>
 
     <script>
