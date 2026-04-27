@@ -1511,6 +1511,16 @@
         <!-- ===== 프로세스: AI 주제추천 (별도 탭) ===== -->
         <div id="process-formula" style="display:none;">
 
+        <!-- 채널 선택 (하위 탭) -->
+        <div style="display:flex;gap:8px;margin-bottom:14px;background:#f8f9fa;padding:8px;border-radius:10px;">
+            <button id="ftCh_pujim" onclick="switchFormulaChannel('pujim')" style="flex:1;padding:10px;background:#dc3545;color:white;border:none;border-radius:6px;font-size:0.9rem;font-weight:700;cursor:pointer;">
+                🥘 푸짐한 경제학
+            </button>
+            <button id="ftCh_psychology" onclick="switchFormulaChannel('psychology')" style="flex:1;padding:10px;background:transparent;color:#666;border:2px solid #ccc;border-radius:6px;font-size:0.9rem;font-weight:700;cursor:pointer;">
+                🧠 한눈에 심리학
+            </button>
+        </div>
+
         <!-- 🔬 내 채널 자가 분석 -->
         <div class="section" style="border:2px solid #cce5ff;">
             <div class="section-title" style="color:#0066cc;">
@@ -4353,6 +4363,299 @@ ${allVideosText}
         }
 
         // ===========================
+        // 🧠 한눈에 심리학 — 결과 렌더
+        // ===========================
+        function renderPsychologyResults(topics, fullData) {
+            const resultsEl = document.getElementById('ftResults');
+            if (!topics || topics.length === 0) {
+                resultsEl.innerHTML = '<div style="padding:16px;color:#888;">추천 주제가 없어요. 모든 후보가 V 평가에서 탈락했어요.</div>';
+                return;
+            }
+
+            const catColor = {
+                '공부/뇌 효율': '#0066cc',
+                '인간관계/직장': '#dc3545',
+                '멘탈/감정': '#9333ea',
+                '자존감/자기인식': '#28a745',
+                '수면/번아웃/신체': '#ffa500'
+            };
+            const medal = (rank) => rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
+            const vColor = (s, max) => {
+                const ratio = s / max;
+                return ratio >= 0.85 ? '#28a745' : ratio >= 0.6 ? '#ffa500' : '#dc3545';
+            };
+            const vMax = { V1_보편성: 15, V2_결과선명도: 15, V3_시간약속: 10, V4_면죄부: 10, V5_한국적통증: 10, V6_자가복제: 10, V7_댓글트리거: 10 };
+
+            const html = topics.map(t => {
+                const cat = t.카테고리 || '미분류';
+                const catCol = catColor[cat] || '#888';
+                const total = t.V_합계 || 0;
+                const totalCol = total >= 75 ? '#28a745' : total >= 70 ? '#ffa500' : '#dc3545';
+                const v = t.V_점수 || {};
+                const skel = t['5단_골격'] || {};
+                const trig = t.댓글_트리거 || {};
+                const trigSum = trig.활성_합계 ?? (['유머_셀프디스','격언_인용','노트_정리형','자기변화_인증'].filter(k => trig[k]===true).length);
+
+                const vBars = Object.entries(vMax).map(([k, max]) => {
+                    const score = v[k] || 0;
+                    const w = Math.round(score / max * 100);
+                    const label = k.replace(/V\d_/, '');
+                    return `<div style="margin-bottom:3px;">
+                        <div style="display:flex;justify-content:space-between;font-size:0.7rem;margin-bottom:1px;">
+                            <span style="color:#666;">${label}</span>
+                            <span style="color:${vColor(score, max)};font-weight:700;">${score}/${max}</span>
+                        </div>
+                        <div style="background:#e0e0e0;height:5px;border-radius:3px;overflow:hidden;">
+                            <div style="width:${w}%;height:100%;background:${vColor(score, max)};"></div>
+                        </div>
+                    </div>`;
+                }).join('');
+
+                const trigItems = [
+                    ['유머_셀프디스', '😂 셀프디스'],
+                    ['격언_인용', '💬 격언'],
+                    ['노트_정리형', '📝 노트'],
+                    ['자기변화_인증', '✨ 인증']
+                ];
+
+                return `<div style="background:white;border:2px solid ${total>=70?catCol:'#dc3545'};border-radius:12px;padding:14px;margin-bottom:12px;">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+                        <span style="font-size:1.3rem;">${medal(t.순위 || 0)}</span>
+                        <span style="background:${catCol};color:white;padding:3px 10px;border-radius:10px;font-size:0.75rem;font-weight:700;">${escapeHtml(cat)}</span>
+                        <span style="background:${totalCol};color:white;padding:3px 10px;border-radius:10px;font-size:0.78rem;font-weight:700;">총점 ${total}/80</span>
+                        ${trigSum >= 3 ? `<span style="background:#28a745;color:white;padding:3px 10px;border-radius:10px;font-size:0.72rem;font-weight:700;">💬 트리거 ${trigSum}/4</span>` : `<span style="background:#888;color:white;padding:3px 10px;border-radius:10px;font-size:0.72rem;font-weight:700;">💬 트리거 ${trigSum}/4</span>`}
+                    </div>
+
+                    <div onclick="navigator.clipboard.writeText(this.textContent.trim()); this.style.background='#ffe0e0';" style="font-size:1rem;font-weight:700;color:#222;padding:8px 10px;background:#fff5f5;border-radius:6px;cursor:pointer;margin-bottom:10px;" title="클릭=복사">
+                        ${escapeHtml(t.예상_제목 || t.주제_한줄 || '')}
+                    </div>
+
+                    ${t.면죄부 ? `<div style="background:#f0fff4;padding:10px 12px;border-left:3px solid #28a745;border-radius:4px;margin-bottom:10px;">
+                        <div style="font-size:0.75rem;font-weight:700;color:#28a745;margin-bottom:2px;">🛡️ 면죄부</div>
+                        <div style="font-size:0.88rem;color:#333;">"${escapeHtml(t.면죄부)}"</div>
+                    </div>` : ''}
+
+                    ${t.변신_서사 ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+                        <div style="background:#f0f9ff;padding:8px 10px;border-radius:6px;">
+                            <div style="font-size:0.7rem;font-weight:700;color:#0066cc;margin-bottom:2px;">✨ 변신 서사</div>
+                            <div style="font-size:0.83rem;color:#333;">${escapeHtml(t.변신_서사)}</div>
+                        </div>
+                        ${t.시간_약속 ? `<div style="background:#fff8e6;padding:8px 10px;border-radius:6px;">
+                            <div style="font-size:0.7rem;font-weight:700;color:#996600;margin-bottom:2px;">⏱️ 시간 약속</div>
+                            <div style="font-size:0.83rem;color:#333;font-weight:700;">${escapeHtml(t.시간_약속)}</div>
+                        </div>` : ''}
+                    </div>` : ''}
+
+                    <details style="margin-bottom:10px;">
+                        <summary style="font-size:0.8rem;font-weight:700;color:#666;cursor:pointer;">📊 7개 변수 점수 상세</summary>
+                        <div style="margin-top:6px;background:#fafafa;padding:8px;border-radius:6px;">${vBars}</div>
+                    </details>
+
+                    <details style="margin-bottom:10px;">
+                        <summary style="font-size:0.8rem;font-weight:700;color:#666;cursor:pointer;">🗂️ 5단 골격 (S1~S5)</summary>
+                        <div style="margin-top:6px;display:flex;flex-direction:column;gap:4px;font-size:0.78rem;">
+                            ${['S1_훅','S2_정체확인','S3_원리설명','S4_5단계_방법','S5_변신_약속'].map(k => skel[k] ? `<div style="background:#f8f9fa;padding:6px 10px;border-radius:4px;"><b style="color:#9333ea;">${k.replace('_', '. ')}:</b> ${escapeHtml(skel[k])}</div>` : '').join('')}
+                        </div>
+                    </details>
+
+                    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;">
+                        ${trigItems.map(([k, label]) => `<span style="padding:3px 8px;border-radius:8px;font-size:0.72rem;background:${trig[k]?'#e6ffed':'#f0f0f0'};color:${trig[k]?'#28a745':'#aaa'};">${trig[k]?'✓':'✗'} ${label}</span>`).join('')}
+                    </div>
+
+                    ${t.리스크 ? `<div style="margin-bottom:10px;padding:6px 10px;background:#fafafa;border-radius:4px;font-size:0.78rem;color:#777;">
+                        <b>⚠️ 리스크:</b> ${escapeHtml(t.리스크)}
+                    </div>` : ''}
+
+                    <div style="display:flex;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid #eee;flex-wrap:wrap;">
+                        <button onclick='copyScriptPrompt(${JSON.stringify(t).replace(/'/g, "\\'")}, this)'
+                                style="flex:1;min-width:240px;padding:10px;background:#0066cc;color:white;border:none;border-radius:6px;font-size:0.85rem;font-weight:700;cursor:pointer;">
+                            📋 Claude Code 대본 프롬프트 복사
+                        </button>
+                        <button onclick="blockTopic('${(t.예상_제목 || t.주제_한줄 || '').replace(/'/g, "\\'").replace(/"/g, '&quot;')}', this)"
+                                style="flex:1;min-width:140px;padding:8px;background:#fff5f5;color:#dc3545;border:1px solid #ffcccc;border-radius:6px;font-size:0.78rem;font-weight:700;cursor:pointer;">
+                            🚫 다시 안 보기
+                        </button>
+                        <button onclick="blockTopic('이 주제 사용함: ' + '${(t.예상_제목 || t.주제_한줄 || '').replace(/'/g, "\\'").replace(/"/g, '&quot;')}', this)"
+                                style="flex:1;min-width:140px;padding:8px;background:#f0fff4;color:#28a745;border:1px solid #ccebcc;border-radius:6px;font-size:0.78rem;font-weight:700;cursor:pointer;">
+                            ✅ 이거 만들었음
+                        </button>
+                    </div>
+                </div>`;
+            }).join('');
+
+            // 카테고리 분포 통계
+            const catCounts = {};
+            topics.forEach(t => { const c = t.카테고리 || '미분류'; catCounts[c] = (catCounts[c]||0) + 1; });
+            const catSummary = Object.entries(catCounts).map(([c,n]) => `${c} ${n}`).join(' · ');
+
+            resultsEl.innerHTML = `
+                <div style="background:#faf5ff;padding:10px 14px;border-radius:8px;margin-bottom:12px;border-left:4px solid #9333ea;">
+                    <div style="font-size:0.9rem;color:#9333ea;font-weight:700;">🧠 한눈에 심리학 · ${topics.length}개 주제 통과</div>
+                    <div style="font-size:0.78rem;color:#666;margin-top:2px;">${catSummary}</div>
+                </div>
+                ${html}
+            `;
+        }
+
+        // ===========================
+        // 🧠 한눈에 심리학 — 주제 추천 프롬프트
+        // ===========================
+        function buildPsychologyPrompt({today, count, recencyText, recentTitles, blockedSection, capsSection, feedbackSection, userExtra, avoid}) {
+            return `오늘은 ${today}입니다. 당신은 유튜브 채널 "한눈에 심리학"의 콘텐츠 기획자입니다.
+
+[채널 컨텍스트]
+- 채널명: 한눈에 심리학 (구독자 6.81만, 영상 30개)
+- 평균 조회수 13만 / 중앙값 6만
+- 형식: AI 애니 그림체, 18~25분, 주 1편
+- 타겟: 한국인 보편 고민 (공부/직장/인간관계/잠/돈/부모)
+
+[검증된 TOP 영상 (학습용)]
+- 두뇌 80만 / 여유로운 사람 68만 / 예민함 32만
+[부진 패턴 (회피)]
+- 가스라이팅 5.8천 / 깊이생각 7.4천 / 형제 6천 (시청자 좁음)
+
+[채널 시그니처]
+1. 보편적 고민 (한국인 70%+ 직접 경험)
+2. 변신 서사 ("유리 → 강철 멘탈" / "예민 → 여유로운 뇌" / "산만 → 천재 두뇌")
+3. 면죄부 ("당신 잘못 아닙니다, 뇌의 ○○ 때문입니다")
+4. 시간 약속 ("3일 / 3초 / 2분 / 5단계")
+
+[7개 평가 변수 — 각 항목별 점수, 합계 80점 만점, 70점 이상만 통과]
+V1 보편성 (15점): 한국인 70%+ 직접 경험? 공부·직장·인관·잠·돈·부모=10+ / 특정성격(예민함)=5 / 특정상황(가스라이팅)=3
+V2 결과 선명도 (15점): 영상 끝 후 "달라진 자기" 그림 가능? "○○한 사람이 된다" 명확?
+V3 시간 약속 (10점): "3일/3초/2분/5단계" 가능=10 / 막연=3
+V4 면죄부 가능성 (10점): "당신 잘못 X, 뇌의 ○○ 때문" 가능=10 / 책임 묻는 주제=0
+V5 한국적 통증 (10점): 학력/성공/인관/비교 직결=10 / 글로벌 일반론=5
+V6 자가복제 안전성 (10점): 채널 30영상 중복 — 0편=10 / 1편(6개월+)=7 / 2편=3 / 3편+=0(차단)
+V7 댓글 트리거 4종 (10점, 각 2.5):
+  - 유머 셀프디스 (영상 기법 따라하다 실패할 디테일?)
+  - 격언 인용 (명언 1개 박을 수 있나?)
+  - 노트 정리형 (3~5단계 구조화 가능?)
+  - 자기 변화 인증 ("○○년 살았는데" 본인사 유도?)
+
+[필수 탈락 룰]
+- 합계 70점 미만 → 탈락
+- V1 보편성 7점 미만 → 무조건 탈락 (부진작 1순위 원인)
+- V2 결과 선명도 7점 미만 → 무조건 탈락
+- V6 자가복제 0점(3편+) → 무조건 탈락
+
+[차단 카테고리 — 절대 금지]
+- 정치/종교/연예
+- 특정 성별 비방
+- 의학적 진단 (우울증/ADHD 자가진단류 — 2025년 유튜브 정책 위반)
+- 가스라이팅·나르시시스트 단독 (부진 검증)
+${avoid ? `- 사용자 추가 금지: ${avoid}` : ''}
+
+[카테고리 균형 — ${count}개 추천 시]
+- 공부/뇌 효율: ${Math.round(count*0.17)}개
+- 인간관계/직장: ${Math.round(count*0.25)}개
+- 멘탈/감정: ${Math.round(count*0.25)}개
+- 자존감/자기인식: ${Math.round(count*0.17)}개
+- 수면/번아웃/신체: ${Math.round(count*0.17)}개
+
+[최근 다룬 영상 — 자가복제 회피용]
+${recentTitles}
+${blockedSection}${capsSection}${feedbackSection}
+${userExtra ? `[사용자 추가 요청]\n${userExtra}\n` : ''}
+
+[작업]
+${recencyText} 동안의 한국 사회 트렌드/이슈를 웹에서 검색해서 (또는 평상시 보편 고민 기반) 위 7개 평가 변수에 따라 영상 주제 ${count}개 추천하세요. 5단 골격은 동일 형태가 3개 이상이면 다양화 재구성.
+
+[출력 — 반드시 아래 JSON만. 다른 설명 금지]
+{
+  "topics": [
+    {
+      "순위": 1,
+      "카테고리": "공부/뇌 효율",
+      "예상_제목": "40~55자, 괄호 부연 필수 (예: 3일 만에 산만한 뇌가 천재 두뇌로 바뀌는 5단계 (도파민 리셋, 미국 신경과학자 검증))",
+      "주제_한줄": "주제 한 줄 요약",
+      "면죄부": "당신 잘못 아닙니다, ○○ 때문입니다 (한 줄)",
+      "변신_서사": "○○ → ○○ (구체적 변화)",
+      "시간_약속": "3일 / 5단계 / 2분 등",
+      "V_점수": {
+        "V1_보편성": 13,
+        "V2_결과선명도": 14,
+        "V3_시간약속": 10,
+        "V4_면죄부": 10,
+        "V5_한국적통증": 8,
+        "V6_자가복제": 10,
+        "V7_댓글트리거": 8
+      },
+      "V_합계": 73,
+      "5단_골격": {
+        "S1_훅": "0~30초 — 강한 후킹 (예: '왜 당신은 책 한 페이지에서 5번 딴짓하는가?')",
+        "S2_정체확인": "30초~3분 — '이건 게으름이 아닙니다, ○○입니다'",
+        "S3_원리설명": "3~10분 — 뇌 과학/심리 메커니즘",
+        "S4_5단계_방법": "10~20분 — 실천 단계 (3~5개)",
+        "S5_변신_약속": "20~25분 — '3일 후 당신은 ○○한 사람이 됩니다'"
+      },
+      "댓글_트리거": {
+        "유머_셀프디스": true,
+        "격언_인용": true,
+        "노트_정리형": true,
+        "자기변화_인증": false,
+        "활성_합계": 3
+      },
+      "리스크": "주의점 한 줄"
+    }
+  ]
+}`;
+        }
+
+        // ===========================
+        // 🔀 채널 전환 (푸짐한경제학 / 한눈에심리학)
+        // ===========================
+        const FT_CHANNEL_KEY = 'ft_current_channel_v1';
+        function getCurrentChannel() {
+            return localStorage.getItem(FT_CHANNEL_KEY) || 'pujim';
+        }
+        function switchFormulaChannel(ch) {
+            localStorage.setItem(FT_CHANNEL_KEY, ch);
+            // 버튼 스타일 토글
+            const pujimBtn = document.getElementById('ftCh_pujim');
+            const psychBtn = document.getElementById('ftCh_psychology');
+            if (ch === 'pujim') {
+                pujimBtn.style.background = '#dc3545';
+                pujimBtn.style.color = 'white';
+                pujimBtn.style.border = 'none';
+                psychBtn.style.background = 'transparent';
+                psychBtn.style.color = '#666';
+                psychBtn.style.border = '2px solid #ccc';
+            } else {
+                psychBtn.style.background = '#9333ea';
+                psychBtn.style.color = 'white';
+                psychBtn.style.border = 'none';
+                pujimBtn.style.background = 'transparent';
+                pujimBtn.style.color = '#666';
+                pujimBtn.style.border = '2px solid #ccc';
+            }
+            // 채널별 기본값 채우기
+            const handleEl = document.getElementById('caHandle');
+            const formulaEl = document.getElementById('ftFormula');
+            if (ch === 'pujim') {
+                if (handleEl) handleEl.value = '@PujimEcon';
+                if (formulaEl && !formulaEl.value.includes('역설')) {
+                    formulaEl.value = '선진국 이미지 강한 나라인데 한국인이 잘 모르는 숨은 경제 위기. 역설 DNA 필수 (낙원→탈출, 자원부국→최빈국).';
+                }
+            } else {
+                if (handleEl) handleEl.value = '@한눈에심리학';
+                if (formulaEl) {
+                    formulaEl.value = '한국인 70% 이상이 직접 경험하는 보편적 고민 + 영상 끝 후 "달라진 자기 모습" 그릴 수 있는 변신 서사 + 면죄부("당신 잘못 아닙니다, 뇌의 ○○ 때문") 구조.';
+                }
+            }
+            // 기존 결과 클리어
+            const resultsEl = document.getElementById('ftResults');
+            if (resultsEl) resultsEl.innerHTML = '';
+            const caResults = document.getElementById('caResults');
+            if (caResults) caResults.innerHTML = '';
+        }
+        // 페이지 로드 시 저장된 채널 적용
+        document.addEventListener('DOMContentLoaded', () => {
+            const saved = getCurrentChannel();
+            if (saved === 'psychology') switchFormulaChannel('psychology');
+        });
+
+        // ===========================
         // 📋 Claude Code 대본 프롬프트 복사
         // ===========================
         function copyScriptPrompt(t, btnEl) {
@@ -4776,7 +5079,12 @@ ${topVideosSection}${forbiddenSection}
                 ? `\n[과거 추천 정확도 — 학습용]\n총 ${feedbackList.length}건. 최근 5건:\n${feedbackList.slice(-5).map(f => `- "${f.title}" 예상 ${f.predicted} → 실제 ${f.actualGrade} (${f.actual.toLocaleString()}회)`).join('\n')}\n→ 위 패턴을 참고해서 등급 예상을 더 보수적으로/공격적으로 조정하세요.\n`
                 : '';
 
-            const prompt = `오늘은 ${today}입니다. 당신은 유튜브 채널 "푸짐한 경제학"의 콘텐츠 기획자입니다.
+            const _channel = getCurrentChannel();
+
+            // 한눈에 심리학 채널이면 완전히 다른 프롬프트 사용
+            const prompt = _channel === 'psychology' ? buildPsychologyPrompt({
+                today, count, recencyText, recentTitles, blockedSection, capsSection, feedbackSection, userExtra, avoid
+            }) : `오늘은 ${today}입니다. 당신은 유튜브 채널 "푸짐한 경제학"의 콘텐츠 기획자입니다.
 
 [채널 컨텍스트]
 - 채널명: 푸짐한 경제학 (@PujimEcon)
@@ -5075,24 +5383,44 @@ ${(window._channelState && window._channelState.slump)
                         t.한국인_관심_점수 = recomputed;
                     }
                 });
-                const passedKr = allTopics.filter(t => typeof t.한국인_관심_점수 !== 'number' || t.한국인_관심_점수 >= 7);
-                // 자가복제 60% 이상 자동 제외
-                const passedDup = passedKr.filter(t => typeof t.키워드_매칭_퍼센트 !== 'number' || t.키워드_매칭_퍼센트 < 60);
-                // 감정 출구 3개 미만 자동 제외 (물전쟁 케이스 방지)
-                const passed = passedDup.filter(t => {
-                    if (!t.감정_출구) return true;
-                    const sum = t.감정_출구.활성_합계 ??
-                        (['분노','연민','동경','공포'].filter(k => t.감정_출구[k] === true).length);
-                    return sum >= 3;
-                });
-                const krFiltered = allTopics.length - passedKr.length;
-                const dupFiltered = passedKr.length - passedDup.length;
-                const emoFiltered = passedDup.length - passed.length;
-                renderFormulaResults(passed, parsed);
-                const notes = [];
-                if (krFiltered > 0) notes.push(`한국인 관심 7점 미만 ${krFiltered}개`);
-                if (dupFiltered > 0) notes.push(`자가복제(키워드 60%+) ${dupFiltered}개`);
-                if (emoFiltered > 0) notes.push(`감정 출구 3개 미만 ${emoFiltered}개 (물전쟁 케이스 방지)`);
+                const __ch = getCurrentChannel();
+                const allTopics = parsed.topics;
+                let passed, notes = [];
+
+                if (__ch === 'psychology') {
+                    // 심리학 채널 — V 합계 70+ / V1 7+ / V2 7+ / V6 0초과 필터
+                    const failed = { lowTotal: 0, lowV1: 0, lowV2: 0, dup: 0 };
+                    passed = allTopics.filter(t => {
+                        const v = t.V_점수 || {};
+                        if (typeof t.V_합계 === 'number' && t.V_합계 < 70) { failed.lowTotal++; return false; }
+                        if (typeof v.V1_보편성 === 'number' && v.V1_보편성 < 7) { failed.lowV1++; return false; }
+                        if (typeof v.V2_결과선명도 === 'number' && v.V2_결과선명도 < 7) { failed.lowV2++; return false; }
+                        if (typeof v.V6_자가복제 === 'number' && v.V6_자가복제 === 0) { failed.dup++; return false; }
+                        return true;
+                    });
+                    if (failed.lowTotal) notes.push(`총점 70 미만 ${failed.lowTotal}개`);
+                    if (failed.lowV1) notes.push(`V1 보편성 7 미만 ${failed.lowV1}개`);
+                    if (failed.lowV2) notes.push(`V2 결과선명도 7 미만 ${failed.lowV2}개`);
+                    if (failed.dup) notes.push(`V6 자가복제 0점 ${failed.dup}개`);
+                    renderPsychologyResults(passed, parsed);
+                } else {
+                    // 푸짐한경제학 — 기존 로직
+                    const passedKr = allTopics.filter(t => typeof t.한국인_관심_점수 !== 'number' || t.한국인_관심_점수 >= 7);
+                    const passedDup = passedKr.filter(t => typeof t.키워드_매칭_퍼센트 !== 'number' || t.키워드_매칭_퍼센트 < 60);
+                    passed = passedDup.filter(t => {
+                        if (!t.감정_출구) return true;
+                        const sum = t.감정_출구.활성_합계 ??
+                            (['분노','연민','동경','공포'].filter(k => t.감정_출구[k] === true).length);
+                        return sum >= 3;
+                    });
+                    const krFiltered = allTopics.length - passedKr.length;
+                    const dupFiltered = passedKr.length - passedDup.length;
+                    const emoFiltered = passedDup.length - passed.length;
+                    if (krFiltered > 0) notes.push(`한국인 관심 7점 미만 ${krFiltered}개`);
+                    if (dupFiltered > 0) notes.push(`자가복제(키워드 60%+) ${dupFiltered}개`);
+                    if (emoFiltered > 0) notes.push(`감정 출구 3개 미만 ${emoFiltered}개`);
+                    renderFormulaResults(passed, parsed);
+                }
                 if (notes.length > 0) {
                     const note = document.createElement('div');
                     note.style.cssText = 'padding:8px 12px;background:#fff8e6;border-left:3px solid #ffa500;border-radius:4px;font-size:0.8rem;color:#996600;margin-top:8px;';
