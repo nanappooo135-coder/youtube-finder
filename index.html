@@ -3923,6 +3923,16 @@ ${recencyText} 동안의 실제 뉴스/이슈를 웹에서 검색하여, 위 공
 체크4: 최근 4주 내 비슷한 주제 다뤘나? (No여야 통과 — 위 영상 목록 참조)
 체크5: 이란/중동 주제? AND 이번 주 이미 1편 있나? (No여야 통과)
 
+[한국인 관심 강도 점수 — 10점 만점 / 7점 이상만 추천]
+각 주제마다 아래 항목별로 점수 계산:
+- 한국인이 이민/유학 가는 나라? (+3점)
+- 한국 기업이 진출한 나라? (+2점)
+- 한국인이 여행 가는 나라? (+2점)
+- 최근 1개월 한국 뉴스에 나온 인물/국가? (+2점)
+- 한국 경제/안보에 직접 영향? (+3점)
+- 인물이면 한국 일반인도 이름 아는가? (+3점)
+※ 합계 7점 미만이면 추천하지 말 것. 합계가 7점 이상인 주제만 출력하세요.
+
 [출력 형식 — 반드시 아래 JSON만 출력. 다른 설명·마크다운 금지]
 {
   "topics": [
@@ -3946,6 +3956,15 @@ ${recencyText} 동안의 실제 뉴스/이슈를 웹에서 검색하여, 위 공
         "3_왜형식가능": true,
         "4_4주중복없음": true,
         "5_중동안겹침": true
+      },
+      "한국인_관심_점수": 8,
+      "한국인_관심_세부": {
+        "이민유학": 3,
+        "한국기업진출": 2,
+        "여행지": 0,
+        "최근뉴스등장": 2,
+        "경제안보영향": 1,
+        "인물인지도": 0
       }
     }
   ]
@@ -3985,7 +4004,17 @@ ${recencyText} 동안의 실제 뉴스/이슈를 웹에서 검색하여, 위 공
                     return;
                 }
 
-                renderFormulaResults(parsed.topics);
+                // 한국인 관심 점수 7점 미만 자동 제외 (AI가 실수로 포함했을 경우 대비)
+                const allTopics = parsed.topics;
+                const passed = allTopics.filter(t => typeof t.한국인_관심_점수 !== 'number' || t.한국인_관심_점수 >= 7);
+                const filteredOut = allTopics.length - passed.length;
+                renderFormulaResults(passed);
+                if (filteredOut > 0) {
+                    const note = document.createElement('div');
+                    note.style.cssText = 'padding:8px 12px;background:#fff8e6;border-left:3px solid #ffa500;border-radius:4px;font-size:0.8rem;color:#996600;margin-top:8px;';
+                    note.innerHTML = `⚠️ 한국인 관심 점수 7점 미만 ${filteredOut}개 주제는 자동 제외됐어요.`;
+                    resultsEl.appendChild(note);
+                }
 
             } catch (e) {
                 resultsEl.innerHTML = `<div style="padding:16px;color:#dc3545;font-weight:700;">오류: ${escapeHtml(e.message)}</div>`;
@@ -4026,6 +4055,10 @@ ${recencyText} 동안의 실제 뉴스/이슈를 웹에서 검색하여, 위 공
                     ['중동 안겹침', checks['5_중동안겹침']],
                 ];
                 const allPass = checkList.every(c => c[1] === true);
+                const krScore = typeof t.한국인_관심_점수 === 'number' ? t.한국인_관심_점수 : null;
+                const krDetail = t.한국인_관심_세부 || {};
+                const krColor = krScore === null ? '#888' : krScore >= 9 ? '#dc3545' : krScore >= 7 ? '#28a745' : '#ffa500';
+                const krLabel = krScore === null ? '미평가' : krScore >= 9 ? '매우 높음' : krScore >= 7 ? '추천 통과' : '미달';
 
                 return `
                 <div style="background:white;border:2px solid ${allPass ? '#28a745' : '#dc3545'};border-radius:12px;padding:16px;margin-bottom:12px;">
@@ -4037,6 +4070,7 @@ ${recencyText} 동안의 실제 뉴스/이슈를 웹에서 검색하여, 위 공
                         ${allPass
                             ? '<span style="background:#e6ffed;color:#28a745;padding:3px 10px;border-radius:10px;font-size:0.75rem;font-weight:700;">✅ 5체크 통과</span>'
                             : '<span style="background:#ffebeb;color:#dc3545;padding:3px 10px;border-radius:10px;font-size:0.75rem;font-weight:700;">⚠️ 체크 미통과</span>'}
+                        ${krScore !== null ? `<span style="background:${krColor};color:white;padding:3px 10px;border-radius:10px;font-size:0.75rem;font-weight:700;" title="한국인 관심 강도">🇰🇷 ${krScore}/10 ${krLabel}</span>` : ''}
                     </div>
 
                     <div style="font-size:1.05rem;font-weight:700;color:#222;margin-bottom:6px;">
@@ -4084,10 +4118,21 @@ ${recencyText} 동안의 실제 뉴스/이슈를 웹에서 검색하여, 위 공
                     </div>` : ''}
 
                     <details style="margin-top:8px;">
-                        <summary style="font-size:0.75rem;color:#888;cursor:pointer;">5개 체크리스트 상세</summary>
-                        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;">
+                        <summary style="font-size:0.75rem;color:#888;cursor:pointer;">5개 체크리스트 + 한국인 관심 세부 점수</summary>
+                        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;margin-bottom:8px;">
                             ${checkList.map(([label, pass]) => `<span style="padding:3px 8px;border-radius:10px;font-size:0.72rem;background:${pass ? '#e6ffed' : '#ffebeb'};color:${pass ? '#28a745' : '#dc3545'};">${pass ? '✅' : '❌'} ${label}</span>`).join('')}
                         </div>
+                        ${krScore !== null ? `<div style="background:#f0f9ff;padding:8px 10px;border-radius:6px;font-size:0.72rem;">
+                            <div style="font-weight:700;color:#0066cc;margin-bottom:4px;">🇰🇷 한국인 관심 점수 ${krScore}/10 (${krLabel})</div>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;color:#555;">
+                                <span>이민/유학: <b>${krDetail.이민유학||0}/3</b></span>
+                                <span>한국기업 진출: <b>${krDetail.한국기업진출||0}/2</b></span>
+                                <span>여행지: <b>${krDetail.여행지||0}/2</b></span>
+                                <span>최근 뉴스: <b>${krDetail.최근뉴스등장||0}/2</b></span>
+                                <span>경제·안보 영향: <b>${krDetail.경제안보영향||0}/3</b></span>
+                                <span>인물 인지도: <b>${krDetail.인물인지도||0}/3</b></span>
+                            </div>
+                        </div>` : ''}
                     </details>
 
                     <div style="display:flex;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid #eee;">
