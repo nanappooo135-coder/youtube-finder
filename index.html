@@ -4235,7 +4235,8 @@ ${allVideosText}
 1. 역설 강도: 상식 vs 진실 충돌 (0=단순 정보 / 10=강력한 역설)
 2. 호기심 갭: 클릭 안 하고 못 배기는가?
 3. 키워드 인지도: 한국인이 아는 단어/인물/국가
-4. 글자 수: 35~50자=10점 / 25~34 또는 51~60=7점 / 그 외=5점 (지금 ${charCount}자)
+4. 글자 수: 40~55자=10점 / 35~39 또는 56~60=7점 / 그 외=5점 (지금 ${charCount}자, 본인 채널 검증 길이 = 40~55자)
+   ※ 단순한 "왜 ○○인가?" 짧은 형식이면 추가 감점
 5. 첫 15자 강도: 모바일 잘림 대비 앞부분만으로 후킹
 6. 본인 채널 톤 일치도: 검증된 5공식 중 하나 + 검증 키워드 사용
 
@@ -4480,15 +4481,22 @@ ${allVideosText}
 영상 주제: ${topic}
 적용 패턴: ${pattern || 'A'}
 ${topVideosSection}${forbiddenSection}
-[필수 준수 사항]
-- 제목 35~50자 (한국 유튜브 최적)
-- 첫 15자 안에 후킹 키워드 (모바일 잘림 방지)
-- 5개 후보는 각각 다른 공식 사용 (공식 1~5 모두 등장)
-- 모두 "역설" DNA 포함 (상식 vs 진실 충돌 명시)
-- 검증 키워드 가급적 활용
-- 패턴별 톤 매칭 준수
-- 클릭베이트지만 거짓말 금지
-- 위 "사용 금지" 표현은 절대 쓰지 말 것
+[필수 준수 사항 — 강화 룰]
+1. 글자수 40~55자 강제 (35자 미만/56자 이상 금지). "왜 ○○인가?" 단순형 금지.
+2. 5개 후보 중 최소 3개는 괄호 부연 필수 — 형식: "본문 (구체키워드1, 키워드2, 인물명)"
+   예: (트뤼도의 실정, 학비 3배 폭등) / (BYD 추격, 머스크 정치 리스크) / (HBM 전쟁, 삼성 vs SK)
+3. 따옴표 톤 가이드 (검증된 본인 채널 톤만):
+   ✅ 도발형 "○○에 속지 마세요" / 비꼼형 "○○인 줄 알았지?" / 반말친근형 "○○해줄게" / 명령형 "절대 ○○ 마세요"
+   ❌ 정중한 호소 "제발 ○○" 금지
+4. 숫자 임팩트:
+   ✅ 큰 단위 (4,000조 / 1,300조 / 163만) / 시간 압축 (30년이 3일 만에) / 비율 충격 (70% 점령, 97% 폭락)
+   ❌ 평범한 비교 금지
+5. 5개 후보는 공식 1~5 모두 등장 (같은 공식 중복 금지)
+6. 모두 "역설" DNA 포함 (상식 vs 진실 충돌 명시)
+7. 첫 15자 강도 8/10 이상 — 모바일 잘림 대비, 첫 15자만으로 후킹
+8. 검증 키워드 가급적 활용: "진짜 이유" "도망치는" "몰락" "숨겨둔" "역대급" "30년 만에" "단 ○일 만에" "충격적인" "끝났습니다" "무너지는"
+9. 패턴별 톤 매칭 준수, 클릭베이트지만 거짓말 금지
+10. 위 "사용 금지" 표현은 절대 쓰지 말 것
 
 [A/B 톤 모드]
 - 옵션 A "자극·도발" 톤 / 옵션 B "분석·신뢰" 톤. 5개 후보 중 최소 2개씩 분배.
@@ -4581,7 +4589,8 @@ ${topVideosSection}${forbiddenSection}
             const titlesHtml = titles.map((t, i) => {
                 const isFinalPick = finalPickTitle && t.title === finalPickTitle;
                 const charCount = t.글자수 || (t.title ? [...t.title].length : 0);
-                const charColor = (charCount >= 35 && charCount <= 50) ? '#28a745' : '#ffa500';
+                const charColor = (charCount >= 40 && charCount <= 55) ? '#28a745' : (charCount >= 35 && charCount <= 60) ? '#ffa500' : '#dc3545';
+                const hasParen = t.title && /[（(].+[)）]/.test(t.title);
                 const first15Score = t.첫15자_강도 || 0;
                 const first15Color = first15Score >= 8 ? '#28a745' : first15Score >= 5 ? '#ffa500' : '#dc3545';
                 return `
@@ -4595,7 +4604,8 @@ ${topVideosSection}${forbiddenSection}
                     </div>
                     <div onclick="navigator.clipboard.writeText(this.textContent.trim()); this.style.background='#ffe0e0';" style="font-size:0.92rem;color:#222;font-weight:700;padding:6px 8px;background:#fff5f5;border-radius:4px;cursor:pointer;margin-bottom:4px;" title="클릭해서 복사">${escapeHtml(t.title||'')}</div>
                     <div style="display:flex;gap:6px;flex-wrap:wrap;font-size:0.7rem;color:#666;margin-bottom:4px;">
-                        <span style="background:#f8f9fa;padding:2px 6px;border-radius:6px;">📏 <b style="color:${charColor};">${charCount}자</b></span>
+                        <span style="background:#f8f9fa;padding:2px 6px;border-radius:6px;">📏 <b style="color:${charColor};">${charCount}자</b>${charCount < 40 ? ' ⚠️짧음' : charCount > 55 ? ' ⚠️김' : ' ✓'}</span>
+                        <span style="background:#f8f9fa;padding:2px 6px;border-radius:6px;color:${hasParen?'#28a745':'#dc3545'};">${hasParen ? '✅' : '❌'} 괄호 부연</span>
                         ${first15Score ? `<span style="background:#f8f9fa;padding:2px 6px;border-radius:6px;">⚡ 첫15자 <b style="color:${first15Color};">${first15Score}/10</b></span>` : ''}
                         ${t.첫15자 ? `<span style="background:#f8f9fa;padding:2px 6px;border-radius:6px;color:#888;">"${escapeHtml(t.첫15자)}"</span>` : ''}
                     </div>
@@ -4783,6 +4793,25 @@ ${recencyText} 동안의 실제 뉴스/이슈를 웹에서 검색하여, 위 패
 - 형식2: "○○이 ○○하는 이유" (서술형)
 - 형식3: "○○: ○○의 진짜 모습" (사건명+폭로형)
 
+[제목 3안(A/B/C) 강화 룰 — 절대 준수]
+1. 글자수 40~55자 강제 (35자 미만 금지, "왜 ○○인가?" 단순형 금지)
+2. 3안 중 최소 1개는 괄호 부연 필수 — 형식: "본문 (구체키워드1, 키워드2, 인물명)"
+   예: (트뤼도의 실정, 학비 3배 폭등) / (BYD 추격, 머스크 정치 리스크) / (HBM 전쟁, 삼성 vs SK)
+3. 따옴표 톤 가이드 (검증된 본인 채널 톤만):
+   ✅ 도발형 "○○에 속지 마세요" / 비꼼형 "○○인 줄 알았지?" / 반말 친근형 "○○해줄게" / 명령형 "절대 ○○ 마세요"
+   ❌ 정중한 호소 "제발 ○○" 금지 — 본인 톤 아님
+4. 숫자 임팩트 강화:
+   ✅ 큰 단위 ("4,000조" "1,300조" "163만") / 시간 압축 ("30년이 3일 만에" "11일 만에") / 비율 충격 ("70% 점령" "97% 폭락")
+   ❌ 평범한 비교 ("A는 X, B는 Y") 금지
+5. A/B/C 3안은 반드시 다른 공식 사용 (같은 공식 3개 절대 금지):
+   - A안: 따옴표 후킹형 (45~55자, 괄호 부연 필수)
+   - B안: 콜론 폭로형 (40~50자)
+   - C안: 숫자 스케일형 (35~45자)
+6. 검증 키워드 가급적 포함: "진짜 이유" "도망치는" "몰락" "숨겨둔" "역대급" "30년 만에" "단 ○일 만에" "충격적인" "끝났습니다" "무너지는"
+7. 첫 15자 강도: 모바일 잘림 대비, 첫 15자만으로 후킹되어야 함
+   ✅ "아름다운 자연에 속지" → 호기심 폭발
+   ❌ "캐나다 이민의 종말" → 평범
+
 [동적 룰 — 채널 상태 반영]
 ${(window._channelState && window._channelState.slump)
     ? '⚠️ 현재 채널 슬럼프 상태(최근 5편 평균 < 2만회). 검증된 패턴(A·B)만 추천하고, 새 실험·패턴D는 자제하세요.'
@@ -4834,7 +4863,11 @@ ${(window._channelState && window._channelState.slump)
       "예상_등급": "S",
       "최근_뉴스": "${recencyText} 내 실제 뉴스 한 줄 (날짜 포함)",
       "핵심_데이터": ["숫자 포함 데이터1", "숫자 포함 데이터2", "숫자 포함 데이터3"],
-      "제목_후보": ["A안 (호기심 갭 강조)", "B안 (드라마 강조)", "C안 (숫자 강조)"],
+      "제목_후보": [
+        "A안 (따옴표 후킹형 45~55자, 괄호 부연 필수): '○○에 속지 마세요' 본문 (구체키워드1, 키워드2)",
+        "B안 (콜론 폭로형 40~50자): 사건명: 진짜 이유 + (부연)",
+        "C안 (숫자 스케일형 35~45자): 4000조 ○○ + 충격 결과"
+      ],
       "체크": {
         "1_슈카월드회피": true,
         "2_이름들어봤나": true,
