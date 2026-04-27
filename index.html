@@ -6726,9 +6726,16 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                         s.needRealImage = false;
                         delete s.realSearchKeyword;
                         if (!s.aiPrompt) {
-                            // 2026-04-23: 나레이션 통째 복사 금지 (의문형·긴 문장 그대로 들어가서 AI 혼란)
-                            // 핵심 명사만 추출 or 일반 지시
-                            s.aiPrompt = 'Hand-drawn symbolic illustration of the central metaphor from the scene. Minimal composition, cream paper background, watercolor edges. 16:9.';
+                            // 2026-04-27: 나레이션 내용만 — style은 SYMBOLIC_STYLE_PREFIX가 따로 붙임 (중복 방지)
+                            const cleaned = narr
+                                .replace(/[?!]+/g, '')
+                                .replace(/^(그런데|근데|그러자|그래서|하지만|그러나|한편|반면|이번엔)\s*/g, '')
+                                .replace(/(거든요|거예요|거죠|이에요|이죠|네요|군요|는데요|어요|아요)$/g, '')
+                                .trim()
+                                .slice(0, 200);
+                            s.aiPrompt = 'Visualize this specific Korean narrative scene as ONE single clear symbolic image: "' + cleaned + '". '
+                                + 'Show the literal objects mentioned (cars, stamps, paperwork, etc.) AND their symbolic meaning. '
+                                + 'Do NOT add unrelated economic infographic elements (gauges, charts, generic businessmen) unless explicitly mentioned in the narration.';
                         }
                     }
                     if (s.bgSource !== 'ai') return;
