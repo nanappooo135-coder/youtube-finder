@@ -6411,7 +6411,63 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                 //   - 강조: 선명한 빨강 #C62828
                 //   - 타이포: 굵은 모던 산세리프 (Noto Sans KR Bold)
                 //   - 텍스처 최소화 (플랫 or 아주 은은한 그레인만)
-                const MAP_STYLE_PREFIX = 'Modern editorial infographic map, YouTube documentary thumbnail quality. Clean flat design with HIGH CONTRAST and VIVID readable colors. Ocean: solid deep teal blue (#1F4E5F) with no watercolor stains, no paper texture. Land: soft light neutral gray (#E8E5DD) with crisp thin dark country borders (#2A2A2A, 1-2px). Background: clean off-white (#FAFAF5), subtle paper grain barely visible. Exactly ONE highlighted region in BOLD SATURATED RED (#C62828) — pure solid fill, no watercolor, no gradient. All other land stays neutral gray. Modern flat icons only when explicitly needed (small filled pins, simple prison/watchtower symbols in solid dark red). Typography: BOLD MODERN SANS-SERIF (Noto Sans KR Bold or equivalent weight), large readable size, dark charcoal #1A1A1A or pure white on dark areas. NO hand-drawn styling, NO watercolor brush edges, NO sepia tones, NO parchment, NO ink splatter, NO antique atlas feel, NO vintage aging. This is a CONTEMPORARY editorial map (think The Economist, Financial Times, Bloomberg, NYT map graphics). Do NOT add decorative icons (oil barrels, ships, coins, arrows) unless the scene explicitly mentions them. 🚨 CRITICAL LABEL RULES: Render ONLY the country, region, sea, strait, or city names that are explicitly listed in the scene description below — do NOT add extra countries. Every label must be written in Korean Hangul script (do not write the bare word meaning "Korean script" as a label — write actual place names only). Thick bold sans-serif typography, clearly readable on mobile. Never print example placeholder words as labels. Cinematic 16:9. ';
+                // 2026-04-27: 지도 색상 팔레트 5종 — 장면별로 자동 선택해서 다양화
+                // 모든 팔레트 공통: 모던 에디토리얼 톤, 솔리드 컬러, 굵은 산세리프, 빈티지/수채화 금지
+                const MAP_PALETTES = [
+                    { // 1. Editorial Navy (기본) — 차분한 분석 톤
+                        ocean: 'solid deep teal blue (#1F4E5F)',
+                        land: 'soft light neutral gray (#E8E5DD)',
+                        bg: 'clean off-white (#FAFAF5)',
+                        accent: 'BOLD SATURATED RED (#C62828)',
+                        text: 'dark charcoal (#1A1A1A)'
+                    },
+                    { // 2. Cold North — 차가운 위기·북유럽 톤
+                        ocean: 'solid icy steel blue (#5B7C9D)',
+                        land: 'pale snow white (#F2F2EE)',
+                        bg: 'cool light gray (#EAEDF0)',
+                        accent: 'deep burgundy red (#8B1A1A)',
+                        text: 'midnight blue (#0F1B2D)'
+                    },
+                    { // 3. Desert / Mediterranean — 따뜻한 사막·중동·남유럽 톤
+                        ocean: 'solid mediterranean blue (#2C6E91)',
+                        land: 'warm sandy beige (#E5D4B0)',
+                        bg: 'warm cream (#F5EDD8)',
+                        accent: 'terracotta orange (#C8472E)',
+                        text: 'dark olive (#3A3326)'
+                    },
+                    { // 4. Forest Asia — 동아시아·정글·녹지 톤
+                        ocean: 'solid dark teal (#1A4D4D)',
+                        land: 'muted forest green (#A8B89A)',
+                        bg: 'warm bone (#F0EBDD)',
+                        accent: 'warm gold (#C49B3D)',
+                        text: 'deep forest (#1F2A1F)'
+                    },
+                    { // 5. Mono Editorial — 흑백 강조형 (사망률·전쟁 등 중립적 충격)
+                        ocean: 'solid charcoal black (#1F1F1F)',
+                        land: 'pure off-white (#FBFAF6)',
+                        bg: 'soft warm gray (#E8E4DC)',
+                        accent: 'pure crimson red (#D32F2F)',
+                        text: 'jet black (#000000)'
+                    }
+                ];
+                // 장면 ID 기반 deterministic 선택 (같은 장면은 항상 같은 팔레트)
+                function _pickMapPalette(sceneId) {
+                    const idx = ((sceneId || 1) - 1) % MAP_PALETTES.length;
+                    return MAP_PALETTES[idx];
+                }
+                function _buildMapStylePrefix(p) {
+                    return 'Modern editorial infographic map, YouTube documentary thumbnail quality. Clean flat design with HIGH CONTRAST and VIVID readable colors. '
+                        + 'Ocean: ' + p.ocean + ' with no watercolor stains, no paper texture. '
+                        + 'Land: ' + p.land + ' with crisp thin dark country borders (#2A2A2A, 1-2px). '
+                        + 'Background: ' + p.bg + ', subtle paper grain barely visible. '
+                        + 'Exactly ONE highlighted region in ' + p.accent + ' — pure solid fill, no watercolor, no gradient. All other land stays in the base land color. '
+                        + 'Modern flat icons only when explicitly needed (small filled pins, simple prison/watchtower symbols in the accent color). '
+                        + 'Typography: BOLD MODERN SANS-SERIF (Noto Sans KR Bold or equivalent weight), large readable size, ' + p.text + ' or pure white on dark areas. '
+                        + 'NO hand-drawn styling, NO watercolor brush edges, NO sepia tones, NO parchment, NO ink splatter, NO antique atlas feel, NO vintage aging. '
+                        + 'This is a CONTEMPORARY editorial map (think The Economist, Financial Times, Bloomberg, NYT map graphics). '
+                        + 'Do NOT add decorative icons (oil barrels, ships, coins, arrows) unless the scene explicitly mentions them. '
+                        + '🚨 CRITICAL LABEL RULES: Render ONLY the country, region, sea, strait, or city names that are explicitly listed in the scene description below — do NOT add extra countries. Every label must be written in Korean Hangul script (do not write the bare word meaning "Korean script" as a label — write actual place names only). Thick bold sans-serif typography, clearly readable on mobile. Never print example placeholder words as labels. Cinematic 16:9. ';
+                }
                 // 2026-04-23: 스타일 prefix 중복 방지 헬퍼 — 하나만 적용되도록
                 // 이미 다른 스타일이 붙어있으면 새 prefix 안 붙임
                 function _hasAnyStylePrefix(prompt) {
@@ -6433,7 +6489,9 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                     if (_isPsych) return; // 🧠 심리 모드: 지도 prefix 차단
                     if (s.isMapScene !== true || typeof s.aiPrompt !== 'string') return;
                     if (!_hasAnyStylePrefix(s.aiPrompt)) {
-                        s.aiPrompt = MAP_STYLE_PREFIX + s.aiPrompt;
+                        const palette = _pickMapPalette(s.id);
+                        s.mapPaletteIdx = ((s.id || 1) - 1) % MAP_PALETTES.length; // 디버그용 추적
+                        s.aiPrompt = _buildMapStylePrefix(palette) + s.aiPrompt;
                     }
                 });
                 // 🧠 심리 모드: AI 장면 전부 웹툰 스타일 블록으로 강제 재작성
