@@ -2426,8 +2426,16 @@
                         <!-- 그록 영상 탭 -->
                         <div id="spTab_grok" class="sp-result-pane" style="display:none;">
                             <p style="font-size:0.78rem;color:#666;margin-bottom:8px;">이미지 → 그록 → 영상화. 6초/10초 자동 매칭, 애니→실사 드리프트 방지 문구 포함.</p>
-                            <button class="search-btn" onclick="_spCopy('spOut_grok', this)" style="width:100%;margin-bottom:8px;background:#e03131;border-color:#e03131;">🎬 영상 프롬프트 전체 복사</button>
-                            <textarea id="spOut_grok" readonly style="width:100%;min-height:400px;padding:14px;border:2px solid #ffa8a8;border-radius:10px;font-size:0.78rem;font-family:'Courier New',monospace;line-height:1.5;background:#1e1e1e;color:#d4d4d4;resize:vertical;"></textarea>
+                            <div style="display:flex;gap:8px;margin-bottom:8px;">
+                                <button class="search-btn" onclick="_spCopy('spOut_grok', this)" style="flex:1;background:#e03131;border-color:#e03131;">🎬 장면번호 포함 (사람이 보기)</button>
+                                <button class="search-btn" onclick="_spCopy('spOut_grokPaste', this)" style="flex:1;background:#c92a2a;border-color:#c92a2a;">📋 그록 일괄 붙여넣기 (빈줄 구분)</button>
+                            </div>
+                            <p style="font-size:0.72rem;color:#856404;background:#fff3cd;padding:6px 10px;border-radius:4px;margin-bottom:8px;">
+                                ⚠️ <strong>그록 일괄 입력 시</strong>: 이미지 업로드 순서 = 프롬프트 순서. 위 "이름 변경 도구"에서 받은 ZIP 순서대로 업로드하면 자동 매칭됨. 빈 줄로 프롬프트 구분되니 [장면 N] 헤더 절대 같이 붙여넣지 말 것.
+                            </p>
+                            <textarea id="spOut_grok" readonly style="width:100%;min-height:200px;padding:14px;border:2px solid #ffa8a8;border-radius:10px;font-size:0.78rem;font-family:'Courier New',monospace;line-height:1.5;background:#1e1e1e;color:#d4d4d4;resize:vertical;"></textarea>
+                            <div style="font-size:0.72rem;color:#c92a2a;margin-top:8px;font-weight:700;">↓ 그록에 그대로 붙여넣기용 (장면번호 X, 빈줄 구분)</div>
+                            <textarea id="spOut_grokPaste" readonly style="width:100%;min-height:200px;padding:14px;border:2px solid #c92a2a;border-radius:10px;font-size:0.78rem;font-family:'Courier New',monospace;line-height:1.5;background:#1e1e1e;color:#fff;resize:vertical;margin-top:4px;"></textarea>
                         </div>
 
                         <!-- 실사 검색 탭 -->
@@ -16620,11 +16628,17 @@ JSON만 출력하세요. 코드블록 마커 금지.`;
             document.getElementById('spOut_nano').value = nanoLines || '(AI 이미지 장면 없음)';
 
             // 3) 그록 영상 — type=ai만, 6초/10초 표시
-            const grokLines = scenes
-                .filter(s => s.type === 'ai' && s.grok_prompt)
+            const grokScenes = scenes.filter(s => s.type === 'ai' && s.grok_prompt);
+            const grokLines = grokScenes
                 .map(s => `[장면 ${s.sceneNo}] ⏱ ${s.duration}초\n${s.grok_prompt}\n`)
                 .join('\n');
             document.getElementById('spOut_grok').value = grokLines || '(AI 영상 장면 없음)';
+            // 2026-04-27: 그록 일괄 입력용 — 빈줄로만 구분, 장면번호 X
+            const grokPasteText = grokScenes
+                .map(s => s.grok_prompt.trim())
+                .join('\n\n');
+            const pasteEl = document.getElementById('spOut_grokPaste');
+            if (pasteEl) pasteEl.value = grokPasteText || '(AI 영상 장면 없음)';
 
             // 4) 실사 검색 — type=real만
             const realLines = scenes
