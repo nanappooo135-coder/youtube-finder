@@ -16234,8 +16234,33 @@ overall mood: bright, psychologically safe illustration, uplifting and reassurin
 
         function _sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
+        // 2026-04-27: fix-webm-duration 로드 (webm 메타데이터 길이 자동 수정)
+        async function _loadWebmFixer() {
+            if (window._webmDurationFixer) return window._webmDurationFixer;
+            const cdns = [
+                'https://cdn.jsdelivr.net/npm/fix-webm-duration@1/fix-webm-duration.min.js',
+                'https://unpkg.com/fix-webm-duration@1/fix-webm-duration.min.js'
+            ];
+            for (const url of cdns) {
+                try {
+                    await new Promise((resolve, reject) => {
+                        const sc = document.createElement('script');
+                        sc.src = url;
+                        sc.onload = resolve;
+                        sc.onerror = reject;
+                        document.head.appendChild(sc);
+                    });
+                    if (window.ysFixWebmDuration) {
+                        window._webmDurationFixer = window.ysFixWebmDuration;
+                        return window._webmDurationFixer;
+                    }
+                } catch (e) { /* try next */ }
+            }
+            return null; // fixer 없이 진행 (메타데이터는 깨질 수 있지만 영상은 작동)
+        }
+
         async function _recordDuration(stream, durationMs) {
-            return new Promise((resolve, reject) => {
+            const blob = await new Promise((resolve, reject) => {
                 const mimeCandidates = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
                 const mimeType = mimeCandidates.find(t => MediaRecorder.isTypeSupported(t)) || 'video/webm';
                 const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 8_000_000 });
@@ -16246,6 +16271,14 @@ overall mood: bright, psychologically safe illustration, uplifting and reassurin
                 recorder.start();
                 setTimeout(() => { try { recorder.stop(); } catch(e) { reject(e); } }, durationMs);
             });
+            // webm 메타데이터 길이 수정 (MediaRecorder 흔한 버그)
+            try {
+                const fixer = await _loadWebmFixer();
+                if (fixer) {
+                    return await fixer(blob, durationMs);
+                }
+            } catch (e) { console.warn('webm duration fix 실패:', e); }
+            return blob;
         }
 
         async function _webmToMp4(webmBlob, progressEl) {
