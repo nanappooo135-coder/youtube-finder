@@ -4762,6 +4762,12 @@ ${userExtra ? `[사용자 추가 요청]\n${userExtra}\n` : ''}
 ${recencyText} 동안의 실제 뉴스/이슈를 웹에서 검색하여, 위 패턴 비중(A 40% / B 30% / C 20% / D 10%)에 맞춰 영상 주제 ${count}개 추천하세요.
 예: ${count}개 중 패턴A ${Math.round(count*0.4)}개, 패턴B ${Math.round(count*0.3)}개, 패턴C ${Math.round(count*0.2)}개, 패턴D ${Math.max(1, Math.round(count*0.1))}개.
 
+[주제_한줄 다양화 — 모든 추천이 비슷해 보이지 않도록 형식 분산]
+3가지 형식을 골고루 섞어서 사용 (한 형식이 50% 넘지 않게):
+- 형식1: "왜 ○○인가?" (질문형)
+- 형식2: "○○이 ○○하는 이유" (서술형)
+- 형식3: "○○: ○○의 진짜 모습" (사건명+폭로형)
+
 [동적 룰 — 채널 상태 반영]
 ${(window._channelState && window._channelState.slump)
     ? '⚠️ 현재 채널 슬럼프 상태(최근 5편 평균 < 2만회). 검증된 패턴(A·B)만 추천하고, 새 실험·패턴D는 자제하세요.'
@@ -4818,10 +4824,42 @@ ${(window._channelState && window._channelState.slump)
         "최근뉴스등장": 2,
         "경제안보영향": 1,
         "인물인지도": 0
-      }
+      },
+      "추천_영상길이": "16~18분 (선진국 몰락은 스토리텔링 15~18분이 최적)",
+      "썸네일_인물풀": ["트뤼도", "캐나다 국기 + 균열", "짐 싸는 한국인 가족"],
+      "썸네일_색상": "어두운 빨강 + 검정 (위기·붕괴 톤)"
     }
-  ]
+  ],
+  "best_pick_today": {
+    "rank": 1,
+    "title": "5~7개 중 가장 강력한 1개의 예상_제목 그대로",
+    "total_score": 92,
+    "score_breakdown": {
+      "한국관심": 9,
+      "패턴효율": 10,
+      "시의성": 8,
+      "슬럼프탈출적합성": 9
+    },
+    "expected_grade": "S",
+    "why_today": "오늘 만들면 가장 잘 터질 이유 한 줄"
+  },
+  "weekly_plan": {
+    "monday": { "title": "...", "pattern": "A", "reason": "슬럼프 탈출용 검증 패턴" },
+    "wednesday": { "title": "...", "pattern": "B", "reason": "효율 1위 패턴" },
+    "friday": { "title": "...", "pattern": "B", "reason": "한국 연결 강함" },
+    "next_week_candidates": ["다음주 후보1", "후보2", "후보3"]
+  }
 }
+
+[영상 길이 추천 가이드]
+- 인물·테크 (패턴 B): 18~20분 (심층 분석)
+- 선진국 몰락 (패턴 A): 15~18분 (스토리텔링)
+- 지정학 (패턴 C): 13~16분 (속도감)
+- 자원 역설 (패턴 D): 14~17분
+
+[썸네일 인물풀 — 주제별 자동 매칭]
+주제와 가장 어울리는 인물 1~3개 추천 (검증 인물풀: 트럼프/푸틴/김정은/빈살만/머스크/시진핑/젠슨황/손정의 우선)
+인물이 없으면 상징 이미지 (국기+균열 효과, 짐 싸는 가족, 무너지는 빌딩 등)
 
 [등급 기준]
 - S: 50만+ 예상
@@ -4861,7 +4899,7 @@ ${(window._channelState && window._channelState.slump)
                 const allTopics = parsed.topics;
                 const passed = allTopics.filter(t => typeof t.한국인_관심_점수 !== 'number' || t.한국인_관심_점수 >= 7);
                 const filteredOut = allTopics.length - passed.length;
-                renderFormulaResults(passed);
+                renderFormulaResults(passed, parsed);
                 if (filteredOut > 0) {
                     const note = document.createElement('div');
                     note.style.cssText = 'padding:8px 12px;background:#fff8e6;border-left:3px solid #ffa500;border-radius:4px;font-size:0.8rem;color:#996600;margin-top:8px;';
@@ -4877,12 +4915,14 @@ ${(window._channelState && window._channelState.slump)
             }
         }
 
-        function renderFormulaResults(topics) {
+        function renderFormulaResults(topics, fullData) {
             const resultsEl = document.getElementById('ftResults');
             if (!topics || topics.length === 0) {
                 resultsEl.innerHTML = '<div style="padding:16px;color:#888;">추천된 주제가 없어요.</div>';
                 return;
             }
+            const bestPick = fullData?.best_pick_today;
+            const weeklyPlan = fullData?.weekly_plan;
 
             const medal = (rank) => rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
             const trackColor = { 1: '#0066cc', 2: '#28a745', 3: '#996600', 4: '#888' };
@@ -4977,6 +5017,12 @@ ${(window._channelState && window._channelState.slump)
                         <b>⚠️ 리스크:</b> ${escapeHtml(t.리스크)}
                     </div>` : ''}
 
+                    ${(t.추천_영상길이 || t.썸네일_인물풀 || t.썸네일_색상) ? `<div style="background:#f8f9fa;padding:8px 10px;border-radius:6px;margin-bottom:10px;font-size:0.78rem;color:#555;">
+                        ${t.추천_영상길이 ? `<div style="margin-bottom:3px;"><b>⏱️ 영상 길이:</b> ${escapeHtml(t.추천_영상길이)}</div>` : ''}
+                        ${Array.isArray(t.썸네일_인물풀) && t.썸네일_인물풀.length ? `<div style="margin-bottom:3px;"><b>👤 썸네일 인물풀:</b> ${t.썸네일_인물풀.map(escapeHtml).join(' · ')}</div>` : ''}
+                        ${t.썸네일_색상 ? `<div><b>🎨 썸네일 색상:</b> ${escapeHtml(t.썸네일_색상)}</div>` : ''}
+                    </div>` : ''}
+
                     <details style="margin-top:8px;">
                         <summary style="font-size:0.75rem;color:#888;cursor:pointer;">5개 체크리스트 + 한국인 관심 세부 점수</summary>
                         <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;margin-bottom:8px;">
@@ -5017,11 +5063,53 @@ ${(window._channelState && window._channelState.slump)
             topics.forEach(t => { if (t.패턴 && patternCounts[t.패턴] !== undefined) patternCounts[t.패턴]++; });
             const trackSummary = `패턴A ${patternCounts.A}개 · 패턴B ${patternCounts.B}개 · 패턴C ${patternCounts.C}개 · 패턴D ${patternCounts.D}개`;
 
+            // 🏆 오늘의 베스트 픽 박스
+            const bestPickHtml = bestPick ? `
+                <div style="background:linear-gradient(135deg, #fff5f5, #fff8e6);border:3px solid #dc3545;padding:14px;border-radius:10px;margin-bottom:14px;box-shadow:0 2px 8px rgba(220,53,69,0.15);">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
+                        <span style="font-size:0.9rem;font-weight:700;color:#dc3545;">🏆 오늘의 베스트 픽 — 1편만 만든다면 이거</span>
+                        <span style="background:#dc3545;color:white;padding:3px 10px;border-radius:10px;font-size:0.78rem;font-weight:700;">총점 ${bestPick.total_score||0}/100 · 예상 ${bestPick.expected_grade||'-'}급</span>
+                    </div>
+                    <div onclick="navigator.clipboard.writeText(this.textContent.trim()); this.style.background='#ffe0e0';" style="font-size:1.05rem;color:#222;font-weight:700;padding:10px 12px;background:white;border:1px solid #ffcccc;border-radius:6px;cursor:pointer;margin-bottom:8px;" title="클릭해서 복사">${escapeHtml(bestPick.title||'')}</div>
+                    ${bestPick.score_breakdown ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;font-size:0.72rem;">
+                        ${Object.entries(bestPick.score_breakdown).map(([k, v]) => `<span style="background:white;padding:2px 8px;border-radius:6px;color:#666;">${escapeHtml(k)} <b style="color:#dc3545;">${v}/10</b></span>`).join('')}
+                    </div>` : ''}
+                    ${bestPick.why_today ? `<div style="font-size:0.82rem;color:#555;font-style:italic;">"${escapeHtml(bestPick.why_today)}"</div>` : ''}
+                </div>
+            ` : '';
+
+            // 📅 이번 주 업로드 플랜 박스
+            const dayLabel = { monday: '월', wednesday: '수', friday: '금' };
+            const planHtml = weeklyPlan ? `
+                <div style="background:#f0f9ff;border:2px solid #0066cc;padding:12px;border-radius:8px;margin-bottom:14px;">
+                    <div style="font-size:0.88rem;font-weight:700;color:#0066cc;margin-bottom:8px;">📅 이번 주 업로드 플랜 (월·수·금)</div>
+                    <div style="display:flex;flex-direction:column;gap:6px;">
+                        ${['monday','wednesday','friday'].map(day => {
+                            const d = weeklyPlan[day];
+                            if (!d) return '';
+                            return `<div style="background:white;padding:8px 10px;border-radius:6px;border-left:3px solid #0066cc;">
+                                <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;">
+                                    <span style="background:#0066cc;color:white;padding:2px 8px;border-radius:6px;font-size:0.72rem;font-weight:700;">${dayLabel[day]}요일</span>
+                                    ${d.pattern ? `<span style="background:${patternColor[d.pattern]||'#888'};color:white;padding:2px 8px;border-radius:6px;font-size:0.7rem;font-weight:700;">패턴 ${escapeHtml(d.pattern)}</span>` : ''}
+                                </div>
+                                <div style="font-size:0.85rem;font-weight:700;color:#222;margin-bottom:2px;">${escapeHtml(d.title||'')}</div>
+                                ${d.reason ? `<div style="font-size:0.72rem;color:#666;">💡 ${escapeHtml(d.reason)}</div>` : ''}
+                            </div>`;
+                        }).join('')}
+                    </div>
+                    ${Array.isArray(weeklyPlan.next_week_candidates) && weeklyPlan.next_week_candidates.length ? `<div style="margin-top:10px;padding-top:10px;border-top:1px dashed #cce5ff;font-size:0.75rem;color:#666;">
+                        <b>다음주 후보:</b> ${weeklyPlan.next_week_candidates.map(escapeHtml).join(' · ')}
+                    </div>` : ''}
+                </div>
+            ` : '';
+
             resultsEl.innerHTML = `
                 <div style="background:#f0fff4;padding:10px 14px;border-radius:8px;margin-bottom:12px;">
                     <div style="font-size:0.9rem;color:#28a745;font-weight:700;">✅ ${topics.length}개 주제 추천 완료</div>
                     <div style="font-size:0.78rem;color:#666;margin-top:2px;">${trackSummary} · 제목 클릭하면 복사됩니다</div>
                 </div>
+                ${bestPickHtml}
+                ${planHtml}
                 ${html}
             `;
         }
