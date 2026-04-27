@@ -15974,15 +15974,36 @@ overall mood: bright, psychologically safe illustration, uplifting and reassurin
         async function _loadFFmpeg(progressEl) {
             if (window._ffmpegInstance) return window._ffmpegInstance;
             if (progressEl) progressEl.textContent = '⏳ ffmpeg core 다운로드 중 (약 30MB, 1회만)...';
-            // 2026-04-27 v3: ESM 방식 (공식 ffmpeg.wasm playground 패턴)
-            // UMD 버전의 worker 청크(814.ffmpeg.js) 문제 회피.
-            // esm.sh가 ffmpeg 패키지를 ESM으로 변환 + worker도 동일 origin blob으로 자동 처리.
-            const { FFmpeg } = await import('https://esm.sh/@ffmpeg/[email protected]');
-            const utilMod = await import('https://esm.sh/@ffmpeg/[email protected]');
-            const { toBlobURL } = utilMod;
-            const fetchFile = utilMod.fetchFile;
+            // 2026-04-27 v4: jsdelivr ESM 방식 (esm.sh는 응답 불안정)
+            // jsdelivr의 +esm 접미사로 UMD를 자동 ESM 변환
+            let FFmpeg, toBlobURL, fetchFile;
+            const cdns = [
+                {
+                    ffmpeg: 'https://cdn.jsdelivr.net/npm/@ffmpeg/[email protected]/+esm',
+                    util: 'https://cdn.jsdelivr.net/npm/@ffmpeg/[email protected]/+esm'
+                },
+                {
+                    ffmpeg: 'https://esm.sh/@ffmpeg/[email protected]',
+                    util: 'https://esm.sh/@ffmpeg/[email protected]'
+                }
+            ];
+            let lastErr = null;
+            for (const cdn of cdns) {
+                try {
+                    const fm = await import(cdn.ffmpeg);
+                    const um = await import(cdn.util);
+                    FFmpeg = fm.FFmpeg;
+                    toBlobURL = um.toBlobURL;
+                    fetchFile = um.fetchFile;
+                    if (FFmpeg && toBlobURL && fetchFile) break;
+                } catch (e) {
+                    lastErr = e;
+                    if (progressEl) progressEl.textContent = '⏳ CDN 시도 중... (' + (e.message || e).slice(0, 80) + ')';
+                }
+            }
+            if (!FFmpeg) throw new Error('ffmpeg 로드 실패 (모든 CDN): ' + (lastErr?.message || ''));
             window.FFmpegUtil = { toBlobURL, fetchFile };
-            const baseURL = 'https://unpkg.com/@ffmpeg/[email protected]/dist/esm';
+            const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/[email protected]/dist/esm';
             const ffmpeg = new FFmpeg();
             await ffmpeg.load({
                 coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
