@@ -16653,7 +16653,7 @@ JSON만 출력하세요. 코드블록 마커 금지.`;
             // 5) Claude Design — type=claude_design만
             const claudeLines = scenes
                 .filter(s => s.type === 'claude_design')
-                .map(s => `[장면 ${s.sceneNo}] (${s.claude_kind || '인포그래픽'})\n${s.claude_prompt || ''}\n`)
+                .map(s => `[장면 ${s.sceneNo}] ⏱ ${s.duration || '?'}초 · (${s.claude_kind || '인포그래픽'})\n${s.claude_prompt || ''}\n`)
                 .join('\n');
             document.getElementById('spOut_claude').value = claudeLines || '(Claude Design 장면 없음)';
 
