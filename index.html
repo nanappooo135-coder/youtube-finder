@@ -4839,6 +4839,14 @@ ${(window._channelState && window._channelState.slump)
 - 3~6편 = 적정
 - 2편 이하 = 미개척 ⭐ 가중치 ×1.5 (AI/테크 인물·미·중 빅이슈 등)
 
+[감정 출구 4종 — 3개 이상 활성화 필수]
+이 주제로 영상 만들면 한국 시청자가 다음 4개 감정 중 몇 개를 댓글로 표출할 수 있는지 평가:
+- 분노: "한국 정치인/판사/기득권부터 ○○하라" 형 댓글 유발 가능?
+- 연민: "○○ 민족 화이팅, 한국과 인연" 형 (6.25/IMF 등 한국과 역사적 접점)
+- 동경: "저 나라 부럽다, 한국도 저랬으면" 형 (그 나라 시스템·기술·정책)
+- 공포: "한국도 같은 길 가고 있다" 형 (한국 통계로 같은 패턴 증명 가능)
+※ 활성 출구 합계 3개 미만이면 댓글 폭발 안 함 (물전쟁 영상 케이스 = 출구 1개, 댓글 좋아요 50 이하). 3개 미만은 추천 자체 금지.
+
 [채널 전체 유사도 체크 — 강화 룰]
 "최근 4주 다룬 영상" 뿐 아니라 위 [자가복제 금지] 목록 + 채널 전체 54개 영상까지 고려해 핵심 키워드 일치율 평가:
 - 60% 이상 일치 → ❌ 추천 자체 금지 (제외)
@@ -4921,6 +4929,14 @@ ${(window._channelState && window._channelState.slump)
       "자가복제_여부": false,
       "자가복제_새각도": "(자가복제 시에만 — 반대진영/인물교체/한국적용/후속검증 중 하나)",
       "블루오션_적용": "AI/테크 인물 - 젠슨황",
+      "감정_출구": {
+        "분노": true,
+        "연민": false,
+        "동경": false,
+        "공포": true,
+        "활성_합계": 2,
+        "근거": "각 출구가 어떻게 활성화되는지 한 줄 (예: 분노=트뤼도 실정 / 공포=한국 PIR 13.9배 같은 패턴)"
+      },
       "추천_영상길이": "18~20분 (인물·테크는 심층 18~20분)",
       "썸네일_인물풀": ["젠슨황 정면 + 화난 표정", "엔비디아 로고 + 균열"],
       "썸네일_색상": "어두운 파랑 + 보라 (미래·테크 톤)"
@@ -5009,13 +5025,22 @@ ${(window._channelState && window._channelState.slump)
                 });
                 const passedKr = allTopics.filter(t => typeof t.한국인_관심_점수 !== 'number' || t.한국인_관심_점수 >= 7);
                 // 자가복제 60% 이상 자동 제외
-                const passed = passedKr.filter(t => typeof t.키워드_매칭_퍼센트 !== 'number' || t.키워드_매칭_퍼센트 < 60);
+                const passedDup = passedKr.filter(t => typeof t.키워드_매칭_퍼센트 !== 'number' || t.키워드_매칭_퍼센트 < 60);
+                // 감정 출구 3개 미만 자동 제외 (물전쟁 케이스 방지)
+                const passed = passedDup.filter(t => {
+                    if (!t.감정_출구) return true;
+                    const sum = t.감정_출구.활성_합계 ??
+                        (['분노','연민','동경','공포'].filter(k => t.감정_출구[k] === true).length);
+                    return sum >= 3;
+                });
                 const krFiltered = allTopics.length - passedKr.length;
-                const dupFiltered = passedKr.length - passed.length;
+                const dupFiltered = passedKr.length - passedDup.length;
+                const emoFiltered = passedDup.length - passed.length;
                 renderFormulaResults(passed, parsed);
                 const notes = [];
                 if (krFiltered > 0) notes.push(`한국인 관심 7점 미만 ${krFiltered}개`);
                 if (dupFiltered > 0) notes.push(`자가복제(키워드 60%+) ${dupFiltered}개`);
+                if (emoFiltered > 0) notes.push(`감정 출구 3개 미만 ${emoFiltered}개 (물전쟁 케이스 방지)`);
                 if (notes.length > 0) {
                     const note = document.createElement('div');
                     note.style.cssText = 'padding:8px 12px;background:#fff8e6;border-left:3px solid #ffa500;border-radius:4px;font-size:0.8rem;color:#996600;margin-top:8px;';
@@ -5164,6 +5189,23 @@ ${(window._channelState && window._channelState.slump)
                     ${t.자가복제_새각도 && t.자가복제_여부 ? `<div style="margin-bottom:10px;padding:8px 10px;background:#fff5f5;border-left:3px solid #dc3545;border-radius:4px;font-size:0.8rem;color:#333;">
                         <b style="color:#dc3545;">🔄 새 각도:</b> ${escapeHtml(t.자가복제_새각도)}
                     </div>` : ''}
+
+                    ${t.감정_출구 ? (() => {
+                        const e = t.감정_출구;
+                        const sum = e.활성_합계 ?? (['분노','연미','동경','공포'].filter(k => e[k]===true).length);
+                        const items = [['분노','😡'],['연민','😢'],['동경','🤩'],['공포','😨']];
+                        const sumColor = sum >= 4 ? '#dc3545' : sum >= 3 ? '#28a745' : '#888';
+                        return `<div style="background:#fff8e6;padding:8px 10px;border-radius:6px;margin-bottom:10px;border-left:3px solid ${sumColor};">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                                <span style="font-size:0.75rem;font-weight:700;color:#996600;">💬 댓글 폭발 출구</span>
+                                <span style="background:${sumColor};color:white;padding:2px 8px;border-radius:6px;font-size:0.72rem;font-weight:700;">${sum}/4 ${sum>=4?'폭발':sum>=3?'통과':'미달'}</span>
+                            </div>
+                            <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px;">
+                                ${items.map(([k, icon]) => `<span style="padding:2px 8px;border-radius:6px;font-size:0.7rem;background:${e[k]?'#e6ffed':'#f0f0f0'};color:${e[k]?'#28a745':'#aaa'};">${icon} ${k} ${e[k]?'✓':'✗'}</span>`).join('')}
+                            </div>
+                            ${e.근거 ? `<div style="font-size:0.72rem;color:#666;font-style:italic;">"${escapeHtml(e.근거)}"</div>` : ''}
+                        </div>`;
+                    })() : ''}
 
                     ${(t.추천_영상길이 || t.썸네일_인물풀 || t.썸네일_색상) ? `<div style="background:#f8f9fa;padding:8px 10px;border-radius:6px;margin-bottom:10px;font-size:0.78rem;color:#555;">
                         ${t.추천_영상길이 ? `<div style="margin-bottom:3px;"><b>⏱️ 영상 길이:</b> ${escapeHtml(t.추천_영상길이)}</div>` : ''}
