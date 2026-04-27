@@ -3684,10 +3684,10 @@
                 _geminiStatusEl = btn;
 
                 const allVideosText = recentSorted
-                    .slice(0, 80)
+                    .slice(0, 60)
                     .map(v => {
-                        const d = new Date(v.publishedAt).toISOString().slice(0, 10);
-                        return `[${d}] [${v.views.toLocaleString()}회] ${v.title}`;
+                        const d = new Date(v.publishedAt).toISOString().slice(0, 7);
+                        return `[${d}] [${v.views.toLocaleString()}] ${v.title}`;
                     }).join('\n');
 
                 const prompt = `한국어 유튜브 채널 "${channelTitle}" (구독자 ${subCount.toLocaleString()}명) 분석.
@@ -3765,21 +3765,53 @@ ${allVideosText}
 - top_patterns: 평균 조회수 높은 패턴 위주로 2~4개`;
 
                 const result = await callGemini(prompt, {
-                    maxTokens: 8192,
+                    maxTokens: 32768,
                     temperature: 0.3,
                     model: 'gemini-2.5-pro',
                 });
 
+                const rawText = result.text || '';
+                const finishReason = result.finishReason || 'unknown';
                 let parsed = null;
-                const jsonMatch = (result.text || '').match(/\{[\s\S]*\}/);
-                if (jsonMatch) {
-                    try { parsed = JSON.parse(jsonMatch[0]); } catch(e) {}
+
+                // JSON 추출 — 여러 전략 시도
+                // 1) 마크다운 코드블록 안의 JSON
+                let jsonStr = null;
+                const codeBlock = rawText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
+                if (codeBlock) jsonStr = codeBlock[1];
+                // 2) 첫 { 부터 마지막 } 까지 (단순)
+                if (!jsonStr) {
+                    const firstBrace = rawText.indexOf('{');
+                    const lastBrace = rawText.lastIndexOf('}');
+                    if (firstBrace >= 0 && lastBrace > firstBrace) {
+                        jsonStr = rawText.slice(firstBrace, lastBrace + 1);
+                    }
+                }
+                if (jsonStr) {
+                    try { parsed = JSON.parse(jsonStr); } catch(e) {
+                        // 잘림 복구 — 마지막 완전한 } 까지 찾기
+                        try {
+                            let depth = 0, lastValidEnd = -1;
+                            for (let i = 0; i < jsonStr.length; i++) {
+                                const ch = jsonStr[i];
+                                if (ch === '{') depth++;
+                                else if (ch === '}') { depth--; if (depth === 0) lastValidEnd = i; }
+                            }
+                            if (lastValidEnd > 0) parsed = JSON.parse(jsonStr.slice(0, lastValidEnd + 1));
+                        } catch(e2) {}
+                    }
                 }
 
                 if (!parsed) {
+                    const reasonMsg = finishReason === 'MAX_TOKENS'
+                        ? '⚠️ 응답이 길이 제한에 걸렸어요. 영상 개수를 줄여보세요 (50개 → 20개).'
+                        : finishReason === 'SAFETY'
+                        ? '⚠️ 안전 필터에 걸렸어요.'
+                        : `(finishReason: ${finishReason})`;
                     resultsEl.innerHTML = `<div style="padding:16px;background:#fff5f5;border:1px solid #ffcccc;border-radius:8px;">
-                        <div style="font-weight:700;color:#dc3545;margin-bottom:8px;">JSON 파싱 실패 — 원본 응답</div>
-                        <pre style="white-space:pre-wrap;font-size:0.8rem;color:#555;max-height:400px;overflow:auto;">${escapeHtml(result.text || '')}</pre>
+                        <div style="font-weight:700;color:#dc3545;margin-bottom:6px;">JSON 파싱 실패</div>
+                        <div style="font-size:0.85rem;color:#666;margin-bottom:8px;">${reasonMsg} · 응답 길이: ${rawText.length}자</div>
+                        ${rawText ? `<pre style="white-space:pre-wrap;font-size:0.78rem;color:#555;max-height:400px;overflow:auto;background:white;padding:8px;border-radius:4px;">${escapeHtml(rawText.slice(0, 5000))}${rawText.length > 5000 ? '\n\n...(이하 생략)' : ''}</pre>` : '<div style="font-size:0.85rem;color:#dc3545;">응답이 비어 있습니다. API 키 또는 안전 필터 문제일 수 있어요.</div>'}
                     </div>`;
                     return;
                 }
