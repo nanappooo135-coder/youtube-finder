@@ -2523,10 +2523,10 @@
 
                             <!-- 🐢 그록 영상 슬로우 처리 -->
                             <div style="padding:10px;background:#fff9db;border:2px solid #fab005;border-radius:8px;margin-top:12px;">
-                                <div style="font-weight:700;color:#856404;margin-bottom:8px;font-size:0.9rem;">🐢 그록 영상 슬로우 처리 (브라우저 내장 ffmpeg)</div>
+                                <div style="font-weight:700;color:#856404;margin-bottom:8px;font-size:0.9rem;">🐢 그록 영상 슬로우 처리 (브라우저 자체 처리)</div>
                                 <p style="font-size:0.78rem;color:#666;margin-bottom:8px;">
-                                    그록 영상(<strong>6초/10초</strong>)을 셀팟 장면 길이에 맞게 자동 슬로우. 파일명을 <strong>scene_5.mp4</strong> 형식으로 두고 떨구면 장면번호 인식 → PTS 자동 적용 → mp4 자동 다운로드.
-                                    <br><span style="color:#856404;">⚠️ 첫 사용 시 ffmpeg core(약 30MB) 1회 다운로드 (이후 캐시).</span>
+                                    그록 영상(<strong>6초/10초</strong>)을 셀팟 장면 길이에 맞게 자동 슬로우. 파일명에 장면번호 들어있으면 PTS 자동 적용 → webm 자동 다운로드.
+                                    <br><span style="color:#856404;">⚠️ ffmpeg 없이 브라우저 자체 처리 (HTML video + canvas 재녹화). 출력은 .webm 형식. 셀팟이 webm 거부하면 CapCut에 한 번만 변환.</span>
                                 </p>
                                 <div id="slowDropZone" style="border:2px dashed #fab005;border-radius:6px;padding:24px;text-align:center;background:#fff;cursor:pointer;font-size:0.85rem;color:#856404;font-weight:600;">
                                     📁 mp4 파일을 여기에 드래그하거나 <span style="text-decoration:underline;">클릭해서 선택</span>
@@ -16102,6 +16102,80 @@ overall mood: bright, psychologically safe illustration, uplifting and reassurin
             _renderSlowFileList();
         }
 
+        // 2026-04-27 v6: ffmpeg 없이 브라우저로 영상 슬로우 처리
+        // 비디오 element에 playbackRate 설정 + canvas.captureStream + MediaRecorder
+        // → mp4 입력 → playbackRate 1/PTS배 (예: 0.71) → 늘어진 길이로 webm 출력
+        async function _slowVideoOne(item) {
+            const fileURL = URL.createObjectURL(item.file);
+            try {
+                // 비디오 로드
+                const video = document.createElement('video');
+                video.src = fileURL;
+                video.muted = true;
+                video.playsInline = true;
+                video.preload = 'auto';
+                await new Promise((resolve, reject) => {
+                    video.onloadedmetadata = resolve;
+                    video.onerror = () => reject(new Error('비디오 로드 실패'));
+                });
+                const w = video.videoWidth || 1280;
+                const h = video.videoHeight || 720;
+                const playbackRate = 1 / item.ptsRatio; // PTS 1.4 → 0.71배속
+
+                // 캔버스 + 스트림
+                const canvas = document.createElement('canvas');
+                canvas.width = w; canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                const stream = canvas.captureStream(30);
+                const mimeType = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm']
+                    .find(t => MediaRecorder.isTypeSupported(t)) || 'video/webm';
+                const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 8_000_000 });
+                const chunks = [];
+                recorder.ondataavailable = e => { if (e.data && e.data.size > 0) chunks.push(e.data); };
+                const stopPromise = new Promise(resolve => { recorder.onstop = () => resolve(); });
+
+                // 그리기 루프
+                let drawing = true;
+                const draw = () => {
+                    if (!drawing) return;
+                    if (!video.paused && !video.ended) {
+                        ctx.drawImage(video, 0, 0, w, h);
+                    }
+                    requestAnimationFrame(draw);
+                };
+
+                // 시작
+                recorder.start();
+                video.playbackRate = playbackRate;
+                await video.play();
+                draw();
+
+                // 비디오 끝나면 녹화 종료
+                await new Promise(resolve => {
+                    video.onended = resolve;
+                    video.ontimeupdate = () => {
+                        if (video.currentTime >= video.duration - 0.05) resolve();
+                    };
+                });
+                drawing = false;
+                recorder.stop();
+                await stopPromise;
+
+                let blob = new Blob(chunks, { type: mimeType });
+                // webm 메타데이터 길이 수정
+                try {
+                    const fixer = await _loadWebmFixer();
+                    if (fixer) {
+                        const targetMs = Math.round(video.duration / playbackRate * 1000);
+                        blob = await fixer(blob, targetMs);
+                    }
+                } catch (e) { console.warn('webm fix 실패:', e); }
+                return blob;
+            } finally {
+                URL.revokeObjectURL(fileURL);
+            }
+        }
+
         window._slowProcessAll = async function() {
             const progress = document.getElementById('slowProgress');
             const btn = document.getElementById('slowProcessBtn');
@@ -16112,27 +16186,14 @@ overall mood: bright, psychologically safe illustration, uplifting and reassurin
             }
             btn.disabled = true; btn.textContent = '🐢 처리 중...';
             try {
-                const ffmpeg = await _loadFFmpeg(progress);
-                const { fetchFile } = window.FFmpegUtil;
                 for (let i = 0; i < pending.length; i++) {
                     const item = pending[i];
                     item.status = 'processing'; _renderSlowFileList();
-                    progress.textContent = '⏳ (' + (i+1) + '/' + pending.length + ') ' + item.file.name + ' 처리 중...';
+                    progress.textContent = '⏳ (' + (i+1) + '/' + pending.length + ') ' + item.file.name + ' 슬로우 처리 중...';
                     try {
-                        const inName = 'in_' + i + '.mp4';
-                        const outName = 'out_' + i + '.mp4';
-                        await ffmpeg.writeFile(inName, await fetchFile(item.file));
-                        await ffmpeg.exec(['-i', inName, '-vf', 'setpts=' + item.ptsRatio + '*PTS', '-an', outName]);
-                        const data = await ffmpeg.readFile(outName);
-                        const blob = new Blob([data.buffer], { type: 'video/mp4' });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = item.file.name.replace(/\.[^.]+$/, '') + '_slow.mp4';
-                        document.body.appendChild(a); a.click(); document.body.removeChild(a);
-                        setTimeout(() => URL.revokeObjectURL(url), 1000);
-                        try { await ffmpeg.deleteFile(inName); } catch(e){}
-                        try { await ffmpeg.deleteFile(outName); } catch(e){}
+                        const blob = await _slowVideoOne(item);
+                        const baseName = item.file.name.replace(/\.[^.]+$/, '');
+                        _downloadBlob(blob, baseName + '_slow.webm');
                         item.status = 'done';
                     } catch (e) {
                         item.status = 'error'; item.error = e.message || String(e);
@@ -16140,9 +16201,9 @@ overall mood: bright, psychologically safe illustration, uplifting and reassurin
                     }
                     _renderSlowFileList();
                 }
-                progress.textContent = '✅ ' + pending.length + '개 처리 완료. 다운로드 폴더 확인.';
+                progress.innerHTML = '✅ ' + pending.length + '개 처리 완료. 다운로드 폴더 확인.<br><span style="color:#856404;">⚠️ webm 형식으로 저장됨 (ffmpeg 없이). 셀팟이 webm 안 받으면 CapCut/온라인 변환 필요.</span>';
             } catch (e) {
-                progress.textContent = '❌ ffmpeg 로드 실패: ' + (e.message || e);
+                progress.textContent = '❌ 처리 실패: ' + (e.message || e);
             } finally {
                 btn.disabled = false; btn.textContent = '🐢 슬로우 처리 시작';
             }
