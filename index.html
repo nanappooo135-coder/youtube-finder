@@ -16296,6 +16296,7 @@ overall mood: bright, psychologically safe illustration, uplifting and reassurin
                 for (let i = 0; i < pending.length; i++) {
                     const item = pending[i];
                     overlayInfo.textContent = '🎬 (' + (i+1) + '/' + pending.length + ') ' + item.file.name + ' · ' + item.durationSec + '초';
+                    overlayInfo.style.display = ''; // 장면 시작 안내 (녹화 전)
                     progress.textContent = '🎬 (' + (i+1) + '/' + pending.length + ') ' + item.file.name + ' 녹화 중...';
                     item.status = 'recording'; _renderDesignFileList();
                     try {
@@ -16304,7 +16305,10 @@ overall mood: bright, psychologically safe illustration, uplifting and reassurin
                         iframe.srcdoc = html;
                         await loadPromise;
                         await _sleep(800);
+                        // 2026-04-27: 녹화 중에는 안내 배너 숨김 (배너가 영상에 찍히지 않게)
+                        overlayInfo.style.display = 'none';
                         const webm = await _recordDuration(stream, item.durationSec * 1000 + 100);
+                        overlayInfo.style.display = ''; // 녹화 끝나면 다시 표시
                         item.status = 'encoding'; _renderDesignFileList();
                         // 2026-04-27 v5: ffmpeg.wasm CDN 불안정 → webm→mp4 시도, 실패 시 webm 그대로 저장
                         const baseName = item.file.name.replace(/\.[^.]+$/, '');
