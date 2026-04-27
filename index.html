@@ -1599,6 +1599,72 @@
             </div>
         </div>
 
+        <!-- ⏱️ 빈도 캡 (키워드별 4주 최대) -->
+        <div class="section" style="border:1px solid #ffe0a0;">
+            <div class="section-title" onclick="toggleSection(this)" style="font-size:0.95rem;color:#996600;">
+                ⏱️ 빈도 캡 (완전 차단 X, 4주 N편 이하)
+                <span class="arrow">&#9660;</span>
+            </div>
+            <div class="section-content">
+                <p style="font-size:0.8rem;color:#666;margin-bottom:10px;">
+                    완전히 막진 않고 빈도만 제한 (예: "이란 = 4주 1편", "부동산 = 4주 2편"). AI는 캡을 넘는 주제는 추천하지 않아요.
+                </p>
+                <div style="display:flex;gap:6px;margin-bottom:10px;align-items:flex-end;">
+                    <div style="flex:1;">
+                        <label style="font-size:0.75rem;color:#666;">키워드</label>
+                        <input id="ftCapKeyword" type="text" placeholder="예: 이란, 부동산" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-size:0.85rem;">
+                    </div>
+                    <div style="width:120px;">
+                        <label style="font-size:0.75rem;color:#666;">4주 최대</label>
+                        <select id="ftCapMax" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-size:0.85rem;">
+                            <option value="0">0편 (사실상 차단)</option>
+                            <option value="1" selected>1편</option>
+                            <option value="2">2편</option>
+                            <option value="3">3편</option>
+                        </select>
+                    </div>
+                    <button onclick="addTopicCap()" class="btn-small btn-primary" style="padding:9px 14px;">추가</button>
+                </div>
+                <div id="ftCapList" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+            </div>
+        </div>
+
+        <!-- 📊 피드백 입력 (예상 vs 실제) -->
+        <div class="section" style="border:1px solid #cce5cc;">
+            <div class="section-title" onclick="toggleSection(this)" style="font-size:0.95rem;color:#28a745;">
+                📊 업로드 후 피드백 (예상 vs 실제)
+                <span class="arrow">&#9660;</span>
+            </div>
+            <div class="section-content">
+                <p style="font-size:0.8rem;color:#666;margin-bottom:10px;">
+                    영상 업로드 1주 후 실제 조회수를 입력하세요. 누적되면 "예상 등급 정확도"가 보이고, 다음 추천에 반영됩니다.
+                </p>
+                <div style="display:grid;grid-template-columns:1fr 110px 110px 80px;gap:6px;margin-bottom:10px;align-items:flex-end;">
+                    <div>
+                        <label style="font-size:0.75rem;color:#666;">영상 제목</label>
+                        <input id="fbTitle" type="text" placeholder="업로드한 영상 제목" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-size:0.85rem;">
+                    </div>
+                    <div>
+                        <label style="font-size:0.75rem;color:#666;">예상 등급</label>
+                        <select id="fbPredicted" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-size:0.85rem;">
+                            <option value="S">S (50만+)</option>
+                            <option value="A" selected>A (20~50만)</option>
+                            <option value="B">B (5~20만)</option>
+                            <option value="C">C (5만↓)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size:0.75rem;color:#666;">실제 조회수</label>
+                        <input id="fbActual" type="number" placeholder="예: 80000" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-size:0.85rem;">
+                    </div>
+                    <button onclick="addFeedback()" class="btn-small btn-primary" style="padding:9px 10px;">기록</button>
+                </div>
+                <div id="fbStats" style="background:#f8f9fa;padding:10px;border-radius:6px;font-size:0.82rem;color:#555;margin-bottom:10px;"></div>
+                <div id="fbHistory" style="max-height:240px;overflow-y:auto;"></div>
+                <button class="btn-small btn-primary" onclick="clearFeedback()" style="font-size:0.78rem;margin-top:8px;">전체 삭제</button>
+            </div>
+        </div>
+
         </div><!-- /process-formula -->
 
         <!-- ===== 프로세스 1 계속: 주제찾기 ===== -->
@@ -3515,6 +3581,119 @@
         }
 
         // ===========================
+        // 📊 피드백 루프 (예상 등급 vs 실제 조회수)
+        // ===========================
+        const FB_KEY = 'ft_feedback_v1';
+        function loadFeedback() {
+            try { return JSON.parse(localStorage.getItem(FB_KEY) || '[]'); }
+            catch(e) { return []; }
+        }
+        function saveFeedback(list) {
+            localStorage.setItem(FB_KEY, JSON.stringify(list));
+            renderFeedback();
+        }
+        function gradeFromViews(v) {
+            if (v >= 500000) return 'S';
+            if (v >= 200000) return 'A';
+            if (v >= 50000) return 'B';
+            return 'C';
+        }
+        function addFeedback() {
+            const title = document.getElementById('fbTitle').value.trim();
+            const predicted = document.getElementById('fbPredicted').value;
+            const actual = parseInt(document.getElementById('fbActual').value);
+            if (!title || !actual) { alert('제목과 실제 조회수를 입력하세요'); return; }
+            const list = loadFeedback();
+            list.push({ title, predicted, actual, actualGrade: gradeFromViews(actual), date: new Date().toISOString().slice(0,10) });
+            saveFeedback(list);
+            document.getElementById('fbTitle').value = '';
+            document.getElementById('fbActual').value = '';
+        }
+        function clearFeedback() {
+            if (!confirm('피드백 기록을 모두 삭제할까요?')) return;
+            saveFeedback([]);
+        }
+        function renderFeedback() {
+            const histEl = document.getElementById('fbHistory');
+            const statsEl = document.getElementById('fbStats');
+            if (!histEl || !statsEl) return;
+            const list = loadFeedback();
+            if (list.length === 0) {
+                histEl.innerHTML = '<div style="font-size:0.78rem;color:#aaa;padding:8px;text-align:center;">피드백 기록 없음</div>';
+                statsEl.innerHTML = '<span style="color:#aaa;">데이터가 쌓이면 정확도가 표시돼요</span>';
+                return;
+            }
+            // 정확도 계산
+            const exact = list.filter(f => f.predicted === f.actualGrade).length;
+            const accuracy = Math.round(exact / list.length * 100);
+            const overestimated = list.filter(f => 'SABC'.indexOf(f.predicted) < 'SABC'.indexOf(f.actualGrade)).length;
+            const underestimated = list.filter(f => 'SABC'.indexOf(f.predicted) > 'SABC'.indexOf(f.actualGrade)).length;
+            statsEl.innerHTML = `
+                <b>${list.length}건 누적</b> · 등급 정확도 <b style="color:${accuracy>=70?'#28a745':accuracy>=40?'#ffa500':'#dc3545'};">${accuracy}%</b>
+                · 과대평가 ${overestimated}건 · 과소평가 ${underestimated}건
+            `;
+            const gradeColor = { S: '#dc3545', A: '#ffa500', B: '#0066cc', C: '#888' };
+            histEl.innerHTML = list.slice().reverse().map((f, i) => {
+                const isMatch = f.predicted === f.actualGrade;
+                return `<div style="padding:6px 10px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;font-size:0.8rem;">
+                    <div style="flex:1;min-width:0;">
+                        <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(f.title)}</div>
+                        <div style="font-size:0.7rem;color:#888;">${f.date}</div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:6px;margin-left:8px;">
+                        <span style="background:${gradeColor[f.predicted]};color:white;padding:2px 6px;border-radius:6px;font-size:0.7rem;font-weight:700;">예상 ${f.predicted}</span>
+                        <span style="color:#888;">→</span>
+                        <span style="background:${gradeColor[f.actualGrade]};color:white;padding:2px 6px;border-radius:6px;font-size:0.7rem;font-weight:700;">실제 ${f.actualGrade}</span>
+                        <span style="color:#666;font-size:0.72rem;">(${f.actual.toLocaleString()})</span>
+                        <span style="font-size:0.85rem;">${isMatch ? '✅' : (overestimated > underestimated ? '📉' : '📈')}</span>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        // ===========================
+        // ⏱️ 빈도 캡 (키워드별 4주 최대)
+        // ===========================
+        const FT_CAPS_KEY = 'ft_topic_caps_v1';
+        function loadTopicCaps() {
+            try { return JSON.parse(localStorage.getItem(FT_CAPS_KEY) || '[]'); }
+            catch(e) { return []; }
+        }
+        function saveTopicCaps(list) {
+            localStorage.setItem(FT_CAPS_KEY, JSON.stringify(list));
+            renderTopicCapsList();
+        }
+        function addTopicCap() {
+            const kw = (document.getElementById('ftCapKeyword')?.value || '').trim();
+            const max = parseInt(document.getElementById('ftCapMax')?.value || '1');
+            if (!kw) { alert('키워드를 입력하세요'); return; }
+            const list = loadTopicCaps();
+            const existing = list.findIndex(c => c.keyword === kw);
+            if (existing >= 0) list[existing].max_per_4w = max;
+            else list.push({ keyword: kw, max_per_4w: max });
+            saveTopicCaps(list);
+            document.getElementById('ftCapKeyword').value = '';
+        }
+        function removeTopicCap(kw) {
+            saveTopicCaps(loadTopicCaps().filter(c => c.keyword !== kw));
+        }
+        function renderTopicCapsList() {
+            const el = document.getElementById('ftCapList');
+            if (!el) return;
+            const list = loadTopicCaps();
+            if (list.length === 0) {
+                el.innerHTML = '<span style="font-size:0.78rem;color:#aaa;">설정된 빈도 캡 없음</span>';
+                return;
+            }
+            el.innerHTML = list.map(c => `
+                <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:#fff8e6;color:#996600;border-radius:14px;font-size:0.78rem;">
+                    <b>${escapeHtml(c.keyword)}</b> 4주 ${c.max_per_4w}편 이하
+                    <button onclick="removeTopicCap('${c.keyword.replace(/'/g, "\\'").replace(/"/g, '&quot;')}')" style="background:none;border:none;color:#dc3545;font-weight:700;cursor:pointer;padding:0;font-size:0.9rem;">×</button>
+                </span>
+            `).join('');
+        }
+
+        // ===========================
         // 🚫 차단 주제 (블랙리스트)
         // ===========================
         const FT_BLOCKED_KEY = 'ft_blocked_topics_v1';
@@ -3724,19 +3903,24 @@ ${allVideosText}
       "count": 8,
       "avg_views": 350000,
       "median_views": 180000,
+      "recent_30d_avg": 280000,
+      "weighted_score": 320000,
       "efficiency_rank": 1,
       "frequency_rank": 3,
       "trend": "stable",
       "fatigue_flag": false,
       "sample_titles": ["대표 영상 제목 1", "대표 영상 제목 2"],
-      "verdict": "이 카테고리에 대한 한 줄 평가 (계속 가야 할지 줄여야 할지)"
+      "verdict": "이 카테고리에 대한 한 줄 평가"
     }
   ],
   "top_patterns": [
     {
       "pattern_id": "A",
       "name": "선진국 몰락·이민",
+      "sample_count": 8,
+      "confidence": "validated",
       "avg_views": 400000,
+      "recent_30d_avg": 320000,
       "evidence": ["뉴질랜드 106만", "스페인 14만"],
       "hook": "살기 좋다던 ○○이 무너지는 이유",
       "recommended_share": "40%"
@@ -3758,11 +3942,15 @@ ${allVideosText}
 
 [규칙]
 - categories: 영상 1개라도 있는 카테고리만 출력. avg_views와 median_views는 실제 계산
-- efficiency_rank: avg_views 기준 1등이 1
+- recent_30d_avg: 최근 30일 내 영상만의 평균 (없으면 null)
+- weighted_score: 최근 30일 가중치 0.6 + 전체 평균 가중치 0.4 가중평균 (최근 영상 중요도 ↑)
+- efficiency_rank: weighted_score 기준 1등이 1
 - frequency_rank: count 기준 1등이 1 (많은 게 1)
 - trend: "rising" / "stable" / "declining"
 - fatigue_flag: 최근 영상 갈수록 조회수 하락하면 true
-- top_patterns: 평균 조회수 높은 패턴 위주로 2~4개`;
+- top_patterns: weighted_score 높은 패턴 위주로 2~4개
+- sample_count: 그 패턴에 해당하는 영상 개수
+- confidence: sample_count 기준 — 2 이하 "low" / 3~4 "medium" / 5+ "validated"`;
 
                 const result = await callGemini(prompt, {
                     maxTokens: 32768,
@@ -3909,14 +4097,27 @@ ${allVideosText}
                     ${patterns.length > 0 ? `<div style="margin-bottom:14px;">
                         <div style="font-size:0.85rem;font-weight:700;color:#333;margin-bottom:8px;">🏆 당신 채널의 성공 패턴 ${patterns.length}개</div>
                         <div style="display:flex;flex-direction:column;gap:8px;">
-                            ${patterns.map(p => `<div style="background:#f0fff4;padding:10px 12px;border-radius:6px;border-left:3px solid #28a745;">
-                                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-                                    <span style="font-weight:700;color:#28a745;font-size:0.88rem;">패턴 ${escapeHtml(p.pattern_id||'')} — ${escapeHtml(p.name||'')}</span>
-                                    <span style="font-size:0.75rem;color:#666;">평균 <b>${(p.avg_views||0).toLocaleString()}회</b> · 권장 ${escapeHtml(p.recommended_share||'')}</span>
-                                </div>
-                                ${p.hook ? `<div style="font-size:0.8rem;color:#555;margin-bottom:3px;">💡 ${escapeHtml(p.hook)}</div>` : ''}
-                                ${Array.isArray(p.evidence) && p.evidence.length ? `<div style="font-size:0.72rem;color:#888;">근거: ${p.evidence.map(escapeHtml).join(' · ')}</div>` : ''}
-                            </div>`).join('')}
+                            ${patterns.map(p => {
+                                const conf = p.confidence || (p.sample_count >= 5 ? 'validated' : p.sample_count <= 2 ? 'low' : 'medium');
+                                const confBadge = conf === 'validated'
+                                    ? '<span style="background:#28a745;color:white;padding:2px 8px;border-radius:8px;font-size:0.7rem;font-weight:700;">✅ 검증됨</span>'
+                                    : conf === 'low'
+                                    ? '<span style="background:#dc3545;color:white;padding:2px 8px;border-radius:8px;font-size:0.7rem;font-weight:700;">⚠️ 낮은 신뢰도</span>'
+                                    : '<span style="background:#ffa500;color:white;padding:2px 8px;border-radius:8px;font-size:0.7rem;font-weight:700;">🔍 보통</span>';
+                                const sampleStr = p.sample_count ? `표본 ${p.sample_count}편` : '';
+                                const recentStr = p.recent_30d_avg ? `· 최근 30일 ${p.recent_30d_avg.toLocaleString()}회` : '';
+                                return `<div style="background:#f0fff4;padding:10px 12px;border-radius:6px;border-left:3px solid ${conf === 'validated' ? '#28a745' : conf === 'low' ? '#dc3545' : '#ffa500'};">
+                                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;flex-wrap:wrap;gap:6px;">
+                                        <span style="font-weight:700;color:#28a745;font-size:0.88rem;">패턴 ${escapeHtml(p.pattern_id||'')} — ${escapeHtml(p.name||'')}</span>
+                                        ${confBadge}
+                                    </div>
+                                    <div style="font-size:0.75rem;color:#666;margin-bottom:4px;">
+                                        ${sampleStr} · 평균 <b>${(p.avg_views||0).toLocaleString()}회</b> ${recentStr} · 권장 ${escapeHtml(p.recommended_share||'')}
+                                    </div>
+                                    ${p.hook ? `<div style="font-size:0.8rem;color:#555;margin-bottom:3px;">💡 ${escapeHtml(p.hook)}</div>` : ''}
+                                    ${Array.isArray(p.evidence) && p.evidence.length ? `<div style="font-size:0.72rem;color:#888;">근거: ${p.evidence.map(escapeHtml).join(' · ')}</div>` : ''}
+                                </div>`;
+                            }).join('')}
                         </div>
                     </div>` : ''}
 
@@ -4019,6 +4220,18 @@ ${allVideosText}
                 ? `\n[사용자가 명시적으로 차단한 주제 — 절대 추천 금지]\n${blockedList.map((t,i) => `${i+1}. ${t}`).join('\n')}\n`
                 : '';
 
+            // 빈도 캡
+            const capsList = loadTopicCaps();
+            const capsSection = capsList.length > 0
+                ? `\n[키워드별 빈도 캡 — 4주 내 N편 이하만 허용. 위 "최근 4주 다룬 영상"에서 이미 캡에 도달한 키워드는 제외]\n${capsList.map((c,i) => `${i+1}. "${c.keyword}" → 4주 ${c.max_per_4w}편 이하`).join('\n')}\n`
+                : '';
+
+            // 피드백 학습 (예상 vs 실제 누적)
+            const feedbackList = loadFeedback();
+            const feedbackSection = feedbackList.length >= 3
+                ? `\n[과거 추천 정확도 — 학습용]\n총 ${feedbackList.length}건. 최근 5건:\n${feedbackList.slice(-5).map(f => `- "${f.title}" 예상 ${f.predicted} → 실제 ${f.actualGrade} (${f.actual.toLocaleString()}회)`).join('\n')}\n→ 위 패턴을 참고해서 등급 예상을 더 보수적으로/공격적으로 조정하세요.\n`
+                : '';
+
             const prompt = `오늘은 ${today}입니다. 당신은 유튜브 채널 "푸짐한 경제학"의 콘텐츠 기획자입니다.
 
 [채널 컨텍스트]
@@ -4060,7 +4273,7 @@ ${avoid ? `- 사용자 추가 금지: ${avoid}` : ''}
 
 [최근 4주 다룬 영상]
 ${recentTitles}
-${blockedSection}
+${blockedSection}${capsSection}${feedbackSection}
 ${userExtra ? `[사용자 추가 요청]\n${userExtra}\n` : ''}
 
 [작업]
@@ -4100,6 +4313,7 @@ ${(window._channelState && window._channelState.slump)
       "주제_한줄": "내용 요약 한 줄",
       "예상_제목": "유튜브 썸네일에 들어갈 제목 (왜 ○○일까? 형태)",
       "후킹_포인트": "왜 클릭할 것인가 1~2문장",
+      "추천_근거": "왜 이 주제를 추천하는지 명확한 근거 (예: '패턴 A 적용 · 한국인 관심 8점 · 최근 4주 미다룸 · 살릴 키워드 캐나다 포함')",
       "한국_연결고리": "한국 시청자가 왜 봐야 하는가",
       "차별점": "슈카월드 등이 안 다룰 이유",
       "리스크": "안 터질 가능성/주의점",
@@ -4242,6 +4456,11 @@ ${(window._channelState && window._channelState.slump)
                         <div style="font-size:0.88rem;color:#333;">${escapeHtml(t.후킹_포인트 || '')}</div>
                     </div>
 
+                    ${t.추천_근거 ? `<div style="background:#f0f9ff;padding:10px 12px;border-left:3px solid #0066cc;border-radius:4px;margin-bottom:10px;">
+                        <div style="font-size:0.75rem;font-weight:700;color:#0066cc;margin-bottom:2px;">🧭 왜 이 주제 (추천 근거)</div>
+                        <div style="font-size:0.85rem;color:#333;">${escapeHtml(t.추천_근거)}</div>
+                    </div>` : ''}
+
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
                         <div style="background:#f0f9ff;padding:8px 10px;border-radius:6px;">
                             <div style="font-size:0.7rem;font-weight:700;color:#0066cc;margin-bottom:2px;">🇰🇷 한국 연결고리</div>
@@ -4336,7 +4555,11 @@ ${(window._channelState && window._channelState.slump)
             if (procTopicRestEl) procTopicRestEl.style.display = proc === 'topic' ? '' : 'none';
             // AI 주제추천 탭
             document.getElementById('process-formula').style.display = proc === 'formula' ? '' : 'none';
-            if (proc === 'formula') renderBlockedTopicsList();
+            if (proc === 'formula') {
+                renderBlockedTopicsList();
+                renderTopicCapsList();
+                renderFeedback();
+            }
             // 각 탭 고유 콘텐츠 (process-topic 밖)
             document.getElementById('process-thumbnail').style.display = proc === 'thumbnail' ? '' : 'none';
             document.getElementById('process-thumbtext').style.display = proc === 'thumbtext' ? '' : 'none';
