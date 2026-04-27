@@ -4220,27 +4220,35 @@ ${allVideosText}
             const charCount = [...title].length;
             const first15 = title.slice(0, 15);
 
-            const prompt = `유튜브 채널 "푸짐한 경제학" (글로벌 지정학·경제, 30~50대 한국인 타겟) 의 제목을 평가합니다.
+            const prompt = `유튜브 채널 "푸짐한 경제학" (글로벌 지정학·경제, 30~50대 한국인 타겟)의 제목을 평가합니다.
+
+[채널 마스터 공식]
+모든 대박 영상은 "역설(Paradox) — 상식 vs 진실의 충돌"이 핵심 DNA.
+검증된 5개 공식: 따옴표 충격발언형 / 역설 직격형 / 숫자 스케일형 / 콜론 폭로형 / 강대국 음모형
+검증 키워드: "진짜 이유", "도망치는", "몰락", "숨겨둔", "○○인데 왜 ○○?", "30년 만에", "역대급", "최후", "붕괴", "끝장"
 
 [평가할 제목]
 "${title}"
 (글자수: ${charCount}자, 첫 15자: "${first15}")
 
-[채점 기준 — 각 0~10점]
-1. 호기심 갭: 클릭 안 하고 못 배기는가?
-2. 키워드 인지도: 한국인이 아는 단어인가?
-3. 글자 수: 35~50자가 최적 (지금 ${charCount}자)
-4. 첫 15자 강도: 모바일에서도 후킹되는가?
-5. 채널 톤 일치도: 자극적+분석적 균형
+[6개 채점 기준 — 각 10점, 총 60점]
+1. 역설 강도: 상식 vs 진실 충돌 (0=단순 정보 / 10=강력한 역설)
+2. 호기심 갭: 클릭 안 하고 못 배기는가?
+3. 키워드 인지도: 한국인이 아는 단어/인물/국가
+4. 글자 수: 35~50자=10점 / 25~34 또는 51~60=7점 / 그 외=5점 (지금 ${charCount}자)
+5. 첫 15자 강도: 모바일 잘림 대비 앞부분만으로 후킹
+6. 본인 채널 톤 일치도: 검증된 5공식 중 하나 + 검증 키워드 사용
 
-[총점 기준]
-- 35점 이상: 사용 권장
-- 25~34점: 수정 권장
-- 25점 미만: 재작성 권장
+[총점 등급]
+- 50+: ✅ 사용 권장 (S급)
+- 40~49: ⚠️ 일부 수정 후 사용 (A급)
+- 30~39: 🔧 재작성 권장 (B급)
+- 30 미만: ❌ 폐기 권장 (C급)
 
 [출력 — 반드시 아래 JSON만]
 {
   "scores": {
+    "역설강도": 8,
     "호기심갭": 8,
     "키워드인지도": 7,
     "글자수": 9,
@@ -4248,23 +4256,27 @@ ${allVideosText}
     "채널톤": 8
   },
   "score_reasons": {
-    "호기심갭": "왜 이 점수인지 한 줄",
+    "역설강도": "왜 이 점수인지 한 줄",
+    "호기심갭": "...",
     "키워드인지도": "...",
     "글자수": "...",
     "첫15자강도": "...",
     "채널톤": "..."
   },
-  "total": 38,
-  "verdict": "사용 권장",
+  "total": 46,
+  "grade": "A",
+  "verdict": "일부 수정 후 사용",
+  "weak_points": ["가장 약한 항목 1", "약한 항목 2"],
   "improvements": [
-    "구체적 개선 제안 1 (어떻게 바꾸면 좋을지)",
-    "구체적 개선 제안 2",
-    "구체적 개선 제안 3"
+    "약한 항목별 구체적 개선 제안 1",
+    "개선 제안 2",
+    "개선 제안 3"
   ],
-  "rewrites": [
-    "개선 제안 반영한 대안 제목 1",
-    "개선 제안 반영한 대안 제목 2"
-  ]
+  "stronger_title": {
+    "title": "같은 주제로 더 강하게 다시 쓴 제목 1개 (검증 키워드 + 5공식 중 하나 명확히 적용)",
+    "applied_formula": "공식1~5 중 어느 것 사용했는지",
+    "why_stronger": "왜 더 강한지 한 줄"
+  }
 }`;
 
             try {
@@ -4289,20 +4301,23 @@ ${allVideosText}
         function renderTitleEvaluation(d) {
             const resultEl = document.getElementById('evResult');
             const total = d.total || 0;
-            const totalColor = total >= 35 ? '#28a745' : total >= 25 ? '#ffa500' : '#dc3545';
-            const verdictBg = total >= 35 ? '#f0fff4' : total >= 25 ? '#fff8e6' : '#fff5f5';
+            const grade = d.grade || (total >= 50 ? 'S' : total >= 40 ? 'A' : total >= 30 ? 'B' : 'C');
+            const totalColor = grade === 'S' ? '#28a745' : grade === 'A' ? '#ffa500' : grade === 'B' ? '#996600' : '#dc3545';
+            const verdictBg = grade === 'S' ? '#f0fff4' : grade === 'A' ? '#fff8e6' : grade === 'B' ? '#fff8e6' : '#fff5f5';
+            const verdictIcon = grade === 'S' ? '✅' : grade === 'A' ? '⚠️' : grade === 'B' ? '🔧' : '❌';
             const scores = d.scores || {};
             const reasons = d.score_reasons || {};
             const items = [
-                ['호기심갭', '🔥'], ['키워드인지도', '🎯'], ['글자수', '📏'], ['첫15자강도', '⚡'], ['채널톤', '🎨']
+                ['역설강도', '⚖️'], ['호기심갭', '🔥'], ['키워드인지도', '🎯'], ['글자수', '📏'], ['첫15자강도', '⚡'], ['채널톤', '🎨']
             ];
 
             const scoresHtml = items.map(([k, icon]) => {
                 const s = scores[k] || 0;
                 const c = s >= 8 ? '#28a745' : s >= 5 ? '#ffa500' : '#dc3545';
-                return `<div style="background:white;border:1px solid #e0e0e0;border-radius:6px;padding:8px 10px;margin-bottom:5px;">
+                const isWeak = Array.isArray(d.weak_points) && d.weak_points.some(w => w.includes(k));
+                return `<div style="background:white;border:${isWeak ? '2px' : '1px'} solid ${isWeak ? '#dc3545' : '#e0e0e0'};border-radius:6px;padding:8px 10px;margin-bottom:5px;">
                     <div style="display:flex;justify-content:space-between;align-items:center;">
-                        <span style="font-size:0.82rem;font-weight:700;">${icon} ${k}</span>
+                        <span style="font-size:0.82rem;font-weight:700;">${icon} ${k}${isWeak ? ' <span style="color:#dc3545;font-size:0.7rem;">(약점)</span>' : ''}</span>
                         <span style="background:${c};color:white;padding:2px 10px;border-radius:8px;font-size:0.78rem;font-weight:700;">${s}/10</span>
                     </div>
                     ${reasons[k] ? `<div style="font-size:0.72rem;color:#888;margin-top:3px;">${escapeHtml(reasons[k])}</div>` : ''}
@@ -4312,7 +4327,7 @@ ${allVideosText}
             resultEl.innerHTML = `
                 <div style="background:${verdictBg};border:2px solid ${totalColor};padding:14px;border-radius:8px;text-align:center;margin-bottom:12px;">
                     <div style="font-size:0.85rem;color:#666;margin-bottom:4px;">총점</div>
-                    <div style="font-size:2rem;font-weight:900;color:${totalColor};">${total}<span style="font-size:1rem;">/50</span></div>
+                    <div style="font-size:2rem;font-weight:900;color:${totalColor};">${total}<span style="font-size:1rem;">/60</span> <span style="font-size:1.2rem;">${verdictIcon} ${grade}급</span></div>
                     <div style="font-size:0.95rem;font-weight:700;color:${totalColor};margin-top:4px;">${escapeHtml(d.verdict||'')}</div>
                 </div>
 
@@ -4325,9 +4340,13 @@ ${allVideosText}
                     </ul>
                 </div>` : ''}
 
-                ${Array.isArray(d.rewrites) && d.rewrites.length ? `<div>
-                    <div style="font-size:0.78rem;font-weight:700;color:#dc3545;margin-bottom:5px;">✏️ 대안 제목 (클릭=복사)</div>
-                    ${d.rewrites.map(r => `<div onclick="navigator.clipboard.writeText(this.textContent.trim()); this.style.background='#ffe0e0';" style="padding:8px 10px;background:#fff5f5;border:1px solid #ffd0d0;border-radius:6px;font-size:0.88rem;color:#222;cursor:pointer;margin-bottom:4px;font-weight:700;" title="클릭해서 복사">${escapeHtml(r)}</div>`).join('')}
+                ${d.stronger_title?.title ? `<div style="background:#fff5f5;border:2px solid #dc3545;padding:12px;border-radius:8px;">
+                    <div style="font-size:0.78rem;font-weight:700;color:#dc3545;margin-bottom:6px;">✏️ 더 강한 제목 (자동 생성)</div>
+                    <div onclick="navigator.clipboard.writeText(this.textContent.trim()); this.style.background='#ffe0e0';" style="padding:8px 10px;background:white;border:1px solid #ffd0d0;border-radius:6px;font-size:0.95rem;color:#222;cursor:pointer;font-weight:700;margin-bottom:6px;" title="클릭해서 복사">${escapeHtml(d.stronger_title.title)}</div>
+                    <div style="font-size:0.72rem;color:#666;">
+                        ${d.stronger_title.applied_formula ? `<div><b>적용 공식:</b> ${escapeHtml(d.stronger_title.applied_formula)}</div>` : ''}
+                        ${d.stronger_title.why_stronger ? `<div><b>왜 더 강한가:</b> ${escapeHtml(d.stronger_title.why_stronger)}</div>` : ''}
+                    </div>
                 </div>` : ''}
             `;
         }
@@ -4373,104 +4392,156 @@ ${allVideosText}
                 ? `\n[제목·썸네일에 사용 금지]\n${forbidden.length ? '차단/캡 키워드: ' + forbidden.join(', ') + '\n' : ''}${recent4w.length ? '최근 4주 사용된 표현 (재사용 금지): ' + recent4w.join(' / ') : ''}\n`
                 : '';
 
+            const channelStatus = (window._channelState && window._channelState.slump) ? '슬럼프' : '호조';
+
             const prompt = `당신은 유튜브 채널 "푸짐한 경제학"의 제목·썸네일 카피라이터입니다.
 
+═══════════════════════════
+[채널 마스터 공식 — 절대 원칙]
+═══════════════════════════
+이 채널의 모든 대박 영상은 "역설(Paradox)"이 핵심 DNA입니다.
+- 뉴질랜드: 낙원이라더니 → 탈출
+- 아프가니스탄: 4000조 자원 → 최빈국
+- 머스크 AI: 편리함 → 직업 소멸
+- 사우디: 기름 한 방울 → 부자
+→ 모든 제목·썸네일은 "상식 vs 진실"의 충돌을 만들어야 함.
+
+═══════════════════════════
+[채널 검증된 제목 5개 공식]
+═══════════════════════════
+공식1 — 따옴표 충격 발언형
+구조: "충격 발언" + 본문 + (괄호 부연)
+검증: "아름다운 자연에 속지 마세요" 살기 좋다던 뉴질랜드 (106만) / "미사일보다 무서운 '이것'" (44만) / "망하면 정부가 갚아줄게" 사막 국가 부자 비결 (21만)
+
+공식2 — 역설 직격형
+구조: A인데 왜 B인가? + (구체 키워드)
+검증: "4,000조 자원인데 최빈국" (37만) / "기름 한 방울 안 나는데 부자" (21만) / "은인을 공격하는 탈레반" (31만)
+
+공식3 — 숫자 스케일형
+구조: 구체적 숫자 + 충격 결과
+검증: "30년 노력이 3일 만에" (35만) / "4,000조 자원 노다지" (37만) / "1타 3피로 중국·북한까지" (27만)
+
+공식4 — 콜론 폭로형
+구조: 사건명: 진짜 이유 + (부연)
+검증: "F-15 격추 사건: 미 특수부대 역대급 작전 (CSAR)" (33만) / "북한이 설계한 난공불락의 몰락: 30년 노력 3일 증발" (35만)
+
+공식5 — 강대국 음모형 (패턴 C 전용)
+구조: ○○가 숨겨둔 ○○: 진짜 설계
+검증: "미국이 숨겨둔 최후의 카드 (쿠르드족의 정체)" (54만) / "트럼프의 장대한 분노 작전: 1타 3피 역대급 설계" (27만)
+
+═══════════════════════════
+[패턴별 톤 매칭]
+═══════════════════════════
+- 패턴 A 선진국 몰락: "살기 좋다던" + 충격 폭로 톤
+- 패턴 B 인물·테크: 미래 충격 + 인물 인용 톤
+- 패턴 C 지정학: 강대국 음모 + 첩보 톤 (공식5 우선)
+- 패턴 D 자원 역설: 숫자 자원 + 역설 톤
+
+═══════════════════════════
+[검증된 키워드 — 가급적 활용]
+═══════════════════════════
+"진짜 이유", "도망치는", "몰락", "숨겨둔", "○○인데 왜 ○○?", "30년 만에", "역대급", "최후", "붕괴", "끝장"
+
+═══════════════════════════
+[검증된 썸네일 텍스트 예시 — 길이/톤 참고]
+═══════════════════════════
+- "9천억짜리 다윈시스 사기극" / "홍해도 막히면 끝장이야" / "8천만원 줄테니 제발 나가" / "한때 세계 최강대국이었던" / "여긴 지옥입니다" / "돈은 버는데 망하는중"
+규칙: 8~15자, 빨간 강조어 1~2개 (끝장/지옥/최후/역대급/붕괴), 도발 발언 또는 충격 결과, 따옴표 OK.
+
+═══════════════════════════
+[검증된 시각 패턴]
+═══════════════════════════
+- 좌측: 인물 정면 클로즈업 (감정 표현 강함)
+- 우측: 빨간 텍스트 + 보조 이미지
+- 배경: 어두운 톤 + 화염/폭발/균열
+- 보조: 국기, 무기, 건물 무너짐
+
+[썸네일 인물 풀 — 검증된 얼굴 우선 사용]
+- 트럼프 (지정학) / 푸틴 (러시아) / 김정은 (북한) / 빈 살만 (사우디) / 머스크 (테크) / 시진핑 (중국)
+- 신규 추천: 젠슨황 (엔비디아·AI), 손정의 (일본·테크)
+
+[썸네일 색상 코드 — 주제별]
+- 위기·붕괴: 어두운 빨강 + 검정
+- 음모·첩보: 검정 + 빨강 액센트
+- 미래·테크: 어두운 파랑 + 보라
+- 자원·경제: 금색 + 검정
+
+═══════════════════════════
 [채널 정보]
+═══════════════════════════
 - 구독자 3.66만, 글로벌 지정학·경제 채널
 - 평균 조회수 12.8만 (대박 100만+, 중박 4만)
 - 타겟: 30~50대 한국 남성, 국제정세·경제 관심층
+- 현재 채널 상태: ${channelStatus}${channelStatus === '슬럼프' ? ' (검증된 공식 위주, 새 실험 자제)' : ''}
 
+═══════════════════════════
 [입력]
+═══════════════════════════
 영상 주제: ${topic}
-패턴 분류: ${pattern || 'A (선진국 몰락)'}
+적용 패턴: ${pattern || 'A'}
 ${topVideosSection}${forbiddenSection}
 [필수 준수 사항]
 - 제목 35~50자 (한국 유튜브 최적)
 - 첫 15자 안에 후킹 키워드 (모바일 잘림 방지)
+- 5개 후보는 각각 다른 공식 사용 (공식 1~5 모두 등장)
+- 모두 "역설" DNA 포함 (상식 vs 진실 충돌 명시)
+- 검증 키워드 가급적 활용
+- 패턴별 톤 매칭 준수
 - 클릭베이트지만 거짓말 금지
-- 본인 채널의 패턴 톤 유지
 - 위 "사용 금지" 표현은 절대 쓰지 말 것
 
-[A/B 톤 모드 — 각 제목 후보마다 톤 명시]
-- 옵션 A "자극·도발": 호기심 폭발, 클릭 욕구 극대화 ("거짓말입니다", "지옥이 됐다" 등)
-- 옵션 B "분석·신뢰": 퀄리티 어필, 신뢰감 있는 톤 ("진짜 이유", "구조적 분석" 등)
-5개 후보 중 최소 2개는 A 톤, 2개는 B 톤으로 분배.
+[A/B 톤 모드]
+- 옵션 A "자극·도발" 톤 / 옵션 B "분석·신뢰" 톤. 5개 후보 중 최소 2개씩 분배.
 
-[출력 — 반드시 아래 JSON만. 다른 설명 금지]
+[출력 — 반드시 아래 JSON만. 다른 설명·마크다운 금지. 5개 후보는 공식1~5 모두 등장]
 {
   "titles": [
     {
-      "type": "따옴표 후킹형",
+      "공식번호": 1,
+      "공식명": "따옴표 충격 발언형",
       "tone": "A",
-      "structure": "충격적 발언 + 본문 + (괄호 보충)",
       "title": "실제 생성된 제목 35~50자",
+      "글자수": 47,
+      "역설_포인트": "상식(낙원) vs 진실(탈출) 충돌 한 줄",
+      "첫15자": "이민 천국이라더니",
+      "첫15자_강도": 9,
       "ctr_grade": "S",
       "ctr_reason": "왜 이 등급인지 한 줄"
-    },
-    {
-      "type": "역설형",
-      "structure": "A인데 왜 B인가? + (구체 키워드)",
-      "title": "...",
-      "ctr_grade": "A",
-      "ctr_reason": "..."
-    },
-    {
-      "type": "숫자·스케일형",
-      "structure": "구체적 숫자 + 충격 결과 + 부연",
-      "title": "...",
-      "ctr_grade": "...",
-      "ctr_reason": "..."
-    },
-    {
-      "type": "콜론형",
-      "structure": "사건명: 핵심 질문 + 부연",
-      "title": "...",
-      "ctr_grade": "...",
-      "ctr_reason": "..."
-    },
-    {
-      "type": "폭로형",
-      "structure": "○○가 숨긴/공개한 ○○: 진짜 이유",
-      "title": "...",
-      "ctr_grade": "...",
-      "ctr_reason": "..."
     }
   ],
   "thumbnail_texts": [
-    {
-      "type": "도발 발언형",
-      "text": "8~15자",
-      "highlight": "강조할 빨간색 단어 1~2개"
-    },
-    {
-      "type": "충격 결과형",
-      "text": "...",
-      "highlight": "..."
-    },
-    {
-      "type": "숫자 강조형",
-      "text": "...",
-      "highlight": "..."
-    }
+    { "type": "도발 발언형", "text": "8~15자", "highlight": "빨간 강조어 1~2개" },
+    { "type": "충격 결과형", "text": "...", "highlight": "..." },
+    { "type": "숫자 강조형", "text": "...", "highlight": "..." }
   ],
   "thumbnail_visual": {
-    "main_image": "메인 인물/이미지 (예: 트럼프 정면 클로즈업, 화난 표정)",
-    "background": "배경 요소 (예: 뒤편 무너지는 빌딩 + 어두운 빨강)",
-    "layout": "좌측 인물 / 우측 텍스트 (또는 중앙 충격 이미지 + 상하 텍스트)"
+    "main_image": "메인 인물/이미지 (구체적 인물명·표정. 검증된 인물풀 우선)",
+    "background": "배경 요소 (뒤편 무너지는 빌딩 + 어두운 빨강 등)",
+    "layout": "좌인물·우텍스트 / 중앙·상하 등",
+    "color_code": "위기·붕괴 / 음모·첩보 / 미래·테크 / 자원·경제 중 어떤 톤인지 + 구체 색상"
   },
   "validation": {
     "message_match": true,
     "thumbnail_clickable": true,
-    "title_clickable": true,
-    "combined_curiosity": true,
-    "channel_tone_match": true,
-    "comments": "5개 체크리스트 종합 평가 한 줄"
+    "title_first15_strong": true,
+    "uses_verified_keyword": true,
+    "clickbait_truthful": true,
+    "comments": "5체크 종합 한 줄"
+  },
+  "final_pick": {
+    "rank": 1,
+    "title": "5개 후보 중 가장 강력한 1개 (위 titles 중 하나의 title 그대로)",
+    "reasons": [
+      "선정 이유 1줄",
+      "선정 이유 1줄",
+      "선정 이유 1줄"
+    ]
   }
 }
 
 [CTR 등급 기준]
-- S: 호기심 갭 강함 + 인지도 높은 키워드 + 충격 단어 모두
-- A: 호기심 또는 인지도 중 하나 강함
+- S: 역설 강함 + 호기심 갭 + 인지도 키워드 + 충격 단어 모두
+- A: 위 중 2~3개
 - B: 평이함
 - C: 키워드 약함 (추천 안 함)`;
 
@@ -4506,19 +4577,32 @@ ${topVideosSection}${forbiddenSection}
 
             const toneColor = { A: '#dc3545', B: '#0066cc' };
             const toneLabel = { A: '🔥 자극·도발', B: '🧠 분석·신뢰' };
-            const titlesHtml = titles.map((t, i) => `
-                <div style="background:white;border:1px solid #e0e0e0;border-radius:6px;padding:10px;margin-bottom:6px;">
+            const finalPickTitle = data.final_pick?.title || '';
+            const titlesHtml = titles.map((t, i) => {
+                const isFinalPick = finalPickTitle && t.title === finalPickTitle;
+                const charCount = t.글자수 || (t.title ? [...t.title].length : 0);
+                const charColor = (charCount >= 35 && charCount <= 50) ? '#28a745' : '#ffa500';
+                const first15Score = t.첫15자_강도 || 0;
+                const first15Color = first15Score >= 8 ? '#28a745' : first15Score >= 5 ? '#ffa500' : '#dc3545';
+                return `
+                <div style="background:white;border:${isFinalPick ? '2px solid #dc3545' : '1px solid #e0e0e0'};border-radius:6px;padding:10px;margin-bottom:6px;${isFinalPick ? 'box-shadow:0 0 0 3px rgba(220,53,69,0.15);' : ''}">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;flex-wrap:wrap;gap:4px;">
-                        <span style="font-size:0.72rem;color:#666;font-weight:700;">후보 ${i+1} — ${escapeHtml(t.type||'')}</span>
-                        <span style="display:inline-flex;gap:4px;">
+                        <span style="font-size:0.72rem;color:#666;font-weight:700;">${isFinalPick ? '🏆 ' : ''}후보 ${i+1} — 공식${t.공식번호||''} ${escapeHtml(t.공식명||t.type||'')}</span>
+                        <span style="display:inline-flex;gap:4px;flex-wrap:wrap;">
                             ${t.tone ? `<span style="background:${toneColor[t.tone]||'#888'};color:white;padding:2px 8px;border-radius:8px;font-size:0.7rem;font-weight:700;">${toneLabel[t.tone]||t.tone}</span>` : ''}
                             <span style="background:${gradeColor[t.ctr_grade]||'#888'};color:white;padding:2px 8px;border-radius:8px;font-size:0.7rem;font-weight:700;">CTR ${escapeHtml(t.ctr_grade||'')}</span>
                         </span>
                     </div>
                     <div onclick="navigator.clipboard.writeText(this.textContent.trim()); this.style.background='#ffe0e0';" style="font-size:0.92rem;color:#222;font-weight:700;padding:6px 8px;background:#fff5f5;border-radius:4px;cursor:pointer;margin-bottom:4px;" title="클릭해서 복사">${escapeHtml(t.title||'')}</div>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;font-size:0.7rem;color:#666;margin-bottom:4px;">
+                        <span style="background:#f8f9fa;padding:2px 6px;border-radius:6px;">📏 <b style="color:${charColor};">${charCount}자</b></span>
+                        ${first15Score ? `<span style="background:#f8f9fa;padding:2px 6px;border-radius:6px;">⚡ 첫15자 <b style="color:${first15Color};">${first15Score}/10</b></span>` : ''}
+                        ${t.첫15자 ? `<span style="background:#f8f9fa;padding:2px 6px;border-radius:6px;color:#888;">"${escapeHtml(t.첫15자)}"</span>` : ''}
+                    </div>
+                    ${t.역설_포인트 ? `<div style="font-size:0.74rem;color:#dc3545;margin-bottom:3px;">⚖️ 역설: ${escapeHtml(t.역설_포인트)}</div>` : ''}
                     ${t.ctr_reason ? `<div style="font-size:0.72rem;color:#888;">💡 ${escapeHtml(t.ctr_reason)}</div>` : ''}
-                </div>
-            `).join('');
+                </div>`;
+            }).join('');
 
             const thumbsHtml = thumbs.map((th, i) => `
                 <div style="background:white;border:1px solid #e0e0e0;border-radius:6px;padding:8px 10px;margin-bottom:6px;">
@@ -4531,9 +4615,9 @@ ${topVideosSection}${forbiddenSection}
             const valItems = [
                 ['메시지 일치', val.message_match],
                 ['썸네일 클릭 욕구', val.thumbnail_clickable],
-                ['제목 클릭 욕구', val.title_clickable],
-                ['호기심 폭발', val.combined_curiosity],
-                ['채널 톤 일치', val.channel_tone_match],
+                ['첫 15자 강력', val.title_first15_strong ?? val.title_clickable],
+                ['검증 키워드 사용', val.uses_verified_keyword ?? val.combined_curiosity],
+                ['클릭베이트 진실성', val.clickbait_truthful ?? val.channel_tone_match],
             ];
             const valHtml = valItems.map(([l, p]) => `<span style="padding:2px 8px;border-radius:8px;font-size:0.7rem;background:${p?'#e6ffed':'#ffebeb'};color:${p?'#28a745':'#dc3545'};">${p?'✅':'❌'} ${l}</span>`).join(' ');
 
@@ -4556,8 +4640,20 @@ ${topVideosSection}${forbiddenSection}
                         <div><b>메인:</b> ${escapeHtml(visual.main_image||'')}</div>
                         <div><b>배경:</b> ${escapeHtml(visual.background||'')}</div>
                         <div><b>레이아웃:</b> ${escapeHtml(visual.layout||'')}</div>
+                        ${visual.color_code ? `<div><b>🎨 색상 코드:</b> ${escapeHtml(visual.color_code)}</div>` : ''}
                     </div>
                 </div>
+
+                ${data.final_pick ? `<div style="background:#fff5f5;border:2px solid #dc3545;border-radius:8px;padding:12px;margin-bottom:10px;">
+                    <div style="font-size:0.85rem;font-weight:700;color:#dc3545;margin-bottom:6px;">🏆 최종 추천 (5개 중 가장 강력)</div>
+                    <div onclick="navigator.clipboard.writeText(this.textContent.trim()); this.style.background='#ffe0e0';" style="font-size:1rem;color:#222;font-weight:700;padding:8px 10px;background:white;border:1px solid #ffcccc;border-radius:4px;cursor:pointer;margin-bottom:8px;" title="클릭해서 복사">${escapeHtml(data.final_pick.title||'')}</div>
+                    ${Array.isArray(data.final_pick.reasons) ? `<div style="font-size:0.78rem;color:#666;">
+                        <div style="font-weight:700;margin-bottom:3px;">선정 이유:</div>
+                        <ol style="margin:0;padding-left:18px;">
+                            ${data.final_pick.reasons.map(r => `<li style="margin-bottom:2px;">${escapeHtml(r)}</li>`).join('')}
+                        </ol>
+                    </div>` : ''}
+                </div>` : ''}
 
                 <div style="background:white;border:1px solid #e0e0e0;border-radius:6px;padding:10px;">
                     <div style="font-size:0.78rem;font-weight:700;color:#333;margin-bottom:6px;">✅ 매칭 검증</div>
