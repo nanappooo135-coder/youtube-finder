@@ -1629,6 +1629,27 @@
             </div>
         </div>
 
+        <!-- 📝 제목 평가기 -->
+        <div class="section" style="border:1px solid #ffd6e0;">
+            <div class="section-title" onclick="toggleSection(this)" style="font-size:0.95rem;color:#dc3545;">
+                📝 제목 평가기 (5항목 채점)
+                <span class="arrow">&#9660;</span>
+            </div>
+            <div class="section-content">
+                <p style="font-size:0.8rem;color:#666;margin-bottom:10px;">
+                    제목 1개를 입력하면 5항목(호기심갭/인지도/글자수/첫15자/채널톤) 채점하고 개선 제안 3개 드려요.
+                </p>
+                <div class="input-group">
+                    <label style="font-size:0.78rem;color:#666;">평가할 제목</label>
+                    <textarea id="evTitle" rows="2" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-size:0.9rem;resize:vertical;font-family:inherit;" placeholder="예: 캐나다 이민 대탈출: 왜 3년 만에 천국이 지옥이 됐나?"></textarea>
+                </div>
+                <button id="evBtn" class="search-btn" onclick="evaluateTitle()" style="background:#dc3545;">
+                    🎯 제목 평가하기
+                </button>
+                <div id="evResult" style="margin-top:14px;"></div>
+            </div>
+        </div>
+
         <!-- 📊 피드백 입력 (예상 vs 실제) -->
         <div class="section" style="border:1px solid #cce5cc;">
             <div class="section-title" onclick="toggleSection(this)" style="font-size:0.95rem;color:#28a745;">
@@ -4182,6 +4203,371 @@ ${allVideosText}
         }
 
         // ===========================
+        // 📝 제목 평가기 (5항목 채점)
+        // ===========================
+        async function evaluateTitle() {
+            const title = document.getElementById('evTitle').value.trim();
+            if (!title) { alert('평가할 제목을 입력하세요'); return; }
+            if (!GEMINI_API_KEYS || !GEMINI_API_KEYS[0]) { alert('Gemini API 키가 필요합니다'); return; }
+
+            const btn = document.getElementById('evBtn');
+            const resultEl = document.getElementById('evResult');
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner"></div> 평가 중...';
+            _geminiStatusEl = btn;
+            resultEl.innerHTML = '<div style="text-align:center;color:#888;font-size:0.85rem;padding:10px;">채점 중...</div>';
+
+            const charCount = [...title].length;
+            const first15 = title.slice(0, 15);
+
+            const prompt = `유튜브 채널 "푸짐한 경제학" (글로벌 지정학·경제, 30~50대 한국인 타겟) 의 제목을 평가합니다.
+
+[평가할 제목]
+"${title}"
+(글자수: ${charCount}자, 첫 15자: "${first15}")
+
+[채점 기준 — 각 0~10점]
+1. 호기심 갭: 클릭 안 하고 못 배기는가?
+2. 키워드 인지도: 한국인이 아는 단어인가?
+3. 글자 수: 35~50자가 최적 (지금 ${charCount}자)
+4. 첫 15자 강도: 모바일에서도 후킹되는가?
+5. 채널 톤 일치도: 자극적+분석적 균형
+
+[총점 기준]
+- 35점 이상: 사용 권장
+- 25~34점: 수정 권장
+- 25점 미만: 재작성 권장
+
+[출력 — 반드시 아래 JSON만]
+{
+  "scores": {
+    "호기심갭": 8,
+    "키워드인지도": 7,
+    "글자수": 9,
+    "첫15자강도": 6,
+    "채널톤": 8
+  },
+  "score_reasons": {
+    "호기심갭": "왜 이 점수인지 한 줄",
+    "키워드인지도": "...",
+    "글자수": "...",
+    "첫15자강도": "...",
+    "채널톤": "..."
+  },
+  "total": 38,
+  "verdict": "사용 권장",
+  "improvements": [
+    "구체적 개선 제안 1 (어떻게 바꾸면 좋을지)",
+    "구체적 개선 제안 2",
+    "구체적 개선 제안 3"
+  ],
+  "rewrites": [
+    "개선 제안 반영한 대안 제목 1",
+    "개선 제안 반영한 대안 제목 2"
+  ]
+}`;
+
+            try {
+                const result = await callGemini(prompt, { maxTokens: 4096, temperature: 0.5, model: 'gemini-2.5-pro' });
+                const text = result.text || '';
+                let parsed = null;
+                const m = text.match(/\{[\s\S]*\}/);
+                if (m) { try { parsed = JSON.parse(m[0]); } catch(e) {} }
+                if (!parsed) {
+                    resultEl.innerHTML = `<div style="color:#dc3545;font-size:0.85rem;">파싱 실패<br><pre style="font-size:0.75rem;color:#666;max-height:300px;overflow:auto;white-space:pre-wrap;">${escapeHtml(text)}</pre></div>`;
+                    return;
+                }
+                renderTitleEvaluation(parsed);
+            } catch (e) {
+                resultEl.innerHTML = `<div style="color:#dc3545;">오류: ${escapeHtml(e.message)}</div>`;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '🎯 제목 평가하기';
+            }
+        }
+
+        function renderTitleEvaluation(d) {
+            const resultEl = document.getElementById('evResult');
+            const total = d.total || 0;
+            const totalColor = total >= 35 ? '#28a745' : total >= 25 ? '#ffa500' : '#dc3545';
+            const verdictBg = total >= 35 ? '#f0fff4' : total >= 25 ? '#fff8e6' : '#fff5f5';
+            const scores = d.scores || {};
+            const reasons = d.score_reasons || {};
+            const items = [
+                ['호기심갭', '🔥'], ['키워드인지도', '🎯'], ['글자수', '📏'], ['첫15자강도', '⚡'], ['채널톤', '🎨']
+            ];
+
+            const scoresHtml = items.map(([k, icon]) => {
+                const s = scores[k] || 0;
+                const c = s >= 8 ? '#28a745' : s >= 5 ? '#ffa500' : '#dc3545';
+                return `<div style="background:white;border:1px solid #e0e0e0;border-radius:6px;padding:8px 10px;margin-bottom:5px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <span style="font-size:0.82rem;font-weight:700;">${icon} ${k}</span>
+                        <span style="background:${c};color:white;padding:2px 10px;border-radius:8px;font-size:0.78rem;font-weight:700;">${s}/10</span>
+                    </div>
+                    ${reasons[k] ? `<div style="font-size:0.72rem;color:#888;margin-top:3px;">${escapeHtml(reasons[k])}</div>` : ''}
+                </div>`;
+            }).join('');
+
+            resultEl.innerHTML = `
+                <div style="background:${verdictBg};border:2px solid ${totalColor};padding:14px;border-radius:8px;text-align:center;margin-bottom:12px;">
+                    <div style="font-size:0.85rem;color:#666;margin-bottom:4px;">총점</div>
+                    <div style="font-size:2rem;font-weight:900;color:${totalColor};">${total}<span style="font-size:1rem;">/50</span></div>
+                    <div style="font-size:0.95rem;font-weight:700;color:${totalColor};margin-top:4px;">${escapeHtml(d.verdict||'')}</div>
+                </div>
+
+                <div style="margin-bottom:12px;">${scoresHtml}</div>
+
+                ${Array.isArray(d.improvements) && d.improvements.length ? `<div style="background:#fffbe6;padding:10px 12px;border-left:3px solid #ffa500;border-radius:4px;margin-bottom:10px;">
+                    <div style="font-size:0.78rem;font-weight:700;color:#996600;margin-bottom:4px;">💡 개선 제안</div>
+                    <ul style="margin:0;padding-left:18px;font-size:0.83rem;color:#333;">
+                        ${d.improvements.map(i => `<li style="margin-bottom:3px;">${escapeHtml(i)}</li>`).join('')}
+                    </ul>
+                </div>` : ''}
+
+                ${Array.isArray(d.rewrites) && d.rewrites.length ? `<div>
+                    <div style="font-size:0.78rem;font-weight:700;color:#dc3545;margin-bottom:5px;">✏️ 대안 제목 (클릭=복사)</div>
+                    ${d.rewrites.map(r => `<div onclick="navigator.clipboard.writeText(this.textContent.trim()); this.style.background='#ffe0e0';" style="padding:8px 10px;background:#fff5f5;border:1px solid #ffd0d0;border-radius:6px;font-size:0.88rem;color:#222;cursor:pointer;margin-bottom:4px;font-weight:700;" title="클릭해서 복사">${escapeHtml(r)}</div>`).join('')}
+                </div>` : ''}
+            `;
+        }
+
+        // ===========================
+        // 🎨 제목·썸네일 카피라이터 (각 주제 카드에서 호출)
+        // ===========================
+        async function generateTitleThumbnail(rawTopic, pattern, btnEl) {
+            const topic = (rawTopic || '').replace(/&quot;/g, '"');
+            if (!topic) { alert('주제를 찾을 수 없습니다'); return; }
+            if (!GEMINI_API_KEYS || !GEMINI_API_KEYS[0]) { alert('Gemini API 키가 필요합니다'); return; }
+
+            // 결과 div를 카드 안에 동적 생성 또는 갱신
+            const card = btnEl.closest('div[style*="border:2px solid"]');
+            let resultBox = card.querySelector('.tt-result-box');
+            if (!resultBox) {
+                resultBox = document.createElement('div');
+                resultBox.className = 'tt-result-box';
+                resultBox.style.cssText = 'margin-top:12px;padding:12px;background:#fafafa;border:2px dashed #ccc;border-radius:8px;';
+                card.appendChild(resultBox);
+            }
+            resultBox.innerHTML = '<div style="text-align:center;color:#888;font-size:0.85rem;padding:10px;"><div class="spinner"></div> 제목·썸네일 5종 생성 중... (15~25초)</div>';
+
+            const originalLabel = btnEl.innerHTML;
+            btnEl.disabled = true;
+            btnEl.innerHTML = '<div class="spinner"></div> 생성 중...';
+            _geminiStatusEl = btnEl;
+
+            // 채널 분석에서 가져온 TOP 10 영상 제목 (학습용)
+            const topVideos = (window._lastChannelAnalysis && window._lastChannelAnalysis.top_patterns)
+                ? window._lastChannelAnalysis.top_patterns.flatMap(p => Array.isArray(p.evidence) ? p.evidence : [])
+                : [];
+            const topVideosSection = topVideos.length > 0
+                ? `\n[검증된 TOP 제목 패턴 — 학습 후 새 주제에 적용]\n${topVideos.slice(0, 10).map((t,i) => `${i+1}. ${t}`).join('\n')}\n`
+                : '';
+
+            // 금지 키워드 = 차단주제 + 빈도캡 + 최근 4주 사용 표현
+            const forbidden = [];
+            loadBlockedTopics().forEach(t => forbidden.push(t));
+            loadTopicCaps().forEach(c => forbidden.push(`${c.keyword} (4주 ${c.max_per_4w}편 캡)`));
+            const recent4w = (window._recentVideoTitles || []).slice(0, 8);
+            const forbiddenSection = (forbidden.length || recent4w.length)
+                ? `\n[제목·썸네일에 사용 금지]\n${forbidden.length ? '차단/캡 키워드: ' + forbidden.join(', ') + '\n' : ''}${recent4w.length ? '최근 4주 사용된 표현 (재사용 금지): ' + recent4w.join(' / ') : ''}\n`
+                : '';
+
+            const prompt = `당신은 유튜브 채널 "푸짐한 경제학"의 제목·썸네일 카피라이터입니다.
+
+[채널 정보]
+- 구독자 3.66만, 글로벌 지정학·경제 채널
+- 평균 조회수 12.8만 (대박 100만+, 중박 4만)
+- 타겟: 30~50대 한국 남성, 국제정세·경제 관심층
+
+[입력]
+영상 주제: ${topic}
+패턴 분류: ${pattern || 'A (선진국 몰락)'}
+${topVideosSection}${forbiddenSection}
+[필수 준수 사항]
+- 제목 35~50자 (한국 유튜브 최적)
+- 첫 15자 안에 후킹 키워드 (모바일 잘림 방지)
+- 클릭베이트지만 거짓말 금지
+- 본인 채널의 패턴 톤 유지
+- 위 "사용 금지" 표현은 절대 쓰지 말 것
+
+[A/B 톤 모드 — 각 제목 후보마다 톤 명시]
+- 옵션 A "자극·도발": 호기심 폭발, 클릭 욕구 극대화 ("거짓말입니다", "지옥이 됐다" 등)
+- 옵션 B "분석·신뢰": 퀄리티 어필, 신뢰감 있는 톤 ("진짜 이유", "구조적 분석" 등)
+5개 후보 중 최소 2개는 A 톤, 2개는 B 톤으로 분배.
+
+[출력 — 반드시 아래 JSON만. 다른 설명 금지]
+{
+  "titles": [
+    {
+      "type": "따옴표 후킹형",
+      "tone": "A",
+      "structure": "충격적 발언 + 본문 + (괄호 보충)",
+      "title": "실제 생성된 제목 35~50자",
+      "ctr_grade": "S",
+      "ctr_reason": "왜 이 등급인지 한 줄"
+    },
+    {
+      "type": "역설형",
+      "structure": "A인데 왜 B인가? + (구체 키워드)",
+      "title": "...",
+      "ctr_grade": "A",
+      "ctr_reason": "..."
+    },
+    {
+      "type": "숫자·스케일형",
+      "structure": "구체적 숫자 + 충격 결과 + 부연",
+      "title": "...",
+      "ctr_grade": "...",
+      "ctr_reason": "..."
+    },
+    {
+      "type": "콜론형",
+      "structure": "사건명: 핵심 질문 + 부연",
+      "title": "...",
+      "ctr_grade": "...",
+      "ctr_reason": "..."
+    },
+    {
+      "type": "폭로형",
+      "structure": "○○가 숨긴/공개한 ○○: 진짜 이유",
+      "title": "...",
+      "ctr_grade": "...",
+      "ctr_reason": "..."
+    }
+  ],
+  "thumbnail_texts": [
+    {
+      "type": "도발 발언형",
+      "text": "8~15자",
+      "highlight": "강조할 빨간색 단어 1~2개"
+    },
+    {
+      "type": "충격 결과형",
+      "text": "...",
+      "highlight": "..."
+    },
+    {
+      "type": "숫자 강조형",
+      "text": "...",
+      "highlight": "..."
+    }
+  ],
+  "thumbnail_visual": {
+    "main_image": "메인 인물/이미지 (예: 트럼프 정면 클로즈업, 화난 표정)",
+    "background": "배경 요소 (예: 뒤편 무너지는 빌딩 + 어두운 빨강)",
+    "layout": "좌측 인물 / 우측 텍스트 (또는 중앙 충격 이미지 + 상하 텍스트)"
+  },
+  "validation": {
+    "message_match": true,
+    "thumbnail_clickable": true,
+    "title_clickable": true,
+    "combined_curiosity": true,
+    "channel_tone_match": true,
+    "comments": "5개 체크리스트 종합 평가 한 줄"
+  }
+}
+
+[CTR 등급 기준]
+- S: 호기심 갭 강함 + 인지도 높은 키워드 + 충격 단어 모두
+- A: 호기심 또는 인지도 중 하나 강함
+- B: 평이함
+- C: 키워드 약함 (추천 안 함)`;
+
+            try {
+                const result = await callGemini(prompt, {
+                    maxTokens: 8192,
+                    temperature: 0.8,
+                    model: 'gemini-2.5-pro',
+                });
+                const text = result.text || '';
+                let parsed = null;
+                const m = text.match(/\{[\s\S]*\}/);
+                if (m) { try { parsed = JSON.parse(m[0]); } catch(e) {} }
+                if (!parsed) {
+                    resultBox.innerHTML = `<div style="color:#dc3545;font-size:0.85rem;">JSON 파싱 실패<br><pre style="white-space:pre-wrap;font-size:0.75rem;color:#666;max-height:300px;overflow:auto;">${escapeHtml(text)}</pre></div>`;
+                    return;
+                }
+                renderTitleThumbnail(parsed, resultBox);
+            } catch (e) {
+                resultBox.innerHTML = `<div style="color:#dc3545;font-size:0.85rem;">오류: ${escapeHtml(e.message)}</div>`;
+            } finally {
+                btnEl.disabled = false;
+                btnEl.innerHTML = originalLabel;
+            }
+        }
+
+        function renderTitleThumbnail(data, box) {
+            const gradeColor = { S: '#dc3545', A: '#ffa500', B: '#0066cc', C: '#888' };
+            const titles = Array.isArray(data.titles) ? data.titles : [];
+            const thumbs = Array.isArray(data.thumbnail_texts) ? data.thumbnail_texts : [];
+            const visual = data.thumbnail_visual || {};
+            const val = data.validation || {};
+
+            const toneColor = { A: '#dc3545', B: '#0066cc' };
+            const toneLabel = { A: '🔥 자극·도발', B: '🧠 분석·신뢰' };
+            const titlesHtml = titles.map((t, i) => `
+                <div style="background:white;border:1px solid #e0e0e0;border-radius:6px;padding:10px;margin-bottom:6px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;flex-wrap:wrap;gap:4px;">
+                        <span style="font-size:0.72rem;color:#666;font-weight:700;">후보 ${i+1} — ${escapeHtml(t.type||'')}</span>
+                        <span style="display:inline-flex;gap:4px;">
+                            ${t.tone ? `<span style="background:${toneColor[t.tone]||'#888'};color:white;padding:2px 8px;border-radius:8px;font-size:0.7rem;font-weight:700;">${toneLabel[t.tone]||t.tone}</span>` : ''}
+                            <span style="background:${gradeColor[t.ctr_grade]||'#888'};color:white;padding:2px 8px;border-radius:8px;font-size:0.7rem;font-weight:700;">CTR ${escapeHtml(t.ctr_grade||'')}</span>
+                        </span>
+                    </div>
+                    <div onclick="navigator.clipboard.writeText(this.textContent.trim()); this.style.background='#ffe0e0';" style="font-size:0.92rem;color:#222;font-weight:700;padding:6px 8px;background:#fff5f5;border-radius:4px;cursor:pointer;margin-bottom:4px;" title="클릭해서 복사">${escapeHtml(t.title||'')}</div>
+                    ${t.ctr_reason ? `<div style="font-size:0.72rem;color:#888;">💡 ${escapeHtml(t.ctr_reason)}</div>` : ''}
+                </div>
+            `).join('');
+
+            const thumbsHtml = thumbs.map((th, i) => `
+                <div style="background:white;border:1px solid #e0e0e0;border-radius:6px;padding:8px 10px;margin-bottom:6px;">
+                    <div style="font-size:0.72rem;color:#666;font-weight:700;margin-bottom:3px;">텍스트 ${i+1} — ${escapeHtml(th.type||'')}</div>
+                    <div onclick="navigator.clipboard.writeText(this.textContent.trim()); this.style.background='#ffe0e0';" style="font-size:1rem;font-weight:900;color:#222;padding:6px 8px;background:#fffbe6;border-radius:4px;cursor:pointer;text-align:center;" title="클릭해서 복사">${escapeHtml(th.text||'')}</div>
+                    ${th.highlight ? `<div style="font-size:0.7rem;color:#dc3545;margin-top:3px;">🔴 강조: ${escapeHtml(th.highlight)}</div>` : ''}
+                </div>
+            `).join('');
+
+            const valItems = [
+                ['메시지 일치', val.message_match],
+                ['썸네일 클릭 욕구', val.thumbnail_clickable],
+                ['제목 클릭 욕구', val.title_clickable],
+                ['호기심 폭발', val.combined_curiosity],
+                ['채널 톤 일치', val.channel_tone_match],
+            ];
+            const valHtml = valItems.map(([l, p]) => `<span style="padding:2px 8px;border-radius:8px;font-size:0.7rem;background:${p?'#e6ffed':'#ffebeb'};color:${p?'#28a745':'#dc3545'};">${p?'✅':'❌'} ${l}</span>`).join(' ');
+
+            box.innerHTML = `
+                <div style="font-size:0.88rem;font-weight:700;color:#333;margin-bottom:8px;">🎨 제목·썸네일 패키지 (제목/텍스트 클릭=복사)</div>
+
+                <div style="margin-bottom:10px;">
+                    <div style="font-size:0.78rem;font-weight:700;color:#dc3545;margin-bottom:6px;">📝 제목 후보 5종</div>
+                    ${titlesHtml}
+                </div>
+
+                <div style="margin-bottom:10px;">
+                    <div style="font-size:0.78rem;font-weight:700;color:#996600;margin-bottom:6px;">🖼️ 썸네일 텍스트 3종 (8~15자)</div>
+                    ${thumbsHtml}
+                </div>
+
+                <div style="background:white;border:1px solid #e0e0e0;border-radius:6px;padding:10px;margin-bottom:10px;">
+                    <div style="font-size:0.78rem;font-weight:700;color:#0066cc;margin-bottom:6px;">🎯 썸네일 시각 구성안</div>
+                    <div style="font-size:0.82rem;color:#333;line-height:1.6;">
+                        <div><b>메인:</b> ${escapeHtml(visual.main_image||'')}</div>
+                        <div><b>배경:</b> ${escapeHtml(visual.background||'')}</div>
+                        <div><b>레이아웃:</b> ${escapeHtml(visual.layout||'')}</div>
+                    </div>
+                </div>
+
+                <div style="background:white;border:1px solid #e0e0e0;border-radius:6px;padding:10px;">
+                    <div style="font-size:0.78rem;font-weight:700;color:#333;margin-bottom:6px;">✅ 매칭 검증</div>
+                    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;">${valHtml}</div>
+                    ${val.comments ? `<div style="font-size:0.78rem;color:#666;font-style:italic;">"${escapeHtml(val.comments)}"</div>` : ''}
+                </div>
+            `;
+        }
+
+        // ===========================
         // ✨ 채널 공식 기반 주제 추천
         // ===========================
         async function findTopicByFormula() {
@@ -4513,14 +4899,18 @@ ${(window._channelState && window._channelState.slump)
                         </div>` : ''}
                     </details>
 
-                    <div style="display:flex;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid #eee;">
+                    <div style="display:flex;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid #eee;flex-wrap:wrap;">
+                        <button onclick="generateTitleThumbnail('${(t.예상_제목 || t.주제_한줄 || '').replace(/'/g, "\\'").replace(/"/g, '&quot;')}', '${escapeHtml(t.패턴||'A')}', this)"
+                                style="flex:1;min-width:200px;padding:10px;background:#dc3545;color:white;border:none;border-radius:6px;font-size:0.85rem;font-weight:700;cursor:pointer;">
+                            🎨 제목·썸네일 5종 만들기
+                        </button>
                         <button onclick="blockTopic('${(t.예상_제목 || t.주제_한줄 || '').replace(/'/g, "\\'").replace(/"/g, '&quot;')}', this)"
-                                style="flex:1;padding:8px;background:#fff5f5;color:#dc3545;border:1px solid #ffcccc;border-radius:6px;font-size:0.8rem;font-weight:700;cursor:pointer;">
-                            🚫 다시 안 보기 (이 주제 차단)
+                                style="flex:1;min-width:140px;padding:8px;background:#fff5f5;color:#dc3545;border:1px solid #ffcccc;border-radius:6px;font-size:0.78rem;font-weight:700;cursor:pointer;">
+                            🚫 다시 안 보기
                         </button>
                         <button onclick="blockTopic('이 주제 사용함: ' + '${(t.예상_제목 || t.주제_한줄 || '').replace(/'/g, "\\'").replace(/"/g, '&quot;')}', this)"
-                                style="flex:1;padding:8px;background:#f0fff4;color:#28a745;border:1px solid #ccebcc;border-radius:6px;font-size:0.8rem;font-weight:700;cursor:pointer;">
-                            ✅ 이거 만들었음 (다음부터 제외)
+                                style="flex:1;min-width:140px;padding:8px;background:#f0fff4;color:#28a745;border:1px solid #ccebcc;border-radius:6px;font-size:0.78rem;font-weight:700;cursor:pointer;">
+                            ✅ 이거 만들었음
                         </button>
                     </div>
                 </div>`;
