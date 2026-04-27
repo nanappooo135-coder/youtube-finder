@@ -2442,11 +2442,49 @@
                             <p style="font-size:0.78rem;color:#666;margin-bottom:8px;">도식·차트·호흡법·뇌구조·통계 장면. Claude Design에 프롬프트 복붙해서 인포그래픽 생성. 채널 그림체 톤 반영됨.</p>
                             <button class="search-btn" onclick="_spCopy('spOut_claude', this)" style="width:100%;margin-bottom:8px;background:#17a2b8;border-color:#17a2b8;">📊 Claude Design 프롬프트 전체 복사</button>
                             <textarea id="spOut_claude" readonly style="width:100%;min-height:300px;padding:14px;border:2px solid #99e9f2;border-radius:10px;font-size:0.85rem;line-height:1.6;background:#fafafa;resize:vertical;"></textarea>
+
+                            <!-- 🎨 클로드 디자인 → MP4 변환 (화면 녹화 방식) -->
+                            <div style="padding:10px;background:#f3e5ff;border:2px solid #9333ea;border-radius:8px;margin-top:14px;">
+                                <div style="font-weight:700;color:#6b21a8;margin-bottom:8px;font-size:0.9rem;">🎨 클로드 디자인 → MP4 변환 (애니메이션 그대로)</div>
+                                <p style="font-size:0.78rem;color:#666;margin-bottom:8px;">
+                                    클로드 디자인 export한 <strong>HTML</strong>을 떨구면 장면 길이만큼 자동 화면녹화 → mp4. CSS 애니메이션 그대로 살아있음. 파일명을 <strong>scene_5.html</strong>로 저장하면 장면 매칭 자동.
+                                    <br><span style="color:#6b21a8;">⚠️ 변환 시작 시 브라우저가 "이 탭을 공유하시겠어요?" 물어봄 → <strong>"이 탭" 선택 후 공유</strong> 한 번만 누르면 끝. 이후 N개 자동.</span>
+                                </p>
+                                <div id="designDropZone" style="border:2px dashed #9333ea;border-radius:6px;padding:24px;text-align:center;background:#fff;cursor:pointer;font-size:0.85rem;color:#6b21a8;font-weight:600;">
+                                    📁 .html 파일을 드래그하거나 <span style="text-decoration:underline;">클릭해서 선택</span>
+                                </div>
+                                <input type="file" id="designFileInput" accept=".html,.htm" multiple style="display:none;">
+                                <div id="designFileList" style="margin-top:10px;"></div>
+                                <button id="designProcessBtn" onclick="_designProcessAll()" style="display:none;width:100%;margin-top:10px;padding:10px;background:#9333ea;color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer;">🎨 화면녹화 변환 시작</button>
+                                <div id="designProgress" style="margin-top:8px;font-size:0.78rem;color:#6b21a8;"></div>
+                            </div>
+
+                            <!-- 🐢 그록 영상 슬로우 처리 -->
+                            <div style="padding:10px;background:#fff9db;border:2px solid #fab005;border-radius:8px;margin-top:12px;">
+                                <div style="font-weight:700;color:#856404;margin-bottom:8px;font-size:0.9rem;">🐢 그록 영상 슬로우 처리 (브라우저 내장 ffmpeg)</div>
+                                <p style="font-size:0.78rem;color:#666;margin-bottom:8px;">
+                                    그록 영상(<strong>6초/10초</strong>)을 셀팟 장면 길이에 맞게 자동 슬로우. 파일명을 <strong>scene_5.mp4</strong> 형식으로 두고 떨구면 장면번호 인식 → PTS 자동 적용 → mp4 자동 다운로드.
+                                    <br><span style="color:#856404;">⚠️ 첫 사용 시 ffmpeg core(약 30MB) 1회 다운로드 (이후 캐시).</span>
+                                </p>
+                                <div id="slowDropZone" style="border:2px dashed #fab005;border-radius:6px;padding:24px;text-align:center;background:#fff;cursor:pointer;font-size:0.85rem;color:#856404;font-weight:600;">
+                                    📁 mp4 파일을 여기에 드래그하거나 <span style="text-decoration:underline;">클릭해서 선택</span>
+                                </div>
+                                <input type="file" id="slowFileInput" accept="video/mp4,video/*" multiple style="display:none;">
+                                <div id="slowFileList" style="margin-top:10px;"></div>
+                                <button id="slowProcessBtn" onclick="_slowProcessAll()" style="display:none;width:100%;margin-top:10px;padding:10px;background:#fab005;color:#000;border:none;border-radius:6px;font-weight:700;cursor:pointer;">🐢 슬로우 처리 시작</button>
+                                <div id="slowProgress" style="margin-top:8px;font-size:0.78rem;color:#856404;"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div><!-- /process-sellpot -->
+
+        <!-- 🎬 디자인 녹화용 풀스크린 오버레이 (변환 중에만 표시) -->
+        <div id="designOverlay" style="display:none;position:fixed;inset:0;z-index:99999;background:#000;">
+            <div id="designOverlayInfo" style="position:fixed;top:8px;right:8px;z-index:100000;background:rgba(147,51,234,0.95);color:#fff;padding:8px 14px;border-radius:6px;font-size:0.85rem;font-weight:700;font-family:sans-serif;box-shadow:0 4px 12px rgba(0,0,0,0.4);"></div>
+            <iframe id="designRenderFrame" style="width:100%;height:100%;border:0;background:#000;"></iframe>
+        </div>
 
         <!-- ===== 프로세스: TTS 변환 ===== -->
         <div id="process-tts" style="display:none;">
@@ -6615,6 +6653,26 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                     });
                 }
 
+                // 2026-04-27: 그록 슬로우 비율 계산 (그록은 6초/10초만 지원)
+                //   narrSec > grokDuration → 영상이 모자라 멈춤 → 슬로우 모션 필요
+                //   PTS 비율 = narrSec / grokDuration (1.0~1.43, 1.43이 자연스러움 한계)
+                //   재생속도 = 1 / PTS
+                jsonObj.scenes.forEach(s => {
+                    if (!s.needsGrokVideo || !s.grokVideoDuration) return;
+                    const narrSec = (typeof s.sceneDuration === 'number')
+                        ? s.sceneDuration
+                        : Math.max(3, Math.round(((s.narration || '').length) / 6));
+                    s.narrationSec = narrSec;
+                    if (narrSec > s.grokVideoDuration) {
+                        const ptsRatio = Math.min(1.43, narrSec / s.grokVideoDuration);
+                        s.grokPtsRatio = Math.round(ptsRatio * 100) / 100;
+                        s.grokPlaybackSpeed = Math.round((1 / ptsRatio) * 100) / 100;
+                        s.grokSlowdownNeeded = true;
+                    } else {
+                        s.grokSlowdownNeeded = false;
+                    }
+                });
+
                 // ═══ 2026-04-23: LLM 기반 맞춤 그록 프롬프트 배치 생성 ═══
                 // 하드코딩 템플릿 대신 Gemini Flash가 장면별로 맞춤 모션 프롬프트 직접 작성
                 // 템플릿으로 놓칠 수 있는 은유·동작도 자동 대응
@@ -7602,10 +7660,27 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                                 : s.isMovingMap ? '지도 이동'
                                 : s.isSymbolicScene ? '상징·은유'
                                 : '영상화';
-                    vidText += '### 장면 ' + s.id + '번 【' + s.grokVideoDuration + '초】 [' + label + ']\n';
+                    const slowTag = s.grokSlowdownNeeded
+                        ? ' ⚠️ 슬로우 ' + s.grokPlaybackSpeed + '배속 → ' + s.narrationSec + '초'
+                        : '';
+                    vidText += '### 장면 ' + s.id + '번 【' + s.grokVideoDuration + '초】 [' + label + ']' + slowTag + '\n';
                     vidText += s.grokVideoPrompt + '\n\n';
                     vidText += '---\n\n';
                 });
+
+                // 2026-04-27: ffmpeg 일괄 슬로우 명령
+                const slowScenes = videoScenes.filter(s => s.grokSlowdownNeeded);
+                if (slowScenes.length > 0) {
+                    vidText += '\n\n# 🐢 ffmpeg 슬로우 일괄 명령 (' + slowScenes.length + '개 장면)\n\n';
+                    vidText += '그록은 6초/10초만 지원 → 영상 길이가 부족한 장면은 ffmpeg로 늘리세요.\n';
+                    vidText += '파일명을 `scene_{N}.mp4`로 통일한 뒤 아래 명령을 터미널에 붙여넣으면 일괄 처리됩니다.\n';
+                    vidText += '(또는 셀팟 기본 탭의 🐢 영상 슬로우 처리 박스에 mp4 떨구면 자동 처리)\n\n```bash\n';
+                    slowScenes.forEach(s => {
+                        vidText += 'ffmpeg -i scene_' + s.id + '.mp4 -vf "setpts=' + s.grokPtsRatio + '*PTS" -an scene_' + s.id + '_slow.mp4\n';
+                    });
+                    vidText += '```\n';
+                }
+
                 vidOut.value = vidText.trim();
                 window._sellpotVideoPromptsText = vidOut.value;
             }
@@ -8364,8 +8439,17 @@ ${sceneList}
             // 2026-04-23: 길이 제한을 bgSource별로 차등
             // - stock: 80자 (영상 루프 6~10초 한계)
             // - ai/real: 정지 이미지라 길어도 됨 → 140자까지 허용
+            // 2026-04-27: 그록 영상 장면은 grokDuration × 1.43 × 6자로 캡
+            //   (재생속도 0.7배까지가 슬로우 자연스러움 한계 → narrSec ≤ grokDur × 1.43)
             const bothStock = (a.bgSource === 'stock') && (b.bgSource === 'stock');
-            const lengthLimit = bothStock ? 80 : 140;
+            let lengthLimit = bothStock ? 80 : 140;
+            const grokDurA = a.needsGrokVideo ? (a.grokVideoDuration || 10) : null;
+            const grokDurB = b.needsGrokVideo ? (b.grokVideoDuration || 10) : null;
+            if (grokDurA || grokDurB) {
+                const grokDur = Math.min(grokDurA || 999, grokDurB || 999);
+                const grokCap = Math.floor(grokDur * 1.43 * 6);
+                lengthLimit = Math.min(lengthLimit, grokCap);
+            }
             if (combined.length > lengthLimit) return false;
 
             // 다음 문장이 명시적 주제 전환 (한편·반면·대조적으로) → 다른 이야기 시작
@@ -8434,7 +8518,12 @@ ${sceneList}
                     // 2026-04-24: 그룹 길이 상한 bgSource별 차등
                     // 스톡(영상 루프 6~10초) 80자, 실사/AI(정지 이미지) 140자
                     const allStock = current.every(c => c.bgSource === 'stock') && s.bgSource === 'stock';
-                    const groupLengthLimit = allStock ? 80 : 140;
+                    let groupLengthLimit = allStock ? 80 : 140;
+                    // 2026-04-27: 그룹 내 그록 장면 있으면 그록 cap 적용
+                    const grokDurs = [...current, s].filter(c => c.needsGrokVideo).map(c => c.grokVideoDuration || 10);
+                    if (grokDurs.length > 0) {
+                        groupLengthLimit = Math.min(groupLengthLimit, Math.floor(Math.min(...grokDurs) * 1.43 * 6));
+                    }
                     const totalLen = current.reduce((acc, c) => acc + (c.narration || '').length, 0) + (s.narration || '').length;
                     if (totalLen <= groupLengthLimit) {
                         current.push(s);
@@ -8699,6 +8788,15 @@ ${sceneList}
                 rows += '<div style="font-size:0.75rem;color:#495057;line-height:1.5;margin-bottom:4px;">' + _escapeHtml(s.grokVideoPrompt) + '</div>';
                 rows += '<button onclick="_copyText(' + "'" + _jsEscape(s.grokVideoPrompt) + "'" + ', this)" style="padding:3px 10px;font-size:0.72rem;border:1px solid #e03131;background:#fff;border-radius:3px;cursor:pointer;color:#c92a2a;font-weight:600;">📋 영상 프롬프트 복사</button>';
                 rows += '<div style="font-size:0.7rem;color:#868e96;margin-top:4px;">↳ 그록에 위 AI 이미지 업로드 → 이 프롬프트로 영상화 (' + s.grokVideoDuration + '초)</div>';
+                // 2026-04-27: 슬로우 비율 안내
+                if (s.grokSlowdownNeeded) {
+                    const ffmpegCmd = 'ffmpeg -i scene_' + s.id + '.mp4 -vf "setpts=' + s.grokPtsRatio + '*PTS" -an scene_' + s.id + '_slow.mp4';
+                    rows += '<div style="margin-top:6px;padding:6px 8px;background:#fff3cd;border:1px solid #ffc107;border-radius:4px;font-size:0.7rem;color:#856404;">';
+                    rows += '⚠️ <strong>슬로우 필요</strong>: ' + s.grokVideoDuration + '초 → ' + s.narrationSec + '초 (재생속도 ' + s.grokPlaybackSpeed + '배 / PTS ' + s.grokPtsRatio + '배)';
+                    rows += '<div style="margin-top:4px;font-family:monospace;background:#fff;padding:4px 6px;border-radius:3px;font-size:0.68rem;color:#212529;word-break:break-all;">' + _escapeHtml(ffmpegCmd) + '</div>';
+                    rows += '<button onclick="_copyText(' + "'" + _jsEscape(ffmpegCmd) + "'" + ', this)" style="margin-top:4px;padding:2px 8px;font-size:0.68rem;border:1px solid #ffc107;background:#fff;border-radius:3px;cursor:pointer;color:#856404;font-weight:600;">📋 ffmpeg 복사</button>';
+                    rows += '</div>';
+                }
                 rows += '</div>';
             }
 
@@ -15539,6 +15637,384 @@ overall mood: bright, psychologically safe illustration, uplifting and reassurin
             setTimeout(() => btn.textContent = orig, 1500);
         }
 
+        // ═══════════════════════════════════════════════════════════════
+        // 🐢 그록 영상 슬로우 처리 (ffmpeg.wasm)
+        // ═══════════════════════════════════════════════════════════════
+        window._ffmpegInstance = null;
+        window._slowFiles = [];
+
+        async function _loadFFmpeg(progressEl) {
+            if (window._ffmpegInstance) return window._ffmpegInstance;
+            if (progressEl) progressEl.textContent = '⏳ ffmpeg core 다운로드 중 (약 30MB, 1회만)...';
+            const loadScript = (src) => new Promise((resolve, reject) => {
+                const sc = document.createElement('script');
+                sc.src = src;
+                sc.onload = resolve;
+                sc.onerror = () => reject(new Error('스크립트 로드 실패: ' + src));
+                document.head.appendChild(sc);
+            });
+            if (!window.FFmpegWASM) await loadScript('https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js');
+            if (!window.FFmpegUtil) await loadScript('https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js');
+            const { FFmpeg } = window.FFmpegWASM;
+            const { toBlobURL } = window.FFmpegUtil;
+            const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+            const ffmpeg = new FFmpeg();
+            await ffmpeg.load({
+                coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+                wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+            });
+            window._ffmpegInstance = ffmpeg;
+            return ffmpeg;
+        }
+
+        function _detectSceneId(filename) {
+            const m = filename.match(/(?:scene[_-]?|장면)?(\d+)\.[a-z0-9]+$/i);
+            return m ? parseInt(m[1], 10) : null;
+        }
+
+        function _lookupSceneSlowdown(sceneId) {
+            if (!window._sceneGuideData || !sceneId) return null;
+            const s = window._sceneGuideData.find(x => x.id === sceneId);
+            if (!s || !s.grokSlowdownNeeded) return null;
+            return {
+                ptsRatio: s.grokPtsRatio,
+                narrSec: s.narrationSec,
+                grokDur: s.grokVideoDuration
+            };
+        }
+
+        function _renderSlowFileList() {
+            const list = document.getElementById('slowFileList');
+            const btn = document.getElementById('slowProcessBtn');
+            if (!list) return;
+            if (window._slowFiles.length === 0) {
+                list.innerHTML = '';
+                if (btn) btn.style.display = 'none';
+                return;
+            }
+            let html = '<div style="font-size:0.78rem;color:#495057;font-weight:700;margin-bottom:6px;">처리 대기 ' + window._slowFiles.length + '개</div>';
+            html += '<div style="display:flex;flex-direction:column;gap:6px;">';
+            window._slowFiles.forEach((item, idx) => {
+                const matched = item.ptsRatio !== null;
+                const bg = item.status === 'done' ? '#d3f9d8' : item.status === 'error' ? '#ffe3e3' : matched ? '#fff' : '#fff3bf';
+                const border = matched ? '#fab005' : '#ff922b';
+                html += '<div style="padding:8px 10px;background:' + bg + ';border:1px solid ' + border + ';border-radius:4px;font-size:0.78rem;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">';
+                html += '<span style="font-weight:700;flex:1;">' + (item.file.name) + '</span>';
+                if (item.sceneId !== null) html += '<span style="background:#fab005;color:#000;padding:1px 6px;border-radius:3px;font-size:0.7rem;font-weight:700;">장면 ' + item.sceneId + '</span>';
+                if (matched) {
+                    html += '<span style="color:#856404;font-size:0.72rem;">PTS ' + item.ptsRatio + '× → ' + item.narrSec + '초</span>';
+                } else {
+                    html += '<span style="color:#d9480f;font-size:0.72rem;">자동 매칭 실패. PTS:</span>';
+                    html += '<input type="number" step="0.05" min="1.0" max="2.0" value="1.3" data-idx="' + idx + '" onchange="_slowSetManualPts(this)" style="width:60px;padding:2px 4px;font-size:0.75rem;border:1px solid #ff922b;border-radius:3px;">';
+                }
+                if (item.status === 'processing') html += '<span style="color:#1971c2;font-size:0.72rem;">⏳ 처리중...</span>';
+                if (item.status === 'done') html += '<span style="color:#2b8a3e;font-size:0.72rem;font-weight:700;">✓ 완료</span>';
+                if (item.status === 'error') html += '<span style="color:#c92a2a;font-size:0.72rem;">✗ ' + (item.error || '실패') + '</span>';
+                html += '</div>';
+            });
+            html += '</div>';
+            list.innerHTML = html;
+            if (btn) btn.style.display = '';
+        }
+
+        window._slowSetManualPts = function(input) {
+            const idx = parseInt(input.dataset.idx, 10);
+            const v = parseFloat(input.value);
+            if (!isNaN(v) && v >= 1.0 && v <= 2.0 && window._slowFiles[idx]) {
+                window._slowFiles[idx].ptsRatio = v;
+                window._slowFiles[idx].narrSec = Math.round(v * (window._slowFiles[idx].grokDur || 10) * 10) / 10;
+            }
+        };
+
+        function _addSlowFiles(files) {
+            for (const file of files) {
+                if (!file.type.startsWith('video/') && !/\.mp4$/i.test(file.name)) continue;
+                const sceneId = _detectSceneId(file.name);
+                const lookup = _lookupSceneSlowdown(sceneId);
+                window._slowFiles.push({
+                    file, sceneId,
+                    ptsRatio: lookup ? lookup.ptsRatio : null,
+                    narrSec: lookup ? lookup.narrSec : null,
+                    grokDur: lookup ? lookup.grokDur : 10,
+                    status: 'pending', error: null
+                });
+            }
+            _renderSlowFileList();
+        }
+
+        window._slowProcessAll = async function() {
+            const progress = document.getElementById('slowProgress');
+            const btn = document.getElementById('slowProcessBtn');
+            const pending = window._slowFiles.filter(f => f.status !== 'done' && f.ptsRatio !== null);
+            if (pending.length === 0) {
+                progress.textContent = '⚠️ 처리할 파일이 없습니다 (자동 매칭 실패 파일은 PTS 직접 입력).';
+                return;
+            }
+            btn.disabled = true; btn.textContent = '🐢 처리 중...';
+            try {
+                const ffmpeg = await _loadFFmpeg(progress);
+                const { fetchFile } = window.FFmpegUtil;
+                for (let i = 0; i < pending.length; i++) {
+                    const item = pending[i];
+                    item.status = 'processing'; _renderSlowFileList();
+                    progress.textContent = '⏳ (' + (i+1) + '/' + pending.length + ') ' + item.file.name + ' 처리 중...';
+                    try {
+                        const inName = 'in_' + i + '.mp4';
+                        const outName = 'out_' + i + '.mp4';
+                        await ffmpeg.writeFile(inName, await fetchFile(item.file));
+                        await ffmpeg.exec(['-i', inName, '-vf', 'setpts=' + item.ptsRatio + '*PTS', '-an', outName]);
+                        const data = await ffmpeg.readFile(outName);
+                        const blob = new Blob([data.buffer], { type: 'video/mp4' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = item.file.name.replace(/\.[^.]+$/, '') + '_slow.mp4';
+                        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                        setTimeout(() => URL.revokeObjectURL(url), 1000);
+                        try { await ffmpeg.deleteFile(inName); } catch(e){}
+                        try { await ffmpeg.deleteFile(outName); } catch(e){}
+                        item.status = 'done';
+                    } catch (e) {
+                        item.status = 'error'; item.error = e.message || String(e);
+                        console.error('슬로우 처리 실패:', e);
+                    }
+                    _renderSlowFileList();
+                }
+                progress.textContent = '✅ ' + pending.length + '개 처리 완료. 다운로드 폴더 확인.';
+            } catch (e) {
+                progress.textContent = '❌ ffmpeg 로드 실패: ' + (e.message || e);
+            } finally {
+                btn.disabled = false; btn.textContent = '🐢 슬로우 처리 시작';
+            }
+        };
+
+        // ═══════════════════════════════════════════════════════════════
+        // 🎨 클로드 디자인 HTML → MP4 (getDisplayMedia 화면 녹화)
+        // ═══════════════════════════════════════════════════════════════
+        window._designFiles = [];
+
+        function _designLookupDuration(sceneId) {
+            if (!window._sceneGuideData || !sceneId) return null;
+            const s = window._sceneGuideData.find(x => x.id === sceneId);
+            if (!s) return null;
+            return s.narrationSec || (typeof s.sceneDuration === 'number' ? s.sceneDuration : Math.max(3, Math.round((s.narration || '').length / 6)));
+        }
+
+        function _renderDesignFileList() {
+            const list = document.getElementById('designFileList');
+            const btn = document.getElementById('designProcessBtn');
+            if (!list) return;
+            if (window._designFiles.length === 0) {
+                list.innerHTML = '';
+                if (btn) btn.style.display = 'none';
+                return;
+            }
+            let html = '<div style="font-size:0.78rem;color:#495057;font-weight:700;margin-bottom:6px;">변환 대기 ' + window._designFiles.length + '개</div>';
+            html += '<div style="display:flex;flex-direction:column;gap:6px;">';
+            window._designFiles.forEach((item, idx) => {
+                const matched = item.durationSec !== null;
+                const bg = item.status === 'done' ? '#d3f9d8' : item.status === 'error' ? '#ffe3e3' : matched ? '#fff' : '#fff3bf';
+                const border = matched ? '#9333ea' : '#ff922b';
+                html += '<div style="padding:8px 10px;background:' + bg + ';border:1px solid ' + border + ';border-radius:4px;font-size:0.78rem;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">';
+                html += '<span style="font-weight:700;flex:1;">' + (item.file.name) + '</span>';
+                if (item.sceneId !== null) html += '<span style="background:#9333ea;color:#fff;padding:1px 6px;border-radius:3px;font-size:0.7rem;font-weight:700;">장면 ' + item.sceneId + '</span>';
+                if (matched) {
+                    html += '<span style="color:#6b21a8;font-size:0.72rem;">' + item.durationSec + '초 녹화</span>';
+                } else {
+                    html += '<span style="color:#d9480f;font-size:0.72rem;">매칭 실패. 초:</span>';
+                    html += '<input type="number" step="1" min="2" max="60" value="10" data-idx="' + idx + '" onchange="_designSetManualDuration(this)" style="width:60px;padding:2px 4px;font-size:0.75rem;border:1px solid #ff922b;border-radius:3px;">';
+                }
+                if (item.status === 'recording') html += '<span style="color:#1971c2;font-size:0.72rem;">🔴 녹화중...</span>';
+                if (item.status === 'encoding') html += '<span style="color:#1971c2;font-size:0.72rem;">⏳ 인코딩...</span>';
+                if (item.status === 'done') html += '<span style="color:#2b8a3e;font-size:0.72rem;font-weight:700;">✓ 완료</span>';
+                if (item.status === 'error') html += '<span style="color:#c92a2a;font-size:0.72rem;">✗ ' + (item.error || '실패') + '</span>';
+                html += '</div>';
+            });
+            html += '</div>';
+            list.innerHTML = html;
+            if (btn) btn.style.display = '';
+        }
+
+        window._designSetManualDuration = function(input) {
+            const idx = parseInt(input.dataset.idx, 10);
+            const v = parseInt(input.value, 10);
+            if (!isNaN(v) && v >= 2 && v <= 60 && window._designFiles[idx]) {
+                window._designFiles[idx].durationSec = v;
+            }
+        };
+
+        function _addDesignFiles(files) {
+            for (const file of files) {
+                if (!/\.(html?|htm)$/i.test(file.name)) continue;
+                const sceneId = _detectSceneId(file.name);
+                const dur = _designLookupDuration(sceneId);
+                window._designFiles.push({
+                    file, sceneId, durationSec: dur,
+                    status: 'pending', error: null
+                });
+            }
+            _renderDesignFileList();
+        }
+
+        function _readFileAsText(file) {
+            return new Promise((resolve, reject) => {
+                const r = new FileReader();
+                r.onload = () => resolve(r.result);
+                r.onerror = () => reject(r.error);
+                r.readAsText(file);
+            });
+        }
+
+        function _waitFrameLoad(iframe) {
+            return new Promise(resolve => {
+                const onLoad = () => { iframe.removeEventListener('load', onLoad); resolve(); };
+                iframe.addEventListener('load', onLoad);
+            });
+        }
+
+        function _sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+        async function _recordDuration(stream, durationMs) {
+            return new Promise((resolve, reject) => {
+                const mimeCandidates = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
+                const mimeType = mimeCandidates.find(t => MediaRecorder.isTypeSupported(t)) || 'video/webm';
+                const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 8_000_000 });
+                const chunks = [];
+                recorder.ondataavailable = e => { if (e.data && e.data.size > 0) chunks.push(e.data); };
+                recorder.onstop = () => resolve(new Blob(chunks, { type: mimeType }));
+                recorder.onerror = e => reject(e.error || new Error('녹화 오류'));
+                recorder.start();
+                setTimeout(() => { try { recorder.stop(); } catch(e) { reject(e); } }, durationMs);
+            });
+        }
+
+        async function _webmToMp4(webmBlob, progressEl) {
+            const ffmpeg = await _loadFFmpeg(progressEl);
+            const { fetchFile } = window.FFmpegUtil;
+            await ffmpeg.writeFile('rec.webm', await fetchFile(webmBlob));
+            await ffmpeg.exec(['-i', 'rec.webm', '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '23', '-pix_fmt', 'yuv420p', '-an', 'out.mp4']);
+            const data = await ffmpeg.readFile('out.mp4');
+            try { await ffmpeg.deleteFile('rec.webm'); } catch(e){}
+            try { await ffmpeg.deleteFile('out.mp4'); } catch(e){}
+            return new Blob([data.buffer], { type: 'video/mp4' });
+        }
+
+        function _downloadBlob(blob, filename) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = filename;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+
+        window._designProcessAll = async function() {
+            const progress = document.getElementById('designProgress');
+            const btn = document.getElementById('designProcessBtn');
+            const overlay = document.getElementById('designOverlay');
+            const overlayInfo = document.getElementById('designOverlayInfo');
+            const iframe = document.getElementById('designRenderFrame');
+            const pending = window._designFiles.filter(f => f.status !== 'done' && f.durationSec);
+            if (pending.length === 0) {
+                progress.textContent = '⚠️ 처리할 파일이 없습니다 (매칭 실패 파일은 초수 입력).';
+                return;
+            }
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+                progress.textContent = '❌ 이 브라우저는 화면녹화를 지원하지 않습니다 (Chrome/Edge 최신 필요).';
+                return;
+            }
+            btn.disabled = true; btn.textContent = '🎨 처리 중...';
+            let stream = null;
+            try {
+                progress.innerHTML = '🖥️ 화면 공유 권한 요청 중... <strong>"이 탭" 선택 후 "공유"</strong> 누르세요.';
+                stream = await navigator.mediaDevices.getDisplayMedia({
+                    video: { frameRate: 30, width: 1920, height: 1080 },
+                    audio: false,
+                    preferCurrentTab: true
+                });
+                overlay.style.display = '';
+                await _sleep(500);
+                for (let i = 0; i < pending.length; i++) {
+                    const item = pending[i];
+                    overlayInfo.textContent = '🎬 (' + (i+1) + '/' + pending.length + ') ' + item.file.name + ' · ' + item.durationSec + '초';
+                    progress.textContent = '🎬 (' + (i+1) + '/' + pending.length + ') ' + item.file.name + ' 녹화 중...';
+                    item.status = 'recording'; _renderDesignFileList();
+                    try {
+                        const html = await _readFileAsText(item.file);
+                        const loadPromise = _waitFrameLoad(iframe);
+                        iframe.srcdoc = html;
+                        await loadPromise;
+                        await _sleep(800);
+                        const webm = await _recordDuration(stream, item.durationSec * 1000 + 100);
+                        item.status = 'encoding'; _renderDesignFileList();
+                        progress.textContent = '⏳ (' + (i+1) + '/' + pending.length + ') mp4 인코딩 중...';
+                        const mp4 = await _webmToMp4(webm, progress);
+                        _downloadBlob(mp4, item.file.name.replace(/\.[^.]+$/, '') + '.mp4');
+                        item.status = 'done';
+                    } catch (e) {
+                        item.status = 'error'; item.error = e.message || String(e);
+                        console.error('디자인 mp4 변환 실패:', e);
+                    }
+                    _renderDesignFileList();
+                }
+                progress.textContent = '✅ ' + pending.length + '개 변환 완료. 다운로드 폴더 확인.';
+            } catch (e) {
+                progress.textContent = '❌ 오류: ' + (e.message || e);
+                console.error(e);
+            } finally {
+                if (stream) stream.getTracks().forEach(t => t.stop());
+                overlay.style.display = 'none';
+                iframe.srcdoc = '';
+                btn.disabled = false; btn.textContent = '🎨 화면녹화 변환 시작';
+            }
+        };
+
+        (function initSlowAndDesignDropZones() {
+            window.addEventListener('DOMContentLoaded', function() {
+                // 슬로우 드롭존
+                const sdz = document.getElementById('slowDropZone');
+                const sin = document.getElementById('slowFileInput');
+                if (sdz && sin) {
+                    sdz.addEventListener('click', () => sin.click());
+                    sin.addEventListener('change', e => {
+                        if (e.target.files && e.target.files.length > 0) _addSlowFiles(e.target.files);
+                        sin.value = '';
+                    });
+                    ['dragenter','dragover'].forEach(ev => sdz.addEventListener(ev, e => {
+                        e.preventDefault(); e.stopPropagation();
+                        sdz.style.background = '#fff3bf';
+                    }));
+                    ['dragleave','drop'].forEach(ev => sdz.addEventListener(ev, e => {
+                        e.preventDefault(); e.stopPropagation();
+                        sdz.style.background = '#fff';
+                    }));
+                    sdz.addEventListener('drop', e => {
+                        if (e.dataTransfer && e.dataTransfer.files) _addSlowFiles(e.dataTransfer.files);
+                    });
+                }
+                // 디자인 드롭존
+                const ddz = document.getElementById('designDropZone');
+                const din = document.getElementById('designFileInput');
+                if (ddz && din) {
+                    ddz.addEventListener('click', () => din.click());
+                    din.addEventListener('change', e => {
+                        if (e.target.files && e.target.files.length > 0) _addDesignFiles(e.target.files);
+                        din.value = '';
+                    });
+                    ['dragenter','dragover'].forEach(ev => ddz.addEventListener(ev, e => {
+                        e.preventDefault(); e.stopPropagation();
+                        ddz.style.background = '#f3e5ff';
+                    }));
+                    ['dragleave','drop'].forEach(ev => ddz.addEventListener(ev, e => {
+                        e.preventDefault(); e.stopPropagation();
+                        ddz.style.background = '#fff';
+                    }));
+                    ddz.addEventListener('drop', e => {
+                        if (e.dataTransfer && e.dataTransfer.files) _addDesignFiles(e.dataTransfer.files);
+                    });
+                }
+            });
+        })();
+
         // ============================================================
         // 변환 메인 — Gemini Pro에 전체 대본 맥락 + 장면 분류 요청
         // ============================================================
@@ -15657,7 +16133,8 @@ ${stylePrompt}
   **★ 애니메이션 영상으로 출력 ★**
   - Claude Design의 **HTML/CSS 애니메이션 슬라이드** 형식으로 요청. 정지 이미지 X, 움직이는 영상 O.
   - 도식 요소가 **순차적으로 나타나는** 모션 명시 (예: "그래프 곡선이 좌→우로 그려지며 등장", "박스 호흡 4단계가 시계방향으로 차례로 빛나며 강조", "비교 도식 좌측 먼저 → 우측 나중", "통계 숫자가 0에서 목표값까지 카운트업", "단계 카드가 1→2→3→4로 위에서 아래로 슬라이드인").
-  - **총 길이 8~10초**에 맞춰 모션 페이싱 조정.
+  - **총 길이는 장면 나레이션 분량에 맞춰 5~20초 자유롭게 설정** (duration 필드). 짧은 펀치라인 5초, 깊은 설명 15~20초까지 OK. 기존 8~10초 고정 X.
+  - 정한 duration에 맞춰 모션 페이싱 조정 (긴 영상이면 단계 더 느리게, 카운트업·페이드인 텀 길게).
   - 캐릭터가 있으면 캐릭터도 살짝 움직임 (눈 깜빡, 호흡 등 미세 모션).
   - 텍스트 라벨은 도식 요소 등장 후 부드럽게 페이드인.
   **★ 텍스트 규칙 (매우 중요) ★**
@@ -15694,7 +16171,7 @@ ${stylePrompt}
   "scenes": [
     {"sceneNo": 1, "type": "ai", "duration": 6, "isIntro": true, "bodyIndices": [], "nano_prompt": "...", "grok_prompt": "..."},
     {"sceneNo": ${startBodyNo}, "type": "ai", "duration": 10, "isIntro": false, "bodyIndices": [1,2,3], "nano_prompt": "...", "grok_prompt": "..."},
-    {"sceneNo": ${startBodyNo+1}, "type": "claude_design", "duration": 10, "isIntro": false, "bodyIndices": [4,5,6,7], "claude_prompt": "...", "claude_kind": "..."}
+    {"sceneNo": ${startBodyNo+1}, "type": "claude_design", "duration": 15, "isIntro": false, "bodyIndices": [4,5,6,7], "claude_prompt": "...", "claude_kind": "..."}
   ]
 }
 
