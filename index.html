@@ -4839,11 +4839,21 @@ ${(window._channelState && window._channelState.slump)
 - 3~6편 = 적정
 - 2편 이하 = 미개척 ⭐ 가중치 ×1.5 (AI/테크 인물·미·중 빅이슈 등)
 
-[채널 키워드 매칭 체크]
-위에 첨부된 "최근 4주 다룬 영상"과 비교해 주제 키워드 일치율 평가:
-- 60% 이상 일치 → ❌ 차단
-- 30~59% 일치 → ⚠️ 차별화 각도 명시 필수 (위 자가복제 새 각도 4종 중 하나)
-- 30% 미만 → ✅ 안전
+[채널 전체 유사도 체크 — 강화 룰]
+"최근 4주 다룬 영상" 뿐 아니라 위 [자가복제 금지] 목록 + 채널 전체 54개 영상까지 고려해 핵심 키워드 일치율 평가:
+- 60% 이상 일치 → ❌ 추천 자체 금지 (제외)
+- 30~59% 일치 → ⚠️ 자가복제_여부=true, 자가복제_새각도 필드에 다음 4종 중 하나 반드시 명시:
+  ① 후속 검증 (1년 후 결과)
+  ② 인물 교체 (같은 주제 다른 인물 — 머스크 → 젠슨황)
+  ③ 반대 진영 (다른 관점)
+  ④ 한국 적용 (한국 직접 영향)
+- 30% 미만 → ✅ 안전 (자가복제_여부=false)
+
+[카테고리 포화도 강화 룰]
+본인 채널 누적 카테고리 (참고): 지정학·군사 21~22편(포화) / 마이너국가 13~15편(포화) / 선진국몰락 6편(적정) / 인물·테크 2~3편(미개척⭐)
+- 7편 이상 = 포화 → 한국 관심 9점 이상 + 명확히 새 각도일 때만 통과
+- 3~6편 = 적정
+- 2편 이하 = 미개척 ⭐ → 가중치 ×1.5 (best_pick_today 점수 산정 시 우선)
 
 [출력 형식 — 반드시 아래 JSON만 출력. 다른 설명·마크다운 금지]
 {
@@ -4864,9 +4874,30 @@ ${(window._channelState && window._channelState.slump)
       "최근_뉴스": "${recencyText} 내 실제 뉴스 한 줄 (날짜 포함)",
       "핵심_데이터": ["숫자 포함 데이터1", "숫자 포함 데이터2", "숫자 포함 데이터3"],
       "제목_후보": [
-        "A안 (따옴표 후킹형 45~55자, 괄호 부연 필수): '○○에 속지 마세요' 본문 (구체키워드1, 키워드2)",
-        "B안 (콜론 폭로형 40~50자): 사건명: 진짜 이유 + (부연)",
-        "C안 (숫자 스케일형 35~45자): 4000조 ○○ + 충격 결과"
+        {
+          "공식": "따옴표 후킹형",
+          "title": "실제 제목만 (메타데이터/접두사 절대 포함 금지)",
+          "글자수": 54,
+          "괄호부연": true,
+          "첫15자_강도": 10,
+          "ctr_grade": "S"
+        },
+        {
+          "공식": "콜론 폭로형",
+          "title": "...",
+          "글자수": 47,
+          "괄호부연": true,
+          "첫15자_강도": 8,
+          "ctr_grade": "A"
+        },
+        {
+          "공식": "숫자 스케일형",
+          "title": "...",
+          "글자수": 42,
+          "괄호부연": false,
+          "첫15자_강도": 9,
+          "ctr_grade": "S"
+        }
       ],
       "체크": {
         "1_슈카월드회피": true,
@@ -4976,13 +5007,19 @@ ${(window._channelState && window._channelState.slump)
                         t.한국인_관심_점수 = recomputed;
                     }
                 });
-                const passed = allTopics.filter(t => typeof t.한국인_관심_점수 !== 'number' || t.한국인_관심_점수 >= 7);
-                const filteredOut = allTopics.length - passed.length;
+                const passedKr = allTopics.filter(t => typeof t.한국인_관심_점수 !== 'number' || t.한국인_관심_점수 >= 7);
+                // 자가복제 60% 이상 자동 제외
+                const passed = passedKr.filter(t => typeof t.키워드_매칭_퍼센트 !== 'number' || t.키워드_매칭_퍼센트 < 60);
+                const krFiltered = allTopics.length - passedKr.length;
+                const dupFiltered = passedKr.length - passed.length;
                 renderFormulaResults(passed, parsed);
-                if (filteredOut > 0) {
+                const notes = [];
+                if (krFiltered > 0) notes.push(`한국인 관심 7점 미만 ${krFiltered}개`);
+                if (dupFiltered > 0) notes.push(`자가복제(키워드 60%+) ${dupFiltered}개`);
+                if (notes.length > 0) {
                     const note = document.createElement('div');
                     note.style.cssText = 'padding:8px 12px;background:#fff8e6;border-left:3px solid #ffa500;border-radius:4px;font-size:0.8rem;color:#996600;margin-top:8px;';
-                    note.innerHTML = `⚠️ 한국인 관심 점수 7점 미만 ${filteredOut}개 주제는 자동 제외됐어요.`;
+                    note.innerHTML = `⚠️ 자동 제외: ${notes.join(' · ')}`;
                     resultsEl.appendChild(note);
                 }
 
@@ -5006,8 +5043,8 @@ ${(window._channelState && window._channelState.slump)
             const medal = (rank) => rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
             const trackColor = { 1: '#0066cc', 2: '#28a745', 3: '#996600', 4: '#888' };
             const trackName = { 1: '국가 흥망', 2: '글로벌 빅이슈', 3: '한국인 관점', 4: '인물·기업' };
-            const patternColor = { A: '#dc3545', B: '#0066cc', C: '#996600', D: '#888' };
-            const patternName = { A: 'A 선진국몰락', B: 'B 인물·테크', C: 'C 지정학', D: 'D 한국연결' };
+            const patternColor = { A: '#0066cc', B: '#dc3545', C: '#996600', D: '#28a745' };
+            const patternName = { A: '인물·테크', B: '선진국 몰락', C: '지정학', D: '자원 역설' };
             const gradeColor = { S: '#dc3545', A: '#ffa500', B: '#0066cc', C: '#888' };
             const gradeLabel = { S: 'S (50만+)', A: 'A (20~50만)', B: 'B (5~20만)', C: 'C (5만↓)' };
             const formulaIcon = {
@@ -5039,8 +5076,7 @@ ${(window._channelState && window._channelState.slump)
                 <div style="background:white;border:2px solid ${allPass ? '#28a745' : '#dc3545'};border-radius:12px;padding:16px;margin-bottom:12px;">
                     <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;">
                         <span style="font-size:1.3rem;">${medal(t.순위 || t.rank || 0)}</span>
-                        ${t.패턴 ? `<span style="background:${patternColor[t.패턴]||'#888'};color:white;padding:3px 10px;border-radius:10px;font-size:0.75rem;font-weight:700;">패턴 ${escapeHtml(patternName[t.패턴]||t.패턴)}</span>` : ''}
-                        <span style="background:#f8f9fa;color:#333;padding:3px 10px;border-radius:10px;font-size:0.75rem;font-weight:700;">${formulaIcon[t.공식]||'✨'} ${escapeHtml(t.공식||'')}</span>
+                        ${t.패턴 ? `<span style="background:${patternColor[t.패턴]||'#888'};color:white;padding:3px 10px;border-radius:10px;font-size:0.75rem;font-weight:700;">패턴 ${escapeHtml(t.패턴)} (${escapeHtml(patternName[t.패턴]||t.패턴)})</span>` : ''}
                         <span style="background:${gradeColor[grade]||'#888'};color:white;padding:3px 10px;border-radius:10px;font-size:0.75rem;font-weight:700;">${gradeLabel[grade]||grade}</span>
                         ${allPass
                             ? '<span style="background:#e6ffed;color:#28a745;padding:3px 10px;border-radius:10px;font-size:0.75rem;font-weight:700;">✅ 5체크 통과</span>'
@@ -5092,9 +5128,32 @@ ${(window._channelState && window._channelState.slump)
                     </div>` : ''}
 
                     ${Array.isArray(t.제목_후보) && t.제목_후보.length > 0 ? `<div style="margin-bottom:10px;">
-                        <div style="font-size:0.75rem;font-weight:700;color:#666;margin-bottom:4px;">🎬 제목 A/B/C 후보 <span style="color:#aaa;font-weight:400;">(클릭=복사)</span></div>
-                        <div style="display:flex;flex-direction:column;gap:4px;">
-                            ${t.제목_후보.map((v, i) => `<div style="padding:6px 10px;background:#fff5f5;border:1px solid #ffe0e0;border-radius:6px;font-size:0.85rem;color:#222;cursor:pointer;" onclick="navigator.clipboard.writeText(this.textContent.trim().replace(/^[A-C]안:\\s*/,'')); this.style.background='#ffe0e0';" title="클릭해서 복사"><b style="color:#dc3545;">${String.fromCharCode(65+i)}안:</b> ${escapeHtml(v)}</div>`).join('')}
+                        <div style="font-size:0.75rem;font-weight:700;color:#666;margin-bottom:4px;">🎬 제목 A/B/C 후보 <span style="color:#aaa;font-weight:400;">(제목 클릭=복사)</span></div>
+                        <div style="display:flex;flex-direction:column;gap:6px;">
+                            ${t.제목_후보.map((v, i) => {
+                                // 객체 또는 문자열 모두 호환
+                                const isObj = typeof v === 'object' && v !== null;
+                                const titleText = isObj ? (v.title || '') : String(v).replace(/^[A-C]안\s*[\(（].*?[\)）]\s*[:：]\s*/, '').replace(/^[A-C]안\s*[:：]\s*/, '');
+                                const formula = isObj ? (v.공식 || '') : '';
+                                const ctr = isObj ? (v.ctr_grade || '') : '';
+                                const charCount = isObj ? (v.글자수 || [...titleText].length) : [...titleText].length;
+                                const hasParen = isObj ? !!v.괄호부연 : /[（(].+[)）]/.test(titleText);
+                                const first15 = isObj ? (v.첫15자_강도 || 0) : 0;
+                                const charCol = (charCount >= 40 && charCount <= 55) ? '#28a745' : (charCount >= 35 && charCount <= 60) ? '#ffa500' : '#dc3545';
+                                const ctrColor = { S: '#dc3545', A: '#ffa500', B: '#0066cc', C: '#888' };
+                                return `<div style="padding:8px 10px;background:#fff5f5;border:1px solid #ffe0e0;border-radius:6px;">
+                                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;flex-wrap:wrap;gap:4px;">
+                                        <span style="font-size:0.72rem;font-weight:700;color:#dc3545;">${String.fromCharCode(65+i)}안 — ${escapeHtml(formula||'-')}</span>
+                                        ${ctr ? `<span style="background:${ctrColor[ctr]||'#888'};color:white;padding:2px 8px;border-radius:6px;font-size:0.7rem;font-weight:700;">CTR ${escapeHtml(ctr)}</span>` : ''}
+                                    </div>
+                                    <div onclick="navigator.clipboard.writeText(this.textContent.trim()); this.style.background='#ffe0e0';" style="font-size:0.92rem;color:#222;font-weight:700;padding:5px 0;cursor:pointer;" title="클릭해서 복사">${escapeHtml(titleText)}</div>
+                                    <div style="display:flex;gap:4px;flex-wrap:wrap;font-size:0.68rem;margin-top:3px;">
+                                        <span style="background:white;padding:2px 6px;border-radius:5px;color:${charCol};">📏 ${charCount}자</span>
+                                        <span style="background:white;padding:2px 6px;border-radius:5px;color:${hasParen?'#28a745':'#dc3545'};">${hasParen?'✅':'❌'} 괄호</span>
+                                        ${first15 ? `<span style="background:white;padding:2px 6px;border-radius:5px;color:${first15>=8?'#28a745':first15>=5?'#ffa500':'#dc3545'};">⚡ 첫15자 ${first15}/10</span>` : ''}
+                                    </div>
+                                </div>`;
+                            }).join('')}
                         </div>
                     </div>` : ''}
 
@@ -5150,7 +5209,7 @@ ${(window._channelState && window._channelState.slump)
             // 패턴 분포 통계
             const patternCounts = { A: 0, B: 0, C: 0, D: 0 };
             topics.forEach(t => { if (t.패턴 && patternCounts[t.패턴] !== undefined) patternCounts[t.패턴]++; });
-            const trackSummary = `패턴A ${patternCounts.A}개 · 패턴B ${patternCounts.B}개 · 패턴C ${patternCounts.C}개 · 패턴D ${patternCounts.D}개`;
+            const trackSummary = `A 인물·테크 ${patternCounts.A}개 · B 선진국몰락 ${patternCounts.B}개 · C 지정학 ${patternCounts.C}개 · D 자원역설 ${patternCounts.D}개`;
 
             // 🏆 오늘의 베스트 픽 박스
             const bestPickHtml = bestPick ? `
