@@ -2459,6 +2459,43 @@
                                 <div id="designProgress" style="margin-top:8px;font-size:0.78rem;color:#6b21a8;"></div>
                             </div>
 
+                            <!-- 🔢 받은 파일 자동 이름 변경 (이미지·영상·HTML 공통) -->
+                            <div style="padding:10px;background:#e7f5ff;border:2px solid #1c7ed6;border-radius:8px;margin-top:14px;">
+                                <div style="font-weight:700;color:#0c4a6e;margin-bottom:8px;font-size:0.9rem;">🔢 받은 파일 자동 이름 변경</div>
+                                <p style="font-size:0.78rem;color:#666;margin-bottom:8px;">
+                                    젠스파크/그록/클로드 디자인에서 다 받은 후 <strong>다운로드 순서대로</strong> 박스에 던지면 → 자동으로 <strong>scene_3.png</strong> 식으로 이름 바뀐 ZIP 다운로드.
+                                    <br><span style="color:#0c4a6e;">⚠️ 다운로드 순서 = 도구 출력 장면 순서와 같아야 함. (예: 젠스파크 1번째 이미지 = 첫 AI 장면)</span>
+                                </p>
+                                <div id="renameStatus" style="font-size:0.75rem;color:#0c4a6e;background:#fff;padding:8px 10px;border-radius:4px;margin-bottom:10px;"></div>
+                                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+                                    <!-- 이미지 박스 -->
+                                    <div>
+                                        <div id="renameImgZone" style="border:2px dashed #20c997;border-radius:6px;padding:16px 8px;text-align:center;background:#fff;cursor:pointer;font-size:0.78rem;color:#087f5b;font-weight:600;min-height:80px;display:flex;flex-direction:column;justify-content:center;">
+                                            🟢 이미지<br><span style="font-size:0.7rem;font-weight:400;color:#666;">젠스파크 .png/.jpg</span>
+                                        </div>
+                                        <input type="file" id="renameImgInput" accept="image/*" multiple style="display:none;">
+                                        <div id="renameImgList" style="font-size:0.7rem;color:#087f5b;margin-top:4px;"></div>
+                                    </div>
+                                    <!-- 영상 박스 -->
+                                    <div>
+                                        <div id="renameVidZone" style="border:2px dashed #e03131;border-radius:6px;padding:16px 8px;text-align:center;background:#fff;cursor:pointer;font-size:0.78rem;color:#c92a2a;font-weight:600;min-height:80px;display:flex;flex-direction:column;justify-content:center;">
+                                            🔴 영상<br><span style="font-size:0.7rem;font-weight:400;color:#666;">그록 .mp4</span>
+                                        </div>
+                                        <input type="file" id="renameVidInput" accept="video/*" multiple style="display:none;">
+                                        <div id="renameVidList" style="font-size:0.7rem;color:#c92a2a;margin-top:4px;"></div>
+                                    </div>
+                                    <!-- HTML 박스 -->
+                                    <div>
+                                        <div id="renameHtmlZone" style="border:2px dashed #9333ea;border-radius:6px;padding:16px 8px;text-align:center;background:#fff;cursor:pointer;font-size:0.78rem;color:#6b21a8;font-weight:600;min-height:80px;display:flex;flex-direction:column;justify-content:center;">
+                                            🟣 HTML<br><span style="font-size:0.7rem;font-weight:400;color:#666;">클로드 디자인 .html</span>
+                                        </div>
+                                        <input type="file" id="renameHtmlInput" accept=".html,.htm" multiple style="display:none;">
+                                        <div id="renameHtmlList" style="font-size:0.7rem;color:#6b21a8;margin-top:4px;"></div>
+                                    </div>
+                                </div>
+                                <div id="renameProgress" style="margin-top:8px;font-size:0.78rem;color:#0c4a6e;"></div>
+                            </div>
+
                             <!-- 🐢 그록 영상 슬로우 처리 -->
                             <div style="padding:10px;background:#fff9db;border:2px solid #fab005;border-radius:8px;margin-top:12px;">
                                 <div style="font-weight:700;color:#856404;margin-bottom:8px;font-size:0.9rem;">🐢 그록 영상 슬로우 처리 (브라우저 내장 ffmpeg)</div>
@@ -15638,6 +15675,118 @@ overall mood: bright, psychologically safe illustration, uplifting and reassurin
         }
 
         // ═══════════════════════════════════════════════════════════════
+        // 🔢 받은 파일 자동 이름 변경 (장면 순서대로 scene_N.{ext} ZIP 출력)
+        // ═══════════════════════════════════════════════════════════════
+        async function _loadJSZip() {
+            if (window.JSZip) return window.JSZip;
+            await new Promise((resolve, reject) => {
+                const sc = document.createElement('script');
+                sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+                sc.onload = resolve;
+                sc.onerror = () => reject(new Error('JSZip 로드 실패'));
+                document.head.appendChild(sc);
+            });
+            return window.JSZip;
+        }
+
+        function _renderRenameStatus() {
+            const el = document.getElementById('renameStatus');
+            if (!el) return;
+            const ai = window._spAiSceneNos || [];
+            const claude = window._spClaudeSceneNos || [];
+            if (ai.length === 0 && claude.length === 0) {
+                el.innerHTML = '⚠️ 셀팟 기본 변환을 먼저 실행하세요.';
+                return;
+            }
+            el.innerHTML = '🟢 이미지/영상 = AI 장면 순서: <strong>' + (ai.join(', ') || '없음') + '</strong>'
+                + ' &nbsp; · &nbsp; 🟣 HTML = Claude Design 장면 순서: <strong>' + (claude.join(', ') || '없음') + '</strong>';
+        }
+
+        async function _renameAndZip(files, sceneNos, ext, kind) {
+            const progress = document.getElementById('renameProgress');
+            if (!sceneNos || sceneNos.length === 0) {
+                progress.textContent = '❌ ' + kind + ' 장면 정보 없음. 셀팟 변환 먼저 실행하세요.';
+                return;
+            }
+            if (files.length !== sceneNos.length) {
+                progress.innerHTML = '⚠️ 파일 ' + files.length + '개 ≠ 장면 ' + sceneNos.length + '개. <strong>다운로드 순서대로 정확히 같은 개수</strong>를 던져야 합니다.';
+                if (files.length === 0) return;
+                if (files.length > sceneNos.length) {
+                    progress.innerHTML += '<br>(' + (files.length - sceneNos.length) + '개 초과 — 뒤쪽 파일 무시)';
+                } else {
+                    progress.innerHTML += '<br>(' + (sceneNos.length - files.length) + '개 부족 — 일부 장면만 처리)';
+                }
+            }
+            const sortedFiles = Array.from(files).sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+            try {
+                progress.textContent = '⏳ ZIP 생성 중...';
+                const JSZip = await _loadJSZip();
+                const zip = new JSZip();
+                const count = Math.min(sortedFiles.length, sceneNos.length);
+                for (let i = 0; i < count; i++) {
+                    const sceneNo = sceneNos[i];
+                    const file = sortedFiles[i];
+                    const newName = 'scene_' + sceneNo + '.' + ext;
+                    zip.file(newName, file);
+                }
+                const blob = await zip.generateAsync({ type: 'blob' });
+                _downloadBlob(blob, kind + '_renamed.zip');
+                progress.textContent = '✅ ' + count + '개 파일 이름 변경 완료. ' + kind + '_renamed.zip 다운로드됨.';
+            } catch (e) {
+                progress.textContent = '❌ ZIP 생성 실패: ' + (e.message || e);
+                console.error(e);
+            }
+        }
+
+        (function initRenameDropZones() {
+            window.addEventListener('DOMContentLoaded', function() {
+                const setup = (zoneId, inputId, listId, hover, kind, getSceneNos, defaultExt) => {
+                    const zone = document.getElementById(zoneId);
+                    const input = document.getElementById(inputId);
+                    const list = document.getElementById(listId);
+                    if (!zone || !input) return;
+                    let staged = [];
+                    const updateList = () => {
+                        if (staged.length === 0) { list.innerHTML = ''; return; }
+                        const sorted = [...staged].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+                        list.innerHTML = sorted.length + '개 대기:<br>' + sorted.slice(0, 5).map(f => '· ' + f.name).join('<br>') + (sorted.length > 5 ? '<br>... 외 ' + (sorted.length - 5) + '개' : '')
+                            + '<button onclick="window._renameProcess_' + kind + '()" style="margin-top:6px;padding:4px 10px;font-size:0.72rem;background:#fff;border:1px solid currentColor;border-radius:3px;cursor:pointer;font-weight:600;">▶ 변환 → ZIP</button>';
+                    };
+                    window['_renameProcess_' + kind] = () => {
+                        const ext = staged[0] ? (staged[0].name.match(/\.([^.]+)$/) || [, defaultExt])[1] : defaultExt;
+                        _renameAndZip(staged, getSceneNos(), ext, kind);
+                    };
+                    window['_renameStaged_' + kind] = staged;
+                    zone.addEventListener('click', () => input.click());
+                    input.addEventListener('change', e => {
+                        if (e.target.files && e.target.files.length > 0) {
+                            for (const f of e.target.files) staged.push(f);
+                            updateList();
+                        }
+                        input.value = '';
+                    });
+                    ['dragenter', 'dragover'].forEach(ev => zone.addEventListener(ev, e => {
+                        e.preventDefault(); e.stopPropagation();
+                        zone.style.background = hover;
+                    }));
+                    ['dragleave', 'drop'].forEach(ev => zone.addEventListener(ev, e => {
+                        e.preventDefault(); e.stopPropagation();
+                        zone.style.background = '#fff';
+                    }));
+                    zone.addEventListener('drop', e => {
+                        if (e.dataTransfer && e.dataTransfer.files) {
+                            for (const f of e.dataTransfer.files) staged.push(f);
+                            updateList();
+                        }
+                    });
+                };
+                setup('renameImgZone', 'renameImgInput', 'renameImgList', '#d3f9d8', 'image', () => window._spAiSceneNos || [], 'png');
+                setup('renameVidZone', 'renameVidInput', 'renameVidList', '#ffe3e3', 'video', () => window._spAiSceneNos || [], 'mp4');
+                setup('renameHtmlZone', 'renameHtmlInput', 'renameHtmlList', '#f3e5ff', 'html', () => window._spClaudeSceneNos || [], 'html');
+            });
+        })();
+
+        // ═══════════════════════════════════════════════════════════════
         // 🐢 그록 영상 슬로우 처리 (ffmpeg.wasm)
         // ═══════════════════════════════════════════════════════════════
         window._ffmpegInstance = null;
@@ -16243,6 +16392,12 @@ JSON만 출력하세요. 코드블록 마커 금지.`;
         // ============================================================
         function _spRenderResults(result) {
             const scenes = result.scenes;
+            // 2026-04-27: 일괄 이름 변경 도구용 — 종류별 장면번호 순서 저장
+            window._spAiSceneNos = scenes.filter(s => s.type === 'ai').map(s => s.sceneNo);
+            window._spClaudeSceneNos = scenes.filter(s => s.type === 'claude_design').map(s => s.sceneNo);
+            window._spRealSceneNos = scenes.filter(s => s.type === 'real').map(s => s.sceneNo);
+            _renderRenameStatus();
+
             const counts = { ai: 0, real: 0, claude_design: 0, unknown: 0 };
             scenes.forEach(s => {
                 if (counts[s.type] !== undefined) counts[s.type]++;
