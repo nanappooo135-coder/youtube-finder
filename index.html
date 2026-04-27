@@ -9570,6 +9570,33 @@ ${sceneList}
             if (/빚.*덫|빚더미|함정|덫|빠져나올 수 없/.test(narr)) {
                 return 'debt trap chains financial';
             }
+            // 2026-04-27: 차·자동차 (입고/제조/수입/리콜 등)
+            if (/(\d+\s*대|수백 ?대|수천 ?대|차들?\s*[을이가에는도]|자동차|승용차|차량)/.test(narr)) {
+                if (/(안 들어|미입고|입고.*안|산더미|쌓여|줄지어|줄 ?서)/.test(narr)) return 'rows of cars parked warehouse aerial';
+                if (/(공장|생산|조립)/.test(narr)) return 'car factory assembly line robotic';
+                if (/(수입|선적|컨테이너|항구)/.test(narr)) return 'cars shipping port containers';
+                if (/(리콜|결함|파손|불량)/.test(narr)) return 'damaged car inspection mechanic';
+                return 'parking lot cars aerial top down';
+            }
+            // 도장·서류·승인·결재·검사
+            if (/(도장.*찍|결재|승인.*찍|서류.*검토|검사.*통과|허가.*받|인증.*받)/.test(narr)) {
+                return 'official stamp seal document close up';
+            }
+            if (/(서류.*산더미|서류 더미|문서 뭉치|보고서 더미)/.test(narr)) {
+                return 'stack of documents paperwork pile office';
+            }
+            // 사기·횡령·뒷돈
+            if (/(사기당|사기.*친|뒷돈|횡령|뇌물|비리|부정행위|불법.*거래)/.test(narr)) {
+                return 'businessman shaking hands money envelope shadow';
+            }
+            // 정부·정책·국정·내각
+            if (/(국정|내각|장관|정부.*결정|정책.*발표|국무회의)/.test(narr)) {
+                return 'government cabinet meeting officials suits';
+            }
+            // 단속·수사·조사
+            if (/(단속|수사|조사관|감사원|경찰.*조사|검찰.*수사)/.test(narr)) {
+                return 'investigation interrogation document search';
+            }
             // 세대 단절·다음 세대 없음
             if (/세대 단절|다음 세대|대물림.*못|세대.*못 만들/.test(narr)) {
                 return 'broken generation family tree';
