@@ -2496,6 +2496,22 @@
                                 <div id="renameProgress" style="margin-top:8px;font-size:0.78rem;color:#0c4a6e;"></div>
                             </div>
 
+                            <!-- 📺 결과물 미리보기 대시보드 -->
+                            <div style="padding:10px;background:#f0f0f0;border:2px solid #495057;border-radius:8px;margin-top:12px;">
+                                <div style="font-weight:700;color:#212529;margin-bottom:8px;font-size:0.9rem;">📺 결과물 미리보기</div>
+                                <p style="font-size:0.78rem;color:#666;margin-bottom:8px;">
+                                    완성된 mp4·이미지 전부 한 번에 던지면 → 장면 순서대로 미리보기. 마음에 안 드는 장면 바로 보고 "다시" 표시 가능.
+                                    파일명 <strong>scene_N.mp4</strong> / <strong>scene_N.png</strong> 형식으로 두면 자동 매칭.
+                                </p>
+                                <div id="previewDropZone" style="border:2px dashed #495057;border-radius:6px;padding:24px;text-align:center;background:#fff;cursor:pointer;font-size:0.85rem;color:#212529;font-weight:600;">
+                                    📁 mp4·png·jpg 파일 다 한 번에 드래그 (또는 클릭)
+                                </div>
+                                <input type="file" id="previewFileInput" accept="video/mp4,video/*,image/png,image/jpeg" multiple style="display:none;">
+                                <div id="previewProgress" style="margin-top:8px;font-size:0.78rem;color:#212529;"></div>
+                                <div id="previewGrid" style="margin-top:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;"></div>
+                                <button id="previewExportRetryBtn" onclick="_previewExportRetryList()" style="display:none;width:100%;margin-top:10px;padding:8px;background:#fa5252;color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer;">🔄 재생성 필요 장면 목록 복사</button>
+                            </div>
+
                             <!-- 🐢 그록 영상 슬로우 처리 -->
                             <div style="padding:10px;background:#fff9db;border:2px solid #fab005;border-radius:8px;margin-top:12px;">
                                 <div style="font-weight:700;color:#856404;margin-bottom:8px;font-size:0.9rem;">🐢 그록 영상 슬로우 처리 (브라우저 내장 ffmpeg)</div>
@@ -15675,6 +15691,147 @@ overall mood: bright, psychologically safe illustration, uplifting and reassurin
         }
 
         // ═══════════════════════════════════════════════════════════════
+        // 📺 결과물 미리보기 대시보드
+        // ═══════════════════════════════════════════════════════════════
+        window._previewFiles = []; // [{file, sceneId, type, url, retry}]
+        window._spLastScenes = null; // 셀팟 변환 결과 저장 (나레이션 표시용)
+
+        function _previewParseSceneId(filename) {
+            const m = filename.match(/(?:scene[_-]?|장면)?(\d+)\.[a-z0-9]+$/i);
+            return m ? parseInt(m[1], 10) : null;
+        }
+
+        function _previewClassify(file) {
+            if (file.type.startsWith('video/') || /\.mp4$/i.test(file.name)) return 'video';
+            if (file.type.startsWith('image/') || /\.(png|jpe?g|gif|webp)$/i.test(file.name)) return 'image';
+            return 'unknown';
+        }
+
+        function _previewAddFiles(files) {
+            for (const file of files) {
+                const type = _previewClassify(file);
+                if (type === 'unknown') continue;
+                const sceneId = _previewParseSceneId(file.name);
+                window._previewFiles.push({
+                    file, sceneId, type,
+                    url: URL.createObjectURL(file),
+                    retry: false
+                });
+            }
+            _renderPreviewGrid();
+        }
+
+        function _renderPreviewGrid() {
+            const grid = document.getElementById('previewGrid');
+            const progress = document.getElementById('previewProgress');
+            const exportBtn = document.getElementById('previewExportRetryBtn');
+            if (!grid) return;
+            if (window._previewFiles.length === 0) {
+                grid.innerHTML = '';
+                if (progress) progress.textContent = '';
+                if (exportBtn) exportBtn.style.display = 'none';
+                return;
+            }
+            // 장면번호 순서대로 정렬, 매칭 실패는 뒤로
+            const sorted = [...window._previewFiles].sort((a, b) => {
+                if (a.sceneId === null && b.sceneId === null) return 0;
+                if (a.sceneId === null) return 1;
+                if (b.sceneId === null) return -1;
+                return a.sceneId - b.sceneId;
+            });
+            const sceneInfo = window._spLastScenes || [];
+            let html = '';
+            sorted.forEach((item, idx) => {
+                const realIdx = window._previewFiles.indexOf(item);
+                const scene = item.sceneId ? sceneInfo.find(s => s.sceneNo === item.sceneId) : null;
+                const narration = scene ? (scene.text || scene.narration || '').slice(0, 80) : '(나레이션 매칭 X)';
+                const duration = scene ? (scene.duration || '?') : '?';
+                const sceneType = scene ? scene.type : '';
+                const typeIcon = sceneType === 'ai' ? '🎨' : sceneType === 'real' ? '📷' : sceneType === 'claude_design' ? '📊' : '';
+                const retryStyle = item.retry ? 'background:#ffe3e3;border:2px solid #fa5252;' : 'background:#fff;border:1px solid #dee2e6;';
+                html += '<div style="' + retryStyle + 'border-radius:6px;padding:8px;font-size:0.78rem;">';
+                html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">';
+                if (item.sceneId) {
+                    html += '<span style="font-weight:700;color:#212529;">' + typeIcon + ' 장면 ' + item.sceneId + ' · ' + duration + '초</span>';
+                } else {
+                    html += '<span style="font-weight:700;color:#d9480f;">⚠️ 매칭 실패</span>';
+                }
+                html += '<button onclick="_previewToggleRetry(' + realIdx + ')" style="padding:2px 8px;font-size:0.7rem;border:1px solid #fa5252;background:' + (item.retry ? '#fa5252' : '#fff') + ';color:' + (item.retry ? '#fff' : '#fa5252') + ';border-radius:3px;cursor:pointer;font-weight:600;">' + (item.retry ? '✓ 다시' : '🔄 다시') + '</button>';
+                html += '</div>';
+                if (item.type === 'video') {
+                    html += '<video src="' + item.url + '" controls muted preload="metadata" style="width:100%;border-radius:4px;background:#000;" loop></video>';
+                } else {
+                    html += '<img src="' + item.url + '" style="width:100%;border-radius:4px;display:block;">';
+                }
+                html += '<div style="font-size:0.7rem;color:#868e96;margin-top:4px;">' + (item.file.name) + '</div>';
+                html += '<div style="font-size:0.72rem;color:#495057;margin-top:4px;line-height:1.4;">' + _escapeHtml(narration) + (narration.length >= 80 ? '...' : '') + '</div>';
+                html += '</div>';
+            });
+            grid.innerHTML = html;
+            const retryCount = window._previewFiles.filter(f => f.retry).length;
+            if (progress) progress.textContent = '📺 총 ' + window._previewFiles.length + '개 미리보기 중' + (retryCount > 0 ? ' · 🔄 재생성 표시 ' + retryCount + '개' : '');
+            if (exportBtn) exportBtn.style.display = retryCount > 0 ? '' : 'none';
+        }
+
+        window._previewToggleRetry = function(idx) {
+            if (window._previewFiles[idx]) {
+                window._previewFiles[idx].retry = !window._previewFiles[idx].retry;
+                _renderPreviewGrid();
+            }
+        };
+
+        window._previewExportRetryList = function() {
+            const retry = window._previewFiles.filter(f => f.retry).sort((a, b) => (a.sceneId || 0) - (b.sceneId || 0));
+            if (retry.length === 0) { alert('재생성 표시된 장면 없음'); return; }
+            const sceneInfo = window._spLastScenes || [];
+            let text = '# 재생성 필요 장면 (' + retry.length + '개)\n\n';
+            retry.forEach(item => {
+                const scene = item.sceneId ? sceneInfo.find(s => s.sceneNo === item.sceneId) : null;
+                text += '## 장면 ' + (item.sceneId || '?') + '\n';
+                if (scene) {
+                    text += '타입: ' + (scene.type || '?') + ' · ' + (scene.duration || '?') + '초\n';
+                    text += '나레이션: ' + (scene.text || scene.narration || '') + '\n';
+                    if (scene.nano_prompt) text += '\n[이미지 프롬프트]\n' + scene.nano_prompt + '\n';
+                    if (scene.grok_prompt) text += '\n[그록 프롬프트]\n' + scene.grok_prompt + '\n';
+                    if (scene.claude_prompt) text += '\n[Claude Design 프롬프트]\n' + scene.claude_prompt + '\n';
+                    if (scene.real_keyword) text += '\n[실사 검색어]\n' + scene.real_keyword + '\n';
+                }
+                text += '\n---\n\n';
+            });
+            // 클립보드 복사
+            navigator.clipboard.writeText(text).then(() => {
+                alert('✅ ' + retry.length + '개 재생성 장면 정보 클립보드에 복사됨. 메모장 또는 Claude에 붙여넣어 재작업하세요.');
+            }).catch(e => {
+                alert('❌ 클립보드 복사 실패: ' + e.message);
+                console.error(e);
+            });
+        };
+
+        (function initPreviewDropZone() {
+            window.addEventListener('DOMContentLoaded', function() {
+                const dz = document.getElementById('previewDropZone');
+                const input = document.getElementById('previewFileInput');
+                if (!dz || !input) return;
+                dz.addEventListener('click', () => input.click());
+                input.addEventListener('change', e => {
+                    if (e.target.files && e.target.files.length > 0) _previewAddFiles(e.target.files);
+                    input.value = '';
+                });
+                ['dragenter','dragover'].forEach(ev => dz.addEventListener(ev, e => {
+                    e.preventDefault(); e.stopPropagation();
+                    dz.style.background = '#e9ecef';
+                }));
+                ['dragleave','drop'].forEach(ev => dz.addEventListener(ev, e => {
+                    e.preventDefault(); e.stopPropagation();
+                    dz.style.background = '#fff';
+                }));
+                dz.addEventListener('drop', e => {
+                    if (e.dataTransfer && e.dataTransfer.files) _previewAddFiles(e.dataTransfer.files);
+                });
+            });
+        })();
+
+        // ═══════════════════════════════════════════════════════════════
         // 🔢 받은 파일 자동 이름 변경 (장면 순서대로 scene_N.{ext} ZIP 출력)
         // ═══════════════════════════════════════════════════════════════
         async function _loadJSZip() {
@@ -16428,7 +16585,13 @@ JSON만 출력하세요. 코드블록 마커 금지.`;
             window._spAiSceneNos = scenes.filter(s => s.type === 'ai').map(s => s.sceneNo);
             window._spClaudeSceneNos = scenes.filter(s => s.type === 'claude_design').map(s => s.sceneNo);
             window._spRealSceneNos = scenes.filter(s => s.type === 'real').map(s => s.sceneNo);
+            // 2026-04-27: 미리보기 대시보드용 — 장면 정보 전체 저장
+            window._spLastScenes = scenes;
             _renderRenameStatus();
+            // 미리보기 그리드도 다시 그려서 새 장면 정보 반영
+            if (typeof _renderPreviewGrid === 'function' && window._previewFiles && window._previewFiles.length > 0) {
+                _renderPreviewGrid();
+            }
 
             const counts = { ai: 0, real: 0, claude_design: 0, unknown: 0 };
             scenes.forEach(s => {
