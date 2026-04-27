@@ -1505,6 +1505,79 @@
             </div>
         </div>
 
+        <!-- 🔬 내 채널 자가 분석 -->
+        <div class="section topic-only" style="border:2px solid #cce5ff;">
+            <div class="section-title" style="color:#0066cc;">
+                🔬 내 채널 자가 분석 <span style="font-size:0.75rem;color:#888;font-weight:400;">(어떤 영상이 잘 됐는지 패턴 추출)</span>
+            </div>
+            <div class="section-content">
+                <p style="font-size:0.85rem;color:#666;margin-bottom:12px;">
+                    내 채널 영상의 조회수를 분석해서 <b>잘된 영상 vs 못된 영상의 공통 패턴</b>을 자동 추출해요.<br>
+                    추출된 공식은 아래 "주제 찾기"에 자동 입력됩니다.
+                </p>
+                <div class="input-group">
+                    <label for="caHandle">내 채널 핸들 또는 URL</label>
+                    <input type="text" id="caHandle" placeholder="예: @PujimEcon 또는 https://youtube.com/@PujimEcon" value="@PujimEcon">
+                </div>
+                <div class="input-group">
+                    <label for="caCount">분석할 영상 개수</label>
+                    <select id="caCount">
+                        <option value="20">최근 20개 (빠름)</option>
+                        <option value="50" selected>최근 50개 (권장)</option>
+                        <option value="100">최근 100개 (정밀)</option>
+                    </select>
+                </div>
+                <button id="caBtn" class="search-btn" onclick="analyzeMyChannel()" style="background:#0066cc;">
+                    🔬 내 채널 분석하기
+                </button>
+                <div id="caResults" style="margin-top:16px;"></div>
+            </div>
+        </div>
+
+        <!-- ✨ 채널 공식 기반 주제 추천 -->
+        <div class="section topic-only" style="border:2px solid #ffe0e0;">
+            <div class="section-title" style="color:#dc3545;">
+                💡 내 채널 공식으로 주제 찾기 <span style="font-size:0.75rem;color:#888;font-weight:400;">(AI + 실시간 웹 검색)</span>
+            </div>
+            <div class="section-content">
+                <p style="font-size:0.85rem;color:#666;margin-bottom:12px;">
+                    내 채널이 잘 되는 공식을 적으면 AI가 최근 뉴스를 검색해서 공식에 맞는 주제 후보를 추천해줘요.
+                </p>
+                <div class="input-group">
+                    <label for="ftFormula">내 채널 공식 <span style="color:#888;font-weight:400;">(왜 영상이 잘 되는지)</span></label>
+                    <textarea id="ftFormula" rows="3" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:0.9rem;resize:vertical;font-family:inherit;" placeholder="예: 선진국 이미지 강한 나라인데 한국인이 잘 모르는 숨은 경제 위기. 이미 망한 나라(아이티 등)는 안 됨 — 멀쩡해 보이는데 사실 무너지는 중인 나라가 대박남.">선진국 이미지 강한 나라인데 한국인이 잘 모르는 숨은 경제 위기. 이미 망한 나라는 안 됨 — 멀쩡해 보이는데 사실 무너지는 중인 나라가 대박남 (예: 뉴질랜드 100만뷰).</textarea>
+                </div>
+                <div class="input-group">
+                    <label for="ftAvoid">피하고 싶은 주제 <span style="color:#888;font-weight:400;">(선택)</span></label>
+                    <textarea id="ftAvoid" rows="2" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:0.9rem;resize:vertical;font-family:inherit;" placeholder="예: 일본, 중동전쟁, 이미 망한 나라"></textarea>
+                </div>
+                <div class="grid-2">
+                    <div class="input-group">
+                        <label for="ftCount">추천 개수</label>
+                        <select id="ftCount">
+                            <option value="3">3개</option>
+                            <option value="5" selected>5개</option>
+                            <option value="7">7개</option>
+                            <option value="10">10개</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="ftRecency">시점</label>
+                        <select id="ftRecency">
+                            <option value="7">최근 7일</option>
+                            <option value="30" selected>최근 30일</option>
+                            <option value="90">최근 3개월</option>
+                            <option value="365">최근 1년</option>
+                        </select>
+                    </div>
+                </div>
+                <button id="ftBtn" class="search-btn" onclick="findTopicByFormula()">
+                    🔍 주제 찾기
+                </button>
+                <div id="ftResults" style="margin-top:16px;"></div>
+            </div>
+        </div>
+
         <!-- 비슷한 채널 영상 찾기 -->
         <div class="topic-only">
 
@@ -3282,22 +3355,26 @@
                                 _showGeminiStatus(`${shortName(model)} 시도 중... (${attempt+1}/${maxRetries})`);
                             }
 
+                            const reqBody = {
+                                contents: [{ parts: [{ text: prompt }] }],
+                                generationConfig: {
+                                    temperature,
+                                    maxOutputTokens: maxTokens,
+                                },
+                                safetySettings: [
+                                    { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
+                                    { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
+                                    { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
+                                    { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
+                                ],
+                            };
+                            if (opts.useSearch) {
+                                reqBody.tools = [{ google_search: {} }];
+                            }
                             const res = await fetch(url, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    contents: [{ parts: [{ text: prompt }] }],
-                                    generationConfig: {
-                                        temperature,
-                                        maxOutputTokens: maxTokens,
-                                    },
-                                    safetySettings: [
-                                        { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
-                                        { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
-                                        { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
-                                        { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
-                                    ],
-                                }),
+                                body: JSON.stringify(reqBody),
                             });
 
                             if (isRetryable(res.status, '')) {
@@ -3409,6 +3486,439 @@
             }
 
             return fullText;
+        }
+
+        // ===========================
+        // 🔬 내 채널 자가 분석
+        // ===========================
+        async function analyzeMyChannel() {
+            const input = document.getElementById('caHandle').value.trim();
+            const count = parseInt(document.getElementById('caCount').value);
+
+            if (!input) { alert('채널 핸들 또는 URL을 입력해주세요'); return; }
+
+            const apiKey = getActiveApiKey();
+            if (!apiKey) { alert('먼저 유튜브 API 키를 저장해주세요'); return; }
+            if (!GEMINI_API_KEYS || !GEMINI_API_KEYS[0]) { alert('먼저 Gemini API 키를 저장해주세요'); return; }
+
+            const btn = document.getElementById('caBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner"></div> 채널 ID 확인 중...';
+
+            const resultsEl = document.getElementById('caResults');
+            resultsEl.innerHTML = '<div style="padding:16px;color:#888;">분석 중...</div>';
+
+            try {
+                // 1. 채널 ID 해석
+                const channelId = await resolveChannelId(input, apiKey);
+                if (!channelId) throw new Error('채널을 찾을 수 없습니다');
+
+                // 2. 채널 정보 + 업로드 플레이리스트 ID 조회
+                btn.innerHTML = '<div class="spinner"></div> 채널 정보 조회 중...';
+                const chData = await fetchYouTubeAPI('channels', {
+                    part: 'snippet,statistics,contentDetails',
+                    id: channelId,
+                    key: apiKey,
+                });
+                if (!chData.items || !chData.items.length) throw new Error('채널 정보를 가져올 수 없습니다');
+                const ch = chData.items[0];
+                const uploadsPlaylistId = ch.contentDetails.relatedPlaylists.uploads;
+                const channelTitle = ch.snippet.title;
+                const subCount = parseInt(ch.statistics.subscriberCount) || 0;
+
+                // 3. 업로드 플레이리스트에서 영상 ID 수집 (페이지네이션)
+                btn.innerHTML = `<div class="spinner"></div> 영상 목록 수집 중... (0/${count})`;
+                const videoIds = [];
+                let pageToken = '';
+                while (videoIds.length < count) {
+                    const params = {
+                        part: 'snippet',
+                        playlistId: uploadsPlaylistId,
+                        maxResults: '50',
+                        key: apiKey,
+                    };
+                    if (pageToken) params.pageToken = pageToken;
+                    const data = await fetchYouTubeAPI('playlistItems', params);
+                    for (const item of (data.items || [])) {
+                        videoIds.push(item.snippet.resourceId.videoId);
+                        if (videoIds.length >= count) break;
+                    }
+                    btn.innerHTML = `<div class="spinner"></div> 영상 목록 수집 중... (${videoIds.length}/${count})`;
+                    if (!data.nextPageToken) break;
+                    pageToken = data.nextPageToken;
+                }
+
+                if (videoIds.length === 0) throw new Error('영상이 하나도 없습니다');
+
+                // 4. 영상 통계 조회 (50개씩 배치)
+                btn.innerHTML = `<div class="spinner"></div> 조회수 데이터 수집 중...`;
+                const videos = [];
+                for (let i = 0; i < videoIds.length; i += 50) {
+                    const batch = videoIds.slice(i, i + 50);
+                    const data = await fetchYouTubeAPI('videos', {
+                        part: 'snippet,statistics',
+                        id: batch.join(','),
+                        key: apiKey,
+                    });
+                    for (const v of (data.items || [])) {
+                        videos.push({
+                            title: v.snippet.title,
+                            views: parseInt(v.statistics.viewCount) || 0,
+                            likes: parseInt(v.statistics.likeCount) || 0,
+                            comments: parseInt(v.statistics.commentCount) || 0,
+                            publishedAt: v.snippet.publishedAt,
+                        });
+                    }
+                }
+
+                // 5. 정렬 — 조회수 기준
+                videos.sort((a, b) => b.views - a.views);
+                const top = videos.slice(0, Math.min(10, Math.floor(videos.length / 3)));
+                const bottom = videos.slice(-Math.min(10, Math.floor(videos.length / 3))).reverse();
+                const avg = Math.round(videos.reduce((s, v) => s + v.views, 0) / videos.length);
+
+                // 6. Gemini에게 패턴 분석 요청
+                btn.innerHTML = '<div class="spinner"></div> AI가 패턴 분석 중... (15~30초)';
+                _geminiStatusEl = btn;
+
+                const prompt = `한국어 유튜브 채널 "${channelTitle}" (구독자 ${subCount.toLocaleString()}명)의 영상 ${videos.length}개를 분석해주세요.
+
+[잘된 영상 TOP ${top.length} — 평균 조회수 ${Math.round(top.reduce((s,v)=>s+v.views,0)/top.length).toLocaleString()}회]
+${top.map((v,i) => `${i+1}. [${v.views.toLocaleString()}회] ${v.title}`).join('\n')}
+
+[못된 영상 BOTTOM ${bottom.length} — 평균 조회수 ${Math.round(bottom.reduce((s,v)=>s+v.views,0)/bottom.length).toLocaleString()}회]
+${bottom.map((v,i) => `${i+1}. [${v.views.toLocaleString()}회] ${v.title}`).join('\n')}
+
+[채널 평균 조회수] ${avg.toLocaleString()}회
+
+[작업]
+- 잘된 영상과 못된 영상의 공통 패턴을 비교 분석
+- 이 채널이 다음에 영상을 만들 때 따라야 할 "공식" 추출
+- 피해야 할 패턴도 함께 추출
+
+[출력 형식 — 반드시 아래 JSON만 출력. 다른 설명 금지]
+{
+  "channel_summary": "채널 한 줄 요약",
+  "winning_pattern": "잘된 영상의 핵심 공통점 2~3문장",
+  "losing_pattern": "못된 영상의 공통점 2~3문장",
+  "extracted_formula": "다음 영상 만들 때 따라야 할 공식 한 문단 (구체적으로)",
+  "avoid_topics": "피해야 할 주제/패턴 한 문단",
+  "winning_keywords": ["키워드1", "키워드2", "키워드3", "키워드4", "키워드5"],
+  "avoid_keywords": ["키워드1", "키워드2", "키워드3"],
+  "top_insights": [
+    "통찰 1 (예: 선진국 + 숨은 위기 조합이 평균 5배 높음)",
+    "통찰 2",
+    "통찰 3"
+  ]
+}`;
+
+                const result = await callGemini(prompt, {
+                    maxTokens: 8192,
+                    temperature: 0.3,
+                    model: 'gemini-2.5-pro',
+                });
+
+                let parsed = null;
+                const jsonMatch = (result.text || '').match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                    try { parsed = JSON.parse(jsonMatch[0]); } catch(e) {}
+                }
+
+                if (!parsed) {
+                    resultsEl.innerHTML = `<div style="padding:16px;background:#fff5f5;border:1px solid #ffcccc;border-radius:8px;">
+                        <div style="font-weight:700;color:#dc3545;margin-bottom:8px;">JSON 파싱 실패 — 원본 응답</div>
+                        <pre style="white-space:pre-wrap;font-size:0.8rem;color:#555;max-height:400px;overflow:auto;">${escapeHtml(result.text || '')}</pre>
+                    </div>`;
+                    return;
+                }
+
+                // 결과 저장 (자동 입력용)
+                window._lastChannelAnalysis = parsed;
+
+                renderChannelAnalysis(parsed, { channelTitle, subCount, avg, top, bottom, totalVideos: videos.length });
+
+            } catch (e) {
+                resultsEl.innerHTML = `<div style="padding:16px;color:#dc3545;font-weight:700;">오류: ${escapeHtml(e.message)}</div>`;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '🔬 내 채널 분석하기';
+            }
+        }
+
+        function renderChannelAnalysis(data, meta) {
+            const resultsEl = document.getElementById('caResults');
+            const html = `
+                <div style="background:white;border:2px solid #cce5ff;border-radius:12px;padding:16px;margin-bottom:12px;">
+                    <div style="font-size:1rem;font-weight:700;color:#0066cc;margin-bottom:6px;">📺 ${escapeHtml(meta.channelTitle)}</div>
+                    <div style="font-size:0.85rem;color:#666;margin-bottom:12px;">
+                        구독자 ${meta.subCount.toLocaleString()}명 · 분석 영상 ${meta.totalVideos}개 · 평균 조회수 ${meta.avg.toLocaleString()}회
+                    </div>
+
+                    <div style="background:#f0f9ff;padding:12px;border-radius:8px;margin-bottom:12px;">
+                        <div style="font-size:0.8rem;font-weight:700;color:#0066cc;margin-bottom:4px;">📌 채널 요약</div>
+                        <div style="font-size:0.9rem;color:#333;">${escapeHtml(data.channel_summary || '')}</div>
+                    </div>
+
+                    <div style="background:#f0fff4;padding:12px;border-radius:8px;margin-bottom:12px;border-left:4px solid #28a745;">
+                        <div style="font-size:0.8rem;font-weight:700;color:#28a745;margin-bottom:4px;">🏆 잘된 영상 패턴</div>
+                        <div style="font-size:0.9rem;color:#333;line-height:1.5;">${escapeHtml(data.winning_pattern || '')}</div>
+                    </div>
+
+                    <div style="background:#fff5f5;padding:12px;border-radius:8px;margin-bottom:12px;border-left:4px solid #dc3545;">
+                        <div style="font-size:0.8rem;font-weight:700;color:#dc3545;margin-bottom:4px;">💀 못된 영상 패턴</div>
+                        <div style="font-size:0.9rem;color:#333;line-height:1.5;">${escapeHtml(data.losing_pattern || '')}</div>
+                    </div>
+
+                    <div style="background:#fffbe6;padding:12px;border-radius:8px;margin-bottom:12px;border-left:4px solid #ffa500;">
+                        <div style="font-size:0.8rem;font-weight:700;color:#996600;margin-bottom:4px;">🎯 추출된 채널 공식</div>
+                        <div style="font-size:0.9rem;color:#333;line-height:1.5;">${escapeHtml(data.extracted_formula || '')}</div>
+                    </div>
+
+                    ${Array.isArray(data.top_insights) && data.top_insights.length > 0 ? `<div style="margin-bottom:12px;">
+                        <div style="font-size:0.8rem;font-weight:700;color:#666;margin-bottom:4px;">💡 핵심 통찰</div>
+                        <ul style="margin:0;padding-left:20px;font-size:0.85rem;color:#333;">
+                            ${data.top_insights.map(i => `<li style="margin-bottom:4px;">${escapeHtml(i)}</li>`).join('')}
+                        </ul>
+                    </div>` : ''}
+
+                    ${Array.isArray(data.winning_keywords) ? `<div style="margin-bottom:8px;">
+                        <div style="font-size:0.75rem;font-weight:700;color:#666;margin-bottom:4px;">✅ 살릴 키워드</div>
+                        <div style="display:flex;flex-wrap:wrap;gap:4px;">
+                            ${data.winning_keywords.map(k => `<span style="padding:3px 8px;background:#e6ffed;color:#28a745;border-radius:10px;font-size:0.8rem;">${escapeHtml(k)}</span>`).join('')}
+                        </div>
+                    </div>` : ''}
+
+                    ${Array.isArray(data.avoid_keywords) ? `<div style="margin-bottom:12px;">
+                        <div style="font-size:0.75rem;font-weight:700;color:#666;margin-bottom:4px;">❌ 피할 키워드</div>
+                        <div style="display:flex;flex-wrap:wrap;gap:4px;">
+                            ${data.avoid_keywords.map(k => `<span style="padding:3px 8px;background:#ffebeb;color:#dc3545;border-radius:10px;font-size:0.8rem;">${escapeHtml(k)}</span>`).join('')}
+                        </div>
+                    </div>` : ''}
+
+                    <button class="search-btn" onclick="applyAnalysisToFinder()" style="background:#28a745;margin-top:8px;">
+                        ⬇️ 이 공식을 아래 "주제 찾기"에 자동 입력
+                    </button>
+
+                    <details style="margin-top:12px;">
+                        <summary style="font-size:0.8rem;color:#888;cursor:pointer;">📊 잘된/못된 영상 목록 보기</summary>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px;">
+                            <div>
+                                <div style="font-size:0.75rem;font-weight:700;color:#28a745;margin-bottom:4px;">🏆 TOP ${meta.top.length}</div>
+                                ${meta.top.map(v => `<div style="font-size:0.75rem;padding:4px;border-bottom:1px solid #eee;"><b style="color:#28a745;">${v.views.toLocaleString()}</b><br>${escapeHtml(v.title)}</div>`).join('')}
+                            </div>
+                            <div>
+                                <div style="font-size:0.75rem;font-weight:700;color:#dc3545;margin-bottom:4px;">💀 BOTTOM ${meta.bottom.length}</div>
+                                ${meta.bottom.map(v => `<div style="font-size:0.75rem;padding:4px;border-bottom:1px solid #eee;"><b style="color:#dc3545;">${v.views.toLocaleString()}</b><br>${escapeHtml(v.title)}</div>`).join('')}
+                            </div>
+                        </div>
+                    </details>
+                </div>
+            `;
+            resultsEl.innerHTML = html;
+        }
+
+        function applyAnalysisToFinder() {
+            const a = window._lastChannelAnalysis;
+            if (!a) { alert('먼저 채널을 분석해주세요'); return; }
+            const formulaEl = document.getElementById('ftFormula');
+            const avoidEl = document.getElementById('ftAvoid');
+            if (formulaEl) formulaEl.value = a.extracted_formula || '';
+            if (avoidEl) {
+                const avoidParts = [a.avoid_topics || ''];
+                if (Array.isArray(a.avoid_keywords) && a.avoid_keywords.length) {
+                    avoidParts.push('피할 키워드: ' + a.avoid_keywords.join(', '));
+                }
+                avoidEl.value = avoidParts.filter(Boolean).join('\n');
+            }
+            // 주제찾기 섹션으로 스크롤
+            document.getElementById('ftFormula')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // 살짝 강조
+            if (formulaEl) {
+                formulaEl.style.borderColor = '#28a745';
+                setTimeout(() => formulaEl.style.borderColor = '', 2000);
+            }
+        }
+
+        // ===========================
+        // ✨ 채널 공식 기반 주제 추천
+        // ===========================
+        async function findTopicByFormula() {
+            const formula = document.getElementById('ftFormula').value.trim();
+            const avoid = document.getElementById('ftAvoid').value.trim();
+            const count = parseInt(document.getElementById('ftCount').value);
+            const recency = parseInt(document.getElementById('ftRecency').value);
+
+            if (!formula) {
+                alert('내 채널 공식을 입력해주세요');
+                return;
+            }
+            if (!GEMINI_API_KEYS || GEMINI_API_KEYS.length === 0 || !GEMINI_API_KEYS[0]) {
+                alert('먼저 Gemini API 키를 저장해주세요');
+                return;
+            }
+
+            const btn = document.getElementById('ftBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner"></div> 뉴스 검색 + 분석 중... (20~40초)';
+            _geminiStatusEl = btn;
+
+            const resultsEl = document.getElementById('ftResults');
+            resultsEl.innerHTML = '<div style="padding:20px;text-align:center;color:#888;">실시간 뉴스를 검색하고 있어요...</div>';
+
+            const today = new Date().toISOString().slice(0, 10);
+            const recencyText = recency <= 7 ? '최근 7일'
+                : recency <= 30 ? '최근 30일'
+                : recency <= 90 ? '최근 3개월'
+                : '최근 1년';
+
+            const prompt = `오늘은 ${today}입니다. 한국어 유튜브 채널 운영자가 다음 공식으로 영상을 만듭니다.
+
+[채널 공식]
+${formula}
+
+${avoid ? `[피해야 할 주제]\n${avoid}\n` : ''}
+
+[작업]
+${recencyText} 동안의 실제 뉴스/이슈를 웹에서 검색하여, 위 공식에 가장 잘 맞는 영상 주제 후보를 ${count}개 추천해주세요.
+
+[필수 조건]
+- 반드시 실제 ${recencyText} 내 뉴스를 근거로 할 것 (오래된 사례 X)
+- 채널 공식에 정확히 부합해야 함
+- 한국 유튜브에서 이미 너무 많이 다뤄진 주제는 제외
+- 피해야 할 주제 목록은 반드시 제외
+
+[출력 형식 — 반드시 아래 JSON 형식만 출력. 다른 설명 금지]
+{
+  "topics": [
+    {
+      "rank": 1,
+      "title": "주제 한 줄 (예: 덴마크 — 노보노디스크 한 회사에 인질 잡힌 행복국가)",
+      "country_or_subject": "덴마크",
+      "fit_score": 95,
+      "timeliness_score": 90,
+      "competition_score": 30,
+      "why_fits": "왜 이 채널 공식에 맞는지 2~3문장",
+      "key_data": [
+        "구체적 데이터 1 (숫자 포함)",
+        "구체적 데이터 2 (숫자 포함)",
+        "구체적 데이터 3 (숫자 포함)"
+      ],
+      "recent_news": "이 주제와 관련된 ${recencyText} 내 실제 뉴스 한 줄 요약",
+      "video_titles": [
+        "영상 제목 후보 1",
+        "영상 제목 후보 2",
+        "영상 제목 후보 3"
+      ]
+    }
+  ]
+}
+
+점수 기준:
+- fit_score: 채널 공식 적합도 (0~100)
+- timeliness_score: 시의성 (0~100, 높을수록 지금 다뤄야 함)
+- competition_score: 한국 유튜브 경쟁도 (0~100, 낮을수록 블루오션)`;
+
+            try {
+                const result = await callGemini(prompt, {
+                    maxTokens: 16384,
+                    temperature: 0.7,
+                    model: 'gemini-2.5-pro',
+                    useSearch: true,
+                });
+
+                const text = result.text || '';
+                let parsed = null;
+                // JSON 추출
+                const jsonMatch = text.match(/\{[\s\S]*"topics"[\s\S]*\}/);
+                if (jsonMatch) {
+                    try { parsed = JSON.parse(jsonMatch[0]); } catch(e) {
+                        // 일부 잘림 가능 — 마지막 } 까지 자르고 다시 시도
+                        const cleaned = jsonMatch[0].replace(/,\s*$/, '') + (jsonMatch[0].trim().endsWith('}') ? '' : ']}');
+                        try { parsed = JSON.parse(cleaned); } catch(e2) {}
+                    }
+                }
+
+                if (!parsed || !parsed.topics) {
+                    resultsEl.innerHTML = `<div style="padding:16px;background:#fff5f5;border:1px solid #ffcccc;border-radius:8px;">
+                        <div style="font-weight:700;color:#dc3545;margin-bottom:8px;">JSON 파싱 실패 — 원본 응답 표시</div>
+                        <pre style="white-space:pre-wrap;font-size:0.8rem;color:#555;max-height:400px;overflow:auto;">${escapeHtml(text)}</pre>
+                    </div>`;
+                    return;
+                }
+
+                renderFormulaResults(parsed.topics);
+
+            } catch (e) {
+                resultsEl.innerHTML = `<div style="padding:16px;color:#dc3545;font-weight:700;">오류: ${escapeHtml(e.message)}</div>`;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '🔍 주제 찾기';
+            }
+        }
+
+        function renderFormulaResults(topics) {
+            const resultsEl = document.getElementById('ftResults');
+            if (!topics || topics.length === 0) {
+                resultsEl.innerHTML = '<div style="padding:16px;color:#888;">추천된 주제가 없어요.</div>';
+                return;
+            }
+
+            const medal = (rank) => rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
+            const scoreColor = (s) => s >= 80 ? '#28a745' : s >= 60 ? '#ffa500' : '#888';
+            const compColor = (s) => s <= 30 ? '#28a745' : s <= 60 ? '#ffa500' : '#dc3545';
+            const compLabel = (s) => s <= 30 ? '낮음 (블루오션)' : s <= 60 ? '중간' : '높음 (레드오션)';
+
+            const html = topics.map(t => `
+                <div style="background:white;border:2px solid #e0e0e0;border-radius:12px;padding:16px;margin-bottom:12px;">
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                        <span style="font-size:1.4rem;">${medal(t.rank)}</span>
+                        <div style="flex:1;font-size:1.05rem;font-weight:700;color:#222;">${escapeHtml(t.title || '')}</div>
+                    </div>
+
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;font-size:0.8rem;">
+                        <span style="background:#f8f9fa;padding:4px 10px;border-radius:12px;">
+                            적합도 <b style="color:${scoreColor(t.fit_score)};">${t.fit_score}</b>
+                        </span>
+                        <span style="background:#f8f9fa;padding:4px 10px;border-radius:12px;">
+                            시의성 <b style="color:${scoreColor(t.timeliness_score)};">${t.timeliness_score}</b>
+                        </span>
+                        <span style="background:#f8f9fa;padding:4px 10px;border-radius:12px;">
+                            경쟁도 <b style="color:${compColor(t.competition_score)};">${compLabel(t.competition_score)}</b>
+                        </span>
+                    </div>
+
+                    <div style="margin-bottom:10px;">
+                        <div style="font-size:0.8rem;font-weight:700;color:#666;margin-bottom:4px;">📌 왜 이 공식에 맞나</div>
+                        <div style="font-size:0.9rem;color:#333;line-height:1.5;">${escapeHtml(t.why_fits || '')}</div>
+                    </div>
+
+                    ${t.recent_news ? `<div style="margin-bottom:10px;padding:8px 12px;background:#fff8e6;border-left:3px solid #ffa500;border-radius:4px;">
+                        <div style="font-size:0.75rem;font-weight:700;color:#996600;margin-bottom:2px;">🔥 최근 뉴스</div>
+                        <div style="font-size:0.85rem;color:#333;">${escapeHtml(t.recent_news)}</div>
+                    </div>` : ''}
+
+                    ${Array.isArray(t.key_data) && t.key_data.length > 0 ? `<div style="margin-bottom:10px;">
+                        <div style="font-size:0.8rem;font-weight:700;color:#666;margin-bottom:4px;">📊 핵심 데이터</div>
+                        <ul style="margin:0;padding-left:20px;font-size:0.85rem;color:#333;">
+                            ${t.key_data.map(d => `<li style="margin-bottom:2px;">${escapeHtml(d)}</li>`).join('')}
+                        </ul>
+                    </div>` : ''}
+
+                    ${Array.isArray(t.video_titles) && t.video_titles.length > 0 ? `<div>
+                        <div style="font-size:0.8rem;font-weight:700;color:#666;margin-bottom:4px;">🎬 영상 제목 후보</div>
+                        <div style="display:flex;flex-direction:column;gap:4px;">
+                            ${t.video_titles.map(v => `<div style="padding:6px 10px;background:#fff5f5;border:1px solid #ffe0e0;border-radius:6px;font-size:0.85rem;color:#222;cursor:pointer;" onclick="navigator.clipboard.writeText(this.textContent.trim()); this.style.background='#ffe0e0';" title="클릭해서 복사">${escapeHtml(v)}</div>`).join('')}
+                        </div>
+                    </div>` : ''}
+                </div>
+            `).join('');
+
+            resultsEl.innerHTML = `
+                <div style="font-size:0.85rem;color:#28a745;font-weight:700;margin-bottom:10px;">
+                    ✅ ${topics.length}개 주제 추천 완료 (제목 클릭하면 복사돼요)
+                </div>
+                ${html}
+            `;
         }
 
         function switchProcess(proc) {
