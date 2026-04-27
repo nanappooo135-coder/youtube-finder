@@ -15705,8 +15705,22 @@ overall mood: bright, psychologically safe illustration, uplifting and reassurin
         window._spLastScenes = null; // 셀팟 변환 결과 저장 (나레이션 표시용)
 
         function _previewParseSceneId(filename) {
-            const m = filename.match(/(?:scene[_-]?|장면)?(\d+)\.[a-z0-9]+$/i);
-            return m ? parseInt(m[1], 10) : null;
+            // 우선순위: 장면키워드 > scene키워드 > 파일명 시작 숫자 > 파일명 끝 숫자
+            // 그록·디자인 자동 다운로드 파일은 끝에 UUID 들어있어서 끝 숫자 매칭은 마지막에
+            const patterns = [
+                /장면[\s_-]?(\d+)/i,      // "장면-1", "장면_3", "장면 5"
+                /scene[\s_-]?(\d+)/i,     // "scene_1", "scene-3"
+                /^(\d+)[_\-\.]/,          // 파일명 맨 앞 숫자 (예: "5_xxx.mp4")
+                /(\d+)\.[a-z0-9]+$/i      // 파일명 끝 숫자 (마지막 fallback)
+            ];
+            for (const p of patterns) {
+                const m = filename.match(p);
+                if (m) {
+                    const n = parseInt(m[1], 10);
+                    if (n >= 1 && n <= 999) return n; // UUID 같은 너무 큰 숫자 제외
+                }
+            }
+            return null;
         }
 
         function _previewClassify(file) {
@@ -15986,8 +16000,21 @@ overall mood: bright, psychologically safe illustration, uplifting and reassurin
         }
 
         function _detectSceneId(filename) {
-            const m = filename.match(/(?:scene[_-]?|장면)?(\d+)\.[a-z0-9]+$/i);
-            return m ? parseInt(m[1], 10) : null;
+            // 동일 우선순위 (그록·디자인 자동 다운로드 파일은 UUID 포함이라 끝 숫자 매칭 마지막)
+            const patterns = [
+                /장면[\s_-]?(\d+)/i,
+                /scene[\s_-]?(\d+)/i,
+                /^(\d+)[_\-\.]/,
+                /(\d+)\.[a-z0-9]+$/i
+            ];
+            for (const p of patterns) {
+                const m = filename.match(p);
+                if (m) {
+                    const n = parseInt(m[1], 10);
+                    if (n >= 1 && n <= 999) return n;
+                }
+            }
+            return null;
         }
 
         function _lookupSceneSlowdown(sceneId) {
