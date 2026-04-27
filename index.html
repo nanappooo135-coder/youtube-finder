@@ -1382,6 +1382,7 @@
         <!-- 업무 프로세스 (최상위) -->
         <div class="process-nav">
             <button class="process-btn" id="procBtn_topic" onclick="switchProcess('topic')">주제찾기</button>
+            <button class="process-btn inactive" id="procBtn_formula" onclick="switchProcess('formula')" style="background:#0066cc;border-color:#0066cc;">🎯 AI 주제추천</button>
             <button class="process-btn inactive" id="procBtn_thumbnail" onclick="switchProcess('thumbnail')">썸네일</button>
             <button class="process-btn inactive" id="procBtn_thumbtext" onclick="switchProcess('thumbtext')">텍스트</button>
             <button class="process-btn inactive" id="procBtn_title" onclick="switchProcess('title')">영상제목</button>
@@ -1505,8 +1506,13 @@
             </div>
         </div>
 
+        </div><!-- /process-topic 임시 닫기 (이 줄 위는 process-topic, 아래는 process-formula) -->
+
+        <!-- ===== 프로세스: AI 주제추천 (별도 탭) ===== -->
+        <div id="process-formula" style="display:none;">
+
         <!-- 🔬 내 채널 자가 분석 -->
-        <div class="section topic-only" style="border:2px solid #cce5ff;">
+        <div class="section" style="border:2px solid #cce5ff;">
             <div class="section-title" style="color:#0066cc;">
                 🔬 내 채널 자가 분석 <span style="font-size:0.75rem;color:#888;font-weight:400;">(어떤 영상이 잘 됐는지 패턴 추출)</span>
             </div>
@@ -1535,7 +1541,7 @@
         </div>
 
         <!-- ✨ 채널 공식 기반 주제 추천 -->
-        <div class="section topic-only" style="border:2px solid #ffe0e0;">
+        <div class="section" style="border:2px solid #ffe0e0;">
             <div class="section-title" style="color:#dc3545;">
                 💡 내 채널 공식으로 주제 찾기 <span style="font-size:0.75rem;color:#888;font-weight:400;">(AI + 실시간 웹 검색)</span>
             </div>
@@ -1577,6 +1583,26 @@
                 <div id="ftResults" style="margin-top:16px;"></div>
             </div>
         </div>
+
+        <!-- 🚫 차단 주제 관리 -->
+        <div class="section" style="border:1px solid #e0e0e0;">
+            <div class="section-title" onclick="toggleSection(this)" style="font-size:0.95rem;">
+                🚫 차단된 주제 관리 <span id="ftBlockCount" style="font-size:0.75rem;color:#888;font-weight:400;">(0개)</span>
+                <span class="arrow">&#9660;</span>
+            </div>
+            <div class="section-content">
+                <p style="font-size:0.8rem;color:#666;margin-bottom:10px;">
+                    추천 결과에서 "🚫 다시 안 보기" 클릭한 주제는 여기 모이고, 다음 추천부터 제외됩니다.
+                </p>
+                <div id="ftBlockList" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;"></div>
+                <button class="btn-small btn-primary" onclick="clearBlockedTopics()" style="font-size:0.8rem;">전체 해제</button>
+            </div>
+        </div>
+
+        </div><!-- /process-formula -->
+
+        <!-- ===== 프로세스 1 계속: 주제찾기 ===== -->
+        <div id="process-topic-rest">
 
         <!-- 비슷한 채널 영상 찾기 -->
         <div class="topic-only">
@@ -3489,6 +3515,67 @@
         }
 
         // ===========================
+        // 🚫 차단 주제 (블랙리스트)
+        // ===========================
+        const FT_BLOCKED_KEY = 'ft_blocked_topics_v1';
+        function loadBlockedTopics() {
+            try { return JSON.parse(localStorage.getItem(FT_BLOCKED_KEY) || '[]'); }
+            catch(e) { return []; }
+        }
+        function saveBlockedTopics(list) {
+            localStorage.setItem(FT_BLOCKED_KEY, JSON.stringify(list));
+            renderBlockedTopicsList();
+        }
+        function blockTopic(title, btnEl) {
+            if (!title) return;
+            const list = loadBlockedTopics();
+            if (list.includes(title)) {
+                alert('이미 차단된 주제입니다');
+                return;
+            }
+            list.push(title);
+            saveBlockedTopics(list);
+            // 카드 시각적으로 흐리게
+            const card = btnEl?.closest('div[style*="border:2px solid"]');
+            if (card) {
+                card.style.opacity = '0.4';
+                card.style.position = 'relative';
+                if (!card.querySelector('.blocked-overlay')) {
+                    const overlay = document.createElement('div');
+                    overlay.className = 'blocked-overlay';
+                    overlay.style.cssText = 'position:absolute;top:8px;right:8px;background:#dc3545;color:white;padding:4px 10px;border-radius:6px;font-size:0.75rem;font-weight:700;';
+                    overlay.textContent = '🚫 차단됨';
+                    card.appendChild(overlay);
+                }
+            }
+        }
+        function unblockTopic(title) {
+            const list = loadBlockedTopics().filter(t => t !== title);
+            saveBlockedTopics(list);
+        }
+        function clearBlockedTopics() {
+            if (!confirm('차단된 주제를 모두 해제할까요?')) return;
+            saveBlockedTopics([]);
+        }
+        function renderBlockedTopicsList() {
+            const listEl = document.getElementById('ftBlockList');
+            const countEl = document.getElementById('ftBlockCount');
+            if (!listEl) return;
+            const list = loadBlockedTopics();
+            if (countEl) countEl.textContent = `(${list.length}개)`;
+            if (list.length === 0) {
+                listEl.innerHTML = '<span style="font-size:0.8rem;color:#aaa;">차단된 주제 없음</span>';
+                return;
+            }
+            listEl.innerHTML = list.map(t => `
+                <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:#ffebeb;color:#dc3545;border-radius:14px;font-size:0.8rem;">
+                    ${escapeHtml(t)}
+                    <button onclick="unblockTopic('${t.replace(/'/g, "\\'").replace(/"/g, '&quot;')}')" style="background:none;border:none;color:#dc3545;font-weight:700;cursor:pointer;padding:0;font-size:0.9rem;" title="해제">×</button>
+                </span>
+            `).join('');
+        }
+
+        // ===========================
         // 🔬 내 채널 자가 분석
         // ===========================
         async function analyzeMyChannel() {
@@ -3634,6 +3721,12 @@ ${bottom.map((v,i) => `${i+1}. [${v.views.toLocaleString()}회] ${v.title}`).joi
 
                 // 결과 저장 (자동 입력용)
                 window._lastChannelAnalysis = parsed;
+                // 최근 영상 제목 → 주제 추천 프롬프트에 자동 포함됨 (publishedAt 최신순으로 15개)
+                window._recentVideoTitles = videos
+                    .slice()
+                    .sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt))
+                    .slice(0, 15)
+                    .map(v => v.title);
 
                 renderChannelAnalysis(parsed, { channelTitle, subCount, avg, top, bottom, totalVideos: videos.length });
 
@@ -3743,15 +3836,11 @@ ${bottom.map((v,i) => `${i+1}. [${v.views.toLocaleString()}회] ${v.title}`).joi
         // ✨ 채널 공식 기반 주제 추천
         // ===========================
         async function findTopicByFormula() {
-            const formula = document.getElementById('ftFormula').value.trim();
+            const userExtra = document.getElementById('ftFormula').value.trim();
             const avoid = document.getElementById('ftAvoid').value.trim();
             const count = parseInt(document.getElementById('ftCount').value);
             const recency = parseInt(document.getElementById('ftRecency').value);
 
-            if (!formula) {
-                alert('내 채널 공식을 입력해주세요');
-                return;
-            }
             if (!GEMINI_API_KEYS || GEMINI_API_KEYS.length === 0 || !GEMINI_API_KEYS[0]) {
                 alert('먼저 Gemini API 키를 저장해주세요');
                 return;
@@ -3771,52 +3860,102 @@ ${bottom.map((v,i) => `${i+1}. [${v.views.toLocaleString()}회] ${v.title}`).joi
                 : recency <= 90 ? '최근 3개월'
                 : '최근 1년';
 
-            const prompt = `오늘은 ${today}입니다. 한국어 유튜브 채널 운영자가 다음 공식으로 영상을 만듭니다.
+            // 채널 분석에서 가져온 최근 4주 영상 제목 (있으면 자동 포함)
+            const recentTitles = (window._recentVideoTitles && window._recentVideoTitles.length)
+                ? window._recentVideoTitles.slice(0, 15).map((t, i) => `${i+1}. ${t}`).join('\n')
+                : '(채널 분석을 먼저 실행하면 여기에 자동 입력됩니다)';
 
-[채널 공식]
-${formula}
+            // 사용자가 차단한 주제
+            const blockedList = loadBlockedTopics();
+            const blockedSection = blockedList.length > 0
+                ? `\n[사용자가 명시적으로 차단한 주제 — 절대 추천 금지]\n${blockedList.map((t,i) => `${i+1}. ${t}`).join('\n')}\n`
+                : '';
 
-${avoid ? `[피해야 할 주제]\n${avoid}\n` : ''}
+            const prompt = `오늘은 ${today}입니다. 당신은 유튜브 채널 "푸짐한 경제학"의 콘텐츠 기획자입니다.
+
+[채널 컨텍스트]
+- 채널명: 푸짐한 경제학 (@PujimEcon)
+- 구독자: 3.66만
+- 포지셔닝: 한국인이 잘 모르는 글로벌 지정학·경제 이야기를 호기심 갭으로 풀어주는 채널
+- 평균 영상 길이: 13~20분
+- 타겟: 30~50대 한국 남성, 뉴스/경제/국제정세 관심층
+
+[잘 터진 영상 TOP 5 — 학습용 레퍼런스]
+- 뉴질랜드 호주 이주 (106만)
+- 일론 머스크 AI 인터뷰 (90만)
+- 중동 석유 종말 (44만)
+- 아프가니스탄 자원 (37만)
+- 이란 난공불락 몰락 (35만)
+
+[성공 공식 4가지 — 반드시 1개 이상 사용]
+1. 호기심 갭: "당연한 줄 알았는데 사실은 반대" (살기 좋다던 뉴질랜드가 망함, 자원 부자가 가난함)
+2. 거리감: 한국인이 이름은 들어봤지만 잘 모르는 나라/이슈
+3. 드라마: 흥망성쇠 서사 (정점→추락 또는 바닥→반전)
+4. 연결: 먼 나라 이야기인데 한국과 연결되는 포인트가 있음
+
+[콘텐츠 트랙 비중 — 추천 시 트랙 분배 고려]
+- 트랙1 국가 흥망 분석: 50%
+- 트랙2 글로벌 빅이슈 (미중·AI·환율 등): 25%
+- 트랙3 한국인 관점 글로벌 경제: 20%
+- 트랙4 인물·기업: 5%
+
+[금지 사항]
+- 한국 국내 정치/연예/스포츠 사건
+- 슈카월드·언더스탠딩이 더 잘 다룰 한국 경제 뉴스
+- 마이너 국가 마이너 이슈
+- 같은 주제 4주 내 반복
+- 이란/중동 주 1편 초과
+${avoid ? `- 사용자 추가 금지: ${avoid}` : ''}
+
+[최근 4주 다룬 영상]
+${recentTitles}
+${blockedSection}
+${userExtra ? `[사용자 추가 요청]\n${userExtra}\n` : ''}
 
 [작업]
-${recencyText} 동안의 실제 뉴스/이슈를 웹에서 검색하여, 위 공식에 가장 잘 맞는 영상 주제 후보를 ${count}개 추천해주세요.
+${recencyText} 동안의 실제 뉴스/이슈를 웹에서 검색하여, 위 공식과 트랙 비중에 맞춰 영상 주제 ${count}개 추천하세요.
+가능하면 트랙1·2·3을 골고루 분배 (예: ${count}개 중 트랙1 ${Math.ceil(count/2)}개, 트랙2 ${Math.floor(count/4)}개, 트랙3 ${Math.floor(count/4)}개).
 
-[필수 조건]
-- 반드시 실제 ${recencyText} 내 뉴스를 근거로 할 것 (오래된 사례 X)
-- 채널 공식에 정확히 부합해야 함
-- 한국 유튜브에서 이미 너무 많이 다뤄진 주제는 제외
-- 피해야 할 주제 목록은 반드시 제외
+[5개 필터링 체크리스트 — 각 주제마다 통과 여부 명시]
+체크1: 슈카월드가 더 잘 다룰 주제인가? (No여야 통과)
+체크2: 한국인이 이름은 들어봤나? (Yes여야 통과)
+체크3: 제목을 "왜 ○○일까?" 형태로 만들 수 있나? (Yes여야 통과)
+체크4: 최근 4주 내 비슷한 주제 다뤘나? (No여야 통과 — 위 영상 목록 참조)
+체크5: 이란/중동 주제? AND 이번 주 이미 1편 있나? (No여야 통과)
 
-[출력 형식 — 반드시 아래 JSON 형식만 출력. 다른 설명 금지]
+[출력 형식 — 반드시 아래 JSON만 출력. 다른 설명·마크다운 금지]
 {
   "topics": [
     {
-      "rank": 1,
-      "title": "주제 한 줄 (예: 덴마크 — 노보노디스크 한 회사에 인질 잡힌 행복국가)",
-      "country_or_subject": "덴마크",
-      "fit_score": 95,
-      "timeliness_score": 90,
-      "competition_score": 30,
-      "why_fits": "왜 이 채널 공식에 맞는지 2~3문장",
-      "key_data": [
-        "구체적 데이터 1 (숫자 포함)",
-        "구체적 데이터 2 (숫자 포함)",
-        "구체적 데이터 3 (숫자 포함)"
-      ],
-      "recent_news": "이 주제와 관련된 ${recencyText} 내 실제 뉴스 한 줄 요약",
-      "video_titles": [
-        "영상 제목 후보 1",
-        "영상 제목 후보 2",
-        "영상 제목 후보 3"
-      ]
+      "순위": 1,
+      "트랙": 1,
+      "공식": "호기심갭",
+      "주제_한줄": "내용 요약 한 줄",
+      "예상_제목": "유튜브 썸네일에 들어갈 제목 (왜 ○○일까? 형태)",
+      "후킹_포인트": "왜 클릭할 것인가 1~2문장",
+      "한국_연결고리": "한국 시청자가 왜 봐야 하는가",
+      "차별점": "슈카월드 등이 안 다룰 이유",
+      "리스크": "안 터질 가능성/주의점",
+      "예상_등급": "S",
+      "최근_뉴스": "${recencyText} 내 실제 뉴스 한 줄 (날짜 포함)",
+      "핵심_데이터": ["숫자 포함 데이터1", "숫자 포함 데이터2", "숫자 포함 데이터3"],
+      "제목_후보": ["A안 (호기심 갭 강조)", "B안 (드라마 강조)", "C안 (숫자 강조)"],
+      "체크": {
+        "1_슈카월드회피": true,
+        "2_이름들어봤나": true,
+        "3_왜형식가능": true,
+        "4_4주중복없음": true,
+        "5_중동안겹침": true
+      }
     }
   ]
 }
 
-점수 기준:
-- fit_score: 채널 공식 적합도 (0~100)
-- timeliness_score: 시의성 (0~100, 높을수록 지금 다뤄야 함)
-- competition_score: 한국 유튜브 경쟁도 (0~100, 낮을수록 블루오션)`;
+[등급 기준]
+- S: 50만+ 예상
+- A: 20~50만
+- B: 5~20만
+- C: 5만 이하 (가급적 추천하지 말 것)`;
 
             try {
                 const result = await callGemini(prompt, {
@@ -3864,58 +4003,115 @@ ${recencyText} 동안의 실제 뉴스/이슈를 웹에서 검색하여, 위 공
             }
 
             const medal = (rank) => rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
-            const scoreColor = (s) => s >= 80 ? '#28a745' : s >= 60 ? '#ffa500' : '#888';
-            const compColor = (s) => s <= 30 ? '#28a745' : s <= 60 ? '#ffa500' : '#dc3545';
-            const compLabel = (s) => s <= 30 ? '낮음 (블루오션)' : s <= 60 ? '중간' : '높음 (레드오션)';
+            const trackColor = { 1: '#0066cc', 2: '#28a745', 3: '#996600', 4: '#888' };
+            const trackName = { 1: '국가 흥망', 2: '글로벌 빅이슈', 3: '한국인 관점', 4: '인물·기업' };
+            const gradeColor = { S: '#dc3545', A: '#ffa500', B: '#0066cc', C: '#888' };
+            const gradeLabel = { S: 'S (50만+)', A: 'A (20~50만)', B: 'B (5~20만)', C: 'C (5만↓)' };
+            const formulaIcon = {
+                '호기심갭': '🤔', '호기심 갭': '🤔',
+                '거리감': '🌍',
+                '드라마': '🎭',
+                '연결': '🔗'
+            };
 
-            const html = topics.map(t => `
-                <div style="background:white;border:2px solid #e0e0e0;border-radius:12px;padding:16px;margin-bottom:12px;">
-                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-                        <span style="font-size:1.4rem;">${medal(t.rank)}</span>
-                        <div style="flex:1;font-size:1.05rem;font-weight:700;color:#222;">${escapeHtml(t.title || '')}</div>
+            const html = topics.map(t => {
+                const tr = t.트랙 || 1;
+                const grade = (t.예상_등급 || 'B').trim().toUpperCase();
+                const checks = t.체크 || {};
+                const checkList = [
+                    ['슈카월드 회피', checks['1_슈카월드회피']],
+                    ['이름 들어봤나', checks['2_이름들어봤나']],
+                    ['"왜 ○○" 형식', checks['3_왜형식가능']],
+                    ['4주 중복 없음', checks['4_4주중복없음']],
+                    ['중동 안겹침', checks['5_중동안겹침']],
+                ];
+                const allPass = checkList.every(c => c[1] === true);
+
+                return `
+                <div style="background:white;border:2px solid ${allPass ? '#28a745' : '#dc3545'};border-radius:12px;padding:16px;margin-bottom:12px;">
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;">
+                        <span style="font-size:1.3rem;">${medal(t.순위 || t.rank || 0)}</span>
+                        <span style="background:${trackColor[tr]};color:white;padding:3px 10px;border-radius:10px;font-size:0.75rem;font-weight:700;">트랙${tr} ${trackName[tr]||''}</span>
+                        <span style="background:#f8f9fa;color:#333;padding:3px 10px;border-radius:10px;font-size:0.75rem;font-weight:700;">${formulaIcon[t.공식]||'✨'} ${escapeHtml(t.공식||'')}</span>
+                        <span style="background:${gradeColor[grade]||'#888'};color:white;padding:3px 10px;border-radius:10px;font-size:0.75rem;font-weight:700;">${gradeLabel[grade]||grade}</span>
+                        ${allPass
+                            ? '<span style="background:#e6ffed;color:#28a745;padding:3px 10px;border-radius:10px;font-size:0.75rem;font-weight:700;">✅ 5체크 통과</span>'
+                            : '<span style="background:#ffebeb;color:#dc3545;padding:3px 10px;border-radius:10px;font-size:0.75rem;font-weight:700;">⚠️ 체크 미통과</span>'}
                     </div>
 
-                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;font-size:0.8rem;">
-                        <span style="background:#f8f9fa;padding:4px 10px;border-radius:12px;">
-                            적합도 <b style="color:${scoreColor(t.fit_score)};">${t.fit_score}</b>
-                        </span>
-                        <span style="background:#f8f9fa;padding:4px 10px;border-radius:12px;">
-                            시의성 <b style="color:${scoreColor(t.timeliness_score)};">${t.timeliness_score}</b>
-                        </span>
-                        <span style="background:#f8f9fa;padding:4px 10px;border-radius:12px;">
-                            경쟁도 <b style="color:${compColor(t.competition_score)};">${compLabel(t.competition_score)}</b>
-                        </span>
+                    <div style="font-size:1.05rem;font-weight:700;color:#222;margin-bottom:6px;">
+                        ${escapeHtml(t.예상_제목 || t.주제_한줄 || '')}
+                    </div>
+                    ${t.주제_한줄 && t.예상_제목 && t.주제_한줄 !== t.예상_제목 ? `<div style="font-size:0.85rem;color:#666;margin-bottom:10px;">${escapeHtml(t.주제_한줄)}</div>` : ''}
+
+                    <div style="background:#fff8e6;padding:10px 12px;border-left:3px solid #ffa500;border-radius:4px;margin-bottom:10px;">
+                        <div style="font-size:0.75rem;font-weight:700;color:#996600;margin-bottom:2px;">🎯 후킹 포인트</div>
+                        <div style="font-size:0.88rem;color:#333;">${escapeHtml(t.후킹_포인트 || '')}</div>
                     </div>
 
-                    <div style="margin-bottom:10px;">
-                        <div style="font-size:0.8rem;font-weight:700;color:#666;margin-bottom:4px;">📌 왜 이 공식에 맞나</div>
-                        <div style="font-size:0.9rem;color:#333;line-height:1.5;">${escapeHtml(t.why_fits || '')}</div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+                        <div style="background:#f0f9ff;padding:8px 10px;border-radius:6px;">
+                            <div style="font-size:0.7rem;font-weight:700;color:#0066cc;margin-bottom:2px;">🇰🇷 한국 연결고리</div>
+                            <div style="font-size:0.82rem;color:#333;">${escapeHtml(t.한국_연결고리 || '')}</div>
+                        </div>
+                        <div style="background:#f0fff4;padding:8px 10px;border-radius:6px;">
+                            <div style="font-size:0.7rem;font-weight:700;color:#28a745;margin-bottom:2px;">⚡ 차별점</div>
+                            <div style="font-size:0.82rem;color:#333;">${escapeHtml(t.차별점 || '')}</div>
+                        </div>
                     </div>
 
-                    ${t.recent_news ? `<div style="margin-bottom:10px;padding:8px 12px;background:#fff8e6;border-left:3px solid #ffa500;border-radius:4px;">
-                        <div style="font-size:0.75rem;font-weight:700;color:#996600;margin-bottom:2px;">🔥 최근 뉴스</div>
-                        <div style="font-size:0.85rem;color:#333;">${escapeHtml(t.recent_news)}</div>
+                    ${t.최근_뉴스 ? `<div style="margin-bottom:10px;padding:8px 12px;background:#fff5f5;border-left:3px solid #dc3545;border-radius:4px;">
+                        <div style="font-size:0.7rem;font-weight:700;color:#dc3545;margin-bottom:2px;">🔥 최근 뉴스 근거</div>
+                        <div style="font-size:0.83rem;color:#333;">${escapeHtml(t.최근_뉴스)}</div>
                     </div>` : ''}
 
-                    ${Array.isArray(t.key_data) && t.key_data.length > 0 ? `<div style="margin-bottom:10px;">
-                        <div style="font-size:0.8rem;font-weight:700;color:#666;margin-bottom:4px;">📊 핵심 데이터</div>
-                        <ul style="margin:0;padding-left:20px;font-size:0.85rem;color:#333;">
-                            ${t.key_data.map(d => `<li style="margin-bottom:2px;">${escapeHtml(d)}</li>`).join('')}
+                    ${Array.isArray(t.핵심_데이터) && t.핵심_데이터.length > 0 ? `<div style="margin-bottom:10px;">
+                        <div style="font-size:0.75rem;font-weight:700;color:#666;margin-bottom:4px;">📊 핵심 데이터</div>
+                        <ul style="margin:0;padding-left:20px;font-size:0.82rem;color:#333;">
+                            ${t.핵심_데이터.map(d => `<li style="margin-bottom:2px;">${escapeHtml(d)}</li>`).join('')}
                         </ul>
                     </div>` : ''}
 
-                    ${Array.isArray(t.video_titles) && t.video_titles.length > 0 ? `<div>
-                        <div style="font-size:0.8rem;font-weight:700;color:#666;margin-bottom:4px;">🎬 영상 제목 후보</div>
+                    ${Array.isArray(t.제목_후보) && t.제목_후보.length > 0 ? `<div style="margin-bottom:10px;">
+                        <div style="font-size:0.75rem;font-weight:700;color:#666;margin-bottom:4px;">🎬 제목 A/B/C 후보 <span style="color:#aaa;font-weight:400;">(클릭=복사)</span></div>
                         <div style="display:flex;flex-direction:column;gap:4px;">
-                            ${t.video_titles.map(v => `<div style="padding:6px 10px;background:#fff5f5;border:1px solid #ffe0e0;border-radius:6px;font-size:0.85rem;color:#222;cursor:pointer;" onclick="navigator.clipboard.writeText(this.textContent.trim()); this.style.background='#ffe0e0';" title="클릭해서 복사">${escapeHtml(v)}</div>`).join('')}
+                            ${t.제목_후보.map((v, i) => `<div style="padding:6px 10px;background:#fff5f5;border:1px solid #ffe0e0;border-radius:6px;font-size:0.85rem;color:#222;cursor:pointer;" onclick="navigator.clipboard.writeText(this.textContent.trim().replace(/^[A-C]안:\\s*/,'')); this.style.background='#ffe0e0';" title="클릭해서 복사"><b style="color:#dc3545;">${String.fromCharCode(65+i)}안:</b> ${escapeHtml(v)}</div>`).join('')}
                         </div>
                     </div>` : ''}
-                </div>
-            `).join('');
+
+                    ${t.리스크 ? `<div style="margin-bottom:10px;padding:6px 10px;background:#fafafa;border-radius:4px;font-size:0.78rem;color:#777;">
+                        <b>⚠️ 리스크:</b> ${escapeHtml(t.리스크)}
+                    </div>` : ''}
+
+                    <details style="margin-top:8px;">
+                        <summary style="font-size:0.75rem;color:#888;cursor:pointer;">5개 체크리스트 상세</summary>
+                        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;">
+                            ${checkList.map(([label, pass]) => `<span style="padding:3px 8px;border-radius:10px;font-size:0.72rem;background:${pass ? '#e6ffed' : '#ffebeb'};color:${pass ? '#28a745' : '#dc3545'};">${pass ? '✅' : '❌'} ${label}</span>`).join('')}
+                        </div>
+                    </details>
+
+                    <div style="display:flex;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid #eee;">
+                        <button onclick="blockTopic('${(t.예상_제목 || t.주제_한줄 || '').replace(/'/g, "\\'").replace(/"/g, '&quot;')}', this)"
+                                style="flex:1;padding:8px;background:#fff5f5;color:#dc3545;border:1px solid #ffcccc;border-radius:6px;font-size:0.8rem;font-weight:700;cursor:pointer;">
+                            🚫 다시 안 보기 (이 주제 차단)
+                        </button>
+                        <button onclick="blockTopic('이 주제 사용함: ' + '${(t.예상_제목 || t.주제_한줄 || '').replace(/'/g, "\\'").replace(/"/g, '&quot;')}', this)"
+                                style="flex:1;padding:8px;background:#f0fff4;color:#28a745;border:1px solid #ccebcc;border-radius:6px;font-size:0.8rem;font-weight:700;cursor:pointer;">
+                            ✅ 이거 만들었음 (다음부터 제외)
+                        </button>
+                    </div>
+                </div>`;
+            }).join('');
+
+            // 트랙 분포 통계
+            const trackCounts = { 1: 0, 2: 0, 3: 0, 4: 0 };
+            topics.forEach(t => trackCounts[t.트랙 || 1]++);
+            const trackSummary = `트랙1 ${trackCounts[1]}개 · 트랙2 ${trackCounts[2]}개 · 트랙3 ${trackCounts[3]}개 · 트랙4 ${trackCounts[4]}개`;
 
             resultsEl.innerHTML = `
-                <div style="font-size:0.85rem;color:#28a745;font-weight:700;margin-bottom:10px;">
-                    ✅ ${topics.length}개 주제 추천 완료 (제목 클릭하면 복사돼요)
+                <div style="background:#f0fff4;padding:10px 14px;border-radius:8px;margin-bottom:12px;">
+                    <div style="font-size:0.9rem;color:#28a745;font-weight:700;">✅ ${topics.length}개 주제 추천 완료</div>
+                    <div style="font-size:0.78rem;color:#666;margin-top:2px;">${trackSummary} · 제목 클릭하면 복사됩니다</div>
                 </div>
                 ${html}
             `;
@@ -3929,6 +4125,14 @@ ${recencyText} 동안의 실제 뉴스/이슈를 웹에서 검색하여, 위 공
             document.querySelectorAll('.topic-only').forEach(el => {
                 el.style.display = proc === 'topic' ? '' : 'none';
             });
+            // 주제찾기 탭의 API키/키워드 설정도 토글 (process-topic 직속 자식)
+            const procTopicEl = document.getElementById('process-topic');
+            const procTopicRestEl = document.getElementById('process-topic-rest');
+            if (procTopicEl) procTopicEl.style.display = proc === 'topic' ? '' : 'none';
+            if (procTopicRestEl) procTopicRestEl.style.display = proc === 'topic' ? '' : 'none';
+            // AI 주제추천 탭
+            document.getElementById('process-formula').style.display = proc === 'formula' ? '' : 'none';
+            if (proc === 'formula') renderBlockedTopicsList();
             // 각 탭 고유 콘텐츠 (process-topic 밖)
             document.getElementById('process-thumbnail').style.display = proc === 'thumbnail' ? '' : 'none';
             document.getElementById('process-thumbtext').style.display = proc === 'thumbtext' ? '' : 'none';
