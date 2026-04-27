@@ -6324,6 +6324,27 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                     }
                 });
 
+                // 2026-04-27: 현직 정상 자동 교체 (Gemini 학습 데이터 시점 차이 보정)
+                // 대본에 "윤석열·문재인" 등 명시 이름이 없는데 "대통령" → 검색어가 옛 대통령으로 나오는 문제
+                // 한국 대본 + 검색어에 옛 이름 → 현직 이재명으로 강제 교체
+                const STALE_KR_PRESIDENTS = /\b(Yoon|Yoon Suk[\s-]?Yeol|윤석열|Moon Jae[\s-]?in|문재인|Park Geun[\s-]?hye|박근혜)\b/gi;
+                const STALE_US_PRESIDENTS = /\b(Biden|Joe Biden|바이든|Obama|오바마)\b/gi;
+                jsonObj.scenes.forEach(s => {
+                    if (typeof s.realSearchKeyword !== 'string') return;
+                    const narr = s.narration || '';
+                    const hasExplicitOldKR = /윤석열|Yoon|문재인|Moon Jae|박근혜|Park Geun/i.test(narr);
+                    const hasExplicitOldUS = /바이든|Biden|오바마|Obama/i.test(narr);
+                    // 대본에 옛 대통령 명시 없는데 검색어에 옛 이름이 박혔으면 → 현직 교체
+                    if (!hasExplicitOldKR && STALE_KR_PRESIDENTS.test(s.realSearchKeyword)) {
+                        s.realSearchKeyword = s.realSearchKeyword.replace(STALE_KR_PRESIDENTS, 'Lee Jae-myung');
+                        s.autoFixedStaleLeader = true;
+                    }
+                    if (!hasExplicitOldUS && STALE_US_PRESIDENTS.test(s.realSearchKeyword)) {
+                        s.realSearchKeyword = s.realSearchKeyword.replace(STALE_US_PRESIDENTS, 'Donald Trump');
+                        s.autoFixedStaleLeader = true;
+                    }
+                });
+
                 // 실사 필요 장면 별도 저장 (자동 교정 후 재계산)
                 let realScenes = jsonObj.scenes.filter(s => s.needRealImage === true);
 
