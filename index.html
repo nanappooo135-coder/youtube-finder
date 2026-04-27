@@ -3658,46 +3658,111 @@
                     }
                 }
 
-                // 5. 정렬 — 조회수 기준
+                // 5. 통계 계산
                 videos.sort((a, b) => b.views - a.views);
-                const top = videos.slice(0, Math.min(10, Math.floor(videos.length / 3)));
-                const bottom = videos.slice(-Math.min(10, Math.floor(videos.length / 3))).reverse();
                 const avg = Math.round(videos.reduce((s, v) => s + v.views, 0) / videos.length);
+                const sortedViews = videos.map(v => v.views).slice().sort((a, b) => a - b);
+                const median = sortedViews.length % 2 === 0
+                    ? Math.round((sortedViews[sortedViews.length/2 - 1] + sortedViews[sortedViews.length/2]) / 2)
+                    : sortedViews[Math.floor(sortedViews.length/2)];
 
-                // 6. Gemini에게 패턴 분석 요청
-                btn.innerHTML = '<div class="spinner"></div> AI가 패턴 분석 중... (15~30초)';
+                // 6. 채널 상태 자동 판단 (최근 5편 vs 전체 평균)
+                const recentSorted = videos.slice().sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
+                const recent5 = recentSorted.slice(0, 5);
+                const recent5Avg = Math.round(recent5.reduce((s, v) => s + v.views, 0) / recent5.length);
+                const slumpRatio = recent5Avg / avg;
+                const isSlump = recent5Avg < 20000 || slumpRatio < 0.5;
+                window._channelState = {
+                    slump: isSlump,
+                    recent5Avg,
+                    overallAvg: avg,
+                    ratio: slumpRatio,
+                };
+
+                // 7. Gemini에게 다중 패턴 분석 요청 (전체 영상 + 카테고리 자동 분류)
+                btn.innerHTML = '<div class="spinner"></div> AI 분석 중 (카테고리 분류 + 시계열 + 다중 패턴)... 30~60초';
                 _geminiStatusEl = btn;
 
-                const prompt = `한국어 유튜브 채널 "${channelTitle}" (구독자 ${subCount.toLocaleString()}명)의 영상 ${videos.length}개를 분석해주세요.
+                const allVideosText = recentSorted
+                    .slice(0, 80)
+                    .map(v => {
+                        const d = new Date(v.publishedAt).toISOString().slice(0, 10);
+                        return `[${d}] [${v.views.toLocaleString()}회] ${v.title}`;
+                    }).join('\n');
 
-[잘된 영상 TOP ${top.length} — 평균 조회수 ${Math.round(top.reduce((s,v)=>s+v.views,0)/top.length).toLocaleString()}회]
-${top.map((v,i) => `${i+1}. [${v.views.toLocaleString()}회] ${v.title}`).join('\n')}
+                const prompt = `한국어 유튜브 채널 "${channelTitle}" (구독자 ${subCount.toLocaleString()}명) 분석.
 
-[못된 영상 BOTTOM ${bottom.length} — 평균 조회수 ${Math.round(bottom.reduce((s,v)=>s+v.views,0)/bottom.length).toLocaleString()}회]
-${bottom.map((v,i) => `${i+1}. [${v.views.toLocaleString()}회] ${v.title}`).join('\n')}
+[채널 통계]
+- 총 ${videos.length}개 영상 분석
+- 전체 평균 조회수: ${avg.toLocaleString()}회 / 중앙값: ${median.toLocaleString()}회
+- 최근 5편 평균: ${recent5Avg.toLocaleString()}회 (전체 대비 ${(slumpRatio*100).toFixed(0)}%)
+- 자동 판정 채널 상태: ${isSlump ? '⚠️ 슬럼프 (검증된 패턴만 추천 권장)' : '✅ 정상/호조'}
 
-[채널 평균 조회수] ${avg.toLocaleString()}회
+[영상 목록 — 최신순, 날짜·조회수 포함]
+${allVideosText}
 
-[작업]
-- 잘된 영상과 못된 영상의 공통 패턴을 비교 분석
-- 이 채널이 다음에 영상을 만들 때 따라야 할 "공식" 추출
-- 피해야 할 패턴도 함께 추출
+[작업 — 매우 중요]
+1. 각 영상을 다음 6개 카테고리 중 하나로 자동 분류:
+   - 선진국몰락, 인물테크, 지정학군사, 마이너국가, 한국국내, 한국연결글로벌
+2. 카테고리별 평균·중앙값 조회수 계산 (빈도와 효율 분리)
+3. 각 카테고리의 시기별 조회수 추세 (최근으로 갈수록 떨어지면 "피로감" 플래그)
+4. 단일 공식 X — TOP 패턴 여러 개 다중 추출
+5. 채널 상태(슬럼프/호조)에 따라 추천 보수성 조정
 
-[출력 형식 — 반드시 아래 JSON만 출력. 다른 설명 금지]
+[출력 형식 — 반드시 아래 JSON만. 다른 설명·마크다운 금지]
 {
   "channel_summary": "채널 한 줄 요약",
-  "winning_pattern": "잘된 영상의 핵심 공통점 2~3문장",
-  "losing_pattern": "못된 영상의 공통점 2~3문장",
-  "extracted_formula": "다음 영상 만들 때 따라야 할 공식 한 문단 (구체적으로)",
+  "channel_state": {
+    "status": "${isSlump ? 'slump' : 'healthy'}",
+    "recent5_avg": ${recent5Avg},
+    "overall_avg": ${avg},
+    "interpretation": "현재 상태 한 줄 해석"
+  },
+  "categories": [
+    {
+      "name": "선진국몰락",
+      "count": 8,
+      "avg_views": 350000,
+      "median_views": 180000,
+      "efficiency_rank": 1,
+      "frequency_rank": 3,
+      "trend": "stable",
+      "fatigue_flag": false,
+      "sample_titles": ["대표 영상 제목 1", "대표 영상 제목 2"],
+      "verdict": "이 카테고리에 대한 한 줄 평가 (계속 가야 할지 줄여야 할지)"
+    }
+  ],
+  "top_patterns": [
+    {
+      "pattern_id": "A",
+      "name": "선진국 몰락·이민",
+      "avg_views": 400000,
+      "evidence": ["뉴질랜드 106만", "스페인 14만"],
+      "hook": "살기 좋다던 ○○이 무너지는 이유",
+      "recommended_share": "40%"
+    }
+  ],
+  "fatigue_warnings": [
+    "이란/중동 카테고리: 최근 5편 평균 12만 → 7만으로 하락. 비중 축소 필요"
+  ],
+  "winning_keywords": ["선진국 이민", "일본", "캐나다", "머스크", "AI"],
+  "avoid_keywords": ["한국 국내 단발", "마이너 국가 단독", "이란"],
+  "extracted_formula": "다음 영상 만들 때 따라야 할 종합 가이드 한 문단 (패턴/비중/상태 모두 반영)",
   "avoid_topics": "피해야 할 주제/패턴 한 문단",
-  "winning_keywords": ["키워드1", "키워드2", "키워드3", "키워드4", "키워드5"],
-  "avoid_keywords": ["키워드1", "키워드2", "키워드3"],
   "top_insights": [
-    "통찰 1 (예: 선진국 + 숨은 위기 조합이 평균 5배 높음)",
+    "통찰 1 (예: 패턴 A는 평균 5배 높지만 빈도 낮음 — 늘려야 함)",
     "통찰 2",
     "통찰 3"
   ]
-}`;
+}
+
+[규칙]
+- categories: 영상 1개라도 있는 카테고리만 출력. avg_views와 median_views는 실제 계산
+- efficiency_rank: avg_views 기준 1등이 1
+- frequency_rank: count 기준 1등이 1 (많은 게 1)
+- trend: "rising" / "stable" / "declining"
+- fatigue_flag: 최근 영상 갈수록 조회수 하락하면 true
+- top_patterns: 평균 조회수 높은 패턴 위주로 2~4개`;
 
                 const result = await callGemini(prompt, {
                     maxTokens: 8192,
@@ -3728,7 +3793,7 @@ ${bottom.map((v,i) => `${i+1}. [${v.views.toLocaleString()}회] ${v.title}`).joi
                     .slice(0, 15)
                     .map(v => v.title);
 
-                renderChannelAnalysis(parsed, { channelTitle, subCount, avg, top, bottom, totalVideos: videos.length });
+                renderChannelAnalysis(parsed, { channelTitle, subCount, avg, median, recent5Avg, isSlump, totalVideos: videos.length, allVideos: recentSorted });
 
             } catch (e) {
                 resultsEl.innerHTML = `<div style="padding:16px;color:#dc3545;font-weight:700;">오류: ${escapeHtml(e.message)}</div>`;
@@ -3740,71 +3805,122 @@ ${bottom.map((v,i) => `${i+1}. [${v.views.toLocaleString()}회] ${v.title}`).joi
 
         function renderChannelAnalysis(data, meta) {
             const resultsEl = document.getElementById('caResults');
+            const cs = data.channel_state || {};
+            const stateColor = cs.status === 'slump' ? '#dc3545' : '#28a745';
+            const stateBg = cs.status === 'slump' ? '#fff5f5' : '#f0fff4';
+            const stateLabel = cs.status === 'slump' ? '⚠️ 슬럼프' : '✅ 정상/호조';
+
+            const trendIcon = { rising: '📈', stable: '➡️', declining: '📉' };
+            const trendColor = { rising: '#28a745', stable: '#888', declining: '#dc3545' };
+
+            const cats = Array.isArray(data.categories) ? data.categories.slice() : [];
+            cats.sort((a, b) => (b.avg_views || 0) - (a.avg_views || 0));
+            const maxAvg = Math.max(...cats.map(c => c.avg_views || 0), 1);
+
+            const patterns = Array.isArray(data.top_patterns) ? data.top_patterns : [];
+
             const html = `
                 <div style="background:white;border:2px solid #cce5ff;border-radius:12px;padding:16px;margin-bottom:12px;">
-                    <div style="font-size:1rem;font-weight:700;color:#0066cc;margin-bottom:6px;">📺 ${escapeHtml(meta.channelTitle)}</div>
-                    <div style="font-size:0.85rem;color:#666;margin-bottom:12px;">
-                        구독자 ${meta.subCount.toLocaleString()}명 · 분석 영상 ${meta.totalVideos}개 · 평균 조회수 ${meta.avg.toLocaleString()}회
+                    <div style="font-size:1.05rem;font-weight:700;color:#0066cc;margin-bottom:4px;">📺 ${escapeHtml(meta.channelTitle)}</div>
+                    <div style="font-size:0.8rem;color:#666;margin-bottom:12px;">
+                        구독자 ${meta.subCount.toLocaleString()}명 · 분석 ${meta.totalVideos}개 · 평균 ${meta.avg.toLocaleString()}회 · 중앙값 ${meta.median.toLocaleString()}회
                     </div>
 
-                    <div style="background:#f0f9ff;padding:12px;border-radius:8px;margin-bottom:12px;">
-                        <div style="font-size:0.8rem;font-weight:700;color:#0066cc;margin-bottom:4px;">📌 채널 요약</div>
-                        <div style="font-size:0.9rem;color:#333;">${escapeHtml(data.channel_summary || '')}</div>
+                    <!-- 채널 상태 -->
+                    <div style="background:${stateBg};border:2px solid ${stateColor};padding:12px;border-radius:8px;margin-bottom:12px;">
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                            <span style="background:${stateColor};color:white;padding:3px 10px;border-radius:10px;font-size:0.8rem;font-weight:700;">${stateLabel}</span>
+                            <span style="font-size:0.85rem;color:#333;">최근 5편 ${meta.recent5Avg.toLocaleString()}회 (전체 평균 대비 ${(meta.recent5Avg/meta.avg*100).toFixed(0)}%)</span>
+                        </div>
+                        ${cs.interpretation ? `<div style="font-size:0.85rem;color:#333;">${escapeHtml(cs.interpretation)}</div>` : ''}
                     </div>
 
-                    <div style="background:#f0fff4;padding:12px;border-radius:8px;margin-bottom:12px;border-left:4px solid #28a745;">
-                        <div style="font-size:0.8rem;font-weight:700;color:#28a745;margin-bottom:4px;">🏆 잘된 영상 패턴</div>
-                        <div style="font-size:0.9rem;color:#333;line-height:1.5;">${escapeHtml(data.winning_pattern || '')}</div>
+                    <!-- 채널 요약 -->
+                    <div style="background:#f0f9ff;padding:10px 12px;border-radius:6px;margin-bottom:12px;">
+                        <div style="font-size:0.75rem;font-weight:700;color:#0066cc;margin-bottom:2px;">📌 채널 요약</div>
+                        <div style="font-size:0.88rem;color:#333;">${escapeHtml(data.channel_summary || '')}</div>
                     </div>
 
-                    <div style="background:#fff5f5;padding:12px;border-radius:8px;margin-bottom:12px;border-left:4px solid #dc3545;">
-                        <div style="font-size:0.8rem;font-weight:700;color:#dc3545;margin-bottom:4px;">💀 못된 영상 패턴</div>
-                        <div style="font-size:0.9rem;color:#333;line-height:1.5;">${escapeHtml(data.losing_pattern || '')}</div>
-                    </div>
+                    <!-- 카테고리별 효율 vs 빈도 -->
+                    ${cats.length > 0 ? `<div style="margin-bottom:14px;">
+                        <div style="font-size:0.85rem;font-weight:700;color:#333;margin-bottom:8px;">📊 카테고리별 효율 vs 빈도</div>
+                        <div style="display:flex;flex-direction:column;gap:6px;">
+                            ${cats.map(c => {
+                                const barW = Math.round((c.avg_views || 0) / maxAvg * 100);
+                                const fatigue = c.fatigue_flag;
+                                const trend = c.trend || 'stable';
+                                return `<div style="background:#fafafa;padding:8px 10px;border-radius:6px;${fatigue ? 'border-left:3px solid #dc3545;' : ''}">
+                                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;font-size:0.82rem;">
+                                        <span style="font-weight:700;">${escapeHtml(c.name||'')}</span>
+                                        <span style="color:#666;font-size:0.75rem;">
+                                            <span title="시계열 추세" style="color:${trendColor[trend]};">${trendIcon[trend]||''}</span>
+                                            ${fatigue ? '<span style="color:#dc3545;font-weight:700;margin-left:4px;">⚠️ 피로감</span>' : ''}
+                                        </span>
+                                    </div>
+                                    <div style="display:flex;gap:8px;font-size:0.75rem;color:#555;margin-bottom:4px;">
+                                        <span>빈도 <b>${c.count||0}편</b> (#${c.frequency_rank||'-'})</span>
+                                        <span>·</span>
+                                        <span>효율 평균 <b style="color:#0066cc;">${(c.avg_views||0).toLocaleString()}회</b> (#${c.efficiency_rank||'-'})</span>
+                                        <span>·</span>
+                                        <span>중앙값 ${(c.median_views||0).toLocaleString()}회</span>
+                                    </div>
+                                    <div style="background:#e0e0e0;height:6px;border-radius:3px;overflow:hidden;margin-bottom:4px;">
+                                        <div style="width:${barW}%;height:100%;background:${fatigue ? '#dc3545' : '#0066cc'};"></div>
+                                    </div>
+                                    ${c.verdict ? `<div style="font-size:0.75rem;color:#666;margin-top:3px;">💬 ${escapeHtml(c.verdict)}</div>` : ''}
+                                </div>`;
+                            }).join('')}
+                        </div>
+                    </div>` : ''}
 
-                    <div style="background:#fffbe6;padding:12px;border-radius:8px;margin-bottom:12px;border-left:4px solid #ffa500;">
-                        <div style="font-size:0.8rem;font-weight:700;color:#996600;margin-bottom:4px;">🎯 추출된 채널 공식</div>
-                        <div style="font-size:0.9rem;color:#333;line-height:1.5;">${escapeHtml(data.extracted_formula || '')}</div>
-                    </div>
+                    <!-- TOP 패턴 다중 -->
+                    ${patterns.length > 0 ? `<div style="margin-bottom:14px;">
+                        <div style="font-size:0.85rem;font-weight:700;color:#333;margin-bottom:8px;">🏆 당신 채널의 성공 패턴 ${patterns.length}개</div>
+                        <div style="display:flex;flex-direction:column;gap:8px;">
+                            ${patterns.map(p => `<div style="background:#f0fff4;padding:10px 12px;border-radius:6px;border-left:3px solid #28a745;">
+                                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                                    <span style="font-weight:700;color:#28a745;font-size:0.88rem;">패턴 ${escapeHtml(p.pattern_id||'')} — ${escapeHtml(p.name||'')}</span>
+                                    <span style="font-size:0.75rem;color:#666;">평균 <b>${(p.avg_views||0).toLocaleString()}회</b> · 권장 ${escapeHtml(p.recommended_share||'')}</span>
+                                </div>
+                                ${p.hook ? `<div style="font-size:0.8rem;color:#555;margin-bottom:3px;">💡 ${escapeHtml(p.hook)}</div>` : ''}
+                                ${Array.isArray(p.evidence) && p.evidence.length ? `<div style="font-size:0.72rem;color:#888;">근거: ${p.evidence.map(escapeHtml).join(' · ')}</div>` : ''}
+                            </div>`).join('')}
+                        </div>
+                    </div>` : ''}
 
-                    ${Array.isArray(data.top_insights) && data.top_insights.length > 0 ? `<div style="margin-bottom:12px;">
-                        <div style="font-size:0.8rem;font-weight:700;color:#666;margin-bottom:4px;">💡 핵심 통찰</div>
-                        <ul style="margin:0;padding-left:20px;font-size:0.85rem;color:#333;">
-                            ${data.top_insights.map(i => `<li style="margin-bottom:4px;">${escapeHtml(i)}</li>`).join('')}
+                    <!-- 피로감 경고 -->
+                    ${Array.isArray(data.fatigue_warnings) && data.fatigue_warnings.length > 0 ? `<div style="background:#fff8e6;padding:10px 12px;border-left:3px solid #ffa500;border-radius:4px;margin-bottom:12px;">
+                        <div style="font-size:0.78rem;font-weight:700;color:#996600;margin-bottom:4px;">⚠️ 피로감 경고</div>
+                        <ul style="margin:0;padding-left:18px;font-size:0.82rem;color:#555;">
+                            ${data.fatigue_warnings.map(w => `<li style="margin-bottom:2px;">${escapeHtml(w)}</li>`).join('')}
                         </ul>
                     </div>` : ''}
 
+                    <!-- 키워드 -->
                     ${Array.isArray(data.winning_keywords) ? `<div style="margin-bottom:8px;">
-                        <div style="font-size:0.75rem;font-weight:700;color:#666;margin-bottom:4px;">✅ 살릴 키워드</div>
+                        <div style="font-size:0.72rem;font-weight:700;color:#666;margin-bottom:3px;">✅ 살릴 키워드</div>
                         <div style="display:flex;flex-wrap:wrap;gap:4px;">
-                            ${data.winning_keywords.map(k => `<span style="padding:3px 8px;background:#e6ffed;color:#28a745;border-radius:10px;font-size:0.8rem;">${escapeHtml(k)}</span>`).join('')}
+                            ${data.winning_keywords.map(k => `<span style="padding:3px 8px;background:#e6ffed;color:#28a745;border-radius:10px;font-size:0.78rem;">${escapeHtml(k)}</span>`).join('')}
                         </div>
                     </div>` : ''}
-
                     ${Array.isArray(data.avoid_keywords) ? `<div style="margin-bottom:12px;">
-                        <div style="font-size:0.75rem;font-weight:700;color:#666;margin-bottom:4px;">❌ 피할 키워드</div>
+                        <div style="font-size:0.72rem;font-weight:700;color:#666;margin-bottom:3px;">❌ 피할 키워드</div>
                         <div style="display:flex;flex-wrap:wrap;gap:4px;">
-                            ${data.avoid_keywords.map(k => `<span style="padding:3px 8px;background:#ffebeb;color:#dc3545;border-radius:10px;font-size:0.8rem;">${escapeHtml(k)}</span>`).join('')}
+                            ${data.avoid_keywords.map(k => `<span style="padding:3px 8px;background:#ffebeb;color:#dc3545;border-radius:10px;font-size:0.78rem;">${escapeHtml(k)}</span>`).join('')}
                         </div>
                     </div>` : ''}
 
-                    <button class="search-btn" onclick="applyAnalysisToFinder()" style="background:#28a745;margin-top:8px;">
-                        ⬇️ 이 공식을 아래 "주제 찾기"에 자동 입력
-                    </button>
+                    <!-- 통찰 -->
+                    ${Array.isArray(data.top_insights) && data.top_insights.length > 0 ? `<div style="background:#fffbe6;padding:10px 12px;border-radius:6px;margin-bottom:12px;border-left:3px solid #ffa500;">
+                        <div style="font-size:0.78rem;font-weight:700;color:#996600;margin-bottom:4px;">💡 핵심 통찰</div>
+                        <ul style="margin:0;padding-left:18px;font-size:0.83rem;color:#333;">
+                            ${data.top_insights.map(i => `<li style="margin-bottom:3px;">${escapeHtml(i)}</li>`).join('')}
+                        </ul>
+                    </div>` : ''}
 
-                    <details style="margin-top:12px;">
-                        <summary style="font-size:0.8rem;color:#888;cursor:pointer;">📊 잘된/못된 영상 목록 보기</summary>
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px;">
-                            <div>
-                                <div style="font-size:0.75rem;font-weight:700;color:#28a745;margin-bottom:4px;">🏆 TOP ${meta.top.length}</div>
-                                ${meta.top.map(v => `<div style="font-size:0.75rem;padding:4px;border-bottom:1px solid #eee;"><b style="color:#28a745;">${v.views.toLocaleString()}</b><br>${escapeHtml(v.title)}</div>`).join('')}
-                            </div>
-                            <div>
-                                <div style="font-size:0.75rem;font-weight:700;color:#dc3545;margin-bottom:4px;">💀 BOTTOM ${meta.bottom.length}</div>
-                                ${meta.bottom.map(v => `<div style="font-size:0.75rem;padding:4px;border-bottom:1px solid #eee;"><b style="color:#dc3545;">${v.views.toLocaleString()}</b><br>${escapeHtml(v.title)}</div>`).join('')}
-                            </div>
-                        </div>
-                    </details>
+                    <button class="search-btn" onclick="applyAnalysisToFinder()" style="background:#28a745;margin-top:6px;">
+                        ⬇️ 이 분석을 "주제 찾기"에 자동 반영 (채널 상태 + 키워드)
+                    </button>
                 </div>
             `;
             resultsEl.innerHTML = html;
@@ -3881,30 +3997,33 @@ ${bottom.map((v,i) => `${i+1}. [${v.views.toLocaleString()}회] ${v.title}`).joi
 - 타겟: 30~50대 한국 남성, 뉴스/경제/국제정세 관심층
 
 [잘 터진 영상 TOP 5 — 학습용 레퍼런스]
-- 뉴질랜드 호주 이주 (106만)
-- 일론 머스크 AI 인터뷰 (90만)
-- 중동 석유 종말 (44만)
-- 아프가니스탄 자원 (37만)
-- 이란 난공불락 몰락 (35만)
+- 뉴질랜드 호주 이주 (106만, 패턴 A 선진국몰락)
+- 일론 머스크 AI 인터뷰 (90만, 패턴 B 인물·테크)
+- 중동 석유 종말 (44만, 패턴 C 지정학)
+- 아프가니스탄 자원 (37만, 패턴 C 지정학)
+- 이란 난공불락 몰락 (35만, 패턴 C 지정학)
 
-[성공 공식 4가지 — 반드시 1개 이상 사용]
-1. 호기심 갭: "당연한 줄 알았는데 사실은 반대" (살기 좋다던 뉴질랜드가 망함, 자원 부자가 가난함)
-2. 거리감: 한국인이 이름은 들어봤지만 잘 모르는 나라/이슈
-3. 드라마: 흥망성쇠 서사 (정점→추락 또는 바닥→반전)
-4. 연결: 먼 나라 이야기인데 한국과 연결되는 포인트가 있음
+[성공 패턴 3종 + D — 단일 공식 아님. 각 주제는 명시적으로 패턴 1개 선택]
+- 패턴 A 선진국 몰락·이민 (효율 최고, 평균 ~40만): "살기 좋다던 ○○이 무너지는 이유"
+- 패턴 B 인물·테크 (효율 우수, 평균 ~50만): 유명 인물 + 미래 충격 (머스크/젠슨황/빈살만/엔비디아)
+- 패턴 C 지정학·군사 (평균 ~12만, 피로감 누적, 비중 축소): 단 이란은 당분간 회피
+- 패턴 D 한국 연결 글로벌 (실험적): 한국 경제·기업과 직결되는 글로벌 이슈
 
-[콘텐츠 트랙 비중 — 추천 시 트랙 분배 고려]
-- 트랙1 국가 흥망 분석: 50%
-- 트랙2 글로벌 빅이슈 (미중·AI·환율 등): 25%
-- 트랙3 한국인 관점 글로벌 경제: 20%
-- 트랙4 인물·기업: 5%
+[패턴별 추천 비중 — 슬럼프 반영]
+- 패턴 A: 40%
+- 패턴 B: 30%
+- 패턴 C: 20% (이란 제외)
+- 패턴 D: 10%
 
-[금지 사항]
-- 한국 국내 정치/연예/스포츠 사건
-- 슈카월드·언더스탠딩이 더 잘 다룰 한국 경제 뉴스
-- 마이너 국가 마이너 이슈
-- 같은 주제 4주 내 반복
-- 이란/중동 주 1편 초과
+[✅ 살릴 키워드 — 가급적 포함]
+선진국 이민, 일본, 캐나다, 싱가포르, 두바이, 머스크, 엔비디아, 젠슨황, 빈살만, AI, 반도체, 환율, 이민, 자원
+
+[❌ 차단 변수 — 절대 추천 금지]
+- 한국 국내 단발 사건 (정부 사기, 단일 정치인, 강남 아파트 등)
+- 마이너 국가 단독 (헝가리·에리트레아·단독 몽골 등 한국인 관심 0인 국가)
+- 이란/중동 주제 (당분간 주 1편 이하 — 시청자 피로감)
+- 슈카월드·언더스탠딩과 겹치는 한국 경제 뉴스
+- 같은 카테고리 4주 내 3편 이상 반복
 ${avoid ? `- 사용자 추가 금지: ${avoid}` : ''}
 
 [최근 4주 다룬 영상]
@@ -3913,8 +4032,13 @@ ${blockedSection}
 ${userExtra ? `[사용자 추가 요청]\n${userExtra}\n` : ''}
 
 [작업]
-${recencyText} 동안의 실제 뉴스/이슈를 웹에서 검색하여, 위 공식과 트랙 비중에 맞춰 영상 주제 ${count}개 추천하세요.
-가능하면 트랙1·2·3을 골고루 분배 (예: ${count}개 중 트랙1 ${Math.ceil(count/2)}개, 트랙2 ${Math.floor(count/4)}개, 트랙3 ${Math.floor(count/4)}개).
+${recencyText} 동안의 실제 뉴스/이슈를 웹에서 검색하여, 위 패턴 비중(A 40% / B 30% / C 20% / D 10%)에 맞춰 영상 주제 ${count}개 추천하세요.
+예: ${count}개 중 패턴A ${Math.round(count*0.4)}개, 패턴B ${Math.round(count*0.3)}개, 패턴C ${Math.round(count*0.2)}개, 패턴D ${Math.max(1, Math.round(count*0.1))}개.
+
+[동적 룰 — 채널 상태 반영]
+${(window._channelState && window._channelState.slump)
+    ? '⚠️ 현재 채널 슬럼프 상태(최근 5편 평균 < 2만회). 검증된 패턴(A·B)만 추천하고, 새 실험·패턴D는 자제하세요.'
+    : '채널 상태 정상. 패턴 D 실험적 추천도 가능합니다.'}
 
 [5개 필터링 체크리스트 — 각 주제마다 통과 여부 명시]
 체크1: 슈카월드가 더 잘 다룰 주제인가? (No여야 통과)
@@ -3938,8 +4062,9 @@ ${recencyText} 동안의 실제 뉴스/이슈를 웹에서 검색하여, 위 공
   "topics": [
     {
       "순위": 1,
+      "패턴": "A",
       "트랙": 1,
-      "공식": "호기심갭",
+      "공식": "선진국 몰락",
       "주제_한줄": "내용 요약 한 줄",
       "예상_제목": "유튜브 썸네일에 들어갈 제목 (왜 ○○일까? 형태)",
       "후킹_포인트": "왜 클릭할 것인가 1~2문장",
@@ -4034,6 +4159,8 @@ ${recencyText} 동안의 실제 뉴스/이슈를 웹에서 검색하여, 위 공
             const medal = (rank) => rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
             const trackColor = { 1: '#0066cc', 2: '#28a745', 3: '#996600', 4: '#888' };
             const trackName = { 1: '국가 흥망', 2: '글로벌 빅이슈', 3: '한국인 관점', 4: '인물·기업' };
+            const patternColor = { A: '#dc3545', B: '#0066cc', C: '#996600', D: '#888' };
+            const patternName = { A: 'A 선진국몰락', B: 'B 인물·테크', C: 'C 지정학', D: 'D 한국연결' };
             const gradeColor = { S: '#dc3545', A: '#ffa500', B: '#0066cc', C: '#888' };
             const gradeLabel = { S: 'S (50만+)', A: 'A (20~50만)', B: 'B (5~20만)', C: 'C (5만↓)' };
             const formulaIcon = {
@@ -4064,7 +4191,7 @@ ${recencyText} 동안의 실제 뉴스/이슈를 웹에서 검색하여, 위 공
                 <div style="background:white;border:2px solid ${allPass ? '#28a745' : '#dc3545'};border-radius:12px;padding:16px;margin-bottom:12px;">
                     <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;">
                         <span style="font-size:1.3rem;">${medal(t.순위 || t.rank || 0)}</span>
-                        <span style="background:${trackColor[tr]};color:white;padding:3px 10px;border-radius:10px;font-size:0.75rem;font-weight:700;">트랙${tr} ${trackName[tr]||''}</span>
+                        ${t.패턴 ? `<span style="background:${patternColor[t.패턴]||'#888'};color:white;padding:3px 10px;border-radius:10px;font-size:0.75rem;font-weight:700;">패턴 ${escapeHtml(patternName[t.패턴]||t.패턴)}</span>` : ''}
                         <span style="background:#f8f9fa;color:#333;padding:3px 10px;border-radius:10px;font-size:0.75rem;font-weight:700;">${formulaIcon[t.공식]||'✨'} ${escapeHtml(t.공식||'')}</span>
                         <span style="background:${gradeColor[grade]||'#888'};color:white;padding:3px 10px;border-radius:10px;font-size:0.75rem;font-weight:700;">${gradeLabel[grade]||grade}</span>
                         ${allPass
@@ -4148,10 +4275,10 @@ ${recencyText} 동안의 실제 뉴스/이슈를 웹에서 검색하여, 위 공
                 </div>`;
             }).join('');
 
-            // 트랙 분포 통계
-            const trackCounts = { 1: 0, 2: 0, 3: 0, 4: 0 };
-            topics.forEach(t => trackCounts[t.트랙 || 1]++);
-            const trackSummary = `트랙1 ${trackCounts[1]}개 · 트랙2 ${trackCounts[2]}개 · 트랙3 ${trackCounts[3]}개 · 트랙4 ${trackCounts[4]}개`;
+            // 패턴 분포 통계
+            const patternCounts = { A: 0, B: 0, C: 0, D: 0 };
+            topics.forEach(t => { if (t.패턴 && patternCounts[t.패턴] !== undefined) patternCounts[t.패턴]++; });
+            const trackSummary = `패턴A ${patternCounts.A}개 · 패턴B ${patternCounts.B}개 · 패턴C ${patternCounts.C}개 · 패턴D ${patternCounts.D}개`;
 
             resultsEl.innerHTML = `
                 <div style="background:#f0fff4;padding:10px 14px;border-radius:8px;margin-bottom:12px;">
