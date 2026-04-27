@@ -15972,8 +15972,12 @@ overall mood: bright, psychologically safe illustration, uplifting and reassurin
             const { FFmpeg } = window.FFmpegWASM;
             const { toBlobURL } = window.FFmpegUtil;
             const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+            // 2026-04-27: GitHub Pages에서 cross-origin Worker 차단 → classWorkerURL 추가
+            // @ffmpeg/ffmpeg 0.12.10이 내부적으로 814.ffmpeg.js 워커를 unpkg에서 직접 로드 시도 → 차단됨
+            // 해결: 워커 스크립트도 toBlobURL로 같이 fetch해서 same-origin blob: URL로 변환
             const ffmpeg = new FFmpeg();
             await ffmpeg.load({
+                classWorkerURL: await toBlobURL('https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/814.ffmpeg.js', 'text/javascript'),
                 coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
                 wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
             });
