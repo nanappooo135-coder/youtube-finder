@@ -19740,7 +19740,7 @@ ${stylePrompt}
      · 비유·은유 시각화
      · 숫자 1~2개 언급 정도 (ai에 자막 얹으면 충분)
      · 일반 설명·연결·결론 문장
-   **🔴 안전망 상한**: 결과적으로 claude_design이 **전체 ${Math.round(_cdCapRatio * 100)}% (최대치)** 넘어가면 과다 — 이 경우 가장 약한 후보(서사 섞인 것, 자막+ai로 처리 가능한 것)부터 ai로 변경. 35장면이면 최대 ${Math.max(1, Math.floor(35 * _cdCapRatio))}개. **하지만 이건 상한일 뿐, 실제로는 용도 판단으로 더 적게 나오는 게 정상**.
+   **🔴 비율 제한 (시청자 피로 방지)**: claude_design은 **전체 장면의 5~10%, 최대 8개 이내**. 예: 76장면이면 4~8개. 적합한 게 적으면 그보다 적어도 OK (5% 미만도 허용). 5~10%는 상한선이지 강제로 채우는 값이 아님. 초과 시 가장 약한 후보(서사 섞인 것, 자막+ai로 처리 가능한 것)부터 ai로 변경.
    **❌ 절대 부적합 (이건 무조건 ai — 위 룰의 부연)**:
    - **모든 인물·풍경·도시 장면**: 응급실 복도 노부부, 공항 입국장, 졸업식, 식탁 앞 부부, 거리 풍경, 사무실 등 — 사람·장소·일상이 등장하면 무조건 ai
    - **서사·드라마 묘사**: "한 사람이 ~했다", "이때 ~했다" 같은 스토리텔링 문장
@@ -19758,21 +19758,22 @@ ${stylePrompt}
    - **(2) 인물·일상이 장면 주체면 ai**: 청년 캐릭터가 미국 vs 캐나다 비교하는 장면, 부부가 계산기 두드리는 장면 등 — 숫자가 나와도 **사람·드라마가 메인**이면 ai. 숫자는 자막으로 표시하면 됨.
    - **(3) 데이터 중복 금지**: 이미 앞 장면에서 다룬 데이터(예: "서울 14년치")를 뒷 장면에서 다시 그래프로 만들지 말 것. 같은 숫자가 두 번 등장하면 두 번째는 무조건 ai로.
    - **(4) 시간 2지점만 비교는 ai**: "30년 전 vs 현재" 같이 타임라인에 점 2개만 찍는 비교는 그래프 가치 X. 시계열 그래프는 **3개 이상 시점** 또는 **연속적 추세선**(50년간 가파른 곡선 등)일 때만.
-   ✅ claude_design 적정 케이스 재확인:
-   - 3개 이상 데이터 다중 비교 (예: 밴쿠버/토론토/서울 3개 도시)
-   - 다중 지표 대시보드 (예: MRI+의사+병상 3개 동시)
-   - 시계열 추세선 (예: 50년간 출국자 곡선이 마지막에 수직 점프)
-   - 명명된 법칙 곡선 (여키스-도드슨 등)
-   - 뇌 구조도·해부도
-   - 단계 도식 (4단계 호흡법 등)
-   - 명확한 디버전스 (총 GDP↑ vs 1인당 GDP→ 같이 두 곡선이 갈라지는 경우)
+   ✅ claude_design 적정 케이스 (구체 예시 포함):
+   - **통계/숫자 비교 (3개 이상)**: 밴쿠버/토론토/서울 3개 도시 비교, "GDP 비교 그래프", "임시거주자 80%, 영주권자 20%"
+   - **다중 지표 대시보드**: MRI+의사+병상 3개 동시, "치료 대기 30주 vs 9.3주" (명확한 통계 비교)
+   - **시계열 추세선**: 50년간 출국자 곡선이 마지막에 수직 점프
+   - **명명된 법칙 곡선**: 여키스-도드슨, 파레토 80/20 등 — 정확한 형태 필요
+   - **뇌 구조도·해부도**: 해부학적 정확성 요구
+   - **교육적 다이어그램**: "출산-사망 균형 도식", 4단계 호흡법, 의사결정 트리
+   - **명확한 디버전스**: 총 GDP↑ vs 1인당 GDP→ 같이 두 곡선이 갈라지는 경우
+   - **구성 비율 도식**: 파이/도넛 차트가 필요한 3개 이상 비율 분해
    **🚨 절대 금지 — 도입부(isIntro:true) 장면**: 도입부는 시청자 후킹 단계. 감정·드라마·궁금증이 목적이라 인포그래픽이 들어가면 즉시 이탈. **도입부 장면은 어떤 경우에도 claude_design 금지** (도식·통계가 도입부 텍스트에 있어도 ai로 분류). 도입부는 오직 'ai' 또는 'real'만 허용.
    **📊 장면 분류 후 자체 검증 필수 (3-pass)**:
    분류 완료 후 모든 claude_design 후보에 대해 다음 3가지 질문을 던지고, 하나라도 NO면 ai로 변경:
    1. "데이터가 3개 이상 비교되거나 연속적 추세인가?" (숫자 2개 비교는 NO)
    2. "이 데이터가 다른 장면에서 이미 등장하지 않았나?" (중복이면 NO)
    3. "사람·드라마가 메인이 아니라 데이터 자체가 메인인가?" (사람이 메인이면 NO)
-   추가로 전체의 ${Math.round(_cdCapRatio * 100)}%를 초과하면 가장 약한 후보부터 ai로 변경. 잘 분류하면 5~10% 안쪽이 자연스러움.
+   추가로 전체의 5~10%(최대 8개)를 초과하면 가장 약한 후보부터 ai로 변경. 잘 분류하면 5~8% 안쪽이 자연스러움. 적합한 게 적으면 5% 미만이어도 OK.
 
 === 각 본문 장면 출력 ===
 - sceneNo: 도입부 ${introSceneList.length}개 다음부터 ${startBodyNo}, ${startBodyNo+1}, ... 순차
@@ -20085,7 +20086,7 @@ ${stylePrompt}
 === 장면 타입 (앞 청크와 동일) ===
 - ai (대부분): 인물·풍경·서사·감정·일반설명
 - real: 실존 인물·기관만 (real_keywords 영문 3개, 대본 인물명 그대로)
-- claude_design: 진짜 그래프·다중 데이터·구조도 (전체 ${Math.round(_cdCapRatio * 100)}% 이내)
+- claude_design: 진짜 그래프·다중 데이터·구조도 (전체 5~10% 이내, 최대 8개)
 
 === 출력 (JSON만) ===
 {"scenes":[{"sceneNo":${chunk2StartSceneNo},"type":"ai","duration":10,"isIntro":false,"bodyIndices":[1,2,3],"nano_prompt":"...","grok_prompt":"..."},...]}
@@ -20175,28 +20176,133 @@ JSON만 출력. 코드블록 마커 금지.`;
                     console.log(`[셀팟] 도입부 claude_design 차단: ${_introClaudeFixed}개 → ai로 변환됨`);
                 }
 
-                // 🚨 claude_design 채널별 하드 캡 — LLM이 룰 어기는 경우 코드 이중화
+                // 🚨 claude_design 내용 기반 적합도 캡 — 단순 개수가 아닌 내용 판단 후 비율 제한
+                // 적합도 점수 함수: 높을수록 claude_design에 적합
+                function _cdFitnessScore(scene) {
+                    const text = scene.text || '';
+                    let score = 0;
+
+                    // ✅ 적합: 숫자/통계 — 본문에 숫자가 많을수록 데이터 시각화 적합
+                    const numbers = text.match(/\d+[\d,.]*\s*(?:%|퍼센트|조|억|만|천|원|달러|배|명|주|개월|년|위|등|점|kg|km|m²|㎡)?/g) || [];
+                    score += Math.min(numbers.length * 2, 8); // 숫자 개당 +2, 최대 +8
+
+                    // ✅ 적합: 비교 표현 (vs, 대비, A vs B 등)
+                    if (/vs|대비|대\s*\d|비교|반면|한쪽.*다른|이쪽.*저쪽/i.test(text)) score += 3;
+
+                    // ✅ 적합: 3개 이상 데이터 포인트 (다중 비교 = 그래프 가치)
+                    if (numbers.length >= 3) score += 5;
+
+                    // ✅ 적합: 구성 비율 표현 (예: "80% vs 20%", 파이차트 적합)
+                    const pctCount = (text.match(/\d+\s*%/g) || []).length;
+                    if (pctCount >= 2) score += 4;
+
+                    // ✅ 적합: 명명된 법칙/이론 곡선
+                    if (/법칙|곡선|이론|모델|매트릭스|사분면|스펙트럼|피라미드|계층|여키스|파레토|파킨슨|호프스태터|던바|매슬로/i.test(text)) score += 4;
+
+                    // ✅ 적합: 뇌 구조/해부학/신경전달물질
+                    if (/뇌|전전두엽|편도체|해마|시상|변연계|도파민|세로토닌|코르티솔|뉴런|시냅스/.test(text)) score += 4;
+
+                    // ✅ 적합: 단계/순서/프로세스 도식
+                    if (/단계|순서|과정|흐름|사이클|루프|피드백|트리|플로우|로드맵/.test(text)) score += 3;
+
+                    // ✅ 적합: 교육적 다이어그램 키워드
+                    if (/도식|차트|그래프|다이어그램|인포그래픽|분포|지도|경로|항로/.test(text)) score += 3;
+
+                    // ❌ 부적합: 단순 서술/감정 표현 (AI 일러스트가 맞음)
+                    if (/슬프|기뻐|화가|불안|두려|외로|절망|공허|무력|우울|희망|감동|눈물/.test(text)) score -= 3;
+
+                    // ❌ 부적합: 비유/은유 표현 (시각적 일러스트가 맞음)
+                    if (/마치|처럼|같은|비유|상징|은유|빗대|도미노|빙산|저울|퍼즐|씨앗|뿌리/.test(text)) score -= 3;
+
+                    // ❌ 부적합: 짧은 문장 (정보량 부족)
+                    if (text.length < 30) score -= 4;
+                    else if (text.length < 50) score -= 2;
+
+                    // ✅ 충분한 본문 길이 = 정보 밀도 높음
+                    if (text.length >= 80) score += 2;
+                    if (text.length >= 120) score += 1;
+
+                    // ❌ 부적합: 인물/일상이 주체 (사람 드라마 메인이면 ai)
+                    if (/캐릭터|인물|얼굴|표정|눈빛|손을|걸어|앉아|서서|뒤돌아|바라보/.test(text)) score -= 2;
+
+                    return score;
+                }
+
+                // nano_prompt + grok_prompt 생성 (claude_design → ai 변환 시)
+                function _generateAiPromptsForConverted(scene) {
+                    const narr = scene.text || '';
+                    const dur = scene.duration || 10;
+                    const fakeScene = { narration: narr, textOverlay: '' };
+
+                    // nano_prompt: 기존 _deriveAiPrompt 활용
+                    let nano = '';
+                    if (typeof _deriveAiPrompt === 'function') {
+                        nano = _deriveAiPrompt(fakeScene);
+                    }
+                    if (!nano) {
+                        nano = 'Warm editorial illustration depicting the concept from the narration. Clean composition, soft natural lighting, muted color palette. Cinematic 16:9. Absolutely no text, no letters, no numbers, no typography, no words, no captions, no labels, no signs, no logos, no writing of any kind anywhere in the image.';
+                    }
+                    // 텍스트 금지 문구 보장
+                    if (!/no text/i.test(nano)) {
+                        nano += ' Absolutely no text, no letters, no numbers, no typography, no words, no captions, no labels, no signs, no logos, no writing of any kind anywhere in the image.';
+                    }
+
+                    // grok_prompt: nano_prompt 기반 + STRICT RULES + 모션 강도
+                    const STRICT = 'STRICT RULES: maintain the EXACT original 2D illustrated style from the input image. NO photorealism, NO live-action drift, NO style change, NO 3D, NO anime conversion. NO scene transitions, NO location change, NO new background, NO cuts to other shots. Stay in the SAME scene from the input image throughout the entire clip. ABSOLUTELY NO NEW HUMAN FACES anywhere in the video. NO new characters appearing, NO portraits emerging, NO people materializing. NO exaggerated actions, NO dramatic gestures, NO dancing, NO fighting, NO running. NO talking, NO speaking, NO dialogue, NO mouth flapping. ONLY subtle micro-movements. Keep the composition 95% identical to the input image.';
+                    let motion;
+                    if (dur <= 10) motion = 'Gentle breathing, subtle hair sway, very slight ambient drift, camera push-in 5% max.';
+                    else if (dur <= 13) motion = 'Visible breathing rhythm, noticeable but soft hair movement, gentle ambient drift, camera push-in or slow pan up to 7%.';
+                    else if (dur <= 16) motion = 'Fuller breathing arc, distinct hair sway, ambient elements drifting visibly, camera push-in or slow pan up to 10%.';
+                    else motion = 'Full natural breathing rhythm with chest motion, clearly visible hair sway, ambient elements with continuous drift, camera push-in or slow pan up to 13%.';
+
+                    const grok = `${STRICT} ${motion}`;
+                    return { nano_prompt: nano, grok_prompt: grok };
+                }
+
                 const _totalScenes = merged.length;
-                const _cdCap = Math.max(1, Math.floor(_totalScenes * _cdCapRatio));
+                // 비율 기반 + 절대 상한 8개 (시청자 피로 방지)
+                const _cdCap = Math.min(8, Math.max(1, Math.floor(_totalScenes * _cdCapRatio)));
                 const _cdScenes = merged.filter(s => s.type === 'claude_design');
                 let _cdCapFixed = 0;
                 if (_cdScenes.length > _cdCap) {
                     const _excess = _cdScenes.length - _cdCap;
-                    // 뒤쪽 sceneNo부터 초과분만큼 ai로 변환 (앞쪽 claude_design이 핵심 데이터일 가능성 높음)
-                    const _sortedDesc = [..._cdScenes].sort((a, b) => (b.sceneNo || 0) - (a.sceneNo || 0));
-                    const _toConvert = new Set(_sortedDesc.slice(0, _excess).map(s => s.sceneNo));
+                    // 적합도 점수 낮은 순서로 제거 (진짜 통계/그래프/도식이 살아남음)
+                    const _scored = _cdScenes.map(s => ({ scene: s, fitness: _cdFitnessScore(s) }));
+                    _scored.sort((a, b) => a.fitness - b.fitness); // 낮은 점수 먼저
+                    const _toConvert = new Set(_scored.slice(0, _excess).map(item => item.scene.sceneNo));
                     merged.forEach(s => {
                         if (s.type === 'claude_design' && _toConvert.has(s.sceneNo)) {
-                            console.warn(`[셀팟] claude_design 캡 초과 → #${s.sceneNo} ai로 강제 변환 (캡: ${_cdCap}개, 원본: ${_cdScenes.length}개)`);
+                            const fitScore = _scored.find(sc => sc.scene.sceneNo === s.sceneNo)?.fitness || 0;
+                            console.warn(`[셀팟] claude_design 캡 초과 → #${s.sceneNo} ai로 변환 (적합도: ${fitScore}점, 캡: ${_cdCap}개, 원본: ${_cdScenes.length}개)`);
                             s.type = 'ai';
+                            // 빈 껍데기 방지: nano_prompt + grok_prompt 새로 생성
+                            const generated = _generateAiPromptsForConverted(s);
+                            s.nano_prompt = generated.nano_prompt;
+                            s.grok_prompt = generated.grok_prompt;
+                            delete s.claude_prompt;
+                            delete s.claude_kind;
                             _cdCapFixed++;
                         }
                     });
-                    console.log(`[셀팟] claude_design 캡 적용: ${_cdScenes.length}개 → ${_cdCap}개 (${_cdCapFixed}개 변환)`);
+                    console.log(`[셀팟] claude_design 캡 적용: ${_cdScenes.length}개 → ${_cdCap}개 (${_cdCapFixed}개 변환, 적합도 낮은 순 제거)`);
                 }
                 window._spCdCapFixed = _cdCapFixed;
                 window._spCdCap = _cdCap;
                 window._spCdOriginal = _cdScenes.length;
+
+                // 🔒 안전망: claude_design→ai 변환된 모든 장면의 nano_prompt 보장 (도입부 변환 포함)
+                let _promptFixCount = 0;
+                merged.forEach(s => {
+                    if (s.type === 'ai' && !s.nano_prompt) {
+                        const generated = _generateAiPromptsForConverted(s);
+                        s.nano_prompt = generated.nano_prompt;
+                        s.grok_prompt = s.grok_prompt || generated.grok_prompt;
+                        _promptFixCount++;
+                    }
+                });
+                if (_promptFixCount > 0) {
+                    console.log(`[셀팟] nano_prompt 빈 껍데기 ${_promptFixCount}개 → AI 프롬프트 자동 생성 완료`);
+                }
 
                 // 🔗 짧은 본문 장면 자동 합치기 (70자 미만 → 옆 장면과 결합, 타입 무관)
                 // 타입별 캡 (target 기준): ai=100, real=130, claude_design=150
@@ -20398,10 +20504,10 @@ JSON만 출력. 코드블록 마커 금지.`;
                 _spRenderResults(_spLastResult);
 
                 const introFixNote = _introClaudeFixed > 0
-                    ? ` <span style="color:#fd7e14;">⚠️ 도입부 ${_introClaudeFixed}개를 claude_design→ai로 강제 변환 (도입부 인포그래픽 금지 규칙). 해당 장면은 nano_prompt 비어있을 수 있음 → 재생성 권장.</span>`
+                    ? ` <span style="color:#fd7e14;">⚠️ 도입부 ${_introClaudeFixed}개를 claude_design→ai로 변환 (도입부 인포그래픽 금지). AI 프롬프트 자동 생성됨.</span>`
                     : '';
                 const cdCapNote = _cdCapFixed > 0
-                    ? ` <span style="color:#fd7e14;">⚠️ claude_design 캡 초과(${_cdScenes.length}개 → ${_cdCap}개) → ${_cdCapFixed}개 ai로 강제 변환. 해당 장면은 nano_prompt 비어있을 수 있음 → 재생성 권장.</span>`
+                    ? ` <span style="color:#fd7e14;">⚠️ claude_design 캡 초과(${_cdScenes.length}개 → ${_cdCap}개) → 적합도 낮은 ${_cdCapFixed}개를 ai로 변환 + AI 프롬프트 자동 생성됨.</span>`
                     : '';
                 const cdInfoNote = _cdCapFixed === 0 && _cdScenes.length > 0
                     ? ` <span style="color:#0066cc;">📊 claude_design ${_cdScenes.length}개 / 캡 ${_cdCap}개 (${Math.round(_cdScenes.length / merged.length * 100)}%)</span>`
