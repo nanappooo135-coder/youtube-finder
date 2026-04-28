@@ -19382,15 +19382,15 @@ overall mood: bright, psychologically safe illustration, uplifting and reassurin
 
                 const startBodyNo = introSceneList.length + 1;
 
-                // 채널별 차등 (AI 글자수 캡만 차등 — 심리학은 정적이라 슬로우 한계 살짝 높음)
-                // claude_design 캡은 양쪽 동일 15% (안전망 상한). 핵심은 비율이 아니라 "용도 판단": AI 일러스트보다 디자인 그래픽이 더 잘 먹히는 내용에만 사용
+                // 채널 양쪽 동일 캡 (15초 max — 심리학은 정적이라 슬로우가 더 어색하게 보여서 더 짧게 가야 함)
+                // claude_design 캡 15% (안전망 상한). 핵심은 비율이 아니라 "용도 판단"
                 const _isPsych = _spChannel === 'psychology';
-                const _cdCapRatio = 0.15; // 양쪽 동일 — 안전망 상한, 실제로는 용도 기반 판단으로 자연스럽게 그 아래 나옴
-                const _aiCharCap = _isPsych ? 140 : 120;
-                const _aiCharRecommend = _isPsych ? '80~130자 (12~20초)' : '70~110자 (10~17초)';
-                const _aiDurationRange = _isPsych ? '12~20초 권장, 21초 초과 금지' : '10~17초 권장, 18초 초과 금지';
+                const _cdCapRatio = 0.15;
+                const _aiCharCap = 100; // 양쪽 동일 — MAX 15초 한계 (10/15 = 0.67배속, 모션 보정 1.5x로 정상 속도 회복 가능한 한계). 16초부터 정지화면 위험
+                const _aiCharRecommend = '권장 60~85자 (9~13초). 최대 100자(15초) 절대 초과 금지';
+                const _aiDurationRange = '권장 9~13초, 최대 15초 (16초 초과 절대 금지)';
                 const _channelNote = _isPsych
-                    ? '심리학 채널: 정적·내면 톤 (인물·감정·일상 장면 위주). 호흡법·뇌구조·법칙 곡선 같은 진짜 도식만 claude_design.'
+                    ? '심리학 채널: 정적·내면 톤 (인물·감정·일상 장면 위주). 그록 영상이 본래 정적이라 슬로우 더 잘 티남 → 장면 길이 짧게 유지. 호흡법·뇌구조·법칙 곡선 같은 진짜 도식만 claude_design.'
                     : '경제 채널: 동적·서사 톤 (인물·풍경·도시 장면 위주). 진짜 그래프·지도·데이터만 claude_design.';
 
                 const prompt = `당신은 유튜브 ${channelLabel} 채널의 영상 제작 디렉터입니다. 아래 대본 전체를 읽고 맥락을 완전히 이해한 뒤, 본문을 **응집도 있는 장면 단위로 자동 묶기** + **각 장면별 시각화 방법 결정**을 해야 합니다.
