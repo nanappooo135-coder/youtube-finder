@@ -19382,7 +19382,20 @@ overall mood: bright, psychologically safe illustration, uplifting and reassurin
 
                 const startBodyNo = introSceneList.length + 1;
 
+                // 채널별 차등 캡 (심리학=정적·도식 친화, 경제=동적·서사 친화)
+                const _isPsych = _spChannel === 'psychology';
+                const _cdCapRatio = _isPsych ? 0.30 : 0.15;
+                const _aiCharCap = _isPsych ? 140 : 120;
+                const _aiCharRecommend = _isPsych ? '80~130자 (12~20초)' : '70~110자 (10~17초)';
+                const _aiDurationRange = _isPsych ? '12~20초 권장, 21초 초과 금지' : '10~17초 권장, 18초 초과 금지';
+                const _channelNote = _isPsych
+                    ? '심리학 채널: 정적·도식 친화 (호흡법·뇌구조·여키스도드슨 등 인포그래픽 자연스러움). claude_design 비율 최대 30%까지 허용.'
+                    : '경제 채널: 동적·서사 친화 (인물·풍경·도시 장면 위주). claude_design은 진짜 데이터·그래프만, 최대 15%.';
+
                 const prompt = `당신은 유튜브 ${channelLabel} 채널의 영상 제작 디렉터입니다. 아래 대본 전체를 읽고 맥락을 완전히 이해한 뒤, 본문을 **응집도 있는 장면 단위로 자동 묶기** + **각 장면별 시각화 방법 결정**을 해야 합니다.
+
+=== 채널 특성 ===
+${_channelNote}
 
 === 전체 대본 (맥락 이해용) ===
 ${fullScript}
@@ -19400,10 +19413,10 @@ ${stylePrompt}
 - **사용자 힌트**: 약 ${_spN}문장 단위로 묶는 것을 기본. 단, 아래 우선순위가 더 중요:
 - **응집도 우선**: 한 장면 = 하나의 시각적 순간/주제. 묶음 안 문장들이 **같은 시각으로 표현 가능**해야 함.
 - **주제 전환 시 분할**: 묶음 중간에 다른 시각/장소/감정/통계로 넘어가면 거기서 끊어 새 장면.
-- **🚨 글자수 캡 (AI 장면 절대 준수)**: AI 일러스트 장면은 **묶음 한국어 글자수 ≤ 120자** (약 18초). 120자 초과면 분할. 이유: 그록은 max 10초만 생성 → 그록 모션 강도 보정(1.5~1.7x) 더해도 실질 한계가 18초 부근 (그 이상은 슬로우 0.5배 미만 → 늘어진 느낌).
+- **🚨 글자수 캡 (AI 장면 절대 준수)**: AI 일러스트 장면은 **묶음 한국어 글자수 ≤ ${_aiCharCap}자**. ${_aiCharCap}자 초과면 분할. 이유: 그록은 max 10초만 생성 → 그록 모션 강도 보정(1.5~1.7x) 더해도 슬로우 한계 존재.
   - 글자수 추정: 한국어 1초 ≈ 6.5자 (TTS 기준)
-  - 권장 범위: AI 장면 **70~110자** (10~17초) — 너무 잘게 쪼개지 말 것
-  - 120자 초과: 분할 (큰 묶음을 2~3개로 나누는 정도면 충분)
+  - 권장 범위: AI 장면 **${_aiCharRecommend}** — 너무 잘게 쪼개지 말 것
+  - ${_aiCharCap}자 초과: 분할 (큰 묶음을 2~3개로 나누는 정도면 충분)
   - **🚨 과도한 분할 금지**: 32초 본문이라도 **2개(약 16초씩)** 또는 **3개(약 10초씩)**로만 분할하면 충분. 5개 이상으로 자르지 말 것 — 이미지·그록 영상 작업량만 늘고 시청자한테 산만한 느낌. 응집도 있으면 한 장면 유지가 우선.
   - 분할 판단 기준: ① 시각이 완전히 달라지는가? ② 한 그림으로 표현 불가능한가? — 둘 다 YES일 때만 분할. 같은 주제 안에서 비슷한 톤이면 한 장면으로 묶어도 OK.
 - **claude_design은 글자수 캡 완화**: HTML 애니메이션이라 자체적으로 길이 조절 가능 → 묶음 글자수 ≤ 150자 (23초).
@@ -19416,9 +19429,9 @@ ${stylePrompt}
 === 장면 타입 분류 ===
 1. **ai** — AI 일러스트(나노바나나2). 일반 장면, 감정·내면·비유·일상 상황. 기본값.
 2. **real** — 실사(구글 이미지). 실존 인물(이름 명시된 학자/정치인/유명인), 실제 책 《》, 유명 기관·장소만.
-3. **claude_design** — Claude Design 인포그래픽. **🚨 매우 엄격한 기준 — 과다 사용 시 시청자 이탈** 🚨
-   **🔴 하드 캡 (절대 준수)**: claude_design은 **전체 장면의 10~15% 이내**. 예: 35장면이면 **최대 4~5개**, 20장면이면 최대 2~3개, 10장면이면 최대 1~2개. 캡을 절대 초과하지 말 것. 캡 초과 시 가장 약한 후보부터 ai로 변경.
-   **이유**: claude_design = 인포그래픽 톤 = 교육·강의·다큐 느낌. 너무 자주 나오면 유튜브 영상이 강의처럼 보여서 시청자가 즉시 이탈. 이 채널은 서사·드라마·풍경 위주이고, 클로드 디자인은 **"이 데이터는 그래프로 봐야 이해된다"**는 결정적 순간에만 효과 있음.
+3. **claude_design** — Claude Design 인포그래픽. **🚨 채널별 캡 절대 준수** 🚨
+   **🔴 하드 캡 (채널별 차등)**: claude_design은 **전체 장면의 ${Math.round(_cdCapRatio * 100)}% 이내**. 예: 35장면이면 최대 ${Math.max(1, Math.floor(35 * _cdCapRatio))}개, 20장면이면 최대 ${Math.max(1, Math.floor(20 * _cdCapRatio))}개, 10장면이면 최대 ${Math.max(1, Math.floor(10 * _cdCapRatio))}개. 캡 초과 시 가장 약한 후보부터 ai로 변경.
+   **이유**: ${_isPsych ? '심리학 채널은 도식·인포그래픽이 자연스럽게 어울리는 톤(호흡법·뇌구조·법칙 곡선 등)이라 30%까지 허용. 그래도 인물·내면·일상 묘사 장면은 무조건 ai.' : '경제 채널은 서사·드라마·풍경 위주. claude_design = 인포그래픽 톤 = 교육·강의·다큐 느낌. 너무 자주 나오면 유튜브 영상이 강의처럼 보여서 시청자 즉시 이탈. **"이 데이터는 그래프로 봐야 이해된다"**는 결정적 순간에만 효과 있음.'}
    **✅ 적합 케이스 (이런 경우만 claude_design)**:
    - **명확한 그래프·곡선이 필요한 데이터**: 시계열 변화, 비교 막대, 추세선 (예: 출산율 1.33 추이, 1인당 GDP 격차 변화)
    - **순위·지표 시각화**: OECD 28위 같은 랭킹, 국가별 비교 (예: MRI 보유량 미국의 1/4)
@@ -19440,12 +19453,12 @@ ${stylePrompt}
    - **숫자가 나온다고 자동으로 claude_design 아님**. 핵심은 "그래프·도식 없이는 시각화 불가능한가?" — 자막+ai로 처리 가능하면 ai.
    - **"인포그래픽이 더 이쁠 것 같다"는 이유 금지**. 시각화 필요성으로만 판단.
    **🚨 절대 금지 — 도입부(isIntro:true) 장면**: 도입부는 시청자 후킹 단계. 감정·드라마·궁금증이 목적이라 인포그래픽이 들어가면 즉시 이탈. **도입부 장면은 어떤 경우에도 claude_design 금지** (도식·통계가 도입부 텍스트에 있어도 ai로 분류). 도입부는 오직 `ai` 또는 `real`만 허용.
-   **📊 장면 분류 후 자체 검증 필수**: 모든 장면 분류 끝낸 뒤 claude_design 개수를 세고, 전체의 15%를 초과하면 가장 약한 후보(서사적 요소가 섞인 것, 자막+ai로 대체 가능한 것)부터 ai로 변경할 것.
+   **📊 장면 분류 후 자체 검증 필수**: 모든 장면 분류 끝낸 뒤 claude_design 개수를 세고, 전체의 ${Math.round(_cdCapRatio * 100)}%를 초과하면 가장 약한 후보(서사적 요소가 섞인 것, 자막+ai로 대체 가능한 것)부터 ai로 변경할 것.
 
 === 각 본문 장면 출력 ===
 - sceneNo: 도입부 ${introSceneList.length}개 다음부터 ${startBodyNo}, ${startBodyNo+1}, ... 순차
 - bodyIndices: 이 묶음에 포함된 본문 문장 인덱스 배열 (예: [1,2,3] = B1+B2+B3)
-- duration: 본문 추정초 = 한국어 글자수 ÷ 6.5 (소수 반올림). **AI 장면은 10~17초 권장, 18초 초과 금지** (그록 슬로우가 0.55배 미만 되면 정지화면처럼 보임 — 모션 강도 보정 1.7x까지 끌어올려도 한계). real은 4~12초, claude_design은 5~23초.
+- duration: 본문 추정초 = 한국어 글자수 ÷ 6.5 (소수 반올림). **AI 장면은 ${_aiDurationRange}** (그록 슬로우 한계 — 모션 강도 보정 1.7x 끌어올려도 한계). real은 4~12초, claude_design은 5~23초.
 - type: ai | real | claude_design
 - nano_prompt: (ai만) 영문. 위 그림체를 자연스럽게 녹임.
   **★ 가장 중요 — 한 장면 = 한 그림만 ★**
@@ -19632,9 +19645,9 @@ JSON만 출력하세요. 코드블록 마커 금지.`;
                     console.log(`[셀팟] 도입부 claude_design 차단: ${_introClaudeFixed}개 → ai로 변환됨`);
                 }
 
-                // 🚨 claude_design 15% 하드 캡 — LLM이 룰 어기는 경우 코드 이중화
+                // 🚨 claude_design 채널별 하드 캡 — LLM이 룰 어기는 경우 코드 이중화
                 const _totalScenes = merged.length;
-                const _cdCap = Math.max(1, Math.floor(_totalScenes * 0.15));
+                const _cdCap = Math.max(1, Math.floor(_totalScenes * _cdCapRatio));
                 const _cdScenes = merged.filter(s => s.type === 'claude_design');
                 let _cdCapFixed = 0;
                 if (_cdScenes.length > _cdCap) {
@@ -19655,12 +19668,12 @@ JSON만 출력하세요. 코드블록 마커 금지.`;
                 window._spCdCap = _cdCap;
                 window._spCdOriginal = _cdScenes.length;
 
-                // 🚨 AI 장면 글자수 초과 경고 (그록 10초 + 모션 보정 1.7x 한계)
-                // 한국어 1초 ≈ 6.5자, 18초 = 117자. 120자 초과 ai 장면은 슬로우가 0.55배 미만 되어 정지화면화 위험
+                // 🚨 AI 장면 글자수 초과 경고 (그록 10초 + 모션 보정 1.7x 한계, 채널별 차등)
+                // 경제: 120자(18초), 심리학: 140자(21초). 심리학은 정적 톤이라 슬로우 한계가 살짝 더 높음
                 const _longAiScenes = merged.filter(s => {
                     if (s.type !== 'ai') return false;
                     const charCount = (s.text || '').length;
-                    return charCount > 120;
+                    return charCount > _aiCharCap;
                 }).map(s => ({
                     sceneNo: s.sceneNo,
                     chars: (s.text || '').length,
@@ -19669,7 +19682,7 @@ JSON만 출력하세요. 코드블록 마커 금지.`;
                     preview: (s.text || '').slice(0, 40)
                 }));
                 if (_longAiScenes.length > 0) {
-                    console.warn(`[셀팟] ⚠️ AI 장면 글자수 초과 ${_longAiScenes.length}개 (120자/18초 한계). 그록 슬로우가 0.55배 미만 되어 정지화면처럼 보일 위험. 큰 묶음을 2~3개로만 분할 (5개 이상 과분할 X):`);
+                    console.warn(`[셀팟] ⚠️ AI 장면 글자수 초과 ${_longAiScenes.length}개 (${_aiCharCap}자 한계, ${_isPsych ? '심리학' : '경제'} 채널). 그록 슬로우가 한계 미만 되어 정지화면처럼 보일 위험. 큰 묶음을 2~3개로만 분할 (5개 이상 과분할 X):`);
                     _longAiScenes.forEach(s => {
                         console.warn(`  #${s.sceneNo} ${s.chars}자 (~${s.estSec}초, 슬로우 ${s.playbackRate.toFixed(2)}x): "${s.preview}..."`);
                     });
@@ -19689,7 +19702,7 @@ JSON만 출력하세요. 코드블록 마커 금지.`;
                     ? ` <span style="color:#0066cc;">📊 claude_design ${_cdScenes.length}개 / 캡 ${_cdCap}개 (${Math.round(_cdScenes.length / merged.length * 100)}%)</span>`
                     : '';
                 const longAiNote = _longAiScenes.length > 0
-                    ? `<br><span style="color:#dc3545;font-weight:700;">🚨 AI 장면 ${_longAiScenes.length}개가 120자(18초) 초과 — 그록 영상이 정지화면처럼 보일 위험. 큰 묶음만 2~3개로 분할 권장 (과분할 X).</span>`
+                    ? `<br><span style="color:#dc3545;font-weight:700;">🚨 AI 장면 ${_longAiScenes.length}개가 ${_aiCharCap}자 초과 (${_isPsych ? '심리학' : '경제'} 캡) — 그록 영상이 정지화면처럼 보일 위험. 큰 묶음만 2~3개로 분할 권장 (과분할 X).</span>`
                     : '';
                 status.innerHTML = `<span style="color:#28a745;">✅ ${merged.length}장면 변환 완료 (모델: ${r.usage?.model || 'gemini-2.5-pro'})</span>${introFixNote}${cdCapNote}${cdInfoNote}${longAiNote}`;
                 document.getElementById('spResultSection').style.display = '';
