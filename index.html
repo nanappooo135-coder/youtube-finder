@@ -20023,6 +20023,45 @@ JSON만 출력. 코드블록 마커 금지.`;
                 window._spCdCap = _cdCap;
                 window._spCdOriginal = _cdScenes.length;
 
+                // 🔗 짧은 AI 장면 자동 합치기 (60자 미만 → 옆 장면과 결합)
+                let _autoMergedShort = 0;
+                const _afterMerge = [];
+                for (let i = 0; i < merged.length; i++) {
+                    const s = merged[i];
+                    const charCount = (s.text || '').length;
+                    // 도입부, claude, real은 그대로
+                    if (s.isIntro || s.type !== 'ai' || charCount === 0 || charCount >= 60) {
+                        _afterMerge.push(s);
+                        continue;
+                    }
+                    // 60자 미만 ai 장면 → 다음 ai 장면과 합치기 (캡 안에 들어오면)
+                    const next = merged[i + 1];
+                    if (next && next.type === 'ai' && !next.isIntro && (charCount + (next.text || '').length + 1) <= _aiCharCap) {
+                        next.text = s.text + ' ' + (next.text || '');
+                        next._mergedFromShort = true;
+                        _autoMergedShort++;
+                        console.log(`[셀팟] 짧은 AI #${s.sceneNo} (${charCount}자) → 다음 #${next.sceneNo}와 합침`);
+                        continue; // s 건너뜀
+                    }
+                    // 다음이 안되면 이전 ai 장면과 합치기
+                    const prev = _afterMerge[_afterMerge.length - 1];
+                    if (prev && prev.type === 'ai' && !prev.isIntro && (charCount + (prev.text || '').length + 1) <= _aiCharCap) {
+                        prev.text = (prev.text || '') + ' ' + s.text;
+                        prev._mergedFromShort = true;
+                        _autoMergedShort++;
+                        console.log(`[셀팟] 짧은 AI #${s.sceneNo} (${charCount}자) → 이전 #${prev.sceneNo}와 합침`);
+                        continue;
+                    }
+                    // 합칠 수 없으면 그대로 (캡 초과 위험으로 합치기 포기)
+                    _afterMerge.push(s);
+                }
+                if (_autoMergedShort > 0) {
+                    _afterMerge.forEach((s, i) => { s.sceneNo = i + 1; });
+                    merged = _afterMerge;
+                    console.log(`[셀팟] ✅ 짧은 AI 장면 자동 합치기: ${_autoMergedShort}개 → 총 ${merged.length}장면`);
+                }
+                window._spAutoMergedShort = _autoMergedShort;
+
                 // 🚨 AI 장면 100자 초과 자동 분할 (LLM이 룰 어긴 경우 코드 강제 분할)
                 let _autoSplitCount = 0;
                 const _splitMerged = [];
@@ -20032,9 +20071,11 @@ JSON만 출력. 코드블록 마커 금지.`;
                         _splitMerged.push(s);
                         continue;
                     }
-                    // 문장 단위 분할 (마침표/물음표/느낌표 기준)
+                    // 문장 단위 분할 (마침표/물음표/느낌표 + 공백 기준 — 숫자 안 마침표 안 자르게)
+                    // "48.5시간" 같이 숫자 사이 마침표는 보호됨 (뒤에 공백 없으니까)
                     const text = s.text;
-                    const parts = text.match(/[^.!?]+[.!?]+\s*/g) || [text];
+                    const splitArr = text.split(/(?<=[.!?])\s+/).filter(p => p.length > 0);
+                    const parts = splitArr.length > 0 ? splitArr : [text];
                     if (parts.length === 1) {
                         // 문장 1개짜리는 분할 불가 → 그대로 두고 경고만
                         _splitMerged.push(s);
@@ -20133,7 +20174,10 @@ JSON만 출력. 코드블록 마커 금지.`;
                     ? ` <span style="color:#0066cc;">📊 claude_design ${_cdScenes.length}개 / 캡 ${_cdCap}개 (${Math.round(_cdScenes.length / merged.length * 100)}%)</span>`
                     : '';
                 const splitNote = _autoSplitCount > 0
-                    ? `<br><span style="color:#0066cc;font-weight:700;">✅ AI 장면 ${_autoSplitCount}개 자동 분할 (100자 초과 → 문장 단위로 쪼갬). 분할된 장면은 프롬프트 재생성 권장 (나노바나나·그록 새로 돌리기).</span>`
+                    ? `<br><span style="color:#0066cc;font-weight:700;">✅ AI 장면 ${_autoSplitCount}개 자동 분할 (100자 초과 → 문장 단위로 쪼갬). 분할된 장면은 프롬프트 재생성 권장.</span>`
+                    : '';
+                const mergeNote = _autoMergedShort > 0
+                    ? `<br><span style="color:#0066cc;font-weight:700;">🔗 짧은 AI 장면 ${_autoMergedShort}개 자동 합치기 (60자 미만 → 옆 장면 흡수).</span>`
                     : '';
                 const longAiNote = _longAiScenes.length > 0
                     ? `<br><span style="color:#dc3545;font-weight:700;">🚨 AI 장면 ${_longAiScenes.length}개가 ${_aiCharCap}자 초과 (단일 문장이라 자동 분할 실패) — 본문 직접 수정 필요.</span>`
@@ -20153,7 +20197,7 @@ JSON만 출력. 코드블록 마커 금지.`;
                 const shortNote = _shortBodyScenes.length > 0
                     ? `<br><span style="color:#fd7e14;font-weight:700;">⚠️ 너무 짧은 본문 장면 ${_shortBodyScenes.length}개 (60자/9초 미만) — 옆 장면과 합치는 게 자연스러움. 콘솔에서 장면번호 확인.</span>`
                     : '';
-                status.innerHTML = `<span style="color:#28a745;">✅ ${merged.length}장면 변환 완료 (모델: ${r.usage?.model || 'gemini-2.5-pro'})</span>${chunkNote}${introFixNote}${cdCapNote}${cdInfoNote}${splitNote}${longAiNote}${shortNote}${recoveryNote}${retryNote}${truncatedNote}`;
+                status.innerHTML = `<span style="color:#28a745;">✅ ${merged.length}장면 변환 완료 (모델: ${r.usage?.model || 'gemini-2.5-pro'})</span>${chunkNote}${introFixNote}${cdCapNote}${cdInfoNote}${mergeNote}${splitNote}${longAiNote}${shortNote}${recoveryNote}${retryNote}${truncatedNote}`;
                 document.getElementById('spResultSection').style.display = '';
                 document.getElementById('spResultSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
