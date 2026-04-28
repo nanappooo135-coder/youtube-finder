@@ -20101,16 +20101,19 @@ JSON만 출력. 코드블록 마커 금지.`;
                 window._spCdCap = _cdCap;
                 window._spCdOriginal = _cdScenes.length;
 
-                // 🔗 짧은 본문 장면 자동 합치기 (60자 미만 → 옆 장면과 결합, 타입 무관)
+                // 🔗 짧은 본문 장면 자동 합치기 (70자 미만 → 옆 장면과 결합, 타입 무관)
                 // 타입별 캡 (target 기준): ai=100, real=130, claude_design=150
+                // 합치기 시 +20자 여유 — 더 많이 합쳐지게 (그록 슬로우 살짝 늘지만 미니 장면 사라짐)
                 const _typeCap = (t) => t === 'real' ? 130 : t === 'claude_design' ? 150 : _aiCharCap;
+                const _typeMergeCap = (t) => _typeCap(t) + 20;
+                const SHORT_THRESHOLD = 70; // 트리거 (60→70자로 상향)
                 let _autoMergedShort = 0;
                 const _afterMerge = [];
                 for (let i = 0; i < merged.length; i++) {
                     const s = merged[i];
                     const charCount = (s.text || '').length;
                     // 도입부는 무조건 그대로
-                    if (s.isIntro || charCount === 0 || charCount >= 60) {
+                    if (s.isIntro || charCount === 0 || charCount >= SHORT_THRESHOLD) {
                         _afterMerge.push(s);
                         continue;
                     }
@@ -20118,7 +20121,7 @@ JSON만 출력. 코드블록 마커 금지.`;
                     // 다음 장면 우선 (서사 흐름 유지)
                     const next = merged[i + 1];
                     if (next && !next.isIntro) {
-                        const nextCap = _typeCap(next.type);
+                        const nextCap = _typeMergeCap(next.type);
                         if ((charCount + (next.text || '').length + 1) <= nextCap) {
                             next.text = s.text + ' ' + (next.text || '');
                             next._mergedFromShort = true;
@@ -20130,7 +20133,7 @@ JSON만 출력. 코드블록 마커 금지.`;
                     // 다음 안되면 이전 장면과 합치기
                     const prev = _afterMerge[_afterMerge.length - 1];
                     if (prev && !prev.isIntro) {
-                        const prevCap = _typeCap(prev.type);
+                        const prevCap = _typeMergeCap(prev.type);
                         if ((charCount + (prev.text || '').length + 1) <= prevCap) {
                             prev.text = (prev.text || '') + ' ' + s.text;
                             prev._mergedFromShort = true;
