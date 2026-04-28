@@ -19604,9 +19604,10 @@ ${stylePrompt}
 JSON만 출력하세요. 코드블록 마커 금지.`;
 
                 status.innerHTML = '<div class="spinner"></div> Gemini Pro 호출 중... (대본 길이에 따라 30~90초)';
-                const r = await callGemini(prompt, { maxTokens: 32768, temperature: 0.4, model: 'gemini-2.5-pro' });
+                // maxTokens 65536으로 증가 (긴 대본 = 40+ 장면 + 각 장면당 nano/grok prompt 합쳐서 응답 80KB+ 가능)
+                const r = await callGemini(prompt, { maxTokens: 65536, temperature: 0.4, model: 'gemini-2.5-pro' });
 
-                // JSON 파싱
+                // JSON 파싱 — 4단계 복구 전략 (응답 잘림 대비)
                 let txt = r.text.trim();
                 txt = txt.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '');
                 const firstBrace = txt.indexOf('{');
@@ -19615,10 +19616,71 @@ JSON만 출력하세요. 코드블록 마커 금지.`;
                     txt = txt.substring(firstBrace, lastBrace + 1);
                 }
                 let parsed;
+                let _parseRecovery = '';
                 try {
                     parsed = JSON.parse(txt);
                 } catch (e) {
-                    throw new Error('Gemini 응답 JSON 파싱 실패: ' + e.message + '\n\n원본 일부: ' + r.text.slice(0, 500));
+                    console.warn('[셀팟] 1차 JSON 파싱 실패, 복구 시도:', e.message);
+                    // 2차: 마지막 완전한 } 까지만 파싱 (잘림 복구)
+                    try {
+                        let depth = 0, lastValidEnd = -1, inStr = false, esc = false;
+                        for (let i = 0; i < txt.length; i++) {
+                            const ch = txt[i];
+                            if (esc) { esc = false; continue; }
+                            if (ch === '\\') { esc = true; continue; }
+                            if (ch === '"') { inStr = !inStr; continue; }
+                            if (inStr) continue;
+                            if (ch === '{') depth++;
+                            else if (ch === '}') { depth--; if (depth === 0) lastValidEnd = i; }
+                        }
+                        if (lastValidEnd > 0) {
+                            parsed = JSON.parse(txt.slice(0, lastValidEnd + 1));
+                            _parseRecovery = '잘림 복구 (마지막 완전 객체)';
+                            console.warn('[셀팟] 2차 복구 성공 — 마지막 완전한 } 까지 파싱');
+                        }
+                    } catch (e2) {
+                        console.warn('[셀팟] 2차 복구도 실패:', e2.message);
+                    }
+                    // 3차: scenes 배열 안에서 마지막 완전한 객체까지만 살리기
+                    if (!parsed) {
+                        try {
+                            const scenesStart = txt.indexOf('"scenes"');
+                            if (scenesStart >= 0) {
+                                const arrStart = txt.indexOf('[', scenesStart);
+                                if (arrStart >= 0) {
+                                    // 배열 안에서 마지막 완전한 } 찾기
+                                    let depth = 0, inStr = false, esc = false;
+                                    let lastObjEnd = -1, inObj = false;
+                                    for (let i = arrStart + 1; i < txt.length; i++) {
+                                        const ch = txt[i];
+                                        if (esc) { esc = false; continue; }
+                                        if (ch === '\\') { esc = true; continue; }
+                                        if (ch === '"') { inStr = !inStr; continue; }
+                                        if (inStr) continue;
+                                        if (ch === '{') { depth++; inObj = true; }
+                                        else if (ch === '}') { depth--; if (depth === 0 && inObj) { lastObjEnd = i; inObj = false; } }
+                                        else if (ch === ']' && depth === 0) break;
+                                    }
+                                    if (lastObjEnd > 0) {
+                                        const recovered = '{' + txt.slice(scenesStart - 1, scenesStart) + txt.slice(scenesStart, lastObjEnd + 1) + ']}';
+                                        // 더 단순한 방법: arrStart부터 lastObjEnd까지 + ]} 닫기
+                                        const fixed = '{"scenes":' + txt.slice(arrStart, lastObjEnd + 1) + ']}';
+                                        parsed = JSON.parse(fixed);
+                                        _parseRecovery = `잘림 복구 (scenes 배열 ${parsed.scenes.length}개까지만)`;
+                                        console.warn('[셀팟] 3차 복구 성공 —', _parseRecovery);
+                                    }
+                                }
+                            }
+                        } catch (e3) {
+                            console.warn('[셀팟] 3차 복구도 실패:', e3.message);
+                        }
+                    }
+                    if (!parsed) {
+                        throw new Error(`Gemini 응답 JSON 파싱 실패 (4단계 복구 모두 실패): ${e.message}\n\n응답 길이: ${r.text.length}자\n원본 앞부분: ${r.text.slice(0, 300)}\n원본 뒷부분: ${r.text.slice(-300)}\n\n해결: 본문을 둘로 나눠서 두 번 변환하거나, 본문 묶음 힌트를 늘려서(${_spN} → ${_spN+2}문장) 장면 개수를 줄여보세요.`);
+                    }
+                }
+                if (_parseRecovery) {
+                    console.log(`[셀팟] ⚠️ JSON 복구됨: ${_parseRecovery}. 일부 장면이 누락됐을 수 있음.`);
                 }
 
                 const geminiScenes = parsed.scenes || [];
@@ -19712,7 +19774,10 @@ JSON만 출력하세요. 코드블록 마커 금지.`;
                 const longAiNote = _longAiScenes.length > 0
                     ? `<br><span style="color:#dc3545;font-weight:700;">🚨 AI 장면 ${_longAiScenes.length}개가 ${_aiCharCap}자 초과 (${_isPsych ? '심리학' : '경제'} 캡) — 그록 영상이 정지화면처럼 보일 위험. 큰 묶음만 2~3개로 분할 권장 (과분할 X).</span>`
                     : '';
-                status.innerHTML = `<span style="color:#28a745;">✅ ${merged.length}장면 변환 완료 (모델: ${r.usage?.model || 'gemini-2.5-pro'})</span>${introFixNote}${cdCapNote}${cdInfoNote}${longAiNote}`;
+                const recoveryNote = _parseRecovery
+                    ? `<br><span style="color:#fd7e14;font-weight:700;">⚠️ JSON 응답이 잘려서 복구 모드로 파싱됨 (${_parseRecovery}) — 일부 장면 누락 가능. 장면 수가 예상보다 적으면 본문을 둘로 나눠 다시 변환하세요.</span>`
+                    : '';
+                status.innerHTML = `<span style="color:#28a745;">✅ ${merged.length}장면 변환 완료 (모델: ${r.usage?.model || 'gemini-2.5-pro'})</span>${introFixNote}${cdCapNote}${cdInfoNote}${longAiNote}${recoveryNote}`;
                 document.getElementById('spResultSection').style.display = '';
                 document.getElementById('spResultSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
