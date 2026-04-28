@@ -12244,6 +12244,15 @@ ${sceneList}
             }).join('\n\n');
 
             const memo = window._contextMemo || '';
+            const isPsych = (typeof _isPsychologyMode === 'function') && _isPsychologyMode();
+            // 심리학: 정적·잔잔. 경제: 행동의 결정적 순간이 또렷이 살아야 함 (단 다큐/시네마틱은 금지)
+            const motionRule = isPsych
+                ? '5. 카메라는 보통 고정(holds steady). 배경은 움직이지 않음.'
+                : '5. 카메라는 기본 고정이지만, 동작을 강조할 때는 subtle push-in 또는 slow pan 허용. 배경에는 동작을 보조하는 부수 모션 가능 (예: 무역 흐름선 흐름, 연기 표류, 깃발 펄럭임). 단 dark cinematic / neon / 3D sci-fi / 카메라 흔들기 금지.';
+            const paceRule = isPsych
+                ? '7. 동작은 **천천히 deliberate**하게. 잔잔한 톤 유지.'
+                : '7. 동작은 **결정적이고 또렷하게** — 도미노가 쓰러지면 끝까지 쓰러지고, 화살이 진격하면 시원하게 진격. before → after가 영상 길이 안에 완결되어야 함. 단, frantic·chaotic은 금지.';
+
             const prompt = `당신은 AI 정지 이미지를 짧은 영상으로 변환하는 영상 감독입니다. 아래 각 장면마다, **AI 이미지 위에 덧입힐 영상 모션**을 구체적으로 지시하세요.
 
 ${memo ? '## 영상 전체 맥락\n' + memo + '\n\n' : ''}## 규칙
@@ -12251,8 +12260,9 @@ ${memo ? '## 영상 전체 맥락\n' + memo + '\n\n' : ''}## 규칙
 2. 주체가 뭔지, 어떤 동작을 하는지, 결과가 뭔지 **3가지를 명시**.
 3. 크림 수채 톤 유지 (NOT dark cinematic, NOT neon, NOT 3D sci-fi).
 4. 영문 2~4문장, 마지막에 "X seconds." 포함.
-5. 카메라는 보통 고정(holds steady). 배경은 움직이지 않음.
+${motionRule}
 6. 나레이션이 은유면 그 은유의 실제 물리 동작을 기술 (예: "손금처럼 본다" → 손바닥이 펼쳐지며 그 안에 항구 지도가 드러남).
+${paceRule}
 
 ## 장면 목록
 ${sceneList}
@@ -12375,7 +12385,11 @@ ${sceneList}
                 motion = 'The central symbolic object performs its key action slowly and deliberately (the main metaphoric motion implied by the scene). Background stays still. Color pulse or subtle glow emphasizes the moment of action. Camera holds steady.';
             }
 
-            return motion + ' Cream paper background stays still. Hand-painted watercolor aesthetic maintained. No text changes. ' + duration + ' seconds total. Restrained, editorial, documentary tone.';
+            const isPsych = (typeof _isPsychologyMode === 'function') && _isPsychologyMode();
+            const suffix = isPsych
+                ? ' Cream paper background stays still. Hand-painted watercolor aesthetic maintained. No text changes. Restrained, editorial, documentary tone.'
+                : ' Hand-painted watercolor aesthetic maintained. No text changes. Editorial tone with momentum — the action completes decisively within the duration. Subtle push-in or slow pan allowed when reinforcing the action. Background may carry secondary motion (drifting smoke, flowing lines, faint pulse). NO dark cinematic, NO neon, NO 3D sci-fi, NO shaky camera.';
+            return motion + suffix + ' ' + duration + ' seconds total.';
         }
 
         function _buildHistoricalVideoPrompt(narr, duration) {
@@ -12394,7 +12408,11 @@ ${sceneList}
                 motion = 'Subtle historical scene motion. Characters perform small natural actions (looking up, gesturing, breathing, subtle head turn). Environmental motion: candlelight flickers, dust motes drift through light beams, fabric moves with breath. Slow camera push-in.';
             }
 
-            return motion + ' Cinematic, grounded, period-accurate, NO sudden movement. ' + duration + ' seconds.';
+            const isPsych = (typeof _isPsychologyMode === 'function') && _isPsychologyMode();
+            const suffix = isPsych
+                ? ' Grounded, period-accurate, restrained. NO sudden movement.'
+                : ' Grounded, period-accurate. The historical action unfolds with clear momentum — banners sway, dust rises, figures move with deliberate intent. Subtle camera push-in allowed. NO dark cinematic, NO neon, NO 3D sci-fi, NO shaky camera, NO frantic motion.';
+            return motion + suffix + ' ' + duration + ' seconds.';
         }
 
         function _buildMovingMapVideoPrompt(narr, duration) {
@@ -12413,7 +12431,11 @@ ${sceneList}
                 motion = 'Animated glowing arrow or path draws smoothly across the map, connecting locations in sequence. Each location label fades in as the path reaches it. Subtle parallax on the map background.';
             }
 
-            return motion + ' Clean informative motion, ink-watercolor map style preserved, NO sudden movement. ' + duration + ' seconds.';
+            const isPsych = (typeof _isPsychologyMode === 'function') && _isPsychologyMode();
+            const suffix = isPsych
+                ? ' Clean informative motion, ink-watercolor map style preserved, NO sudden movement.'
+                : ' Ink-watercolor map style preserved. Directional energy — arrows, flow lines, and route paths complete their movement decisively within the duration. Labels reveal in sync with the motion reaching them. NO dark cinematic, NO neon, NO 3D sci-fi, NO shaky camera, NO frantic motion.';
+            return motion + suffix + ' ' + duration + ' seconds.';
         }
 
         function _enforceKoreanInAiPrompt(prompt, s) {
