@@ -3533,17 +3533,28 @@
                             }
 
                             _geminiCalls++;
-                            // 안전 필터 차단 감지
+                            // 빈 candidates → 다른 키로 시도 (안전 필터일 수도, 일시 장애일 수도)
                             if (!data.candidates || data.candidates.length === 0) {
                                 const blockReason = data.promptFeedback?.blockReason || '알 수 없음';
-                                throw new Error(`Gemini 안전 필터 차단 (${blockReason}). 대본 내용이 민감한 주제를 포함할 수 있습니다. 파트를 나눠서 다시 시도해보세요.`);
+                                lastError = new Error(`빈 응답 (${blockReason})`);
+                                console.warn(`[callGemini] ${shortName(model)} 키${ki+1} 빈 응답 (${blockReason}) → 다음 키 시도`);
+                                _showGeminiStatus(`${shortName(model)} 빈 응답 → 다음 키 시도 중...`);
+                                break; // attempt 루프 빠져서 다음 키로
                             }
                             const candidate = data.candidates[0];
                             if (candidate.finishReason === 'SAFETY') {
                                 const ratings = (candidate.safetyRatings || []).filter(r => r.blocked).map(r => r.category).join(', ');
-                                throw new Error(`Gemini 안전 필터 차단 (${ratings || 'SAFETY'}). 파트를 나눠서 다시 시도해보세요.`);
+                                lastError = new Error(`안전 필터 (${ratings || 'SAFETY'})`);
+                                console.warn(`[callGemini] ${shortName(model)} 키${ki+1} 안전 필터 → 다음 키 시도`);
+                                break;
                             }
                             const text = candidate.content?.parts?.[0]?.text || '';
+                            // 텍스트 너무 짧으면 (50자 미만) 빈 응답 취급 → 다음 키 시도
+                            if (text.length < 50) {
+                                lastError = new Error(`응답 너무 짧음 (${text.length}자)`);
+                                console.warn(`[callGemini] ${shortName(model)} 키${ki+1} 응답 ${text.length}자 → 다음 키 시도`);
+                                break;
+                            }
                             const finishReason = candidate.finishReason || 'STOP';
                             const usage = {
                                 input_tokens: data.usageMetadata?.promptTokenCount || 0,
