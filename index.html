@@ -19514,6 +19514,8 @@ ${stylePrompt}
   2. **장면당 3개 후보** — 1개만 주면 결과 0건일 때 막힘. 3개 다른 각도/단어 조합으로 백업 보장.
   3. **공식 명칭 + 모델/코드 번호 수준** 정확도 — 애매한 일반명 금지. 잘못된 키워드 주면 사용자가 다른 장비/장소 사진 받게 됨.
   4. **장면 나레이션과 매칭 정확도 최우선** — 그 장면이 정확히 뭘 보여줘야 하는지 nail down. 비슷한 다른 것 절대 X.
+  5. **🚨 사용자 대본의 고유명사 절대 변경 금지 (가장 중요)**: 대본에 등장한 인물 이름·기관·지명 등 고유명사는 **그대로 검색어에 사용**. **"당신이 모르는 인물이라고 가명으로 추정하지 말 것"**. 영문 표기를 모르면 한글 발음 그대로 영문 음역으로 검색 (예: "마이크 카니" → "Mike Carney" 또는 "Mark Carney"). **다른 사람 이름으로 임의 대체 절대 금지** (예: "마이크 카니"를 "Marc Miller"로 바꾸기 ❌). 사용자가 잘못된 이름을 적었어도 그건 사용자가 검수할 일 — LLM이 추측·교정하지 말 것.
+  6. **불확실하면 음역 + 직책 조합**: 인물 이름이 정확한 영문 표기가 모를 때 ① 한글 발음 영문 음역 ② 직책+국가 조합 ③ 직책+년도 조합 — 이렇게 3개 후보로. 다른 인물 이름을 끼워 넣지 말 것.
   **✅ 좋은 예 (영문 + 정확 + 3개)**:
   - 인물: ["Justin Trudeau Canadian Prime Minister", "Justin Trudeau press conference 2022", "Trudeau cabinet meeting Ottawa"]
   - 장비: ["USS Spruance DDG-111 destroyer", "Arleigh Burke class destroyer at sea", "US Navy destroyer Pacific deployment"]
