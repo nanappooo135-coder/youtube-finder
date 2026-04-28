@@ -12229,6 +12229,17 @@ ${sceneList}
             return out;
         }
 
+        // 그록 안티-드리프트 강제 문구 (모든 그록 프롬프트 경로에 무조건 append)
+        // 1차 JSON 생성 경로 외 LLM 재작성·fallback 경로에서도 새 얼굴/배경 변경/스타일 드리프트 차단
+        const _GROK_STRICT_RULES = 'STRICT RULES: maintain the EXACT original 2D illustrated style from the input image. NO photorealism, NO live-action drift, NO style change, NO 3D, NO anime conversion. NO scene transitions, NO location change, NO new background, NO cuts to other shots. Stay in the SAME scene from the input image throughout the entire clip. ABSOLUTELY NO NEW HUMAN FACES anywhere in the video — do not invent, generate, or hallucinate any face that is not in the input image. NO new characters appearing, NO portraits emerging, NO people materializing in empty areas, NO characters leaving the frame, NO teleporting. If the input image shows only hands, objects, or partial figures, KEEP IT THAT WAY — do not complete or extend them into full human figures. Empty background regions MUST stay empty — do not fill them with new people, faces, or objects. The total number of human figures MUST stay constant from frame 1 to last frame — count them in the input and never add more. Keep the composition 95% identical to the input image.';
+
+        // 중복 append 방지 (1차 경로 출력에 이미 있으면 그대로 둠)
+        function _appendGrokStrictRules(prompt) {
+            if (!prompt) return prompt;
+            if (/ABSOLUTELY NO NEW HUMAN FACES/i.test(prompt)) return prompt;
+            return prompt.trim() + ' ' + _GROK_STRICT_RULES;
+        }
+
         // AI 프롬프트: 한글 라벨 강제 (최신 이미지 모델은 한글 잘 씀)
         // 핵심 한글 텍스트를 구체적으로 명시 → AI가 정확히 그리게 유도
         // 2026-04-23: LLM 기반 그록 영상 프롬프트 배치 생성
@@ -12307,7 +12318,7 @@ ${sceneList}
                 if (p && typeof p === 'string' && p.length > 20) {
                     // 반환된 프롬프트가 현재 장면 나레이션과 테마 최소 일치하는지 체크
                     // (LLM이 id 섞어 반환했을 때 엉뚱한 은유가 다른 장면에 붙는 버그 방지)
-                    s.grokVideoPrompt = p;
+                    s.grokVideoPrompt = _appendGrokStrictRules(p);
                     s.grokPromptSource = 'llm';
                     applied++;
                 } else {
@@ -12389,7 +12400,7 @@ ${sceneList}
             const suffix = isPsych
                 ? ' Cream paper background stays still. Hand-painted watercolor aesthetic maintained. No text changes. Restrained, editorial, documentary tone.'
                 : ' Hand-painted watercolor aesthetic maintained. No text changes. Editorial tone with momentum — the action completes decisively within the duration. Subtle push-in or slow pan allowed when reinforcing the action. Background may carry secondary motion (drifting smoke, flowing lines, faint pulse). NO dark cinematic, NO neon, NO 3D sci-fi, NO shaky camera.';
-            return motion + suffix + ' ' + duration + ' seconds total.';
+            return _appendGrokStrictRules(motion + suffix + ' ' + duration + ' seconds total.');
         }
 
         function _buildHistoricalVideoPrompt(narr, duration) {
@@ -12412,7 +12423,7 @@ ${sceneList}
             const suffix = isPsych
                 ? ' Grounded, period-accurate, restrained. NO sudden movement.'
                 : ' Grounded, period-accurate. The historical action unfolds with clear momentum — banners sway, dust rises, figures move with deliberate intent. Subtle camera push-in allowed. NO dark cinematic, NO neon, NO 3D sci-fi, NO shaky camera, NO frantic motion.';
-            return motion + suffix + ' ' + duration + ' seconds.';
+            return _appendGrokStrictRules(motion + suffix + ' ' + duration + ' seconds.');
         }
 
         function _buildMovingMapVideoPrompt(narr, duration) {
@@ -12435,7 +12446,7 @@ ${sceneList}
             const suffix = isPsych
                 ? ' Clean informative motion, ink-watercolor map style preserved, NO sudden movement.'
                 : ' Ink-watercolor map style preserved. Directional energy — arrows, flow lines, and route paths complete their movement decisively within the duration. Labels reveal in sync with the motion reaching them. NO dark cinematic, NO neon, NO 3D sci-fi, NO shaky camera, NO frantic motion.';
-            return motion + suffix + ' ' + duration + ' seconds.';
+            return _appendGrokStrictRules(motion + suffix + ' ' + duration + ' seconds.');
         }
 
         function _enforceKoreanInAiPrompt(prompt, s) {
