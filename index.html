@@ -5332,6 +5332,41 @@ overall이 REJECT = 하나라도 FAIL이면 REJECT`;
             return objects;
         }
 
+        // 제목 패턴 분류기 — 인용/단정/역설/발화/의문/기타
+        function _classifyTitlePattern(title) {
+            if (!title) return '기타';
+            const t = String(title).trim();
+            // 의문 폭로형: "왜~?" / "~까?" / "진짜 이유" / "는가" / "되었나" / "한 이유"
+            if (/[?？]$/.test(t) || /^왜\s/.test(t) || /진짜\s*이유|숨은\s*이유|숨겨진\s*이유|는가\s*[?？]?$|되었나\s*[?？]?$|했나\s*[?？]?$|한\s+이유\s*[?？]?$/.test(t)) return '의문';
+            // 인용/발화 폭로형: 큰따옴표로 시작
+            if (/^["“"']/.test(t)) {
+                // 발화 폭로형: 숫자/금액/도발 명령
+                if (/\d|줄게|벌겠다|벌어|마세요|나가|떠나/.test(t)) return '발화';
+                return '인용';
+            }
+            // 사건 단정형: ~다/~다? / ~터졌다/~무너졌다/~끝났다/~선포
+            if (/(다|다[?？]|선포|무덤|중)\s*$/.test(t) || /터졌다|무너졌다|끝났다|사라졌다|돌아왔다/.test(t)) return '단정';
+            // 역설 묘사형: ~던/~인데/~한 + 명사구로 종결
+            if (/(었던|이었던|있던|인데|한데|이라더니|이라던)/.test(t) || /^한때\s/.test(t)) return '역설';
+            return '기타';
+        }
+
+        // 제목 균일성 검사 — 가장 많은 패턴의 비율 반환
+        function _checkTitleUniformity(topics) {
+            const titles = (topics || []).map(t => t.예상_제목 || '').filter(Boolean);
+            if (titles.length < 3) return { maxRatio: 0, dominant: null, counts: {}, total: titles.length };
+            const counts = {};
+            titles.forEach(t => {
+                const p = _classifyTitlePattern(t);
+                counts[p] = (counts[p] || 0) + 1;
+            });
+            let dominant = null, max = 0;
+            for (const k in counts) {
+                if (counts[k] > max) { max = counts[k]; dominant = k; }
+            }
+            return { maxRatio: max / titles.length, dominant, counts, total: titles.length };
+        }
+
         // 카드 검증 결과 토글/복원 헬퍼
         window._toggleValDetail = function(headerEl) {
             const det = headerEl.nextElementSibling;
@@ -5358,7 +5393,7 @@ overall이 REJECT = 하나라도 FAIL이면 REJECT`;
             alert('✅ 차단 목록 초기화 완료! 이제 "주제 찾기"를 다시 눌러보세요.');
         }
 
-        async function findTopicByFormula() {
+        async function findTopicByFormula(_isUniformityRetry = false) {
             const userExtra = document.getElementById('ftFormula').value.trim();
             const avoid = document.getElementById('ftAvoid').value.trim();
             const count = parseInt(document.getElementById('ftCount').value);
@@ -5371,11 +5406,13 @@ overall이 REJECT = 하나라도 FAIL이면 REJECT`;
 
             const btn = document.getElementById('ftBtn');
             btn.disabled = true;
-            btn.innerHTML = '<div class="spinner"></div> 뉴스 검색 + 분석 중... (20~40초)';
+            btn.innerHTML = _isUniformityRetry
+                ? '<div class="spinner"></div> ⚠️ 제목 패턴 다변화 재생성 중... (20~40초)'
+                : '<div class="spinner"></div> 뉴스 검색 + 분석 중... (20~40초)';
             _geminiStatusEl = btn;
 
             const resultsEl = document.getElementById('ftResults');
-            resultsEl.innerHTML = '<div style="padding:20px;text-align:center;color:#888;">실시간 뉴스를 검색하고 있어요...</div>';
+            if (!_isUniformityRetry) resultsEl.innerHTML = '<div style="padding:20px;text-align:center;color:#888;">실시간 뉴스를 검색하고 있어요...</div>';
 
             const today = new Date().toISOString().slice(0, 10);
             const recencyText = recency <= 7 ? '최근 7일'
@@ -5409,9 +5446,12 @@ overall이 REJECT = 하나라도 FAIL이면 REJECT`;
             const _channel = getCurrentChannel();
 
             // 한눈에 심리학 채널이면 완전히 다른 프롬프트 사용
+            const _uniformityHint = _isUniformityRetry
+                ? `⚠️⚠️⚠️ 재시도 호출 — 직전 응답이 제목 패턴 90% 이상 균일했음 (대부분 "왜~?" 의문형). 이번엔 5종 패턴(인용 대사/사건 단정/역설 묘사/발화 폭로/의문 폭로) 반드시 골고루 섞어주세요. 한 패턴이 ${count}개 중 ${Math.max(2, Math.round(count*0.4))}개를 초과하면 안 됩니다!\n\n`
+                : '';
             const prompt = _channel === 'psychology' ? buildPsychologyPrompt({
                 today, count, recencyText, recentTitles, blockedSection, capsSection, feedbackSection, userExtra, avoid
-            }) : `오늘은 ${today}입니다. 당신은 유튜브 채널 "푸짐한 경제학"의 콘텐츠 기획자입니다.
+            }) : _uniformityHint + `오늘은 ${today}입니다. 당신은 유튜브 채널 "푸짐한 경제학"의 콘텐츠 기획자입니다.
 
 [채널 컨텍스트]
 - 채널명: 푸짐한 경제학 (@PujimEcon)
@@ -5427,6 +5467,13 @@ overall이 REJECT = 하나라도 FAIL이면 REJECT`;
 - 중동 석유 종말 (44만, 패턴 C 지정학)
 - 아프가니스탄 자원 (37만, 패턴 C 지정학)
 - 이란 난공불락 몰락 (35만, 패턴 C 지정학)
+
+[잘 터진 제목 5종 — 패턴별 모방용 (이 패턴들을 골고루 섞어 쓰기)]
+- 인용 대사형: "끝까지 찾아서 복수한다" (33만, F-15) / "참을만큼 참았다 전쟁 선포" (31만, 파키스탄)
+- 사건 단정형: "이스라엘에 건드린 금기가 터졌다" (16만) / "16년의 독재자가 무너졌다"
+- 역설 묘사형: "잘 살 이유가 전혀 없는 나라" (16만, 호주) / "한때 세계 최강대국이었던" (12만)
+- 발화 폭로형: "AI 공장 돌려서 1조 달러 벌겠다" (90만, 머스크) / "8천만원 줄테니 제발 나가" (12만)
+- 의문 폭로형: "왜 ○○이 ○○했나?" / "○○의 진짜 이유" ⚠️ 현재 100% 비중 → 최대 40%로 축소
 
 [🎯 채널 검증된 제목 공식 — 반드시 적용]
 TOP 영상 분석 결과, 다음 3가지 공식이 핵심:
@@ -5506,11 +5553,18 @@ ${userExtra ? `[사용자 추가 요청]\n${userExtra}\n` : ''}
 ${recencyText} 동안의 실제 뉴스/이슈를 웹에서 검색하여, 위 패턴 비중(A 15% / B 25% / C 35% / D 25%)에 맞춰 영상 주제 ${count}개 추천하세요.
 예: ${count}개 중 패턴A ${Math.max(1, Math.round(count*0.15))}개, 패턴B ${Math.round(count*0.25)}개, 패턴C ${Math.round(count*0.35)}개, 패턴D ${Math.round(count*0.25)}개.
 
-[주제_한줄 다양화 — 모든 추천이 비슷해 보이지 않도록 형식 분산]
-3가지 형식을 골고루 섞어서 사용 (한 형식이 50% 넘지 않게):
-- 형식1: "왜 ○○인가?" (질문형)
-- 형식2: "○○이 ○○하는 이유" (서술형)
-- 형식3: "○○: ○○의 진짜 모습" (사건명+폭로형)
+[제목 패턴 5종 강제 다변화 — 절대 준수] ⭐ 가장 중요
+현재 AI가 100% "왜 ○○이/가 ○○했나/는가?" 형식만 양산 중. 채널 실제 잘 터진 영상은 5종이 골고루 섞여 있음.
+${count}개 추천 시 다음 비중 강제 적용:
+
+- 패턴 1 인용 대사형 (큰따옴표 시작 + 사람 발화): 최소 1개 필수 (예: "끝까지 찾아서 복수한다")
+- 패턴 2 사건 단정형 (~다/~다? 종결, 현재완료): 최소 1개 필수 (예: "이스라엘에 건드린 금기가 터졌다")
+- 패턴 3 역설 묘사형 (~던/~인데/~한 + 명사구): 최소 1개 권장 (예: "한때 세계 최강대국이었던")
+- 패턴 4 발화 폭로형 (큰따옴표 + 도발/숫자/명령): 최소 1개 권장 (인물 주제 시 필수, 예: "8천만원 줄테니 제발 나가")
+- 패턴 5 의문 폭로형 ("왜~?"/"진짜 이유"): 최대 40% (${count}개 중 ${Math.max(2, Math.round(count*0.4))}개 이하)
+
+⚠️ 위반 시 추천 무효. ${count}개 중 한 패턴이 60% 초과면 전부 재생성.
+각 주제의 "예상_제목"과 "제목_후보[].title"이 위 5종 중 어디에 속하는지 자기 분류해서 출력.
 
 [제목 3안(A/B/C) 강화 룰 — 절대 준수]
 1. 글자수 40~55자 강제 (35자 미만 금지, "왜 ○○인가?" 단순형 금지)
@@ -5522,10 +5576,11 @@ ${recencyText} 동안의 실제 뉴스/이슈를 웹에서 검색하여, 위 패
 4. 숫자 임팩트 강화:
    ✅ 큰 단위 ("4,000조" "1,300조" "163만") / 시간 압축 ("30년이 3일 만에" "11일 만에") / 비율 충격 ("70% 점령" "97% 폭락")
    ❌ 평범한 비교 ("A는 X, B는 Y") 금지
-5. A/B/C 3안은 반드시 다른 공식 사용 (같은 공식 3개 절대 금지):
-   - A안: 따옴표 후킹형 (45~55자, 괄호 부연 필수)
-   - B안: 콜론 폭로형 (40~50자)
-   - C안: 숫자 스케일형 (35~45자)
+5. A/B/C 3안은 반드시 다른 패턴 사용 (같은 패턴 3개 절대 금지):
+   - A안: 인용 대사형 또는 발화 폭로형 (큰따옴표로 시작, 45~55자, 괄호 부연 필수)
+   - B안: 사건 단정형 또는 역설 묘사형 (~다 종결 또는 ~던/~인데 묘사, 40~50자)
+   - C안: 숫자 스케일형 또는 의문 폭로형 (큰 숫자 또는 "왜~?", 35~45자)
+   ※ 3안 모두 같은 패턴(예: 전부 "왜~?"형)이면 자동 무효 — 반드시 분산
 6. 검증 키워드 가급적 포함: "진짜 이유" "도망치는" "몰락" "숨겨둔" "역대급" "30년 만에" "단 ○일 만에" "충격적인" "끝났습니다" "무너지는"
 7. 첫 15자 강도: 모바일 잘림 대비, 첫 15자만으로 후킹되어야 함
    ✅ "아름다운 자연에 속지" → 호기심 폭발
@@ -5779,6 +5834,17 @@ C) "내 얘기 거울" — 시청자 직접 연결 구조
                         <pre style="white-space:pre-wrap;font-size:0.78rem;color:#555;max-height:400px;overflow:auto;background:white;padding:8px;border-radius:4px;">${escapeHtml(text.slice(0, 5000))}${text.length > 5000 ? '\n\n...(이하 생략)' : ''}</pre>
                     </div>`;
                     return;
+                }
+
+                // [수정 4] 제목 패턴 균일성 검사 — 90% 이상 동일 패턴이면 1회 자동 재생성
+                if (!_isUniformityRetry && parsed.topics && parsed.topics.length >= 3) {
+                    const _u = _checkTitleUniformity(parsed.topics);
+                    console.log('[제목 패턴 균일성] 분포:', _u.counts, '/ 가장 많은 패턴:', _u.dominant, '/ 비율:', (_u.maxRatio*100).toFixed(0)+'%');
+                    if (_u.maxRatio >= 0.9) {
+                        console.warn(`[제목 패턴] 균일성 ${(_u.maxRatio*100).toFixed(0)}% (${_u.dominant}형 ${_u.counts[_u.dominant]}/${_u.total}) — 자동 재생성 1회 시도`);
+                        btn.innerHTML = `<div class="spinner"></div> ⚠️ 제목 ${(_u.maxRatio*100).toFixed(0)}%가 ${_u.dominant}형 — 패턴 다변화 재생성 중...`;
+                        return await findTopicByFormula(true);
+                    }
                 }
 
                 // 한국인 관심 점수 7점 미만 자동 제외 + max 항목별 검증 (15점 만점)
