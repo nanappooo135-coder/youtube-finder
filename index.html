@@ -2644,9 +2644,12 @@
 
                         <!-- 실사 검색 탭 -->
                         <div id="spTab_real" class="sp-result-pane" style="display:none;">
-                            <p style="font-size:0.78rem;color:#666;margin-bottom:8px;">실존 인물·책·기관 등장 장면. 구글 이미지에 키워드 검색.</p>
-                            <button class="search-btn" onclick="_spCopy('spOut_real', this)" style="width:100%;margin-bottom:8px;background:#8b4513;border-color:#8b4513;">📷 실사 키워드 전체 복사</button>
-                            <textarea id="spOut_real" readonly style="width:100%;min-height:300px;padding:14px;border:2px solid #d2b48c;border-radius:10px;font-size:0.85rem;line-height:1.6;background:#fafafa;resize:vertical;"></textarea>
+                            <p style="font-size:0.78rem;color:#666;margin-bottom:8px;">실존 인물·책·기관 등장 장면. 키워드 클릭하면 구글 이미지 검색이 새 탭으로 열림. 장면당 3개 영문 후보 (1개로 결과 부족하면 2,3번 시도).</p>
+                            <button class="search-btn" onclick="_spCopy('spOut_real', this)" style="width:100%;margin-bottom:8px;background:#8b4513;border-color:#8b4513;">📷 실사 키워드 전체 복사 (텍스트)</button>
+                            <div id="spOut_realLinks" style="margin-bottom:10px;padding:12px;background:#fffaf0;border:2px solid #d2b48c;border-radius:10px;font-size:0.85rem;line-height:1.6;min-height:60px;"></div>
+                            <details style="margin-bottom:6px;"><summary style="font-size:0.78rem;color:#666;cursor:pointer;">📋 텍스트 원문 (복사용)</summary>
+                                <textarea id="spOut_real" readonly style="width:100%;min-height:200px;padding:14px;border:2px solid #d2b48c;border-radius:10px;font-size:0.85rem;line-height:1.6;background:#fafafa;resize:vertical;margin-top:6px;"></textarea>
+                            </details>
                         </div>
 
                         <!-- Claude Design 탭 -->
@@ -18659,7 +18662,11 @@ overall mood: bright, psychologically safe illustration, uplifting and reassurin
                     if (scene.nano_prompt) text += '\n[이미지 프롬프트]\n' + scene.nano_prompt + '\n';
                     if (scene.grok_prompt) text += '\n[그록 프롬프트]\n' + scene.grok_prompt + '\n';
                     if (scene.claude_prompt) text += '\n[Claude Design 프롬프트]\n' + scene.claude_prompt + '\n';
-                    if (scene.real_keyword) text += '\n[실사 검색어]\n' + scene.real_keyword + '\n';
+                    if (Array.isArray(scene.real_keywords) && scene.real_keywords.length > 0) {
+                        text += '\n[실사 검색어 (영문, 3개 후보)]\n' + scene.real_keywords.map((k, i) => `${i+1}. ${k}`).join('\n') + '\n';
+                    } else if (scene.real_keyword) {
+                        text += '\n[실사 검색어]\n' + scene.real_keyword + '\n';
+                    }
                 }
                 text += '\n---\n\n';
             });
@@ -19449,8 +19456,26 @@ ${stylePrompt}
   - **duration > 16초** (~1.7x 보정): 최대 활기 (STRICT 한계 안에서). "full natural breathing rhythm with chest motion, clearly visible hair sway, ambient elements with continuous drift, camera push-in or slow pan up to 13%" 수준.
   ⚠️ "더 빠른 모션"의 의미 = 더 큰 동작이 아니라 **더 명확한 미세 모션 + 카메라 무빙 강도 약간 ↑**. STRICT RULES의 NO new faces, NO dramatic gestures, NO running 등은 어떤 duration이든 절대 어기지 말 것.
   duration 값에 따라 위 가이드 그대로 grok_prompt에 영문으로 명시할 것 (예: 14초 장면 → "fuller breathing arc, distinct hair sway, camera push-in up to 10%" 같은 문구를 자연스럽게 포함).
-- real_keyword: (real만) 구글 이미지 검색용 한글.
-- real_subject: (real만) 한 줄 설명.
+- real_keywords: (real만) **영문 검색어 배열, 정확히 3개**. 구글 이미지 검색용. 한글 금지.
+  **★ 작성 규칙 (절대 준수) ★**:
+  1. **반드시 영문으로** — 한글 검색은 자료 풀이 좁음. 영문으로 쳐야 구글 이미지에 풍부한 결과 나옴.
+  2. **장면당 3개 후보** — 1개만 주면 결과 0건일 때 막힘. 3개 다른 각도/단어 조합으로 백업 보장.
+  3. **공식 명칭 + 모델/코드 번호 수준** 정확도 — 애매한 일반명 금지. 잘못된 키워드 주면 사용자가 다른 장비/장소 사진 받게 됨.
+  4. **장면 나레이션과 매칭 정확도 최우선** — 그 장면이 정확히 뭘 보여줘야 하는지 nail down. 비슷한 다른 것 절대 X.
+  **✅ 좋은 예 (영문 + 정확 + 3개)**:
+  - 인물: ["Justin Trudeau Canadian Prime Minister", "Justin Trudeau press conference 2022", "Trudeau cabinet meeting Ottawa"]
+  - 장비: ["USS Spruance DDG-111 destroyer", "Arleigh Burke class destroyer at sea", "US Navy destroyer Pacific deployment"]
+  - 장소: ["Toronto Pearson Airport arrival hall", "YYZ Pearson terminal 1 international arrivals", "Toronto airport immigration queue"]
+  - 사건: ["1929 Wall Street Crash bank run", "Black Tuesday October 1929 stock exchange", "Great Depression breadline 1930s NYC"]
+  - 응급실: ["Toronto hospital emergency room hallway crowded", "Canadian healthcare ER waiting patients beds", "ER overcrowding stretchers corridor"]
+  **❌ 금지**:
+  - 한글 키워드 ("캐나다 총리", "토론토 응급실")
+  - 애매한 일반명 ("a destroyer", "a hospital")
+  - 키워드 1~2개만 (반드시 3개)
+  - 추측성 키워드 (검증 안 된 인물명·모델명)
+  **검증 원칙**: 키워드 주기 전 스스로 체크 — Wikipedia/뉴스에 해당 키워드로 결과 있을 법한가? 비슷한 다른 모델/인물과 혼동되지 않는가?
+  **퍼블릭 도메인 소스 힌트**: 미군 장비 → DVIDS, 미국 정부 → 해당 부처 공식 사이트, 일반 이미지 → 위키미디어 공용 우선.
+- real_subject: (real만) 한 줄 한글 설명. 어떤 장면을 의도하는지 사용자가 보고 매칭 확인용.
 - claude_prompt: (claude_design만) 한글. 위 그림체 색감·톤 반영. 16:9 전체 화면.
   **★ 배경색 다양화 (채널 팔레트 안에서) ★**
   - 매번 같은 배경색 쓰지 말 것. 도식 내용·분위기에 맞춰 채널 팔레트 안에서 다른 색 선택.
@@ -19541,7 +19566,8 @@ ${stylePrompt}
   "scenes": [
     {"sceneNo": 1, "type": "ai", "duration": 6, "isIntro": true, "bodyIndices": [], "nano_prompt": "...", "grok_prompt": "..."},
     {"sceneNo": ${startBodyNo}, "type": "ai", "duration": 10, "isIntro": false, "bodyIndices": [1,2,3], "nano_prompt": "...", "grok_prompt": "..."},
-    {"sceneNo": ${startBodyNo+1}, "type": "claude_design", "duration": 13, "isIntro": false, "bodyIndices": [4,5,6,7], "claude_prompt": "...", "claude_kind": "..."}
+    {"sceneNo": ${startBodyNo+1}, "type": "real", "duration": 8, "isIntro": false, "bodyIndices": [4,5], "real_keywords": ["Justin Trudeau press conference 2022", "Trudeau cabinet meeting Ottawa", "Canadian PM Trudeau Parliament Hill"], "real_subject": "트뤼도 총리 책상에서 결단 내리는 장면"},
+    {"sceneNo": ${startBodyNo+2}, "type": "claude_design", "duration": 13, "isIntro": false, "bodyIndices": [6,7,8,9], "claude_prompt": "...", "claude_kind": "..."}
   ]
 }
 
@@ -19701,12 +19727,48 @@ JSON만 출력하세요. 코드블록 마커 금지.`;
             const pasteEl = document.getElementById('spOut_grokPaste');
             if (pasteEl) pasteEl.value = grokPasteText || '(AI 영상 장면 없음)';
 
-            // 4) 실사 검색 — type=real만
-            const realLines = scenes
-                .filter(s => s.type === 'real')
-                .map(s => `[장면 ${s.sceneNo}] ${s.real_subject || ''}\n  🔍 검색어: ${s.real_keyword || ''}\n`)
+            // 4) 실사 검색 — type=real만 (영문 키워드 3개, 클릭 시 구글 이미지 검색)
+            const realScenes = scenes.filter(s => s.type === 'real');
+            const _getKeywords = (s) => {
+                // 신규: real_keywords 배열, 구버전: real_keyword 문자열 폴백
+                if (Array.isArray(s.real_keywords) && s.real_keywords.length > 0) return s.real_keywords;
+                if (typeof s.real_keyword === 'string' && s.real_keyword.trim()) return [s.real_keyword.trim()];
+                return [];
+            };
+            // 텍스트 영역용 (복사용)
+            const realLines = realScenes
+                .map(s => {
+                    const kws = _getKeywords(s);
+                    const kwLines = kws.length > 0
+                        ? kws.map((k, i) => `  ${i+1}. ${k}\n     https://www.google.com/search?tbm=isch&q=${encodeURIComponent(k)}`).join('\n')
+                        : '  (검색어 없음)';
+                    return `[장면 ${s.sceneNo}] ${s.real_subject || ''}\n${kwLines}\n`;
+                })
                 .join('\n');
             document.getElementById('spOut_real').value = realLines || '(실사 장면 없음)';
+            // 클릭 가능 링크 영역
+            const linksEl = document.getElementById('spOut_realLinks');
+            if (linksEl) {
+                if (realScenes.length === 0) {
+                    linksEl.innerHTML = '<div style="color:#888;text-align:center;padding:20px;">실사 장면 없음</div>';
+                } else {
+                    linksEl.innerHTML = realScenes.map(s => {
+                        const kws = _getKeywords(s);
+                        const subject = (s.real_subject || '').replace(/[<>&"']/g, c => ({ '<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;' }[c]));
+                        const links = kws.length === 0
+                            ? '<span style="color:#dc3545;">⚠️ 검색어 없음 — 재생성 필요</span>'
+                            : kws.map((k, i) => {
+                                const safeK = k.replace(/[<>&"']/g, c => ({ '<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;' }[c]));
+                                const url = `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(k)}`;
+                                return `<a href="${url}" target="_blank" rel="noopener" style="display:inline-block;margin:3px 4px 3px 0;padding:5px 10px;background:#fff;border:1px solid #d2b48c;border-radius:6px;color:#8b4513;text-decoration:none;font-size:0.8rem;font-weight:600;" title="구글 이미지에서 검색">🔍 ${i+1}. ${safeK}</a>`;
+                            }).join('');
+                        return `<div style="padding:10px 0;border-bottom:1px solid #eaddc7;">
+                            <div style="font-weight:700;color:#8b4513;margin-bottom:4px;">[장면 ${s.sceneNo}] ${subject}</div>
+                            <div>${links}</div>
+                        </div>`;
+                    }).join('');
+                }
+            }
 
             // 5) Claude Design — type=claude_design만
             const claudeLines = scenes
