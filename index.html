@@ -1587,6 +1587,12 @@
                         </select>
                     </div>
                 </div>
+                <div style="margin-top:8px;padding:8px 12px;background:#f8f9fa;border-radius:6px;display:flex;align-items:center;gap:8px;">
+                    <input type="checkbox" id="ftValidation" checked style="cursor:pointer;width:16px;height:16px;">
+                    <label for="ftValidation" style="font-size:0.82rem;color:#555;cursor:pointer;margin:0;flex:1;">
+                        🔍 AI 자체 검증 사용 <span style="color:#888;font-weight:400;">(시점 유효성·구조성·채널 적합성 — 약 5~10초 추가)</span>
+                    </label>
+                </div>
                 <button id="ftBtn" class="search-btn" onclick="findTopicByFormula()">
                     🔍 주제 찾기
                 </button>
@@ -5148,6 +5154,99 @@ ${topVideosSection}${forbiddenSection}
         }
 
         // ===========================
+        // 🔍 AI 자체 검증 (시대착오·단발이슈·채널적합성)
+        // ===========================
+        function buildValidationPrompt({today, topics}) {
+            const list = topics.map((t, i) => {
+                const title = t.예상_제목 || t.주제_한줄 || '(제목 없음)';
+                const hook = t.후킹_포인트 || '';
+                const news = t.최근_뉴스 || '';
+                return `${i+1}. ${title} | 후킹: ${hook} | 근거: ${news}`;
+            }).join('\n');
+            return `오늘은 ${today}입니다.
+아래 ${topics.length}개 주제가 유튜브 채널 "푸짐한 경제학"에 적합한지 평가해줘.
+
+[평가 기준 — 각 항목 PASS/FAIL]
+1. 시점 유효성: 현재 시점에서도 유효한가?
+   - "트럼프가 돌아온다면" 같은 가정형(이미 결론난 사건) → FAIL
+   - 이미 일어난 사실을 미래 시나리오로 다루는 경우 → FAIL
+
+2. 주제 유형: 구조적 흐름인가, 단발 이슈인가?
+   - 짐바브웨 화폐폭락처럼 장기 흐름의 결과 → PASS
+   - 캐나다 이민 역귀국 같은 사회 구조 → PASS
+   - "이번 주 OO 회담 결과" 같은 1회성 단발 → FAIL (단, 거시 임팩트 연결 시 PASS)
+
+3. 채널 적합성:
+   - 한국인이 70%+ 공감/관심 가질 글로벌 지정학·경제 주제 → PASS
+   - "선진국 몰락" "자원 역설" "거물 인물·테크" "지정학 빅이벤트" 패턴 부합 → PASS
+   - 한국 국내 단발(부동산 단독/연예/스포츠) → FAIL
+   - 마이너 국가 단독으로 한국 연결고리 약함 → FAIL
+
+[평가할 주제]
+${list}
+
+[출력 형식 - 반드시 JSON]
+{
+  "results": [
+    {
+      "index": 1,
+      "timeValid": "PASS|FAIL",
+      "timeReason": "이유 한 줄",
+      "structural": "PASS|FAIL",
+      "structuralReason": "이유 한 줄",
+      "channelFit": "PASS|FAIL",
+      "channelFitReason": "이유 한 줄",
+      "overall": "PASS|REJECT",
+      "overallReason": "최종 판단 이유 (REJECT인 경우만)"
+    }
+  ]
+}
+overall이 PASS = 모든 기준 PASS
+overall이 REJECT = 하나라도 FAIL이면 REJECT`;
+        }
+
+        async function validateTopics(topics, today) {
+            if (!topics || topics.length === 0) return null;
+            const prompt = buildValidationPrompt({today, topics});
+            const result = await callGemini(prompt, {
+                maxTokens: 4096,
+                temperature: 0.2,
+                model: 'gemini-2.5-flash',
+                useSearch: false,
+            });
+            const text = result.text || '';
+            let jsonStr = null;
+            const codeBlock = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+            if (codeBlock) jsonStr = codeBlock[1].trim();
+            if (!jsonStr) {
+                const fb = text.indexOf('{');
+                const lb = text.lastIndexOf('}');
+                if (fb >= 0 && lb > fb) jsonStr = text.slice(fb, lb + 1);
+            }
+            if (!jsonStr) throw new Error('검증 응답 JSON 추출 실패');
+            const parsed = JSON.parse(jsonStr);
+            if (!parsed.results || !Array.isArray(parsed.results)) throw new Error('검증 응답 results 누락');
+            return parsed.results;
+        }
+
+        // 카드 검증 결과 토글/복원 헬퍼
+        window._toggleValDetail = function(headerEl) {
+            const det = headerEl.nextElementSibling;
+            if (!det) return;
+            det.style.display = det.style.display === 'block' ? 'none' : 'block';
+        };
+        window._restoreRejectedTopic = function(cardId) {
+            const card = document.getElementById(cardId);
+            if (!card) return;
+            card.style.opacity = '1';
+            card.dataset.rejected = '0';
+            const summary = card.querySelector('.val-summary');
+            if (summary) {
+                summary.innerHTML = '<span style="background:#28a745;color:white;padding:3px 10px;border-radius:10px;font-size:0.72rem;font-weight:700;">✅ 사용자 복원</span>';
+            }
+        };
+
+        // ===========================
         // ✨ 채널 공식 기반 주제 추천
         // ===========================
         async function findTopicByFormula() {
@@ -5602,7 +5701,39 @@ ${(window._channelState && window._channelState.slump)
                     if (krFiltered > 0) notes.push(`한국인 관심 7점 미만 ${krFiltered}개`);
                     if (dupFiltered > 0) notes.push(`자가복제(키워드 60%+) ${dupFiltered}개`);
                     if (emoFiltered > 0) notes.push(`감정 출구 3개 미만 ${emoFiltered}개`);
+
+                    // 🔍 AI 자체 검증 (옵션, pujim 채널만)
+                    const validateOn = document.getElementById('ftValidation')?.checked !== false;
+                    let validationFailed = false;
+                    let validationFailReason = '';
+                    if (validateOn && passed.length > 0) {
+                        btn.innerHTML = '<div class="spinner"></div> 🔍 추천 주제 검증 중... (5~10초)';
+                        try {
+                            const validations = await validateTopics(passed, today);
+                            if (validations) {
+                                const byIdx = new Map();
+                                validations.forEach(v => byIdx.set(v.index, v));
+                                passed.forEach((t, i) => {
+                                    const v = byIdx.get(i + 1);
+                                    if (v) t._validation = v;
+                                });
+                                const rejectedCount = passed.filter(t => t._validation && t._validation.overall === 'REJECT').length;
+                                if (rejectedCount > 0) notes.push(`AI 검증 REJECT ${rejectedCount}개 (회색 처리)`);
+                            }
+                        } catch (e) {
+                            validationFailed = true;
+                            validationFailReason = e.message || String(e);
+                        }
+                    }
+
                     renderFormulaResults(passed, parsed);
+
+                    if (validationFailed) {
+                        const failNote = document.createElement('div');
+                        failNote.style.cssText = 'padding:8px 12px;background:#fff5f5;border-left:3px solid #dc3545;border-radius:4px;font-size:0.8rem;color:#996600;margin-top:8px;';
+                        failNote.innerHTML = `⚠️ 자체 검증 실패 — 검증 없이 표시 중 <span style="color:#888;">(${escapeHtml(validationFailReason)})</span>`;
+                        resultsEl.appendChild(failNote);
+                    }
                 }
                 if (notes.length > 0) {
                     const note = document.createElement('div');
@@ -5643,6 +5774,7 @@ ${(window._channelState && window._channelState.slump)
             };
 
             window._topicsRegistry = topics;
+            const _runId = Date.now();
             const html = topics.map((t, _idx) => {
                 const tr = t.트랙 || 1;
                 const grade = (t.예상_등급 || 'B').trim().toUpperCase();
@@ -5661,8 +5793,30 @@ ${(window._channelState && window._channelState.slump)
                 const krColor = krScore === null ? '#888' : krScore >= 12 ? '#dc3545' : krScore >= 9 ? '#28a745' : krScore >= 7 ? '#ffa500' : '#888';
                 const krLabel = krScore === null ? '미평가' : krScore >= 12 ? '매우 높음' : krScore >= 9 ? '높음' : krScore >= 7 ? '통과' : '미달';
 
+                // 🔍 AI 자체 검증 결과
+                const val = t._validation;
+                const isReject = !!(val && val.overall === 'REJECT');
+                const cardId = `topic-card-${_runId}-${_idx}`;
+                const cardOpacity = isReject ? 'opacity:0.55;' : '';
+                const borderCol = isReject ? '#dc3545' : (allPass ? '#28a745' : '#dc3545');
+                const valSummaryHtml = !val ? '' :
+                    isReject
+                        ? `<div onclick="_toggleValDetail(this)" style="cursor:pointer;background:#fff5f5;border:1px solid #ffcccc;border-radius:8px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;">
+                                <span style="color:#dc3545;font-weight:700;font-size:0.85rem;">❌ AI 검증 제외 — 클릭해서 이유 보기</span>
+                                <span style="color:#dc3545;font-size:0.75rem;">▼</span>
+                            </div>
+                            <div class="val-detail" style="display:none;background:#fff5f5;border:1px solid #ffcccc;border-top:none;border-radius:0 0 8px 8px;padding:10px 12px;font-size:0.78rem;color:#333;">
+                                <div style="margin-bottom:4px;"><b>시점 유효성 ${val.timeValid==='PASS'?'✅':'❌'}:</b> ${escapeHtml(val.timeReason||'')}</div>
+                                <div style="margin-bottom:4px;"><b>구조성 ${val.structural==='PASS'?'✅':'❌'}:</b> ${escapeHtml(val.structuralReason||'')}</div>
+                                <div style="margin-bottom:4px;"><b>채널 적합성 ${val.channelFit==='PASS'?'✅':'❌'}:</b> ${escapeHtml(val.channelFitReason||'')}</div>
+                                ${val.overallReason ? `<div style="margin-top:6px;padding-top:6px;border-top:1px solid #ffcccc;"><b>종합:</b> ${escapeHtml(val.overallReason)}</div>` : ''}
+                                <button onclick="_restoreRejectedTopic('${cardId}')" style="margin-top:8px;padding:6px 12px;background:#28a745;color:white;border:none;border-radius:6px;font-size:0.78rem;font-weight:700;cursor:pointer;">↩️ 그래도 사용</button>
+                            </div>`
+                        : `<span style="background:#e6ffed;color:#28a745;padding:3px 10px;border-radius:10px;font-size:0.72rem;font-weight:700;">✅ AI 검증 통과</span>`;
+
                 return `
-                <div style="background:white;border:2px solid ${allPass ? '#28a745' : '#dc3545'};border-radius:12px;padding:16px;margin-bottom:12px;">
+                <div id="${cardId}" data-rejected="${isReject?'1':'0'}" style="background:white;border:2px solid ${borderCol};border-radius:12px;padding:16px;margin-bottom:12px;${cardOpacity}">
+                    ${val ? `<div class="val-summary" style="margin-bottom:10px;">${valSummaryHtml}</div>` : ''}
                     <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;">
                         <span style="font-size:1.3rem;">${medal(t.순위 || t.rank || 0)}</span>
                         ${t.패턴 ? `<span style="background:${patternColor[t.패턴]||'#888'};color:white;padding:3px 10px;border-radius:10px;font-size:0.75rem;font-weight:700;">패턴 ${escapeHtml(t.패턴)} (${escapeHtml(patternName[t.패턴]||t.패턴)})</span>` : ''}
