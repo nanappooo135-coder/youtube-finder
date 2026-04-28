@@ -19874,7 +19874,101 @@ JSON만 출력하세요. 코드블록 마커 금지.`;
                     console.log(`[셀팟] ⚠️ JSON 복구됨: ${_parseRecovery}. 일부 장면이 누락됐을 수 있음.`);
                 }
 
-                const geminiScenes = parsed.scenes || [];
+                let geminiScenes = parsed.scenes || [];
+
+                // 🔁 청킹: 청크2 처리 (본문 후반부)
+                let _chunk2Added = 0;
+                if (needsChunking && chunk2Sentences.length > 0) {
+                    status.innerHTML = '<div class="spinner"></div> 본문 후반부 처리 중... (청크 2/2)';
+                    console.log(`[셀팟] 🔁 청크2 호출 시작: ${chunk2Sentences.length}문장`);
+
+                    const chunk2NumberedBody = chunk2Sentences.map((s, i) => `B${i+1}. ${s}`).join('\n');
+                    const chunk2StartSceneNo = geminiScenes.length > 0
+                        ? Math.max(...geminiScenes.map(s => s.sceneNo || 0)) + 1
+                        : startBodyNo;
+
+                    const chunk2Prompt = `당신은 유튜브 ${channelLabel} 채널의 영상 제작 디렉터입니다. 본문 후반부를 분석해 장면 단위로 묶고 시각화 방법을 결정하세요.
+
+=== 채널 특성 ===
+${_channelNote}
+
+=== 전체 대본 (맥락 이해용) ===
+${fullScript}
+
+=== 본문 후반부 문장 (B1, B2, ... 순서대로. 묶음 결정) ===
+${chunk2NumberedBody}
+
+=== 그림체 규약 ===
+${stylePrompt}
+
+=== 본문 묶음 룰 (앞 청크와 동일) ===
+- 약 ${_spN}문장 단위 기본, 응집도 우선
+- AI 장면 글자수 캡 ${_aiCharCap}자 (15초 max)
+- ${_aiCharRecommend}
+- 60자 미만 묶음 합치기, 과분할 금지
+
+=== 장면 타입 (앞 청크와 동일) ===
+- ai (대부분): 인물·풍경·서사·감정·일반설명
+- real: 실존 인물·기관만 (real_keywords 영문 3개, 대본 인물명 그대로)
+- claude_design: 진짜 그래프·다중 데이터·구조도 (전체 ${Math.round(_cdCapRatio * 100)}% 이내)
+
+=== 출력 (JSON만) ===
+{"scenes":[{"sceneNo":${chunk2StartSceneNo},"type":"ai","duration":10,"isIntro":false,"bodyIndices":[1,2,3],"nano_prompt":"...","grok_prompt":"..."},...]}
+
+JSON만 출력. 코드블록 마커 금지.`;
+
+                    try {
+                        const r2 = await callGemini(chunk2Prompt, { maxTokens: 65536, temperature: 0.2, model: 'gemini-2.5-pro' });
+                        console.log(`[셀팟] 청크2 응답: finishReason=${r2.finishReason}, ${r2.text.length}자`);
+
+                        let txt2 = r2.text.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '');
+                        const fb2 = txt2.indexOf('{'); const lb2 = txt2.lastIndexOf('}');
+                        if (fb2 >= 0 && lb2 > fb2) txt2 = txt2.substring(fb2, lb2 + 1);
+                        txt2 = txt2.replace(/"type"\s*:\s*([a-z_]+)\s*"/g, '"type":"$1"');
+                        txt2 = txt2.replace(/"type"\s*:\s*(ai|real|claude_design)([,\s}])/g, '"type":"$1"$2');
+
+                        let parsed2;
+                        try {
+                            parsed2 = JSON.parse(txt2);
+                        } catch (eC2) {
+                            console.warn('[셀팟] 청크2 1차 파싱 실패, 복구:', eC2.message);
+                            try {
+                                const sStart = txt2.indexOf('"scenes"');
+                                const aStart = sStart >= 0 ? txt2.indexOf('[', sStart) : -1;
+                                if (aStart >= 0) {
+                                    let d = 0, inStr = false, esc = false, lastEnd = -1, inObj = false;
+                                    for (let i = aStart + 1; i < txt2.length; i++) {
+                                        const ch = txt2[i];
+                                        if (esc) { esc = false; continue; }
+                                        if (ch === '\\') { esc = true; continue; }
+                                        if (ch === '"') { inStr = !inStr; continue; }
+                                        if (inStr) continue;
+                                        if (ch === '{') { d++; inObj = true; }
+                                        else if (ch === '}') { d--; if (d === 0 && inObj) { lastEnd = i; inObj = false; } }
+                                        else if (ch === ']' && d === 0) break;
+                                    }
+                                    if (lastEnd > 0) parsed2 = JSON.parse('{"scenes":' + txt2.slice(aStart, lastEnd + 1) + ']}');
+                                }
+                            } catch (eC3) { console.warn('[셀팟] 청크2 복구 실패:', eC3.message); }
+                        }
+
+                        if (parsed2 && parsed2.scenes && parsed2.scenes.length > 0) {
+                            // bodyIndices 원본 기준으로 보정
+                            parsed2.scenes.forEach(s => {
+                                if (Array.isArray(s.bodyIndices) && s.bodyIndices.length > 0) {
+                                    s.bodyIndices = s.bodyIndices.map(idx => idx + chunk2Offset);
+                                }
+                            });
+                            geminiScenes = [...geminiScenes, ...parsed2.scenes];
+                            _chunk2Added = parsed2.scenes.length;
+                            console.log(`[셀팟] ✅ 청크2 완료: ${_chunk2Added}장면 추가 → 총 ${geminiScenes.length}장면`);
+                        } else {
+                            console.warn('[셀팟] 청크2 결과 비어있음');
+                        }
+                    } catch (chunkErr) {
+                        console.error('[셀팟] 청크2 호출 실패:', chunkErr);
+                    }
+                }
                 // 도입부는 사용자 입력 텍스트로 텍스트 채우고, 본문은 bodyIndices로 원본 문장 조립
                 let _introClaudeFixed = 0;
                 let merged = geminiScenes.map(g => {
@@ -20050,14 +20144,16 @@ JSON만 출력하세요. 코드블록 마커 금지.`;
                 const retryNote = _retryCount > 0
                     ? `<br><span style="color:#0066cc;font-weight:700;">🔁 1차 응답 JSON 형식 오류 → 자동 재시도 성공.</span>`
                     : '';
-                const truncatedNote = r.finishReason === 'MAX_TOKENS'
-                    ? `<br><span style="color:#dc3545;font-weight:700;">🚨 응답이 잘림 (본문 너무 김). 본문을 둘로 나눠 두 번 변환하세요. 셀팟 결과는 본문 앞부분만 처리됨.</span>`
+                const truncatedNote = (r.finishReason === 'MAX_TOKENS' && !needsChunking)
+                    ? `<br><span style="color:#dc3545;font-weight:700;">🚨 응답이 잘림 (본문 너무 김).</span>`
                     : '';
-                const continuationNote = '';
+                const chunkNote = needsChunking
+                    ? `<br><span style="color:#0066cc;font-weight:700;">🔁 청킹 모드: 본문이 길어서 자동으로 둘로 나눠 처리. 청크2에서 ${_chunk2Added}장면 추가됨.</span>`
+                    : '';
                 const shortNote = _shortBodyScenes.length > 0
                     ? `<br><span style="color:#fd7e14;font-weight:700;">⚠️ 너무 짧은 본문 장면 ${_shortBodyScenes.length}개 (60자/9초 미만) — 옆 장면과 합치는 게 자연스러움. 콘솔에서 장면번호 확인.</span>`
                     : '';
-                status.innerHTML = `<span style="color:#28a745;">✅ ${merged.length}장면 변환 완료 (모델: ${r.usage?.model || 'gemini-2.5-pro'})</span>${introFixNote}${cdCapNote}${cdInfoNote}${splitNote}${longAiNote}${shortNote}${recoveryNote}${retryNote}${truncatedNote}`;
+                status.innerHTML = `<span style="color:#28a745;">✅ ${merged.length}장면 변환 완료 (모델: ${r.usage?.model || 'gemini-2.5-pro'})</span>${chunkNote}${introFixNote}${cdCapNote}${cdInfoNote}${splitNote}${longAiNote}${shortNote}${recoveryNote}${retryNote}${truncatedNote}`;
                 document.getElementById('spResultSection').style.display = '';
                 document.getElementById('spResultSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
