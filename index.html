@@ -20290,10 +20290,21 @@ JSON만 출력. 코드블록 마커 금지.`;
                 window._spCdCap = _cdCap;
                 window._spCdOriginal = _cdScenes.length;
 
-                // 🔒 안전망 1: claude_design→ai 변환된 모든 장면의 nano_prompt 보장 (도입부 변환 포함)
+                // 🔒 안전망 1: ai 장면의 nano_prompt 보장 (빈 값 + 한글 오염 모두 감지)
                 let _promptFixCount = 0;
+                let _koreanFixCount = 0;
+                const _hasKorean = (str) => /[가-힣]/.test(str);
+                const _isKoreanDominated = (str) => {
+                    if (!str) return false;
+                    const korean = (str.match(/[가-힣]/g) || []).length;
+                    return korean > 5 && korean / str.length > 0.15;
+                };
                 merged.forEach(s => {
-                    if (s.type === 'ai' && !s.nano_prompt) {
+                    if (s.type !== 'ai') return;
+                    const np = s.nano_prompt || '';
+                    const needsFix = !np || _isKoreanDominated(np);
+                    if (needsFix) {
+                        if (np && _isKoreanDominated(np)) _koreanFixCount++;
                         const generated = _generateAiPromptsForConverted(s);
                         s.nano_prompt = generated.nano_prompt;
                         s.grok_prompt = s.grok_prompt || generated.grok_prompt;
@@ -20301,7 +20312,7 @@ JSON만 출력. 코드블록 마커 금지.`;
                     }
                 });
                 if (_promptFixCount > 0) {
-                    console.log(`[셀팟] nano_prompt 빈 껍데기 ${_promptFixCount}개 → AI 프롬프트 자동 생성 완료`);
+                    console.log(`[셀팟] nano_prompt 자동 수정 ${_promptFixCount}개 (빈값 ${_promptFixCount - _koreanFixCount}개 + 한글오염 ${_koreanFixCount}개)`);
                 }
 
                 // 🔒 안전망 2: claude_design 장면의 빈 claude_prompt 자동 생성 (Gemini가 타입만 분류하고 프롬프트 안 채운 경우)
