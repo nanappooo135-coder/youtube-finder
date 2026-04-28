@@ -5451,7 +5451,7 @@ overall이 REJECT = 하나라도 FAIL이면 REJECT`;
 
             // 한눈에 심리학 채널이면 완전히 다른 프롬프트 사용
             const _uniformityHint = _isUniformityRetry
-                ? `⚠️⚠️⚠️ 재시도 호출 — 직전 응답이 제목 패턴 90% 이상 균일했음 (대부분 "왜~?" 의문형). 이번엔 5종 패턴(인용 대사/사건 단정/역설 묘사/발화 폭로/의문 폭로) 반드시 골고루 섞어주세요. 한 패턴이 ${count}개 중 ${Math.max(2, Math.round(count*0.4))}개를 초과하면 안 됩니다!\n\n`
+                ? `⚠️⚠️⚠️ 재시도 호출 — ${window._titleRetryHint || '직전 응답이 한 패턴에 치우침'}\n\n반드시 다음 5종 패턴을 메인 타이틀(예상_제목) ${count}개에 골고루 섞기:\n1) 의문 폭로형 (왜~?) — 최대 ${Math.max(2, Math.round(count*0.4))}개\n2) 인용 대사형 (큰따옴표 + 인내·생존 동사 "참았다/버텼다/먹으면서/굶었다" 필수) — 최소 1개 시도\n3) 사건 단정형 (현재완료 종결: ~터졌다/~무너졌다/~사라졌다)\n4) 역설 묘사형 (한때 ~이었던 / ~할 이유가 없는)\n5) 발화 폭로형 (인물명 + 발언, 검증 데이터 부족이라 선택적)\n\n인용 대사형/사건 단정형/역설 묘사형 중 최소 3개는 메인 타이틀에 반드시 사용!\n\n`
                 : '';
             const prompt = _channel === 'psychology' ? buildPsychologyPrompt({
                 today, count, recencyText, recentTitles, blockedSection, capsSection, feedbackSection, userExtra, avoid
@@ -5576,6 +5576,14 @@ ${count}개 추천 시 다음 비중 강제 적용:
 
 ⚠️ 위반 시 추천 무효. ${count}개 중 의문 폭로형(패턴 5)이 40% 초과면 전부 재생성.
 각 주제의 "예상_제목"과 "제목_후보[].title"이 위 5종 중 어디에 속하는지 자기 분류해서 출력.
+
+[⚠️ 메인 타이틀(예상_제목) 분포 강제 — 절대 준수] ⭐ 가장 먼저 사용자가 보는 부분
+"예상_제목"은 추천 카드의 메인 타이틀이라 더 엄격하게 분산 필수. 5개가 모두 "왜 ○○이 ○○했나?" 형식이면 절대 안 됨.
+${count}개의 "예상_제목" 분포 강제:
+- 의문 폭로형 ("왜~?"/"○○의 진짜 이유") → 최대 ${Math.max(2, Math.round(count*0.4))}개 (40% 이하)
+- 인용 대사형 (큰따옴표 + 참았다/버텼다/먹으면서/굶었다/도망쳤다 인내·생존 동사) 또는 사건 단정형 (~다 종결: ~터졌다/~무너졌다/~사라졌다) → 둘 합쳐 최소 1개 필수
+- 역설 묘사형 (한때 ~이었던 / ~할 이유가 없는 / ~인데 + 명사구) → 가능하면 1개 시도
+- 한 패턴이 ${count}개 중 60% 초과 시 → 자동 재생성 트리거 (제발 분산하기!)
 
 [제목 3안(A/B/C) 강화 룰 — 절대 준수]
 1. 글자수 40~55자 강제 (35자 미만 금지, "왜 ○○인가?" 단순형 금지)
@@ -5848,15 +5856,35 @@ C) "내 얘기 거울" — 시청자 직접 연결 구조
                     return;
                 }
 
-                // [수정 4] 제목 패턴 균일성 검사 — 90% 이상 동일 패턴이면 1회 자동 재생성
+                // [수정 4] 메인 타이틀(예상_제목) 패턴 분포 검증 — 1회 자동 재생성
                 if (!_isUniformityRetry && parsed.topics && parsed.topics.length >= 3) {
                     const _u = _checkTitleUniformity(parsed.topics);
-                    console.log('[제목 패턴 균일성] 분포:', _u.counts, '/ 가장 많은 패턴:', _u.dominant, '/ 비율:', (_u.maxRatio*100).toFixed(0)+'%');
-                    if (_u.maxRatio >= 0.9) {
-                        console.warn(`[제목 패턴] 균일성 ${(_u.maxRatio*100).toFixed(0)}% (${_u.dominant}형 ${_u.counts[_u.dominant]}/${_u.total}) — 자동 재생성 1회 시도`);
-                        btn.innerHTML = `<div class="spinner"></div> ⚠️ 제목 ${(_u.maxRatio*100).toFixed(0)}%가 ${_u.dominant}형 — 패턴 다변화 재생성 중...`;
+                    const _total = _u.total;
+                    const _qCount = _u.counts['의문'] || 0;
+                    const _quoteAssertCount = (_u.counts['인용'] || 0) + (_u.counts['단정'] || 0);
+                    const _qRatio = _total ? _qCount / _total : 0;
+                    console.log('[메인 타이틀 분포]', { counts: _u.counts, total: _total, dominant: _u.dominant, maxRatio: _u.maxRatio, 의문비율: _qRatio, 인용단정합계: _quoteAssertCount });
+
+                    let _retryReason = null, _retryHint = null;
+                    if (_u.maxRatio > 0.6) {
+                        _retryReason = `${_u.dominant}형 ${_u.counts[_u.dominant]}/${_total} (${(_u.maxRatio*100).toFixed(0)}%)`;
+                        _retryHint = `직전 응답에서 ${_u.dominant}형이 ${_u.counts[_u.dominant]}/${_total}로 60% 초과. 5종 패턴(인용 대사·사건 단정·역설 묘사·발화 폭로·의문 폭로) 골고루 섞어주세요.`;
+                    } else if (_qRatio > 0.4) {
+                        _retryReason = `의문형 ${_qCount}/${_total} (${(_qRatio*100).toFixed(0)}%)`;
+                        const _excess = _qCount - Math.max(2, Math.round(_total * 0.4));
+                        _retryHint = `메인 타이틀(예상_제목) ${_total}개 중 "왜~?" 의문형이 ${_qCount}개로 너무 많습니다. 인용 대사형(인내·생존 동사 + 큰따옴표) / 사건 단정형(~다 종결) / 역설 묘사형(한때 ~이었던)으로 최소 ${Math.max(1, _excess)}개는 바꿔주세요.`;
+                    } else if (_quoteAssertCount === 0) {
+                        _retryReason = `인용·단정형 0개`;
+                        _retryHint = `메인 타이틀(예상_제목) ${_total}개에 인용 대사형(큰따옴표 + 인내·생존 동사)이나 사건 단정형(~터졌다/~무너졌다)이 하나도 없습니다. 둘 중 하나 이상 반드시 포함해주세요.`;
+                    }
+
+                    if (_retryReason) {
+                        console.warn(`[메인 타이틀] 재시도 트리거: ${_retryReason}`);
+                        btn.innerHTML = `<div class="spinner"></div> ⚠️ ${_retryReason} — 메인 타이틀 다변화 재생성 중...`;
+                        window._titleRetryHint = _retryHint;
                         return await findTopicByFormula(true);
                     }
+                    console.log('[메인 타이틀] 분포 통과 — 재시도 안 함');
                 }
 
                 // 한국인 관심 점수 7점 미만 자동 제외 + max 항목별 검증 (15점 만점)
