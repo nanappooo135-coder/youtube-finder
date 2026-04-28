@@ -19414,6 +19414,7 @@ ${stylePrompt}
    - 결론/요약 문장
    - 도식으로 못 만드는 추상 개념
    **원칙**: 의심스러우면 ai. Claude Design은 "이건 도식 없이는 설명 불가능"한 경우만.
+   **🚨 절대 금지 — 도입부(isIntro:true) 장면**: 도입부는 시청자 후킹 단계. 감정·드라마·궁금증이 목적이라 인포그래픽이 들어가면 즉시 이탈. **도입부 장면은 어떤 경우에도 claude_design 금지** (도식·통계가 도입부 텍스트에 있어도 ai로 분류). 도입부는 오직 `ai` 또는 `real`만 허용.
 
 === 각 본문 장면 출력 ===
 - sceneNo: 도입부 ${introSceneList.length}개 다음부터 ${startBodyNo}, ${startBodyNo+1}, ... 순차
@@ -19549,10 +19550,12 @@ JSON만 출력하세요. 코드블록 마커 금지.`;
 
                 const geminiScenes = parsed.scenes || [];
                 // 도입부는 사용자 입력 텍스트로 텍스트 채우고, 본문은 bodyIndices로 원본 문장 조립
+                let _introClaudeFixed = 0;
                 const merged = geminiScenes.map(g => {
                     let text = '';
                     let duration = g.duration || 10;
-                    if (g.isIntro || (g.bodyIndices && g.bodyIndices.length === 0 && g.sceneNo <= introSceneList.length)) {
+                    const isIntroScene = g.isIntro || (g.bodyIndices && g.bodyIndices.length === 0 && g.sceneNo <= introSceneList.length);
+                    if (isIntroScene) {
                         const introMatch = introSceneList.find(i => i.sceneNo === g.sceneNo);
                         if (introMatch) {
                             text = introMatch.text;
@@ -19564,13 +19567,26 @@ JSON만 출력하세요. 코드블록 마커 금지.`;
                             .filter(Boolean)
                             .join(' ');
                     }
-                    return { ...g, text, duration };
+                    // 🚨 도입부 claude_design 강제 차단 — 프롬프트로 막아도 LLM이 어길 수 있어서 코드 이중화
+                    let forcedType = g.type;
+                    if (isIntroScene && forcedType === 'claude_design') {
+                        console.warn(`[셀팟] 도입부 #${g.sceneNo} claude_design → ai로 강제 변환 (도입부는 인포그래픽 금지)`);
+                        forcedType = 'ai';
+                        _introClaudeFixed++;
+                    }
+                    return { ...g, type: forcedType, text, duration };
                 });
+                if (_introClaudeFixed > 0) {
+                    console.log(`[셀팟] 도입부 claude_design 차단: ${_introClaudeFixed}개 → ai로 변환됨`);
+                }
 
                 _spLastResult = { scenes: merged, channel: _spChannel, stylePrompt };
                 _spRenderResults(_spLastResult);
 
-                status.innerHTML = `<span style="color:#28a745;">✅ ${merged.length}장면 변환 완료 (모델: ${r.usage?.model || 'gemini-2.5-pro'})</span>`;
+                const introFixNote = _introClaudeFixed > 0
+                    ? ` <span style="color:#fd7e14;">⚠️ 도입부 ${_introClaudeFixed}개를 claude_design→ai로 강제 변환 (도입부 인포그래픽 금지 규칙). 해당 장면은 nano_prompt 비어있을 수 있음 → 재생성 권장.</span>`
+                    : '';
+                status.innerHTML = `<span style="color:#28a745;">✅ ${merged.length}장면 변환 완료 (모델: ${r.usage?.model || 'gemini-2.5-pro'})</span>${introFixNote}`;
                 document.getElementById('spResultSection').style.display = '';
                 document.getElementById('spResultSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
