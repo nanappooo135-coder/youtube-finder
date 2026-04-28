@@ -19386,9 +19386,9 @@ overall mood: bright, psychologically safe illustration, uplifting and reassurin
                 // claude_design 캡 15% (안전망 상한). 핵심은 비율이 아니라 "용도 판단"
                 const _isPsych = _spChannel === 'psychology';
                 const _cdCapRatio = 0.15;
-                const _aiCharCap = 100; // 양쪽 동일 — MAX 15초 한계 (10/15 = 0.67배속, 모션 보정 1.5x로 정상 속도 회복 가능한 한계). 16초부터 정지화면 위험
-                const _aiCharRecommend = '권장 60~85자 (9~13초). 최대 100자(15초) 절대 초과 금지';
-                const _aiDurationRange = '권장 9~13초, 최대 15초 (16초 초과 절대 금지)';
+                const _aiCharCap = 100; // 양쪽 동일 — MAX 15초 한계
+                const _aiCharRecommend = '권장 65~95자 (10~14.5초) — 본문 sweet spot. 최대 100자(15초) 절대 초과 금지';
+                const _aiDurationRange = '권장 10~15초 (sweet spot, 본문 평균 12~13초가 제일 자연스러움). 최대 15초, 16초 초과 절대 금지';
                 const _channelNote = _isPsych
                     ? '심리학 채널: 정적·내면 톤 (인물·감정·일상 장면 위주). 그록 영상이 본래 정적이라 슬로우 더 잘 티남 → 장면 길이 짧게 유지. 호흡법·뇌구조·법칙 곡선 같은 진짜 도식만 claude_design.'
                     : '경제 채널: 동적·서사 톤 (인물·풍경·도시 장면 위주). 진짜 그래프·지도·데이터만 claude_design.';
@@ -19710,7 +19710,7 @@ JSON만 출력하세요. 코드블록 마커 금지.`;
                 const geminiScenes = parsed.scenes || [];
                 // 도입부는 사용자 입력 텍스트로 텍스트 채우고, 본문은 bodyIndices로 원본 문장 조립
                 let _introClaudeFixed = 0;
-                const merged = geminiScenes.map(g => {
+                let merged = geminiScenes.map(g => {
                     let text = '';
                     let duration = g.duration || 10;
                     const isIntroScene = g.isIntro || (g.bodyIndices && g.bodyIndices.length === 0 && g.sceneNo <= introSceneList.length);
@@ -19762,8 +19762,63 @@ JSON만 출력하세요. 코드블록 마커 금지.`;
                 window._spCdCap = _cdCap;
                 window._spCdOriginal = _cdScenes.length;
 
-                // 🚨 AI 장면 글자수 초과 경고 (그록 10초 + 모션 보정 1.7x 한계, 채널별 차등)
-                // 경제: 120자(18초), 심리학: 140자(21초). 심리학은 정적 톤이라 슬로우 한계가 살짝 더 높음
+                // 🚨 AI 장면 100자 초과 자동 분할 (LLM이 룰 어긴 경우 코드 강제 분할)
+                let _autoSplitCount = 0;
+                const _splitMerged = [];
+                for (const s of merged) {
+                    const charCount = (s.text || '').length;
+                    if (s.type !== 'ai' || s.isIntro || charCount <= _aiCharCap) {
+                        _splitMerged.push(s);
+                        continue;
+                    }
+                    // 문장 단위 분할 (마침표/물음표/느낌표 기준)
+                    const text = s.text;
+                    const parts = text.match(/[^.!?]+[.!?]+\s*/g) || [text];
+                    if (parts.length === 1) {
+                        // 문장 1개짜리는 분할 불가 → 그대로 두고 경고만
+                        _splitMerged.push(s);
+                        continue;
+                    }
+                    // Greedy bucket — 캡 안에 최대한 채우기
+                    const buckets = [];
+                    let buf = '';
+                    for (const p of parts) {
+                        if (buf.length + p.length > _aiCharCap && buf.length > 0) {
+                            buckets.push(buf.trim());
+                            buf = p;
+                        } else {
+                            buf += p;
+                        }
+                    }
+                    if (buf.trim()) buckets.push(buf.trim());
+                    if (buckets.length === 1) {
+                        // 결국 못 쪼갬 → 그대로 두고 경고
+                        _splitMerged.push(s);
+                        continue;
+                    }
+                    // 분할 성공 → 새 장면들 push (sceneNo는 나중에 일괄 재번호)
+                    console.warn(`[셀팟] AI #${s.sceneNo} ${charCount}자 → ${buckets.length}개 자동 분할 (${buckets.map(b => b.length + '자').join(' + ')})`);
+                    buckets.forEach((t, idx) => {
+                        _splitMerged.push({
+                            ...s,
+                            text: t,
+                            duration: Math.round(t.length / 6.5),
+                            _autoSplit: idx > 0,
+                            _splitFromSceneNo: idx > 0 ? s.sceneNo : undefined,
+                            _splitNote: idx > 0 ? '자동 분할 — 프롬프트 재생성 권장' : '',
+                        });
+                    });
+                    _autoSplitCount += buckets.length - 1;
+                }
+                // sceneNo 일괄 재번호
+                if (_autoSplitCount > 0) {
+                    _splitMerged.forEach((s, i) => { s.sceneNo = i + 1; });
+                    merged = _splitMerged;
+                    console.log(`[셀팟] ✅ AI 장면 자동 분할 완료: ${_autoSplitCount}개 추가 → 총 ${merged.length}장면`);
+                }
+                window._spAutoSplitCount = _autoSplitCount;
+
+                // 🚨 AI 장면 글자수 초과 경고 (자동 분할 후에도 남은 것 — 단일 문장이라 못 쪼갠 케이스)
                 const _longAiScenes = merged.filter(s => {
                     if (s.type !== 'ai') return false;
                     const charCount = (s.text || '').length;
@@ -19816,8 +19871,11 @@ JSON만 출력하세요. 코드블록 마커 금지.`;
                 const cdInfoNote = _cdCapFixed === 0 && _cdScenes.length > 0
                     ? ` <span style="color:#0066cc;">📊 claude_design ${_cdScenes.length}개 / 캡 ${_cdCap}개 (${Math.round(_cdScenes.length / merged.length * 100)}%)</span>`
                     : '';
+                const splitNote = _autoSplitCount > 0
+                    ? `<br><span style="color:#0066cc;font-weight:700;">✅ AI 장면 ${_autoSplitCount}개 자동 분할 (100자 초과 → 문장 단위로 쪼갬). 분할된 장면은 프롬프트 재생성 권장 (나노바나나·그록 새로 돌리기).</span>`
+                    : '';
                 const longAiNote = _longAiScenes.length > 0
-                    ? `<br><span style="color:#dc3545;font-weight:700;">🚨 AI 장면 ${_longAiScenes.length}개가 ${_aiCharCap}자 초과 (${_isPsych ? '심리학' : '경제'} 캡) — 그록 영상이 정지화면처럼 보일 위험. 큰 묶음만 2~3개로 분할 권장 (과분할 X).</span>`
+                    ? `<br><span style="color:#dc3545;font-weight:700;">🚨 AI 장면 ${_longAiScenes.length}개가 ${_aiCharCap}자 초과 (단일 문장이라 자동 분할 실패) — 본문 직접 수정 필요.</span>`
                     : '';
                 const recoveryNote = _parseRecovery
                     ? `<br><span style="color:#fd7e14;font-weight:700;">⚠️ JSON 응답이 잘려서 복구 모드로 파싱됨 (${_parseRecovery}) — 일부 장면 누락 가능. 장면 수가 예상보다 적으면 본문을 둘로 나눠 다시 변환하세요.</span>`
@@ -19825,7 +19883,7 @@ JSON만 출력하세요. 코드블록 마커 금지.`;
                 const shortNote = _shortBodyScenes.length > 0
                     ? `<br><span style="color:#fd7e14;font-weight:700;">⚠️ 너무 짧은 본문 장면 ${_shortBodyScenes.length}개 (60자/9초 미만) — 옆 장면과 합치는 게 자연스러움. 콘솔에서 장면번호 확인.</span>`
                     : '';
-                status.innerHTML = `<span style="color:#28a745;">✅ ${merged.length}장면 변환 완료 (모델: ${r.usage?.model || 'gemini-2.5-pro'})</span>${introFixNote}${cdCapNote}${cdInfoNote}${longAiNote}${shortNote}${recoveryNote}`;
+                status.innerHTML = `<span style="color:#28a745;">✅ ${merged.length}장면 변환 완료 (모델: ${r.usage?.model || 'gemini-2.5-pro'})</span>${introFixNote}${cdCapNote}${cdInfoNote}${splitNote}${longAiNote}${shortNote}${recoveryNote}`;
                 document.getElementById('spResultSection').style.display = '';
                 document.getElementById('spResultSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
