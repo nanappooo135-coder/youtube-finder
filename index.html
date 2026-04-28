@@ -19668,10 +19668,10 @@ ${stylePrompt}
 
 JSON만 출력하세요. 코드블록 마커 금지.`;
 
-                status.innerHTML = '<div class="spinner"></div> Gemini Pro 호출 중... (대본 길이에 따라 30~90초)';
-                // maxTokens 32768 (안정적), temperature 0.2 (결정적, JSON 형식 안 깨짐)
-                // 65536은 응답이 너무 길어서 JSON 형식 망가지는 경우 빈번
-                let r = await callGemini(prompt, { maxTokens: 32768, temperature: 0.2, model: 'gemini-2.5-pro' });
+                status.innerHTML = '<div class="spinner"></div> Gemini Pro 호출 중... (대본 길이에 따라 60~120초)';
+                // maxTokens 65536 (긴 응답 허용) + temperature 0.2 (결정적 — JSON 형식 안 깨짐)
+                // 이력: 32768+0.4 ✓ / 65536+0.4 ✗ JSON 깨짐 / 32768+0.2 ✗ 잘림 / 65536+0.2 ← 베스트
+                let r = await callGemini(prompt, { maxTokens: 65536, temperature: 0.2, model: 'gemini-2.5-pro' });
 
                 // JSON 파싱 실패 시 1회 재시도 (Gemini가 가끔 망가진 JSON 줌)
                 let _retryCount = 0;
