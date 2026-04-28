@@ -19653,8 +19653,33 @@ ${stylePrompt}
 JSON만 출력하세요. 코드블록 마커 금지.`;
 
                 status.innerHTML = '<div class="spinner"></div> Gemini Pro 호출 중... (대본 길이에 따라 30~90초)';
-                // maxTokens 65536으로 증가 (긴 대본 = 40+ 장면 + 각 장면당 nano/grok prompt 합쳐서 응답 80KB+ 가능)
-                const r = await callGemini(prompt, { maxTokens: 65536, temperature: 0.4, model: 'gemini-2.5-pro' });
+                // maxTokens 32768 (안정적), temperature 0.2 (결정적, JSON 형식 안 깨짐)
+                // 65536은 응답이 너무 길어서 JSON 형식 망가지는 경우 빈번
+                let r = await callGemini(prompt, { maxTokens: 32768, temperature: 0.2, model: 'gemini-2.5-pro' });
+
+                // JSON 파싱 실패 시 1회 재시도 (Gemini가 가끔 망가진 JSON 줌)
+                let _retryCount = 0;
+                async function _trySafeParse(text) {
+                    let txt = text.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '');
+                    const fb = txt.indexOf('{');
+                    const lb = txt.lastIndexOf('}');
+                    if (fb >= 0 && lb > fb) txt = txt.substring(fb, lb + 1);
+                    // 일반적 JSON 오류 자동 수정 (Gemini 가끔 만드는 패턴)
+                    // "type":a"ai" → "type":"ai" (앞 따옴표 빠짐)
+                    txt = txt.replace(/"type"\s*:\s*([a-z_]+)\s*"/g, '"type":"$1"');
+                    // "type":ai → "type":"ai" (따옴표 둘 다 빠짐)
+                    txt = txt.replace(/"type"\s*:\s*(ai|real|claude_design)([,\s}])/g, '"type":"$1"$2');
+                    return JSON.parse(txt);
+                }
+                try {
+                    _trySafeParse(r.text);
+                } catch (initialErr) {
+                    console.warn('[셀팟] 1차 파싱 실패, 자동 재시도:', initialErr.message);
+                    _retryCount = 1;
+                    status.innerHTML = '<div class="spinner"></div> JSON 형식 오류 → 재시도 중... (한 번 더 호출)';
+                    r = await callGemini(prompt, { maxTokens: 32768, temperature: 0.1, model: 'gemini-2.5-pro' });
+                    console.log('[셀팟] 재시도 응답 받음, 길이:', r.text.length);
+                }
 
                 // JSON 파싱 — 4단계 복구 전략 (응답 잘림 대비)
                 let txt = r.text.trim();
@@ -19664,6 +19689,11 @@ JSON만 출력하세요. 코드블록 마커 금지.`;
                 if (firstBrace >= 0 && lastBrace > firstBrace) {
                     txt = txt.substring(firstBrace, lastBrace + 1);
                 }
+                // Gemini가 가끔 만드는 망가진 JSON 패턴 자동 수정
+                // "type":a"ai" → "type":"ai" (앞 따옴표 빠짐)
+                txt = txt.replace(/"type"\s*:\s*([a-z_]+)\s*"/g, '"type":"$1"');
+                // "type":ai → "type":"ai" (둘 다 빠짐)
+                txt = txt.replace(/"type"\s*:\s*(ai|real|claude_design)([,\s}])/g, '"type":"$1"$2');
                 let parsed;
                 let _parseRecovery = '';
                 try {
@@ -19905,10 +19935,13 @@ JSON만 출력하세요. 코드블록 마커 금지.`;
                 const recoveryNote = _parseRecovery
                     ? `<br><span style="color:#fd7e14;font-weight:700;">⚠️ JSON 응답이 잘려서 복구 모드로 파싱됨 (${_parseRecovery}) — 일부 장면 누락 가능. 장면 수가 예상보다 적으면 본문을 둘로 나눠 다시 변환하세요.</span>`
                     : '';
+                const retryNote = _retryCount > 0
+                    ? `<br><span style="color:#0066cc;font-weight:700;">🔁 1차 응답 JSON 형식 오류 → 자동 재시도 성공.</span>`
+                    : '';
                 const shortNote = _shortBodyScenes.length > 0
                     ? `<br><span style="color:#fd7e14;font-weight:700;">⚠️ 너무 짧은 본문 장면 ${_shortBodyScenes.length}개 (60자/9초 미만) — 옆 장면과 합치는 게 자연스러움. 콘솔에서 장면번호 확인.</span>`
                     : '';
-                status.innerHTML = `<span style="color:#28a745;">✅ ${merged.length}장면 변환 완료 (모델: ${r.usage?.model || 'gemini-2.5-pro'})</span>${introFixNote}${cdCapNote}${cdInfoNote}${splitNote}${longAiNote}${shortNote}${recoveryNote}`;
+                status.innerHTML = `<span style="color:#28a745;">✅ ${merged.length}장면 변환 완료 (모델: ${r.usage?.model || 'gemini-2.5-pro'})</span>${introFixNote}${cdCapNote}${cdInfoNote}${splitNote}${longAiNote}${shortNote}${recoveryNote}${retryNote}`;
                 document.getElementById('spResultSection').style.display = '';
                 document.getElementById('spResultSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
