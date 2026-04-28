@@ -19422,7 +19422,11 @@ ${stylePrompt}
   - 분할 판단 기준: ① 시각이 완전히 달라지는가? ② 한 그림으로 표현 불가능한가? — 둘 다 YES일 때만 분할. 같은 주제 안에서 비슷한 톤이면 한 장면으로 묶어도 OK.
 - **claude_design은 글자수 캡 완화**: HTML 애니메이션이라 자체적으로 길이 조절 가능 → 묶음 글자수 ≤ 150자 (23초).
 - **real(실사)는 글자수 캡 완화**: 정지 이미지라 길게 보여도 무방 → 묶음 글자수 ≤ 130자.
-- **너무 짧지도 않게**: 최소 2문장 권장 (단 1문장이 결정적이면 단독 가능). **40자 미만 묶음은 옆 장면과 합치는 것 우선 검토**.
+- **🚨 짧은 묶음 강제 합치기 (절대 준수)**: 글자수 **60자 미만 묶음은 무조건 옆 장면과 합칠 것**. 사용자가 줄바꿈으로 단락 분리해놨어도 글자수 적으면 LLM이 알아서 합쳐. 예외 없음 — "결정적 한 문장이라 단독" 같은 핑계 금지.
+  - 60자 미만 단독 묶음의 문제: 약 9초 이하 장면 → 시청자한테 미니 컷 느낌으로 산만함. 그록·이미지 작업량만 늘어남.
+  - 합치는 방향: 의미상 자연스러운 쪽 (앞 묶음 끝과 연결되면 앞으로, 뒤 묶음 도입이면 뒤로).
+  - **이상적 묶음 글자수**: 70~110자 (10~17초). 짧으면 합치고, 너무 길면 (120자 초과) 분할.
+- **단독 문장 예외 조건**: 단독 문장으로 두려면 **(1) 60자 이상 + (2) 정말 시각적으로 단독 컷이 강력**한 경우만. 둘 다 충족 안 되면 무조건 옆과 합칠 것.
 - **문장 수 상한**: 최대 7문장. 단 위 글자수 캡이 우선.
 - **Claude Design 후보(도식·통계·N가지·법칙·호흡법·뇌구조)** 는 그 설명 범위 전체를 한 묶음으로.
 - **실사(실존 인물/책/기관) 후보**는 그 인물/책 언급 부분만 묶음.
@@ -19777,6 +19781,27 @@ JSON만 출력하세요. 코드블록 마커 금지.`;
                 }
                 window._spLongAiScenes = _longAiScenes;
 
+                // ⚠️ 너무 짧은 본문 장면 경고 (60자 미만 ai/real — 미니 장면 산만)
+                const _shortBodyScenes = merged.filter(s => {
+                    if (s.isIntro) return false; // 도입부는 사용자가 정한 그대로
+                    if (s.type === 'claude_design') return false; // claude는 길어도 OK
+                    const charCount = (s.text || '').length;
+                    return charCount > 0 && charCount < 60;
+                }).map(s => ({
+                    sceneNo: s.sceneNo,
+                    chars: (s.text || '').length,
+                    estSec: ((s.text || '').length / 6.5).toFixed(1),
+                    type: s.type,
+                    preview: (s.text || '').slice(0, 40)
+                }));
+                if (_shortBodyScenes.length > 0) {
+                    console.warn(`[셀팟] ⚠️ 너무 짧은 본문 장면 ${_shortBodyScenes.length}개 (60자/9초 미만). 옆 장면과 합치는 게 좋음:`);
+                    _shortBodyScenes.forEach(s => {
+                        console.warn(`  #${s.sceneNo} ${s.type} ${s.chars}자 (~${s.estSec}초): "${s.preview}..."`);
+                    });
+                }
+                window._spShortBodyScenes = _shortBodyScenes;
+
                 _spLastResult = { scenes: merged, channel: _spChannel, stylePrompt };
                 _spRenderResults(_spLastResult);
 
@@ -19795,7 +19820,10 @@ JSON만 출력하세요. 코드블록 마커 금지.`;
                 const recoveryNote = _parseRecovery
                     ? `<br><span style="color:#fd7e14;font-weight:700;">⚠️ JSON 응답이 잘려서 복구 모드로 파싱됨 (${_parseRecovery}) — 일부 장면 누락 가능. 장면 수가 예상보다 적으면 본문을 둘로 나눠 다시 변환하세요.</span>`
                     : '';
-                status.innerHTML = `<span style="color:#28a745;">✅ ${merged.length}장면 변환 완료 (모델: ${r.usage?.model || 'gemini-2.5-pro'})</span>${introFixNote}${cdCapNote}${cdInfoNote}${longAiNote}${recoveryNote}`;
+                const shortNote = _shortBodyScenes.length > 0
+                    ? `<br><span style="color:#fd7e14;font-weight:700;">⚠️ 너무 짧은 본문 장면 ${_shortBodyScenes.length}개 (60자/9초 미만) — 옆 장면과 합치는 게 자연스러움. 콘솔에서 장면번호 확인.</span>`
+                    : '';
+                status.innerHTML = `<span style="color:#28a745;">✅ ${merged.length}장면 변환 완료 (모델: ${r.usage?.model || 'gemini-2.5-pro'})</span>${introFixNote}${cdCapNote}${cdInfoNote}${longAiNote}${shortNote}${recoveryNote}`;
                 document.getElementById('spResultSection').style.display = '';
                 document.getElementById('spResultSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
