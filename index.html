@@ -19400,21 +19400,31 @@ ${stylePrompt}
 === 장면 타입 분류 ===
 1. **ai** — AI 일러스트(나노바나나2). 일반 장면, 감정·내면·비유·일상 상황. 기본값.
 2. **real** — 실사(구글 이미지). 실존 인물(이름 명시된 학자/정치인/유명인), 실제 책 《》, 유명 기관·장소만.
-3. **claude_design** — Claude Design 인포그래픽. **엄격 기준**: 진짜로 도식·구조가 필요한 경우만. 아래 중 하나에 해당해야 함:
-   - 명확한 단계/순서 도식 (예: 박스 호흡 4단계, 인지 행동 치료 단계)
-   - 구체적 통계/수치 비교 (예: "60% vs 40%", "3배 차이")
-   - 명명된 법칙/이론 곡선 (예: 여키스-도드슨, 파레토 80/20, 던바의 수)
-   - 뇌 구조도 / 신경전달물질 도식
-   - 2x2 사분면 또는 매트릭스
-   - 명시적 N가지 비교 (예: "세 가지 유형", "네 가지 함정") — 단, 단순 나열이 아닌 비교/분류일 때만
-   **부적합 (이건 ai로)**:
-   - 그냥 설명·서술 문장 ("우리는 이런 상황에 빠진다", "이게 바로 핵심이다")
-   - 감정·내면·심리 상태 묘사
-   - 일상 상황·비유
-   - 결론/요약 문장
-   - 도식으로 못 만드는 추상 개념
-   **원칙**: 의심스러우면 ai. Claude Design은 "이건 도식 없이는 설명 불가능"한 경우만.
+3. **claude_design** — Claude Design 인포그래픽. **🚨 매우 엄격한 기준 — 과다 사용 시 시청자 이탈** 🚨
+   **🔴 하드 캡 (절대 준수)**: claude_design은 **전체 장면의 10~15% 이내**. 예: 35장면이면 **최대 4~5개**, 20장면이면 최대 2~3개, 10장면이면 최대 1~2개. 캡을 절대 초과하지 말 것. 캡 초과 시 가장 약한 후보부터 ai로 변경.
+   **이유**: claude_design = 인포그래픽 톤 = 교육·강의·다큐 느낌. 너무 자주 나오면 유튜브 영상이 강의처럼 보여서 시청자가 즉시 이탈. 이 채널은 서사·드라마·풍경 위주이고, 클로드 디자인은 **"이 데이터는 그래프로 봐야 이해된다"**는 결정적 순간에만 효과 있음.
+   **✅ 적합 케이스 (이런 경우만 claude_design)**:
+   - **명확한 그래프·곡선이 필요한 데이터**: 시계열 변화, 비교 막대, 추세선 (예: 출산율 1.33 추이, 1인당 GDP 격차 변화)
+   - **순위·지표 시각화**: OECD 28위 같은 랭킹, 국가별 비교 (예: MRI 보유량 미국의 1/4)
+   - **지도 위 데이터**: 인구 이동, 자원 흐름, 전쟁 진격 (단순 위치 표시는 X)
+   - **명명된 법칙·이론 곡선**: 여키스-도드슨, 파레토 80/20, 던바의 수
+   - **단계·구조 도식**: 박스 호흡 4단계, 신경전달물질 회로, 의사결정 트리
+   - **2x2 매트릭스 / N가지 분류**: 비교·분류 목적일 때만 (단순 나열 X)
+   - **숫자 임팩트 비교**: "12.3년치 vs 14년치" 같이 두 값 이상의 시각적 대비가 핵심일 때
+   **❌ 부적합 (이건 무조건 ai)**:
+   - **모든 인물·풍경·도시 장면**: 응급실 복도 노부부, 공항 입국장, 졸업식, 식탁 앞 부부, 거리 풍경, 사무실 등 — 사람·장소·일상이 등장하면 ai
+   - **서사·드라마 묘사**: "한 사람이 ~했다", "이때 ~했다" 같은 스토리텔링 문장
+   - **감정·분위기 묘사**: 한숨, 절망, 기대, 불안 같은 감정 상태
+   - **숫자가 1~2개 언급되는 정도**: 자막 텍스트로 ai 일러스트 위에 얹으면 충분. 그래프 만들 필요 X
+   - **일반적 설명·서술 문장**: "이렇게 됐습니다", "그 결과", "핵심은" 같은 연결·설명
+   - **결론·요약 문장**: 마무리 멘트, 메시지
+   - **도식으로 못 만드는 추상 개념**: 시간이 흐른다, 분위기가 바뀌었다 등
+   **🎯 판정 원칙**:
+   - **의심스러우면 무조건 ai**. claude_design은 시청자가 "이건 그래프로 봐야겠다" 싶은 결정적 순간만.
+   - **숫자가 나온다고 자동으로 claude_design 아님**. 핵심은 "그래프·도식 없이는 시각화 불가능한가?" — 자막+ai로 처리 가능하면 ai.
+   - **"인포그래픽이 더 이쁠 것 같다"는 이유 금지**. 시각화 필요성으로만 판단.
    **🚨 절대 금지 — 도입부(isIntro:true) 장면**: 도입부는 시청자 후킹 단계. 감정·드라마·궁금증이 목적이라 인포그래픽이 들어가면 즉시 이탈. **도입부 장면은 어떤 경우에도 claude_design 금지** (도식·통계가 도입부 텍스트에 있어도 ai로 분류). 도입부는 오직 `ai` 또는 `real`만 허용.
+   **📊 장면 분류 후 자체 검증 필수**: 모든 장면 분류 끝낸 뒤 claude_design 개수를 세고, 전체의 15%를 초과하면 가장 약한 후보(서사적 요소가 섞인 것, 자막+ai로 대체 가능한 것)부터 ai로 변경할 것.
 
 === 각 본문 장면 출력 ===
 - sceneNo: 도입부 ${introSceneList.length}개 다음부터 ${startBodyNo}, ${startBodyNo+1}, ... 순차
@@ -19587,13 +19597,42 @@ JSON만 출력하세요. 코드블록 마커 금지.`;
                     console.log(`[셀팟] 도입부 claude_design 차단: ${_introClaudeFixed}개 → ai로 변환됨`);
                 }
 
+                // 🚨 claude_design 15% 하드 캡 — LLM이 룰 어기는 경우 코드 이중화
+                const _totalScenes = merged.length;
+                const _cdCap = Math.max(1, Math.floor(_totalScenes * 0.15));
+                const _cdScenes = merged.filter(s => s.type === 'claude_design');
+                let _cdCapFixed = 0;
+                if (_cdScenes.length > _cdCap) {
+                    const _excess = _cdScenes.length - _cdCap;
+                    // 뒤쪽 sceneNo부터 초과분만큼 ai로 변환 (앞쪽 claude_design이 핵심 데이터일 가능성 높음)
+                    const _sortedDesc = [..._cdScenes].sort((a, b) => (b.sceneNo || 0) - (a.sceneNo || 0));
+                    const _toConvert = new Set(_sortedDesc.slice(0, _excess).map(s => s.sceneNo));
+                    merged.forEach(s => {
+                        if (s.type === 'claude_design' && _toConvert.has(s.sceneNo)) {
+                            console.warn(`[셀팟] claude_design 캡 초과 → #${s.sceneNo} ai로 강제 변환 (캡: ${_cdCap}개, 원본: ${_cdScenes.length}개)`);
+                            s.type = 'ai';
+                            _cdCapFixed++;
+                        }
+                    });
+                    console.log(`[셀팟] claude_design 캡 적용: ${_cdScenes.length}개 → ${_cdCap}개 (${_cdCapFixed}개 변환)`);
+                }
+                window._spCdCapFixed = _cdCapFixed;
+                window._spCdCap = _cdCap;
+                window._spCdOriginal = _cdScenes.length;
+
                 _spLastResult = { scenes: merged, channel: _spChannel, stylePrompt };
                 _spRenderResults(_spLastResult);
 
                 const introFixNote = _introClaudeFixed > 0
                     ? ` <span style="color:#fd7e14;">⚠️ 도입부 ${_introClaudeFixed}개를 claude_design→ai로 강제 변환 (도입부 인포그래픽 금지 규칙). 해당 장면은 nano_prompt 비어있을 수 있음 → 재생성 권장.</span>`
                     : '';
-                status.innerHTML = `<span style="color:#28a745;">✅ ${merged.length}장면 변환 완료 (모델: ${r.usage?.model || 'gemini-2.5-pro'})</span>${introFixNote}`;
+                const cdCapNote = _cdCapFixed > 0
+                    ? ` <span style="color:#fd7e14;">⚠️ claude_design 캡 초과(${_cdScenes.length}개 → ${_cdCap}개) → ${_cdCapFixed}개 ai로 강제 변환. 해당 장면은 nano_prompt 비어있을 수 있음 → 재생성 권장.</span>`
+                    : '';
+                const cdInfoNote = _cdCapFixed === 0 && _cdScenes.length > 0
+                    ? ` <span style="color:#0066cc;">📊 claude_design ${_cdScenes.length}개 / 캡 ${_cdCap}개 (${Math.round(_cdScenes.length / merged.length * 100)}%)</span>`
+                    : '';
+                status.innerHTML = `<span style="color:#28a745;">✅ ${merged.length}장면 변환 완료 (모델: ${r.usage?.model || 'gemini-2.5-pro'})</span>${introFixNote}${cdCapNote}${cdInfoNote}`;
                 document.getElementById('spResultSection').style.display = '';
                 document.getElementById('spResultSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
