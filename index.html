@@ -20290,7 +20290,7 @@ JSON만 출력. 코드블록 마커 금지.`;
                 window._spCdCap = _cdCap;
                 window._spCdOriginal = _cdScenes.length;
 
-                // 🔒 안전망: claude_design→ai 변환된 모든 장면의 nano_prompt 보장 (도입부 변환 포함)
+                // 🔒 안전망 1: claude_design→ai 변환된 모든 장면의 nano_prompt 보장 (도입부 변환 포함)
                 let _promptFixCount = 0;
                 merged.forEach(s => {
                     if (s.type === 'ai' && !s.nano_prompt) {
@@ -20302,6 +20302,53 @@ JSON만 출력. 코드블록 마커 금지.`;
                 });
                 if (_promptFixCount > 0) {
                     console.log(`[셀팟] nano_prompt 빈 껍데기 ${_promptFixCount}개 → AI 프롬프트 자동 생성 완료`);
+                }
+
+                // 🔒 안전망 2: claude_design 장면의 빈 claude_prompt 자동 생성 (Gemini가 타입만 분류하고 프롬프트 안 채운 경우)
+                let _claudePromptFixCount = 0;
+                merged.forEach(s => {
+                    if (s.type === 'claude_design' && (!s.claude_prompt || s.claude_prompt.trim().length < 10)) {
+                        const narr = s.text || '';
+                        const fakeScene = { narration: narr, textOverlay: '' };
+                        // 심리학 채널: 전용 빌더 사용
+                        if (typeof _buildClaudeDesignPrompt === 'function' && _isPsych) {
+                            s.claude_prompt = _buildClaudeDesignPrompt(fakeScene);
+                        } else {
+                            // 범용: 나레이션 기반 인포그래픽 프롬프트 자동 생성
+                            const dur = s.duration || 10;
+                            const animDur = Math.min(20, Math.round(dur * 1.3));
+                            let prompt = '유튜브 인포그래픽 슬라이드.\n';
+                            // 숫자/통계 감지
+                            const nums = narr.match(/\d+[\d,.]*\s*(?:%|퍼센트|조|억|만|천|원|달러|배|명|주|개월|년|위)?/g) || [];
+                            const hasPct = /\d+\s*%/.test(narr);
+                            const hasVs = /vs|대비|비교|반면/i.test(narr);
+                            const hasFlow = /단계|순서|과정|흐름|사이클/.test(narr);
+                            const hasBrain = /뇌|전전두엽|편도체|해마|도파민|세로토닌/.test(narr);
+                            const hasLaw = /법칙|곡선|이론|여키스|파레토|파킨슨/.test(narr);
+                            const hasMap = /지도|경로|항로|위치|분포/.test(narr);
+                            if (hasBrain) prompt += '뇌 구조 다이어그램. 핵심 부위 강조, 한글 라벨.\n';
+                            else if (hasLaw) prompt += '법칙/이론 곡선 그래프. X축·Y축 한글 라벨, 핵심 포인트 강조.\n';
+                            else if (hasMap) prompt += '지도 시각화. 경로/위치 표시, 한글 지명 라벨.\n';
+                            else if (hasVs && nums.length >= 2) prompt += '좌우 분할 비교 인포그래픽. 양쪽에 수치·아이콘, 한글 라벨.\n';
+                            else if (hasPct) prompt += '비율/구성 도넛 차트. 퍼센트 수치 강조, 한글 라벨.\n';
+                            else if (nums.length >= 3) prompt += '다중 데이터 비교 막대/카드 인포그래픽. 한글 라벨.\n';
+                            else if (hasFlow) prompt += '단계/프로세스 흐름 카드. 순차적 등장 애니메이션, 한글 라벨.\n';
+                            else prompt += '교육용 인포그래픽. 핵심 개념 시각화, 한글 라벨.\n';
+                            prompt += `- 16:9 (1920x1080)\n`;
+                            prompt += `- HTML/CSS 애니메이션 슬라이드, 총 ${animDur}초\n`;
+                            prompt += `- 요소 순차 등장 모션 (페이드인/슬라이드인)\n`;
+                            prompt += `- 마지막 2초는 정적 마무리 (모든 요소 등장 완료 후 정지)\n`;
+                            prompt += `- 하단 1/4 비워둘 것 (자막 공간)\n`;
+                            prompt += `- 본문 나레이션: '${narr.replace(/'/g, "\\'").slice(0, 200)}'`;
+                            s.claude_prompt = prompt;
+                        }
+                        if (!s.claude_kind) s.claude_kind = '인포그래픽';
+                        _claudePromptFixCount++;
+                        console.warn(`[셀팟] claude_design #${s.sceneNo} claude_prompt 빈 껍데기 → 자동 생성`);
+                    }
+                });
+                if (_claudePromptFixCount > 0) {
+                    console.log(`[셀팟] claude_prompt 빈 껍데기 ${_claudePromptFixCount}개 → Claude Design 프롬프트 자동 생성 완료`);
                 }
 
                 // 🔗 짧은 본문 장면 자동 합치기 (70자 미만 → 옆 장면과 결합, 타입 무관)
