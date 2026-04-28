@@ -19637,7 +19637,7 @@ overall mood: bright, psychologically safe illustration, uplifting and reassurin
                 // 채널 양쪽 동일 캡 (15초 max — 심리학은 정적이라 슬로우가 더 어색하게 보여서 더 짧게 가야 함)
                 // claude_design 캡 15% (안전망 상한). 핵심은 비율이 아니라 "용도 판단"
                 const _isPsych = _spChannel === 'psychology';
-                const _cdCapRatio = 0.15;
+                const _cdCapRatio = 0.10; // 10% — 사용자 피드백: 5~8개 정도가 적정 (79장면 → 7개)
                 const _aiCharCap = 100; // 양쪽 동일 — MAX 15초 한계
                 const _aiCharRecommend = '권장 65~95자 (10~14.5초) — 본문 sweet spot. 최대 100자(15초) 절대 초과 금지';
                 const _aiDurationRange = '권장 10~15초 (sweet spot, 본문 평균 12~13초가 제일 자연스러움). 최대 15초, 16초 초과 절대 금지';
@@ -20165,7 +20165,7 @@ JSON만 출력. 코드블록 마커 금지.`;
                 // 타입별 캡 (target 기준): ai=100, real=130, claude_design=150
                 // 합치기 시 +20자 여유 — 더 많이 합쳐지게 (그록 슬로우 살짝 늘지만 미니 장면 사라짐)
                 const _typeCap = (t) => t === 'real' ? 130 : t === 'claude_design' ? 150 : _aiCharCap;
-                const _typeMergeCap = (t) => _typeCap(t) + 20;
+                const _typeMergeCap = (t) => _typeCap(t) + 30; // +30 = 분할 임계값과 일치 → 합치기-분할 순환 방지
                 const SHORT_THRESHOLD = 70; // 트리거 (60→70자로 상향)
                 let _autoMergedShort = 0;
                 const _afterMerge = [];
@@ -20212,12 +20212,13 @@ JSON만 출력. 코드블록 마커 금지.`;
                 }
                 window._spAutoMergedShort = _autoMergedShort;
 
-                // 🚨 AI 장면 100자 초과 자동 분할 (LLM이 룰 어긴 경우 코드 강제 분할)
+                // 🚨 AI 장면 130자 초과 자동 분할 (합치기-분할 순환 방지로 캡+30)
+                const _splitTriggerCap = _aiCharCap + 30; // 130자 = 약 20초 (그록 슬로우 0.5x + 모션 보정 1.7x = OK)
                 let _autoSplitCount = 0;
                 const _splitMerged = [];
                 for (const s of merged) {
                     const charCount = (s.text || '').length;
-                    if (s.type !== 'ai' || s.isIntro || charCount <= _aiCharCap) {
+                    if (s.type !== 'ai' || s.isIntro || charCount <= _splitTriggerCap) {
                         _splitMerged.push(s);
                         continue;
                     }
