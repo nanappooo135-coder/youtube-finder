@@ -19673,8 +19673,24 @@ JSON만 출력하세요. 코드블록 마커 금지.`;
 
                 status.innerHTML = '<div class="spinner"></div> Gemini Pro 호출 중... (대본 길이에 따라 60~120초)';
                 // maxTokens 65536 (긴 응답 허용) + temperature 0.2 (결정적 — JSON 형식 안 깨짐)
-                // 이력: 32768+0.4 ✓ / 65536+0.4 ✗ JSON 깨짐 / 32768+0.2 ✗ 잘림 / 65536+0.2 ← 베스트
                 let r = await callGemini(prompt, { maxTokens: 65536, temperature: 0.2, model: 'gemini-2.5-pro' });
+                console.log(`[셀팟] 1차 응답 완료. finishReason: ${r.finishReason}, 응답 길이: ${r.text.length}자`);
+
+                // 🔁 응답 잘림 감지 → 자동 이어쓰기 (continuation)
+                let _continuationCount = 0;
+                while (r.finishReason === 'MAX_TOKENS' && _continuationCount < 3) {
+                    _continuationCount++;
+                    console.warn(`[셀팟] ⚠️ 응답이 잘림 (MAX_TOKENS). 이어쓰기 ${_continuationCount}/3 시도 중...`);
+                    status.innerHTML = `<div class="spinner"></div> 응답이 길어서 이어쓰는 중... (${_continuationCount}/3)`;
+                    const continuePrompt = `Continue the JSON output EXACTLY where you left off. Do NOT repeat any previous content. Do NOT add explanations. Just continue the JSON structure.\n\nPrevious output ended with:\n"""${r.text.slice(-800)}"""\n\nContinue the JSON:`;
+                    const r2 = await callGemini(continuePrompt, { maxTokens: 65536, temperature: 0.2, model: 'gemini-2.5-pro' });
+                    r.text = r.text + r2.text;
+                    r.finishReason = r2.finishReason;
+                    console.log(`[셀팟] 이어쓰기 ${_continuationCount} 완료. 누적 응답 길이: ${r.text.length}자, finishReason: ${r.finishReason}`);
+                }
+                if (_continuationCount > 0) {
+                    console.log(`[셀팟] ✅ 이어쓰기 ${_continuationCount}회로 응답 완성`);
+                }
 
                 // JSON 파싱 실패 시 1회 재시도 (Gemini가 가끔 망가진 JSON 줌)
                 let _retryCount = 0;
@@ -19957,10 +19973,13 @@ JSON만 출력하세요. 코드블록 마커 금지.`;
                 const retryNote = _retryCount > 0
                     ? `<br><span style="color:#0066cc;font-weight:700;">🔁 1차 응답 JSON 형식 오류 → 자동 재시도 성공.</span>`
                     : '';
+                const continuationNote = _continuationCount > 0
+                    ? `<br><span style="color:#0066cc;font-weight:700;">🔁 응답이 길어서 이어쓰기 ${_continuationCount}회로 완성.</span>`
+                    : '';
                 const shortNote = _shortBodyScenes.length > 0
                     ? `<br><span style="color:#fd7e14;font-weight:700;">⚠️ 너무 짧은 본문 장면 ${_shortBodyScenes.length}개 (60자/9초 미만) — 옆 장면과 합치는 게 자연스러움. 콘솔에서 장면번호 확인.</span>`
                     : '';
-                status.innerHTML = `<span style="color:#28a745;">✅ ${merged.length}장면 변환 완료 (모델: ${r.usage?.model || 'gemini-2.5-pro'})</span>${introFixNote}${cdCapNote}${cdInfoNote}${splitNote}${longAiNote}${shortNote}${recoveryNote}${retryNote}`;
+                status.innerHTML = `<span style="color:#28a745;">✅ ${merged.length}장면 변환 완료 (모델: ${r.usage?.model || 'gemini-2.5-pro'})</span>${introFixNote}${cdCapNote}${cdInfoNote}${splitNote}${longAiNote}${shortNote}${recoveryNote}${retryNote}${continuationNote}`;
                 document.getElementById('spResultSection').style.display = '';
                 document.getElementById('spResultSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
