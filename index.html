@@ -20264,6 +20264,47 @@ JSON만 출력. 코드블록 마커 금지.`;
                 }
                 window._spAutoSplitCount = _autoSplitCount;
 
+                // 🔗 자동 분할 후 짧은 장면 재합치기 (분할로 생긴 60자 미만 조각들)
+                let _mergeAfterSplit = 0;
+                const _afterMerge2 = [];
+                for (let i = 0; i < merged.length; i++) {
+                    const s = merged[i];
+                    const charCount = (s.text || '').length;
+                    if (s.isIntro || charCount === 0 || charCount >= 70) {
+                        _afterMerge2.push(s);
+                        continue;
+                    }
+                    const next = merged[i + 1];
+                    if (next && !next.isIntro) {
+                        const nextCap = _typeMergeCap(next.type);
+                        if ((charCount + (next.text || '').length + 1) <= nextCap) {
+                            next.text = s.text + ' ' + (next.text || '');
+                            next._mergedFromShort = true;
+                            _mergeAfterSplit++;
+                            console.log(`[셀팟-2차합치기] 짧은 ${s.type} #${s.sceneNo} (${charCount}자) → 다음 ${next.type} #${next.sceneNo}와 합침`);
+                            continue;
+                        }
+                    }
+                    const prev = _afterMerge2[_afterMerge2.length - 1];
+                    if (prev && !prev.isIntro) {
+                        const prevCap = _typeMergeCap(prev.type);
+                        if ((charCount + (prev.text || '').length + 1) <= prevCap) {
+                            prev.text = (prev.text || '') + ' ' + s.text;
+                            prev._mergedFromShort = true;
+                            _mergeAfterSplit++;
+                            console.log(`[셀팟-2차합치기] 짧은 ${s.type} #${s.sceneNo} (${charCount}자) → 이전 ${prev.type} #${prev.sceneNo}와 합침`);
+                            continue;
+                        }
+                    }
+                    _afterMerge2.push(s);
+                }
+                if (_mergeAfterSplit > 0) {
+                    _afterMerge2.forEach((s, i) => { s.sceneNo = i + 1; });
+                    merged = _afterMerge2;
+                    _autoMergedShort += _mergeAfterSplit;
+                    console.log(`[셀팟] ✅ 분할 후 합치기 완료: ${_mergeAfterSplit}개 추가 합침 → 총 ${merged.length}장면`);
+                }
+
                 // 🚨 AI 장면 글자수 초과 경고 (자동 분할 후에도 남은 것 — 단일 문장이라 못 쪼갠 케이스)
                 const _longAiScenes = merged.filter(s => {
                     if (s.type !== 'ai') return false;
