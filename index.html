@@ -19842,7 +19842,22 @@ JSON만 출력하세요. 코드블록 마커 금지.`;
                 // maxTokens 65536 (긴 응답 허용) + temperature 0.2 (결정적 — JSON 형식 안 깨짐)
                 let r = await callGemini(prompt, { maxTokens: 65536, temperature: 0.2, model: 'gemini-2.5-pro' });
                 console.log(`[셀팟] 1차 응답 완료. finishReason: ${r.finishReason}, 응답 길이: ${r.text.length}자`);
-                let _continuationCount = 0; // (이어쓰기 제거됨 — JSON 합치기 깨짐 문제로)
+
+                // 빈 응답 자동 재시도 (Gemini 가끔 0자 응답 줌 — 안전 필터·일시 장애)
+                let _emptyRetries = 0;
+                while ((!r.text || r.text.length < 50) && _emptyRetries < 2) {
+                    _emptyRetries++;
+                    console.warn(`[셀팟] ⚠️ 빈 응답 감지 (${r.text.length}자). 재시도 ${_emptyRetries}/2...`);
+                    status.innerHTML = `<div class="spinner"></div> 빈 응답 → 재시도 중... (${_emptyRetries}/2)`;
+                    await new Promise(rs => setTimeout(rs, 2000)); // 2초 대기
+                    r = await callGemini(prompt, { maxTokens: 65536, temperature: 0.3, model: 'gemini-2.5-pro' });
+                    console.log(`[셀팟] 재시도 ${_emptyRetries} 응답 길이: ${r.text.length}자`);
+                }
+                if (!r.text || r.text.length < 50) {
+                    throw new Error('Gemini가 계속 빈 응답을 줍니다. API 키 확인 또는 잠시 후 다시 시도하세요. (안전 필터에 걸렸을 수도 있음)');
+                }
+
+                let _continuationCount = 0;
                 if (r.finishReason === 'MAX_TOKENS') {
                     console.warn(`[셀팟] ⚠️ 응답 잘림 감지 (MAX_TOKENS) — 본문이 너무 길어서 한 번에 처리 못 함. 본문을 둘로 나눠 두 번 변환 권장.`);
                 }
