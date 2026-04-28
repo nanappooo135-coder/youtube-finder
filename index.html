@@ -5222,43 +5222,114 @@ overall이 REJECT = 하나라도 FAIL이면 REJECT`;
 
         async function validateTopics(topics, today) {
             if (!topics || topics.length === 0) return null;
+
+            // 5개 초과는 5개씩 나눠 호출 (토큰 한도 + 부분 실패 격리)
+            const BATCH_SIZE = 5;
+            if (topics.length > BATCH_SIZE) {
+                const total = Math.ceil(topics.length / BATCH_SIZE);
+                console.log('[검증] 배치 분할:', topics.length, '개 →', BATCH_SIZE, '개씩 (총', total, '배치)');
+                const allResults = [];
+                const errors = [];
+                for (let off = 0; off < topics.length; off += BATCH_SIZE) {
+                    const batch = topics.slice(off, off + BATCH_SIZE);
+                    const bi = Math.floor(off / BATCH_SIZE) + 1;
+                    console.log(`[검증] 배치 ${bi}/${total} (${batch.length}개) 호출 — indexOffset=${off}`);
+                    try {
+                        const r = await _validateBatch(batch, today, off);
+                        if (r) allResults.push(...r);
+                    } catch (e) {
+                        errors.push(`배치 ${bi}: ${e.message}`);
+                        console.error(`[검증] 배치 ${bi} 실패 — 이 배치만 검증 누락 (다른 배치는 정상 진행):`, e);
+                    }
+                }
+                if (allResults.length === 0) {
+                    throw new Error('모든 배치 검증 실패: ' + errors.join(' / '));
+                }
+                console.log('[검증] 배치 종합 — 성공:', allResults.length, '개 / 실패 배치:', errors.length);
+                return allResults;
+            }
+
+            return _validateBatch(topics, today, 0);
+        }
+
+        async function _validateBatch(topics, today, indexOffset) {
             const prompt = buildValidationPrompt({today, topics});
-            console.log('[검증] 프롬프트 길이:', prompt.length, '자 / 모델: gemini-2.5-flash / search: false');
+            console.log('[검증] 프롬프트 길이:', prompt.length, '자 / 모델: gemini-2.5-flash / search: false / maxTokens: 8192');
             const result = await callGemini(prompt, {
-                maxTokens: 4096,
+                maxTokens: 8192,
                 temperature: 0.2,
                 model: 'gemini-2.5-flash',
                 useSearch: false,
             });
             const text = result.text || '';
+            const wasTruncated = result.finishReason === 'MAX_TOKENS' || result.finishReason === 'LENGTH';
+            console.log('[검증] 응답 길이:', text.length, '자 / 토큰:', result.usage, '/ finishReason:', result.finishReason, wasTruncated ? '⚠️ 잘림' : '');
             console.log('[검증] 원본 응답 (앞 500자):', text.slice(0, 500));
-            console.log('[검증] 응답 전체 길이:', text.length);
+            if (text.length > 500) console.log('[검증] 응답 끝 (뒤 200자):', text.slice(-200));
+
             let jsonStr = null;
-            const codeBlock = text.match(/```(?:json)?\s*([\s\S]*?)```/);
-            if (codeBlock) jsonStr = codeBlock[1].trim();
+            // 1) 코드블록 우선 (끝 ``` 없어도 OK — 잘린 응답 대응)
+            const codeBlock = text.match(/```(?:json)?\s*([\s\S]*?)(?:```|$)/);
+            if (codeBlock && codeBlock[1].trim().length > 10) jsonStr = codeBlock[1].trim();
+            // 2) 첫 { ~ 마지막 } (마지막 } 없으면 첫 { 부터 끝까지)
             if (!jsonStr) {
                 const fb = text.indexOf('{');
                 const lb = text.lastIndexOf('}');
                 if (fb >= 0 && lb > fb) jsonStr = text.slice(fb, lb + 1);
+                else if (fb >= 0) jsonStr = text.slice(fb);
             }
             if (!jsonStr) {
                 console.error('[검증] JSON 추출 실패 — 원본:', text);
-                throw new Error('검증 응답 JSON 추출 실패');
+                throw new Error(wasTruncated ? '검증 미실시 (응답 길이 부족)' : '검증 응답 JSON 추출 실패');
             }
             console.log('[검증] 추출된 JSON 문자열 (앞 300자):', jsonStr.slice(0, 300));
+
             let parsed;
             try {
                 parsed = JSON.parse(jsonStr);
             } catch (e) {
-                console.error('[검증] JSON 파싱 실패:', e.message, '원본:', jsonStr);
-                throw new Error('검증 응답 JSON 파싱 실패: ' + e.message);
+                console.warn('[검증] 1차 JSON 파싱 실패 — 부분 복구 시도:', e.message);
+                const recovered = _recoverPartialResults(jsonStr);
+                if (recovered.length > 0) {
+                    console.log('[검증] 부분 복구 성공:', recovered.length, '개 객체');
+                    return recovered.map(r => ({...r, index: (r.index || 0) + indexOffset}));
+                }
+                throw new Error(wasTruncated ? '검증 미실시 (응답 길이 부족)' : '검증 응답 JSON 파싱 실패: ' + e.message);
             }
             if (!parsed.results || !Array.isArray(parsed.results)) {
                 console.error('[검증] results 누락 — 파싱된 객체:', parsed);
                 throw new Error('검증 응답 results 배열 누락');
             }
             console.log('[검증] 파싱 성공 — results 개수:', parsed.results.length);
-            return parsed.results;
+            return parsed.results.map(r => ({...r, index: (r.index || 0) + indexOffset}));
+        }
+
+        // 잘린 JSON에서 results 배열 안 완성된 객체만 복구
+        function _recoverPartialResults(jsonStr) {
+            const m = jsonStr.match(/"results"\s*:\s*\[([\s\S]*)/);
+            if (!m) return [];
+            const body = m[1];
+            const objects = [];
+            let depth = 0, start = -1, inStr = false, esc = false;
+            for (let i = 0; i < body.length; i++) {
+                const c = body[i];
+                if (inStr) {
+                    if (esc) { esc = false; continue; }
+                    if (c === '\\') { esc = true; continue; }
+                    if (c === '"') inStr = false;
+                    continue;
+                }
+                if (c === '"') { inStr = true; continue; }
+                if (c === '{') { if (depth === 0) start = i; depth++; }
+                else if (c === '}') {
+                    depth--;
+                    if (depth === 0 && start >= 0) {
+                        try { objects.push(JSON.parse(body.slice(start, i + 1))); } catch (e) { /* skip malformed */ }
+                        start = -1;
+                    }
+                }
+            }
+            return objects;
         }
 
         // 카드 검증 결과 토글/복원 헬퍼
@@ -19414,8 +19485,26 @@ overall mood: bright, psychologically safe illustration, uplifting and reassurin
                 const fullScript = (introRaw + '\n\n' + bodyRaw).trim();
                 const channelLabel = _spChannel === 'psychology' ? '심리학' : '경제';
 
-                // 본문 문장에 인덱스 부여 (B1, B2, ...)
-                const numberedBody = bodySentences.map((s, i) => `B${i+1}. ${s}`).join('\n');
+                // 🔁 본문 자동 청킹 — 너무 길면 둘로 나눠서 두 번 호출 (응답 잘림 방지)
+                const CHUNK_SENTENCE_THRESHOLD = 30; // 본문 문장 수 기준
+                const needsChunking = bodySentences.length > CHUNK_SENTENCE_THRESHOLD;
+
+                let _chunkInfo = '';
+                let chunk1Sentences = bodySentences;
+                let chunk2Sentences = [];
+                let chunk2Offset = 0; // chunk2 sentence들의 원본 인덱스 시작점
+
+                if (needsChunking) {
+                    const midIdx = Math.floor(bodySentences.length / 2);
+                    chunk1Sentences = bodySentences.slice(0, midIdx);
+                    chunk2Sentences = bodySentences.slice(midIdx);
+                    chunk2Offset = midIdx;
+                    _chunkInfo = `본문 ${bodySentences.length}문장 → 2개 청크 (${chunk1Sentences.length} + ${chunk2Sentences.length})`;
+                    console.log(`[셀팟] 🔁 청킹 활성화: ${_chunkInfo}`);
+                }
+
+                // 본문 문장에 인덱스 부여 (B1, B2, ...) — chunk1만
+                const numberedBody = chunk1Sentences.map((s, i) => `B${i+1}. ${s}`).join('\n');
                 // 도입부는 그대로 (이미 사용자가 정함)
                 const introBlock = introSceneList.length === 0 ? '(없음)' :
                     introSceneList.map(s => `[도입부 장면 ${s.sceneNo}] (${s.duration}초)\n${s.text}`).join('\n\n');
