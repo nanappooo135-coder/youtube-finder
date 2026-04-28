@@ -19400,7 +19400,15 @@ ${stylePrompt}
 - **사용자 힌트**: 약 ${_spN}문장 단위로 묶는 것을 기본. 단, 아래 우선순위가 더 중요:
 - **응집도 우선**: 한 장면 = 하나의 시각적 순간/주제. 묶음 안 문장들이 **같은 시각으로 표현 가능**해야 함.
 - **주제 전환 시 분할**: 묶음 중간에 다른 시각/장소/감정/통계로 넘어가면 거기서 끊어 새 장면.
-- **너무 길게 늘이지 말 것**: 최대 7문장 초과 금지. 너무 짧지도 않게(최소 2문장 권장, 단 1문장이 결정적이면 단독 가능).
+- **🚨 글자수 하드 캡 (AI 장면 절대 준수)**: AI 일러스트 장면은 **묶음 한국어 글자수 ≤ 90자**. 90자 초과면 **반드시 분할**. 이유: 그록은 max 10초만 생성 → TTS 14초(약 90자) 초과하면 영상이 슬로우로 늘어져 거의 정지화면처럼 보임 (32초 텍스트 → 0.31배속 = 정지). 한 장면 안에 시각적 순간이 여러 개면 무조건 쪼갤 것.
+  - 글자수 추정: 한국어 1초 ≈ 6.5자 (TTS 기준)
+  - 권장 범위: AI 장면 **40~80자** (6~12초)
+  - 90자 초과: **반드시 분할** (예: 응급실 노부부 + 밴쿠버 부부 + 워털루 졸업생 = 한 묶음 → 3개 별도 장면으로)
+  - 사용자 대본 예시: "토론토 응급실 복도엔 일흔 넘은 노부부가..."(한 시각) / "밴쿠버 30대 맞벌이 부부는..."(다른 시각) / "워털루 공대 졸업생들은..."(또 다른 시각) — 같은 "도시 안쪽 풍경" 주제라도 시각이 다르면 무조건 분할.
+- **claude_design은 글자수 캡 완화**: HTML 애니메이션이라 자체적으로 길이 조절 가능 → 묶음 글자수 ≤ 130자 (20초). 그래도 130자 초과면 분할 권장.
+- **real(실사)는 글자수 캡 완화**: 정지 이미지라 길게 보여도 무방 → 묶음 글자수 ≤ 100자.
+- **너무 짧지도 않게**: 최소 2문장 권장 (단 1문장이 결정적이면 단독 가능).
+- **문장 수 상한**: 최대 7문장. 단 위 글자수 캡이 우선 (7문장이어도 90자 넘으면 분할, 5문장이어도 80자 안에 들어가면 OK).
 - **Claude Design 후보(도식·통계·N가지·법칙·호흡법·뇌구조)** 는 그 설명 범위 전체를 한 묶음으로.
 - **실사(실존 인물/책/기관) 후보**는 그 인물/책 언급 부분만 묶음.
 
@@ -19436,7 +19444,7 @@ ${stylePrompt}
 === 각 본문 장면 출력 ===
 - sceneNo: 도입부 ${introSceneList.length}개 다음부터 ${startBodyNo}, ${startBodyNo+1}, ... 순차
 - bodyIndices: 이 묶음에 포함된 본문 문장 인덱스 배열 (예: [1,2,3] = B1+B2+B3)
-- duration: 10 (본문 고정)
+- duration: 본문 추정초 = 한국어 글자수 ÷ 6.5 (소수 반올림). **AI 장면은 6~14초 권장, 14초 초과 금지** (그록 슬로우가 0.7배 미만 되면 정지화면처럼 보임). real은 4~12초, claude_design은 5~20초.
 - type: ai | real | claude_design
 - nano_prompt: (ai만) 영문. 위 그림체를 자연스럽게 녹임.
   **★ 가장 중요 — 한 장면 = 한 그림만 ★**
@@ -19646,6 +19654,27 @@ JSON만 출력하세요. 코드블록 마커 금지.`;
                 window._spCdCap = _cdCap;
                 window._spCdOriginal = _cdScenes.length;
 
+                // 🚨 AI 장면 글자수 초과 경고 (그록 10초 슬로우 한계)
+                // 한국어 1초 ≈ 6.5자, 14초 = 91자. 90자 초과 ai 장면은 슬로우가 0.7배 미만 되어 정지화면화 위험
+                const _longAiScenes = merged.filter(s => {
+                    if (s.type !== 'ai') return false;
+                    const charCount = (s.text || '').length;
+                    return charCount > 90;
+                }).map(s => ({
+                    sceneNo: s.sceneNo,
+                    chars: (s.text || '').length,
+                    estSec: Math.round((s.text || '').length / 6.5),
+                    playbackRate: Math.min(1, 10 / Math.max(1, Math.round((s.text || '').length / 6.5))),
+                    preview: (s.text || '').slice(0, 40)
+                }));
+                if (_longAiScenes.length > 0) {
+                    console.warn(`[셀팟] ⚠️ AI 장면 글자수 초과 ${_longAiScenes.length}개 (90자/14초 한계). 그록 슬로우가 0.7배 미만 되어 정지화면처럼 보일 위험. LLM이 묶음을 더 잘게 쪼개야 함:`);
+                    _longAiScenes.forEach(s => {
+                        console.warn(`  #${s.sceneNo} ${s.chars}자 (~${s.estSec}초, 슬로우 ${s.playbackRate.toFixed(2)}x): "${s.preview}..."`);
+                    });
+                }
+                window._spLongAiScenes = _longAiScenes;
+
                 _spLastResult = { scenes: merged, channel: _spChannel, stylePrompt };
                 _spRenderResults(_spLastResult);
 
@@ -19658,7 +19687,10 @@ JSON만 출력하세요. 코드블록 마커 금지.`;
                 const cdInfoNote = _cdCapFixed === 0 && _cdScenes.length > 0
                     ? ` <span style="color:#0066cc;">📊 claude_design ${_cdScenes.length}개 / 캡 ${_cdCap}개 (${Math.round(_cdScenes.length / merged.length * 100)}%)</span>`
                     : '';
-                status.innerHTML = `<span style="color:#28a745;">✅ ${merged.length}장면 변환 완료 (모델: ${r.usage?.model || 'gemini-2.5-pro'})</span>${introFixNote}${cdCapNote}${cdInfoNote}`;
+                const longAiNote = _longAiScenes.length > 0
+                    ? `<br><span style="color:#dc3545;font-weight:700;">🚨 AI 장면 ${_longAiScenes.length}개가 90자(14초) 초과 — 그록 영상이 정지화면처럼 보일 위험. 콘솔에서 장면번호 확인 후 해당 장면을 둘로 쪼개서 재실행 권장.</span>`
+                    : '';
+                status.innerHTML = `<span style="color:#28a745;">✅ ${merged.length}장면 변환 완료 (모델: ${r.usage?.model || 'gemini-2.5-pro'})</span>${introFixNote}${cdCapNote}${cdInfoNote}${longAiNote}`;
                 document.getElementById('spResultSection').style.display = '';
                 document.getElementById('spResultSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
