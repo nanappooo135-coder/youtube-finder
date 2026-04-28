@@ -5374,20 +5374,55 @@ ${(window._channelState && window._channelState.slump)
 
                 const text = result.text || '';
                 let parsed = null;
-                // JSON 추출
-                const jsonMatch = text.match(/\{[\s\S]*"topics"[\s\S]*\}/);
-                if (jsonMatch) {
-                    try { parsed = JSON.parse(jsonMatch[0]); } catch(e) {
-                        // 일부 잘림 가능 — 마지막 } 까지 자르고 다시 시도
-                        const cleaned = jsonMatch[0].replace(/,\s*$/, '') + (jsonMatch[0].trim().endsWith('}') ? '' : ']}');
-                        try { parsed = JSON.parse(cleaned); } catch(e2) {}
+                let parseError = '';
+
+                // JSON 추출 — 4단계 전략
+                // 1) ```json ... ``` 마크다운 코드블록
+                let jsonStr = null;
+                const codeBlock = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+                if (codeBlock) jsonStr = codeBlock[1].trim();
+                // 2) 첫 { 부터 마지막 } 까지
+                if (!jsonStr) {
+                    const firstBrace = text.indexOf('{');
+                    const lastBrace = text.lastIndexOf('}');
+                    if (firstBrace >= 0 && lastBrace > firstBrace) {
+                        jsonStr = text.slice(firstBrace, lastBrace + 1);
                     }
+                }
+
+                if (jsonStr) {
+                    try { parsed = JSON.parse(jsonStr); }
+                    catch(e) {
+                        parseError = e.message;
+                        // 3) 잘림 복구 — 마지막 완전한 } 까지
+                        try {
+                            let depth = 0, lastValidEnd = -1, inStr = false, esc = false;
+                            for (let i = 0; i < jsonStr.length; i++) {
+                                const ch = jsonStr[i];
+                                if (esc) { esc = false; continue; }
+                                if (ch === '\\') { esc = true; continue; }
+                                if (ch === '"') { inStr = !inStr; continue; }
+                                if (inStr) continue;
+                                if (ch === '{') depth++;
+                                else if (ch === '}') { depth--; if (depth === 0) lastValidEnd = i; }
+                            }
+                            if (lastValidEnd > 0) parsed = JSON.parse(jsonStr.slice(0, lastValidEnd + 1));
+                        } catch(e2) {}
+                    }
+                }
+                // 4) 마지막 시도: 끝부분 잘리면 ]} 로 닫기
+                if (!parsed && jsonStr) {
+                    try {
+                        const fixed = jsonStr.replace(/,\s*$/, '') + (jsonStr.trim().endsWith('}') ? '' : (jsonStr.includes('"topics":[') || jsonStr.includes('"topics": [') ? ']}' : '}'));
+                        parsed = JSON.parse(fixed);
+                    } catch(e3) {}
                 }
 
                 if (!parsed || !parsed.topics) {
                     resultsEl.innerHTML = `<div style="padding:16px;background:#fff5f5;border:1px solid #ffcccc;border-radius:8px;">
-                        <div style="font-weight:700;color:#dc3545;margin-bottom:8px;">JSON 파싱 실패 — 원본 응답 표시</div>
-                        <pre style="white-space:pre-wrap;font-size:0.8rem;color:#555;max-height:400px;overflow:auto;">${escapeHtml(text)}</pre>
+                        <div style="font-weight:700;color:#dc3545;margin-bottom:8px;">JSON 파싱 실패</div>
+                        <div style="font-size:0.85rem;color:#666;margin-bottom:8px;">${parseError ? '파싱 오류: ' + escapeHtml(parseError) : '응답에서 topics 추출 실패'} · 응답 길이: ${text.length}자</div>
+                        <pre style="white-space:pre-wrap;font-size:0.78rem;color:#555;max-height:400px;overflow:auto;background:white;padding:8px;border-radius:4px;">${escapeHtml(text.slice(0, 5000))}${text.length > 5000 ? '\n\n...(이하 생략)' : ''}</pre>
                     </div>`;
                     return;
                 }
