@@ -1563,6 +1563,12 @@
                     <label for="ftFormula">내 채널 공식 <span style="color:#888;font-weight:400;">(왜 영상이 잘 되는지)</span></label>
                     <textarea id="ftFormula" rows="3" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:0.9rem;resize:vertical;font-family:inherit;" placeholder="예: 선진국 이미지 강한 나라인데 한국인이 잘 모르는 숨은 경제 위기. 이미 망한 나라(아이티 등)는 안 됨 — 멀쩡해 보이는데 사실 무너지는 중인 나라가 대박남.">선진국 이미지 강한 나라인데 한국인이 잘 모르는 숨은 경제 위기. 이미 망한 나라는 안 됨 — 멀쩡해 보이는데 사실 무너지는 중인 나라가 대박남 (예: 뉴질랜드 100만뷰).</textarea>
                 </div>
+                <div style="margin-top:6px;margin-bottom:10px;padding:10px 12px;background:#fff8e6;border:1px solid #ffd966;border-radius:6px;display:flex;align-items:center;gap:8px;">
+                    <input type="checkbox" id="ftValidateToggle" checked style="cursor:pointer;width:18px;height:18px;flex-shrink:0;">
+                    <label for="ftValidateToggle" style="font-size:0.85rem;color:#996600;cursor:pointer;margin:0;flex:1;font-weight:600;">
+                        🔍 AI 자체 검증 사용 <span style="color:#888;font-weight:400;">(시점 유효성·구조성·채널 적합성 — 약 5~10초 추가)</span>
+                    </label>
+                </div>
                 <div class="input-group">
                     <label for="ftAvoid">피하고 싶은 주제 <span style="color:#888;font-weight:400;">(선택)</span></label>
                     <textarea id="ftAvoid" rows="2" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:0.9rem;resize:vertical;font-family:inherit;" placeholder="예: 일본, 중동전쟁, 이미 망한 나라"></textarea>
@@ -1586,12 +1592,6 @@
                             <option value="365">최근 1년</option>
                         </select>
                     </div>
-                </div>
-                <div style="margin-top:8px;padding:8px 12px;background:#f8f9fa;border-radius:6px;display:flex;align-items:center;gap:8px;">
-                    <input type="checkbox" id="ftValidation" checked style="cursor:pointer;width:16px;height:16px;">
-                    <label for="ftValidation" style="font-size:0.82rem;color:#555;cursor:pointer;margin:0;flex:1;">
-                        🔍 AI 자체 검증 사용 <span style="color:#888;font-weight:400;">(시점 유효성·구조성·채널 적합성 — 약 5~10초 추가)</span>
-                    </label>
                 </div>
                 <button id="ftBtn" class="search-btn" onclick="findTopicByFormula()">
                     🔍 주제 찾기
@@ -5208,6 +5208,7 @@ overall이 REJECT = 하나라도 FAIL이면 REJECT`;
         async function validateTopics(topics, today) {
             if (!topics || topics.length === 0) return null;
             const prompt = buildValidationPrompt({today, topics});
+            console.log('[검증] 프롬프트 길이:', prompt.length, '자 / 모델: gemini-2.5-flash / search: false');
             const result = await callGemini(prompt, {
                 maxTokens: 4096,
                 temperature: 0.2,
@@ -5215,6 +5216,8 @@ overall이 REJECT = 하나라도 FAIL이면 REJECT`;
                 useSearch: false,
             });
             const text = result.text || '';
+            console.log('[검증] 원본 응답 (앞 500자):', text.slice(0, 500));
+            console.log('[검증] 응답 전체 길이:', text.length);
             let jsonStr = null;
             const codeBlock = text.match(/```(?:json)?\s*([\s\S]*?)```/);
             if (codeBlock) jsonStr = codeBlock[1].trim();
@@ -5223,9 +5226,23 @@ overall이 REJECT = 하나라도 FAIL이면 REJECT`;
                 const lb = text.lastIndexOf('}');
                 if (fb >= 0 && lb > fb) jsonStr = text.slice(fb, lb + 1);
             }
-            if (!jsonStr) throw new Error('검증 응답 JSON 추출 실패');
-            const parsed = JSON.parse(jsonStr);
-            if (!parsed.results || !Array.isArray(parsed.results)) throw new Error('검증 응답 results 누락');
+            if (!jsonStr) {
+                console.error('[검증] JSON 추출 실패 — 원본:', text);
+                throw new Error('검증 응답 JSON 추출 실패');
+            }
+            console.log('[검증] 추출된 JSON 문자열 (앞 300자):', jsonStr.slice(0, 300));
+            let parsed;
+            try {
+                parsed = JSON.parse(jsonStr);
+            } catch (e) {
+                console.error('[검증] JSON 파싱 실패:', e.message, '원본:', jsonStr);
+                throw new Error('검증 응답 JSON 파싱 실패: ' + e.message);
+            }
+            if (!parsed.results || !Array.isArray(parsed.results)) {
+                console.error('[검증] results 누락 — 파싱된 객체:', parsed);
+                throw new Error('검증 응답 results 배열 누락');
+            }
+            console.log('[검증] 파싱 성공 — results 개수:', parsed.results.length);
             return parsed.results;
         }
 
@@ -5703,36 +5720,65 @@ ${(window._channelState && window._channelState.slump)
                     if (emoFiltered > 0) notes.push(`감정 출구 3개 미만 ${emoFiltered}개`);
 
                     // 🔍 AI 자체 검증 (옵션, pujim 채널만)
-                    const validateOn = document.getElementById('ftValidation')?.checked !== false;
+                    const toggleEl = document.getElementById('ftValidateToggle');
+                    const validateOn = toggleEl ? toggleEl.checked : true; // 토글 없으면 기본 ON
+                    console.log('[검증] 토글 상태:', { exists: !!toggleEl, checked: validateOn, passedTopics: passed.length });
                     let validationFailed = false;
                     let validationFailReason = '';
+                    let validationRan = false;
+                    let passedCount = 0;
+                    let rejectedCount = 0;
                     if (validateOn && passed.length > 0) {
                         btn.innerHTML = '<div class="spinner"></div> 🔍 추천 주제 검증 중... (5~10초)';
+                        console.log('[검증] 호출 시작 — topics:', passed.length, '개');
                         try {
                             const validations = await validateTopics(passed, today);
+                            console.log('[검증] 응답 수신:', validations);
                             if (validations) {
                                 const byIdx = new Map();
                                 validations.forEach(v => byIdx.set(v.index, v));
                                 passed.forEach((t, i) => {
                                     const v = byIdx.get(i + 1);
-                                    if (v) t._validation = v;
+                                    if (v) {
+                                        t._validation = v;
+                                        console.log(`[검증] #${i+1} "${(t.예상_제목||t.주제_한줄||'').slice(0,30)}" → ${v.overall}`, v);
+                                    } else {
+                                        console.warn(`[검증] #${i+1} 매칭 누락 (index ${i+1} 응답에 없음)`);
+                                    }
                                 });
-                                const rejectedCount = passed.filter(t => t._validation && t._validation.overall === 'REJECT').length;
+                                rejectedCount = passed.filter(t => t._validation && t._validation.overall === 'REJECT').length;
+                                passedCount = passed.filter(t => t._validation && t._validation.overall === 'PASS').length;
+                                validationRan = true;
+                                console.log('[검증] 집계:', { passedCount, rejectedCount, totalAttached: passedCount + rejectedCount });
                                 if (rejectedCount > 0) notes.push(`AI 검증 REJECT ${rejectedCount}개 (회색 처리)`);
+                            } else {
+                                console.warn('[검증] validations 응답이 falsy');
                             }
                         } catch (e) {
                             validationFailed = true;
                             validationFailReason = e.message || String(e);
+                            console.error('[검증] 실패:', e);
                         }
+                    } else {
+                        console.log('[검증] 스킵:', { validateOn, passedLen: passed.length });
                     }
 
                     renderFormulaResults(passed, parsed);
 
+                    // 결과 영역 최상단에 검증 요약 배너 (renderFormulaResults는 innerHTML 덮어쓰므로 그 직후에 prepend)
+                    if (validationRan) {
+                        const summary = document.createElement('div');
+                        summary.style.cssText = 'padding:10px 14px;background:linear-gradient(135deg,#f0f9ff,#fff5f5);border:2px solid #0066cc;border-radius:8px;margin-bottom:12px;font-size:0.88rem;font-weight:700;color:#222;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;';
+                        summary.innerHTML = `<span>🔍 AI 자체 검증 결과</span>
+                            <span><span style="color:#28a745;">✅ ${passedCount}개 통과</span> · <span style="color:#dc3545;">❌ ${rejectedCount}개 제외</span> <span style="color:#888;font-weight:400;">(총 ${passed.length}개)</span></span>`;
+                        resultsEl.insertBefore(summary, resultsEl.firstChild);
+                    }
+
                     if (validationFailed) {
                         const failNote = document.createElement('div');
-                        failNote.style.cssText = 'padding:8px 12px;background:#fff5f5;border-left:3px solid #dc3545;border-radius:4px;font-size:0.8rem;color:#996600;margin-top:8px;';
-                        failNote.innerHTML = `⚠️ 자체 검증 실패 — 검증 없이 표시 중 <span style="color:#888;">(${escapeHtml(validationFailReason)})</span>`;
-                        resultsEl.appendChild(failNote);
+                        failNote.style.cssText = 'padding:10px 14px;background:#fff5f5;border:2px solid #dc3545;border-radius:8px;font-size:0.85rem;color:#dc3545;font-weight:700;margin-bottom:12px;';
+                        failNote.innerHTML = `⚠️ AI 자체 검증 실패 — 검증 없이 표시 중 <span style="color:#888;font-weight:400;">(${escapeHtml(validationFailReason)} · 콘솔에서 [검증] 로그 확인)</span>`;
+                        resultsEl.insertBefore(failNote, resultsEl.firstChild);
                     }
                 }
                 if (notes.length > 0) {
@@ -5775,6 +5821,11 @@ ${(window._channelState && window._channelState.slump)
 
             window._topicsRegistry = topics;
             const _runId = Date.now();
+            const _withValidation = topics.filter(t => t._validation).length;
+            console.log(`[렌더] topics=${topics.length}개 / _validation 부착=${_withValidation}개`);
+            if (_withValidation === 0 && topics.length > 0) {
+                console.warn('[렌더] 검증 결과가 카드에 부착되지 않음 — 토글 OFF이거나 검증 실패 가능성');
+            }
             const html = topics.map((t, _idx) => {
                 const tr = t.트랙 || 1;
                 const grade = (t.예상_등급 || 'B').trim().toUpperCase();
