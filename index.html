@@ -9705,30 +9705,31 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                     if (!s.needsGrokVideo) return;
 
                     // 길이 추천: 나레이션 글자수 기반 4단계 분기 (6초 or 10초만)
-                    const _narrLen = (s.narration || '').length;
-                    const _estSec = _narrLen / 8.0;
-                    s.estNarrationSec = Math.round(_estSec * 10) / 10;
+                    // 그록 6초는 절대 슬로우 안 함. 슬로우는 그록 10초에서만.
+                    const narrText = s.narration || '';
+                    const narrSec = Math.round(narrText.length / 8.0 * 10) / 10;
+                    s.estNarrationSec = narrSec;
 
-                    if (_estSec <= 6) {
+                    if (narrSec <= 5) {
                         s.grokVideoDuration = 6;
                         s.slowdownRate = 1.0;
                         s.needsSplit = false;
-                    } else if (_estSec <= 9.6) {
-                        s.grokVideoDuration = 6;
-                        s.slowdownRate = Math.round((_estSec / 6) * 100) / 100;
-                        s.needsSplit = false;
-                    } else if (_estSec <= 15) {
+                    } else if (narrSec <= 9) {
                         s.grokVideoDuration = 10;
-                        s.slowdownRate = _estSec > 10 ? Math.round((_estSec / 10) * 100) / 100 : 1.0;
+                        s.slowdownRate = 1.0;
+                        s.needsSplit = false;
+                    } else if (narrSec <= 15) {
+                        s.grokVideoDuration = 10;
+                        s.slowdownRate = Math.round(((narrSec + 1) / 10) * 10) / 10;
                         s.needsSplit = false;
                     } else {
                         s.grokVideoDuration = 10;
-                        s.slowdownRate = Math.round((_estSec / 10) * 100) / 100;
+                        s.slowdownRate = 1.6;
                         s.needsSplit = true;
                     }
 
                     // 하위 호환
-                    s.narrationSec = Math.round(_estSec);
+                    s.narrationSec = Math.round(narrSec);
                     s.grokSlowdownNeeded = s.slowdownRate > 1.0;
                     if (s.grokSlowdownNeeded) {
                         s.grokPtsRatio = s.slowdownRate;
@@ -9753,29 +9754,29 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                             if (s.needsGrokVideo) return;
                             s.needsGrokVideo = true;
                             s.isSymbolicScene = true;
-                            const _narrLen2 = (s.narration || '').length;
-                            const _estSec2 = _narrLen2 / 8.0;
-                            s.estNarrationSec = Math.round(_estSec2 * 10) / 10;
+                            const narrText2 = s.narration || '';
+                            const narrSec2 = Math.round(narrText2.length / 8.0 * 10) / 10;
+                            s.estNarrationSec = narrSec2;
 
-                            if (_estSec2 <= 6) {
+                            if (narrSec2 <= 5) {
                                 s.grokVideoDuration = 6;
                                 s.slowdownRate = 1.0;
                                 s.needsSplit = false;
-                            } else if (_estSec2 <= 9.6) {
-                                s.grokVideoDuration = 6;
-                                s.slowdownRate = Math.round((_estSec2 / 6) * 100) / 100;
-                                s.needsSplit = false;
-                            } else if (_estSec2 <= 15) {
+                            } else if (narrSec2 <= 9) {
                                 s.grokVideoDuration = 10;
-                                s.slowdownRate = _estSec2 > 10 ? Math.round((_estSec2 / 10) * 100) / 100 : 1.0;
+                                s.slowdownRate = 1.0;
+                                s.needsSplit = false;
+                            } else if (narrSec2 <= 15) {
+                                s.grokVideoDuration = 10;
+                                s.slowdownRate = Math.round(((narrSec2 + 1) / 10) * 10) / 10;
                                 s.needsSplit = false;
                             } else {
                                 s.grokVideoDuration = 10;
-                                s.slowdownRate = Math.round((_estSec2 / 10) * 100) / 100;
+                                s.slowdownRate = 1.6;
                                 s.needsSplit = true;
                             }
 
-                            s.narrationSec = Math.round(_estSec2);
+                            s.narrationSec = Math.round(narrSec2);
                             s.grokSlowdownNeeded = s.slowdownRate > 1.0;
                             if (s.grokSlowdownNeeded) {
                                 s.grokPtsRatio = s.slowdownRate;
