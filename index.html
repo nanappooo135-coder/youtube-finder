@@ -2594,6 +2594,20 @@
                         <span id="spNHint" style="margin-left:auto;font-size:0.78rem;color:#666;"></span>
                     </div>
 
+                    <!-- AI 모델 선택 -->
+                    <div id="spModelSelector" style="margin-bottom:12px;padding:10px 14px;background:#f0fdf4;border:2px solid #16a34a;border-radius:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                        <span style="font-weight:700;color:#15803d;font-size:0.9rem;">🤖 AI 모델</span>
+                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.88rem;">
+                            <input type="radio" name="spModel" value="gemini-pro" checked onchange="_spOnModelChange(this.value)">
+                            <span>Gemini Pro <span style="color:#888;font-size:0.75rem;">(무료)</span></span>
+                        </label>
+                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.88rem;">
+                            <input type="radio" name="spModel" value="claude-opus" onchange="_spOnModelChange(this.value)">
+                            <span>Claude Opus <span style="color:#888;font-size:0.75rem;">(유료·고품질)</span></span>
+                        </label>
+                        <span id="spModelHint" style="margin-left:auto;font-size:0.75rem;color:#888;"></span>
+                    </div>
+
                     <button id="spConvertBtn" class="search-btn" onclick="spConvert()" style="width:100%;font-size:1.05rem;padding:14px;background:#7048e8;border-color:#7048e8;">
                         🚀 변환 시작 (Gemini Pro 맥락 분석)
                     </button>
@@ -18462,6 +18476,7 @@ Example format:
                 text,
                 usage: data.usage,
                 model: data.model || model,
+                stop_reason: data.stop_reason,
             };
         }
 
@@ -18711,8 +18726,44 @@ overall mood: bright, psychologically safe illustration, uplifting and reassurin
 
         let _spN = 5;
         let _spChannel = 'economics';
+        let _spModel = 'gemini-pro';
         let _spInited = false;
         let _spLastResult = null;
+
+        function _spOnModelChange(val) {
+            _spModel = val;
+            const btn = document.getElementById('spConvertBtn');
+            const hint = document.getElementById('spModelHint');
+            if (val === 'claude-opus') {
+                btn.textContent = '🚀 변환 시작 (Claude Opus 맥락 분석)';
+                btn.style.background = '#c2410c';
+                btn.style.borderColor = '#c2410c';
+                hint.textContent = CLAUDE_API_KEY ? '✅ API 키 등록됨' : '⚠️ 설정 탭에서 Claude API 키 등록 필요';
+                hint.style.color = CLAUDE_API_KEY ? '#16a34a' : '#dc3545';
+            } else {
+                btn.textContent = '🚀 변환 시작 (Gemini Pro 맥락 분석)';
+                btn.style.background = '#7048e8';
+                btn.style.borderColor = '#7048e8';
+                hint.textContent = '';
+            }
+        }
+
+        async function _spCallLLM(prompt, opts = {}) {
+            if (_spModel === 'claude-opus') {
+                const r = await callClaude(prompt, {
+                    model: 'claude-opus-4-6',
+                    maxTokens: opts.maxTokens || 65536,
+                    temperature: opts.temperature ?? 0.2,
+                });
+                return {
+                    text: r.text,
+                    usage: { ...r.usage, model: r.model || 'claude-opus-4-6' },
+                    finishReason: r.stop_reason === 'max_tokens' ? 'MAX_TOKENS' : 'STOP',
+                };
+            } else {
+                return await callGemini(prompt, opts);
+            }
+        }
 
         function _spInit() {
             if (_spInited) return;
@@ -19612,9 +19663,16 @@ overall mood: bright, psychologically safe illustration, uplifting and reassurin
             const status = document.getElementById('spStatus');
             _geminiStatusEl = status;
 
-            if (!GEMINI_API_KEYS.length || !GEMINI_API_KEYS[0]) {
-                alert('Gemini API 키가 설정되지 않았습니다. 주제찾기 탭에서 먼저 등록하세요.');
-                return;
+            if (_spModel === 'claude-opus') {
+                if (!CLAUDE_API_KEY) {
+                    alert('Claude API 키가 설정되지 않았습니다. 설정 탭에서 등록하세요.');
+                    return;
+                }
+            } else {
+                if (!GEMINI_API_KEYS.length || !GEMINI_API_KEYS[0]) {
+                    alert('Gemini API 키가 설정되지 않았습니다. 주제찾기 탭에서 먼저 등록하세요.');
+                    return;
+                }
             }
 
             const stylePrompt = document.getElementById('spStylePrompt').value.trim();
@@ -19637,8 +19695,9 @@ overall mood: bright, psychologically safe illustration, uplifting and reassurin
                 text: s.text,
             }));
 
+            const _modelLabel = _spModel === 'claude-opus' ? 'Claude Opus' : 'Gemini Pro';
             btn.disabled = true;
-            btn.textContent = '⏳ Gemini Pro 분석 중...';
+            btn.textContent = `⏳ ${_modelLabel} 분석 중...`;
             status.innerHTML = '<div class="spinner"></div> 전체 대본 맥락 학습 중...';
 
             try {
@@ -19932,9 +19991,8 @@ ${stylePrompt}
 
 JSON만 출력하세요. 코드블록 마커 금지.`;
 
-                status.innerHTML = '<div class="spinner"></div> Gemini Pro 호출 중... (대본 길이에 따라 60~120초)';
-                // maxTokens 65536 (긴 응답 허용) + temperature 0.2 (결정적 — JSON 형식 안 깨짐)
-                let r = await callGemini(prompt, { maxTokens: 65536, temperature: 0.2, model: 'gemini-2.5-pro', noFallback: true });
+                status.innerHTML = `<div class="spinner"></div> ${_modelLabel} 호출 중... (대본 길이에 따라 60~120초)`;
+                let r = await _spCallLLM(prompt, { maxTokens: 65536, temperature: 0.2, model: 'gemini-2.5-pro', noFallback: true });
                 console.log(`[셀팟] 1차 응답 완료. finishReason: ${r.finishReason}, 응답 길이: ${r.text.length}자`);
 
                 // 빈 응답 자동 재시도 (Gemini 가끔 0자 응답 줌 — 안전 필터·일시 장애)
@@ -19944,11 +20002,11 @@ JSON만 출력하세요. 코드블록 마커 금지.`;
                     console.warn(`[셀팟] ⚠️ 빈 응답 감지 (${r.text.length}자). 재시도 ${_emptyRetries}/2...`);
                     status.innerHTML = `<div class="spinner"></div> 빈 응답 → 재시도 중... (${_emptyRetries}/2)`;
                     await new Promise(rs => setTimeout(rs, 2000)); // 2초 대기
-                    r = await callGemini(prompt, { maxTokens: 65536, temperature: 0.3, model: 'gemini-2.5-pro', noFallback: true });
+                    r = await _spCallLLM(prompt, { maxTokens: 65536, temperature: 0.3, model: 'gemini-2.5-pro', noFallback: true });
                     console.log(`[셀팟] 재시도 ${_emptyRetries} 응답 길이: ${r.text.length}자`);
                 }
                 if (!r.text || r.text.length < 50) {
-                    throw new Error('Gemini가 계속 빈 응답을 줍니다. API 키 확인 또는 잠시 후 다시 시도하세요. (안전 필터에 걸렸을 수도 있음)');
+                    throw new Error(`${_modelLabel}가 계속 빈 응답을 줍니다. API 키 확인 또는 잠시 후 다시 시도하세요.`);
                 }
 
                 let _continuationCount = 0;
@@ -19976,7 +20034,7 @@ JSON만 출력하세요. 코드블록 마커 금지.`;
                     console.warn('[셀팟] 1차 파싱 실패, 자동 재시도:', initialErr.message);
                     _retryCount = 1;
                     status.innerHTML = '<div class="spinner"></div> JSON 형식 오류 → 재시도 중... (한 번 더 호출)';
-                    r = await callGemini(prompt, { maxTokens: 32768, temperature: 0.1, model: 'gemini-2.5-pro', noFallback: true });
+                    r = await _spCallLLM(prompt, { maxTokens: 32768, temperature: 0.1, model: 'gemini-2.5-pro', noFallback: true });
                     console.log('[셀팟] 재시도 응답 받음, 길이:', r.text.length);
                 }
 
@@ -20118,7 +20176,7 @@ nano_prompt는 반드시 영문으로 작성. 한국어 나레이션을 그대�
 JSON만 출력. 코드블록 마커 금지.`;
 
                     try {
-                        const r2 = await callGemini(chunk2Prompt, { maxTokens: 65536, temperature: 0.2, model: 'gemini-2.5-pro', noFallback: true });
+                        const r2 = await _spCallLLM(chunk2Prompt, { maxTokens: 65536, temperature: 0.2, model: 'gemini-2.5-pro', noFallback: true });
                         console.log(`[셀팟] 청크2 응답: finishReason=${r2.finishReason}, ${r2.text.length}자`);
 
                         let txt2 = r2.text.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '');
@@ -20808,7 +20866,7 @@ JSON만 출력. 코드블록 마커 금지.`;
                 console.error(e);
             } finally {
                 btn.disabled = false;
-                btn.textContent = '🚀 변환 시작 (Gemini Pro 맥락 분석)';
+                btn.textContent = `🚀 변환 시작 (${_modelLabel} 맥락 분석)`;
             }
         }
 
