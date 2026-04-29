@@ -20097,15 +20097,18 @@ ${stylePrompt}
 - real: 실존 인물·기관만 (real_keywords 영문 3개, 대본 인물명 그대로). **real 장면에도 반드시 nano_prompt + grok_prompt 백업 포함** (실사 대신 AI로 대체 가능하도록)
 - claude_design: ${_isPsych ? '교육적 도식·그래프·인포그래픽 적극 활용 (전체 10~15% 이내, 최대 12개)' : '진짜 그래프·다중 데이터·구조도 (전체 5~10% 이내, 최대 8개)'}
 
-★★★ 중복 프롬프트 절대 금지 ★★★
-- 모든 nano_prompt는 서로 다른 고유한 장면을 묘사해야 함. 동일/유사 프롬프트 금지.
-- 스타일 지시만 있고 구체적 장면 묘사가 없는 빈 껍데기 금지. 반드시 "누가 어디서 무엇을" 묘사.
-- 추상적 내용이어도 구체적 시각 장면을 반드시 창작할 것.
+★★★ 중복 프롬프트 절대 금지 (가장 중요 — 위반 시 전체 실패) ★★★
+- 모든 nano_prompt는 서로 다른 고유한 장면을 묘사해야 함. **두 장면의 nano_prompt가 동일하거나 80% 이상 유사하면 전체 결과 실패로 간주**.
+- 스타일 지시만 있고 구체적 장면 묘사가 없는 빈 껍데기 절대 금지. 반드시 "누가 어디서 무엇을 하는" 구체적 장면을 묘사.
+- 추상적 나레이션이어도 구체적 시각 장면을 반드시 창작할 것.
+- **경제 채널 스타일 블록("Economist, Bloomberg, WSJ...")을 nano_prompt에 넣지 말 것** — 그림체는 위 stylePrompt에서 이미 정의됨. nano_prompt에는 장면 묘사만 작성.
+- **자체 검증**: JSON 출력 전 모든 nano_prompt를 비교해서 동일/유사한 쌍이 있으면 하나를 완전히 다시 작성할 것.
 
 ★★★ 텍스트 절대 금지 (최우선 규칙) ★★★
 모든 ai 장면의 nano_prompt 끝에 반드시 포함:
 "ABSOLUTE RULE: NO text, NO letters, NO words, NO numbers, NO typography, NO captions, NO labels, NO signs, NO logos, NO watermarks, NO Korean text, NO English text, NO characters of ANY language anywhere in the image. The image must be 100% purely visual with ZERO text elements."
 nano_prompt는 반드시 영문으로 작성. 한국어 나레이션을 그대로 넣지 말 것.
+**nano_prompt 구조**: [구체적 장면 묘사 2~3문장] + [채널 그림체 한 줄] + [ABSOLUTE RULE 문구]. 이 세 파트만. 스타일 블록만 단독으로 출력하지 말 것.
 
 === 출력 (JSON만) ===
 {"scenes":[{"sceneNo":${chunk2StartSceneNo},"type":"ai","duration":10,"isIntro":false,"bodyIndices":[1,2,3],"nano_prompt":"...","grok_prompt":"..."},...]}
