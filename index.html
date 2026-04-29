@@ -19791,6 +19791,8 @@ ${stylePrompt}
   - **스타일만 있는 빈 껍데기 금지**: nano_prompt에 "editorial illustration style..." 같은 스타일 지시만 넣고 구체적 장면 묘사가 없으면 실패. 반드시 "누가 어디서 무엇을 하고 있는지" 구체적 장면을 묘사할 것.
   - 대본 내용이 추상적이거나 전환 문장이어도, 그 맥락에 맞는 **구체적인 시각 장면**을 반드시 창작할 것.
   - 생성 후 스스로 검증: 모든 nano_prompt를 훑어보고 동일/유사한 것이 있으면 다시 작성.
+  - **경제 채널 스타일 블록("Economist, Bloomberg, WSJ...", "economic journalism", "muted earth palette")을 nano_prompt에 절대 넣지 말 것** — 그림체는 위 stylePrompt에서 이미 정의됨. nano_prompt에는 순수하게 장면 묘사만 작성.
+  - **nano_prompt 구조**: [구체적 장면 묘사 2~3문장] + [채널 그림체 한 줄] + [ABSOLUTE RULE 문구]. 이 세 파트만. 스타일 블록만 단독으로 출력하지 말 것.
   **★★★ 텍스트 절대 금지 (최우선 규칙) ★★★** — 모든 ai 장면의 nano_prompt 끝에 반드시 다음 문구를 빠짐없이 포함:
   "ABSOLUTE RULE: NO text, NO letters, NO words, NO numbers, NO typography, NO captions, NO labels, NO signs, NO logos, NO watermarks, NO Korean text, NO English text, NO characters of ANY language anywhere in the image. The image must be 100% purely visual with ZERO text elements."
   이미지 안에 글자·숫자·기호가 단 1개라도 보이면 실패. 인포그래픽 숫자 라벨도 금지. 차트 축 라벨도 금지. 어떤 형태의 문자도 절대 금지.
@@ -20595,7 +20597,76 @@ JSON만 출력. 코드블록 마커 금지.`;
                 }
                 window._spShortBodyScenes = _shortBodyScenes;
 
-                // 🚨 중복 nano_prompt 감지
+                // 🔧 안전망 — 중복 nano_prompt 자동 수정 (퍼지 유사도 80% 이상 → 프롬프트 재생성)
+                function _getNanoCore(prompt) {
+                    return (prompt || '')
+                        .replace(/\s*ABSOLUTE RULE:[\s\S]*$/i, '')
+                        .replace(/[Aa]\s*semi-realistic 2D editorial illustration[^.]*\.\s*/gi, '')
+                        .replace(/semi-realistic 2D editorial illustration[^.]*\.\s*/gi, '')
+                        .replace(/Sophisticated editorial illustration[^.]*\.\s*/gi, '')
+                        .replace(/Hand-drawn colored pencil[^.]*\.\s*/gi, '')
+                        .replace(/Cinematic 16:9\.?\s*/gi, '')
+                        .trim().toLowerCase();
+                }
+                function _wordJaccard(a, b) {
+                    const sa = new Set(a.split(/\s+/).filter(w => w.length > 3));
+                    const sb = new Set(b.split(/\s+/).filter(w => w.length > 3));
+                    if (!sa.size && !sb.size) return 1;
+                    if (!sa.size || !sb.size) return 0;
+                    let inter = 0;
+                    sa.forEach(w => { if (sb.has(w)) inter++; });
+                    return inter / (sa.size + sb.size - inter);
+                }
+                const _allNanoScenes = merged.filter(s => s.nano_prompt && s.nano_prompt.length > 50);
+                const _dupAutoFixed = [];
+                const _dupFixedSet = new Set();
+                for (let i = 0; i < _allNanoScenes.length; i++) {
+                    if (_dupFixedSet.has(_allNanoScenes[i].sceneNo)) continue;
+                    const coreI = _getNanoCore(_allNanoScenes[i].nano_prompt);
+                    if (coreI.length < 20) continue;
+                    for (let j = i + 1; j < _allNanoScenes.length; j++) {
+                        if (_dupFixedSet.has(_allNanoScenes[j].sceneNo)) continue;
+                        const coreJ = _getNanoCore(_allNanoScenes[j].nano_prompt);
+                        if (coreJ.length < 20) continue;
+                        const sim = _wordJaccard(coreI, coreJ);
+                        if (sim >= 0.8) {
+                            const later = _allNanoScenes[j];
+                            const gen = _generateAiPromptsForConverted(later);
+                            console.warn(`[셀팟] 🔧 중복 자동 수정: #${_allNanoScenes[i].sceneNo}≈#${later.sceneNo} (유사도 ${(sim*100).toFixed(0)}%) → #${later.sceneNo} 프롬프트 재생성`);
+                            later.nano_prompt = gen.nano_prompt;
+                            later.grok_prompt = gen.grok_prompt;
+                            later._dupAutoFixed = true;
+                            _dupFixedSet.add(later.sceneNo);
+                            _dupAutoFixed.push({ orig: _allNanoScenes[i].sceneNo, dup: later.sceneNo, sim });
+                        }
+                    }
+                }
+                if (_dupAutoFixed.length > 0) {
+                    console.log(`[셀팟] ✅ 중복 프롬프트 자동 수정 완료: ${_dupAutoFixed.length}개`);
+                }
+                window._spDupAutoFixed = _dupAutoFixed;
+
+                // 🔧 안전망 — 심리학 모드에서 경제 스타일 블록 감지 + 자동 수정
+                const _wrongStyleFixed = [];
+                if (_isPsych) {
+                    merged.forEach(s => {
+                        if (!s.nano_prompt) return;
+                        if (/economist|bloomberg|wsj|economic journalism|businessweek/i.test(s.nano_prompt)) {
+                            const gen = _generateAiPromptsForConverted(s);
+                            console.warn(`[셀팟] 🔧 스타일 오류 수정: #${s.sceneNo} 경제 스타일 블록 감지 → 심리학 스타일로 재생성`);
+                            s.nano_prompt = gen.nano_prompt;
+                            s.grok_prompt = gen.grok_prompt;
+                            s._styleAutoFixed = true;
+                            _wrongStyleFixed.push(s.sceneNo);
+                        }
+                    });
+                }
+                if (_wrongStyleFixed.length > 0) {
+                    console.log(`[셀팟] ✅ 경제 스타일 오류 수정 완료: ${_wrongStyleFixed.length}개 → 장면 ${_wrongStyleFixed.join(', ')}`);
+                }
+                window._spWrongStyleFixed = _wrongStyleFixed;
+
+                // 🚨 중복 nano_prompt 감지 (자동 수정 후 남은 것)
                 const _aiScenes = merged.filter(s => s.type === 'ai' && s.nano_prompt);
                 const _nanoMap = new Map();
                 const _dupNanoGroups = [];
@@ -20722,7 +20793,13 @@ JSON만 출력. 코드블록 마커 금지.`;
                 const emptyNote = _emptyShellScenes.length > 0
                     ? `<br><span style="color:#dc3545;font-weight:700;">🚨 빈 껍데기 프롬프트 ${_emptyShellScenes.length}개 (장면 ${_emptyShellScenes.join(', ')}) — 구체적 장면 묘사 없이 스타일만 있음.</span>`
                     : '';
-                status.innerHTML = `<span style="color:#28a745;">✅ ${merged.length}장면 변환 완료 (모델: ${r.usage?.model || 'gemini-2.5-pro'})</span>${chunkNote}${introFixNote}${cdCapNote}${cdInfoNote}${mergeNote}${splitNote}${longAiNote}${shortNote}${dupNote}${emptyNote}${recoveryNote}${retryNote}${truncatedNote}`;
+                const dupAutoFixNote = _dupAutoFixed.length > 0
+                    ? `<br><span style="color:#fd7e14;font-weight:700;">🔧 중복 프롬프트 ${_dupAutoFixed.length}개 자동 수정 (유사도 80%↑ → 프롬프트 재생성). 장면: ${_dupAutoFixed.map(d => '#' + d.dup + '(←#' + d.orig + ')').join(', ')}</span>`
+                    : '';
+                const wrongStyleNote = _wrongStyleFixed.length > 0
+                    ? `<br><span style="color:#fd7e14;font-weight:700;">🔧 경제 스타일 오류 ${_wrongStyleFixed.length}개 자동 수정 (→ 심리학 스타일로 재생성). 장면: ${_wrongStyleFixed.map(n => '#' + n).join(', ')}</span>`
+                    : '';
+                status.innerHTML = `<span style="color:#28a745;">✅ ${merged.length}장면 변환 완료 (모델: ${r.usage?.model || 'gemini-2.5-pro'})</span>${chunkNote}${introFixNote}${cdCapNote}${cdInfoNote}${mergeNote}${splitNote}${longAiNote}${shortNote}${dupNote}${emptyNote}${dupAutoFixNote}${wrongStyleNote}${recoveryNote}${retryNote}${truncatedNote}`;
                 document.getElementById('spResultSection').style.display = '';
                 document.getElementById('spResultSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
