@@ -19786,6 +19786,11 @@ ${stylePrompt}
   여러 시각을 나열하지 말 것 (예: "AND then", "또는", "split-screen", "두 장면" 금지).
   하나의 명확한 캐릭터/구도/순간/감정만 묘사. 단일 프레임의 정지 사진처럼.
   모든 내용을 다 담으려 하지 말 것. 대표 1컷만.
+  **★★★ 중복 프롬프트 절대 금지 ★★★**
+  - 모든 nano_prompt는 반드시 **서로 다른 고유한 장면**을 묘사해야 함. 두 장면의 nano_prompt가 동일하거나 거의 같으면 실패.
+  - **스타일만 있는 빈 껍데기 금지**: nano_prompt에 "editorial illustration style..." 같은 스타일 지시만 넣고 구체적 장면 묘사가 없으면 실패. 반드시 "누가 어디서 무엇을 하고 있는지" 구체적 장면을 묘사할 것.
+  - 대본 내용이 추상적이거나 전환 문장이어도, 그 맥락에 맞는 **구체적인 시각 장면**을 반드시 창작할 것.
+  - 생성 후 스스로 검증: 모든 nano_prompt를 훑어보고 동일/유사한 것이 있으면 다시 작성.
   **★★★ 텍스트 절대 금지 (최우선 규칙) ★★★** — 모든 ai 장면의 nano_prompt 끝에 반드시 다음 문구를 빠짐없이 포함:
   "ABSOLUTE RULE: NO text, NO letters, NO words, NO numbers, NO typography, NO captions, NO labels, NO signs, NO logos, NO watermarks, NO Korean text, NO English text, NO characters of ANY language anywhere in the image. The image must be 100% purely visual with ZERO text elements."
   이미지 안에 글자·숫자·기호가 단 1개라도 보이면 실패. 인포그래픽 숫자 라벨도 금지. 차트 축 라벨도 금지. 어떤 형태의 문자도 절대 금지.
@@ -20091,6 +20096,11 @@ ${stylePrompt}
 - ai (대부분): 인물·풍경·서사·감정·일반설명
 - real: 실존 인물·기관만 (real_keywords 영문 3개, ��본 인물명 그대로). **real 장면에도 반드시 nano_prompt + grok_prompt 백업 포함** (실사 대신 AI로 대체 가능하도록)
 - claude_design: ${_isPsych ? '교육적 도식·그래프·인포그래픽 적극 활용 (��체 10~15% 이내, 최대 12개)' : '진짜 그래프��다중 데이터·구조도 (전체 5~10% 이내, ��대 8개)'}
+
+★★★ 중복 프롬프트 절대 금지 ★★★
+- 모든 nano_prompt는 서로 다른 고유한 장면을 묘사해야 함. 동일/유사 프롬프트 금지.
+- 스타일 지시만 있고 구체적 장면 묘사가 없는 빈 껍데기 금지. 반드시 "누가 어디서 무엇을" 묘사.
+- 추상적 내용이어도 구체적 시각 장면을 반드시 창작할 것.
 
 ★★★ 텍스트 절대 금지 (최우선 규칙) ★★★
 모든 ai 장면의 nano_prompt 끝에 반드시 포함:
@@ -20582,6 +20592,84 @@ JSON만 출력. 코드블록 마커 금지.`;
                 }
                 window._spShortBodyScenes = _shortBodyScenes;
 
+                // 🚨 중복 nano_prompt 감지
+                const _aiScenes = merged.filter(s => s.type === 'ai' && s.nano_prompt);
+                const _nanoMap = new Map();
+                const _dupNanoGroups = [];
+                _aiScenes.forEach(s => {
+                    const key = s.nano_prompt.trim().substring(0, 200);
+                    if (_nanoMap.has(key)) {
+                        _nanoMap.get(key).push(s.sceneNo);
+                    } else {
+                        _nanoMap.set(key, [s.sceneNo]);
+                    }
+                });
+                _nanoMap.forEach((sceneNos, key) => {
+                    if (sceneNos.length > 1) {
+                        _dupNanoGroups.push({ sceneNos, preview: key.substring(0, 80) });
+                    }
+                });
+                // 🚨 중복 grok_prompt 감지
+                const _grokMap = new Map();
+                const _dupGrokGroups = [];
+                _aiScenes.filter(s => s.grok_prompt).forEach(s => {
+                    const key = s.grok_prompt.trim().substring(0, 200);
+                    if (_grokMap.has(key)) {
+                        _grokMap.get(key).push(s.sceneNo);
+                    } else {
+                        _grokMap.set(key, [s.sceneNo]);
+                    }
+                });
+                _grokMap.forEach((sceneNos, key) => {
+                    if (sceneNos.length > 1) {
+                        _dupGrokGroups.push({ sceneNos, preview: key.substring(0, 80) });
+                    }
+                });
+                if (_dupGrokGroups.length > 0) {
+                    console.warn(`[셀팟] ⚠️ 중복 영상 프롬프트 ${_dupGrokGroups.length}그룹 발견:`);
+                    _dupGrokGroups.forEach(g => console.warn(`  장면 ${g.sceneNos.join(', ')}: "${g.preview}..."`));
+                }
+                window._spDupGrokGroups = _dupGrokGroups;
+
+                // 🚨 중복 claude_prompt 감지
+                const _claudeScenes = merged.filter(s => s.type === 'claude_design' && s.claude_prompt);
+                const _claudeMap = new Map();
+                const _dupClaudeGroups = [];
+                _claudeScenes.forEach(s => {
+                    const key = s.claude_prompt.trim().substring(0, 200);
+                    if (_claudeMap.has(key)) {
+                        _claudeMap.get(key).push(s.sceneNo);
+                    } else {
+                        _claudeMap.set(key, [s.sceneNo]);
+                    }
+                });
+                _claudeMap.forEach((sceneNos, key) => {
+                    if (sceneNos.length > 1) {
+                        _dupClaudeGroups.push({ sceneNos, preview: key.substring(0, 80) });
+                    }
+                });
+                if (_dupClaudeGroups.length > 0) {
+                    console.warn(`[셀팟] ⚠️ 중복 Claude Design 프롬프트 ${_dupClaudeGroups.length}그룹 발견:`);
+                    _dupClaudeGroups.forEach(g => console.warn(`  장면 ${g.sceneNos.join(', ')}: "${g.preview}..."`));
+                }
+                window._spDupClaudeGroups = _dupClaudeGroups;
+
+                // 빈 껍데기 감지 (스타일만 있고 장면 묘사 없는 프롬프트)
+                const _emptyShellScenes = _aiScenes.filter(s => {
+                    const p = (s.nano_prompt || '').toLowerCase();
+                    const hasSceneDesc = /character|person|stands|sits|walks|holds|looks|room|stage|desk|cliff|office|park|street|bed/i.test(p);
+                    return !hasSceneDesc && p.length > 50;
+                }).map(s => s.sceneNo);
+                if (_dupNanoGroups.length > 0) {
+                    console.warn(`[셀팟] ⚠️ 중복 이미지 프롬프트 ${_dupNanoGroups.length}그룹 발견:`);
+                    _dupNanoGroups.forEach(g => console.warn(`  장면 ${g.sceneNos.join(', ')}: "${g.preview}..."`));
+                }
+                if (_emptyShellScenes.length > 0) {
+                    console.warn(`[셀팟] ⚠️ 빈 껍데기 프롬프트 ${_emptyShellScenes.length}개 (장면 묘사 없이 스타일만): 장면 ${_emptyShellScenes.join(', ')}`);
+                }
+                window._spDupNanoGroups = _dupNanoGroups;
+                window._spEmptyShellScenes = _emptyShellScenes;
+
                 _spLastResult = { scenes: merged, channel: _spChannel, stylePrompt };
                 _spRenderResults(_spLastResult);
 
@@ -20618,7 +20706,20 @@ JSON만 출력. 코드블록 마커 금지.`;
                 const shortNote = _shortBodyScenes.length > 0
                     ? `<br><span style="color:#fd7e14;font-weight:700;">⚠️ 너무 짧은 본문 장면 ${_shortBodyScenes.length}개 (60자/9초 미만) — 옆 장면과 합치는 게 자연스러움. 콘솔에서 장면번호 확인.</span>`
                     : '';
-                status.innerHTML = `<span style="color:#28a745;">✅ ${merged.length}장면 변환 완료 (모델: ${r.usage?.model || 'gemini-2.5-pro'})</span>${chunkNote}${introFixNote}${cdCapNote}${cdInfoNote}${mergeNote}${splitNote}${longAiNote}${shortNote}${recoveryNote}${retryNote}${truncatedNote}`;
+                const _allDupGroups = [..._dupNanoGroups, ..._dupGrokGroups, ..._dupClaudeGroups];
+                const _dupDetails = [
+                    _dupNanoGroups.length > 0 ? `이미지 ${_dupNanoGroups.length}그룹` : '',
+                    _dupGrokGroups.length > 0 ? `영상 ${_dupGrokGroups.length}그룹` : '',
+                    _dupClaudeGroups.length > 0 ? `Claude Design ${_dupClaudeGroups.length}그룹` : '',
+                ].filter(Boolean).join(', ');
+                const _dupSceneList = _allDupGroups.map(g => '장면 ' + g.sceneNos.join('=')).join(', ');
+                const dupNote = _allDupGroups.length > 0
+                    ? `<br><span style="color:#dc3545;font-weight:700;">🚨 중복 프롬프트 발견! ${_dupDetails} (${_dupSceneList}) — 같은 내용이 여러 번 나옵니다.</span>`
+                    : '';
+                const emptyNote = _emptyShellScenes.length > 0
+                    ? `<br><span style="color:#dc3545;font-weight:700;">🚨 빈 껍데기 프롬프트 ${_emptyShellScenes.length}개 (장면 ${_emptyShellScenes.join(', ')}) — 구체적 장면 묘사 없이 스타일만 있음.</span>`
+                    : '';
+                status.innerHTML = `<span style="color:#28a745;">✅ ${merged.length}장면 변환 완료 (모델: ${r.usage?.model || 'gemini-2.5-pro'})</span>${chunkNote}${introFixNote}${cdCapNote}${cdInfoNote}${mergeNote}${splitNote}${longAiNote}${shortNote}${dupNote}${emptyNote}${recoveryNote}${retryNote}${truncatedNote}`;
                 document.getElementById('spResultSection').style.display = '';
                 document.getElementById('spResultSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
