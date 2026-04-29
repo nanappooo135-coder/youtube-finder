@@ -19674,12 +19674,12 @@ overall mood: bright, psychologically safe illustration, uplifting and reassurin
                 // 채널 양쪽 동일 캡 (15초 max — 심리학은 정적이라 슬로우가 더 어색하게 보여서 더 짧게 가야 함)
                 // claude_design 캡 15% (안전망 상한). 핵심은 비율이 아니라 "용도 판단"
                 const _isPsych = _spChannel === 'psychology';
-                const _cdCapRatio = 0.10; // 10% — 사용자 피드백: 5~8개 정도가 적정 (79장면 → 7개)
+                const _cdCapRatio = _isPsych ? 0.15 : 0.10;
                 const _aiCharCap = 100; // 양쪽 동일 — MAX 15초 한계
                 const _aiCharRecommend = '권장 65~95자 (10~14.5초) — 본문 sweet spot. 최대 100자(15초) 절대 초과 금지';
                 const _aiDurationRange = '권장 10~15초 (sweet spot, 본문 평균 12~13초가 제일 자연스러움). 최대 15초, 16초 초과 절대 금지';
                 const _channelNote = _isPsych
-                    ? '심리학 채널: 정적·내면 톤 (인물·감정·일상 장면 위주). 그록 영상이 본래 정적이라 슬로우 더 잘 티남 → 장면 길이 짧게 유지. 호흡법·뇌구조·법칙 곡선 같은 진짜 도식만 claude_design.'
+                    ? '심리학 채널: 정적·내면 톤 (인물·감정·일상 장면 위주). 그록 영상이 본래 정적이라 슬로우 더 잘 티남 → 장면 길이 짧게 유지. claude_design은 교육적 도식·그래프·인포그래픽·뇌구조·법칙 곡선·단계 다이어그램 등 설명력 필요한 장면에 적극 활용 (10~15%).'
                     : '경제 채널: 동적·서사 톤 (인물·풍경·도시 장면 위주). 진짜 그래프·지도·데이터만 claude_design.';
 
                 const prompt = `당신은 유튜브 ${channelLabel} 채널의 영상 제작 디렉터입니다. 아래 대본 전체를 읽고 맥락을 완전히 이해한 뒤, 본문을 **응집도 있는 장면 단위로 자동 묶기** + **각 장면별 시각화 방법 결정**을 해야 합니다.
@@ -19740,7 +19740,7 @@ ${stylePrompt}
      · 비유·은유 시각화
      · 숫자 1~2개 언급 정도 (ai에 자막 얹으면 충분)
      · 일반 설명·연결·결론 문장
-   **🔴 비율 제한 (시청자 피로 방지)**: claude_design은 **전체 장면의 5~10%, 최대 8개 이내**. 예: 76장면이면 4~8개. 적합한 게 적으면 그보다 적어도 OK (5% 미만도 허용). 5~10%는 상한선이지 강제로 채우는 값이 아님. 초과 시 가장 약한 후보(서사 섞인 것, 자막+ai로 처리 가능한 것)부터 ai로 변경.
+   **🔴 비율 제한 (시청자 피로 방지)**: claude_design은 **전체 장면의 ${_isPsych ? '10~15%' : '5~10%'}, 최대 ${_isPsych ? '12' : '8'}개 이내**. 예: 76장면이면 ${_isPsych ? '8~12' : '4~8'}개. 적합한 게 적으면 그보다 적어도 OK. ${_isPsych ? '10~15%' : '5~10%'}는 상한선이지 강제로 채우는 값이 아님. 초과 시 가장 약한 후보(서사 섞인 것, 자막+ai로 처리 가능한 것)부터 ai로 변경.
    **❌ 절대 부적합 (이건 무조건 ai — 위 룰의 부연)**:
    - **모든 인물·풍경·도시 장면**: 응급실 복도 노부부, 공항 입국장, 졸업식, 식탁 앞 부부, 거리 풍경, 사무실 등 — 사람·장소·일상이 등장하면 무조건 ai
    - **서사·드라마 묘사**: "한 사람이 ~했다", "이때 ~했다" 같은 스토리텔링 문장
@@ -19773,7 +19773,7 @@ ${stylePrompt}
    1. "데이터가 3개 이상 비교되거나 연속적 추세인가?" (숫자 2개 비교는 NO)
    2. "이 데이터가 다른 장면에서 이미 등장하지 않았나?" (중복이면 NO)
    3. "사람·드라마가 메인이 아니라 데이터 자체가 메인인가?" (사람이 메인이면 NO)
-   추가로 전체의 5~10%(최대 8개)를 초과하면 가장 약한 후보부터 ai로 변경. 잘 분류하면 5~8% 안쪽이 자연스러움. 적합한 게 적으면 5% 미만이어도 OK.
+   추가로 전체의 ${_isPsych ? '10~15%' : '5~10%'}(최대 ${_isPsych ? '12' : '8'}개)를 초과하면 가장 약한 후보부터 ai로 변경. 잘 분류하면 ${_isPsych ? '10~15%' : '5~8%'} 안쪽이 자연스러움. 적합한 게 적으면 ${_isPsych ? '10%' : '5%'} 미만이어도 OK.
 
 === 각 본문 장면 출력 ===
 - sceneNo: 도입부 ${introSceneList.length}개 다음부터 ${startBodyNo}, ${startBodyNo+1}, ... 순차
@@ -19800,6 +19800,8 @@ ${stylePrompt}
   - **duration > 16초** (~1.7x 보정): 최대 활기 (STRICT 한계 안에서). "full natural breathing rhythm with chest motion, clearly visible hair sway, ambient elements with continuous drift, camera push-in or slow pan up to 13%" 수준.
   ⚠️ "더 빠른 모션"의 의미 = 더 큰 동작이 아니라 **더 명확한 미세 모션 + 카메라 무빙 강도 약간 ↑**. STRICT RULES의 NO new faces, NO dramatic gestures, NO running 등은 어떤 duration이든 절대 어기지 말 것.
   duration 값에 따라 위 가이드 그대로 grok_prompt에 영문으로 명시할 것 (예: 14초 장면 → "fuller breathing arc, distinct hair sway, camera push-in up to 10%" 같은 문구를 자연스럽게 포함).
+- nano_prompt: (real 장면에서도 필수 — AI 백업용) real 장면이라도 **반드시 nano_prompt + grok_prompt를 함께 생성**. 실사 검색 결과가 마음에 안 들면 사용자가 AI 이미지로 대체할 수 있도록 백업. ai 장면과 동일한 규칙(그림체·텍스트 금지·한 장면 한 그림 등) 적용.
+- grok_prompt: (real 장면에서도 필수 — AI 백업용) nano_prompt 이미지의 그록 영상화용. ai 장면과 동일한 STRICT RULES + 모션 강도 규칙 적용.
 - real_keywords: (real만) **영문 검색어 배열, 정확히 3개**. 구글 이미지 검색용. 한글 금지.
   **★ 작성 규칙 (절대 준수) ★**:
   1. **반드시 영문으로** — 한글 검색은 자료 풀이 좁음. 영문으로 쳐야 구글 이미지에 풍부한 결과 나옴.
@@ -19916,7 +19918,7 @@ ${stylePrompt}
   "scenes": [
     {"sceneNo": 1, "type": "ai", "duration": 6, "isIntro": true, "bodyIndices": [], "nano_prompt": "...", "grok_prompt": "..."},
     {"sceneNo": ${startBodyNo}, "type": "ai", "duration": 10, "isIntro": false, "bodyIndices": [1,2,3], "nano_prompt": "...", "grok_prompt": "..."},
-    {"sceneNo": ${startBodyNo+1}, "type": "real", "duration": 8, "isIntro": false, "bodyIndices": [4,5], "real_keywords": ["Justin Trudeau press conference 2022", "Trudeau cabinet meeting Ottawa", "Canadian PM Trudeau Parliament Hill"], "real_subject": "트뤼도 총리 책상에서 결단 내리는 장면"},
+    {"sceneNo": ${startBodyNo+1}, "type": "real", "duration": 8, "isIntro": false, "bodyIndices": [4,5], "nano_prompt": "...(AI 백업 이미지 프롬프트)...", "grok_prompt": "...(AI 백업 영상 프롬프트)...", "real_keywords": ["Justin Trudeau press conference 2022", "Trudeau cabinet meeting Ottawa", "Canadian PM Trudeau Parliament Hill"], "real_subject": "트뤼도 총리 책상에서 결단 내리는 장면"},
     {"sceneNo": ${startBodyNo+2}, "type": "claude_design", "duration": 13, "isIntro": false, "bodyIndices": [6,7,8,9], "claude_prompt": "...", "claude_kind": "..."}
   ]
 }
@@ -20087,8 +20089,8 @@ ${stylePrompt}
 
 === 장면 타입 (앞 청크와 동일) ===
 - ai (대부분): 인물·풍경·서사·감정·일반설명
-- real: 실존 인물·기관만 (real_keywords 영문 3개, 대본 인물명 그대로)
-- claude_design: 진짜 그래프·다중 데이터·구조도 (전체 5~10% 이내, 최대 8개)
+- real: 실존 인물·기관만 (real_keywords 영문 3개, ��본 인물명 그대로). **real 장면에도 반드시 nano_prompt + grok_prompt 백업 포함** (실사 대신 AI로 대체 가능하도록)
+- claude_design: ${_isPsych ? '교육적 도식·그래프·인포그래픽 적극 활용 (��체 10~15% 이내, 최대 12개)' : '진짜 그래프��다중 데이터·구조도 (전체 5~10% 이내, ��대 8개)'}
 
 ★★★ 텍스트 절대 금지 (최우선 규칙) ★★★
 모든 ai 장면의 nano_prompt 끝에 반드시 포함:
@@ -20714,7 +20716,8 @@ JSON만 출력. 코드블록 마커 금지.`;
                     const kwLines = kws.length > 0
                         ? kws.map((k, i) => `  ${i+1}. ${k}\n     https://www.google.com/search?tbm=isch&q=${encodeURIComponent(k)}`).join('\n')
                         : '  (검색어 없음)';
-                    return `[장면 ${s.sceneNo}] ${s.real_subject || ''}\n${kwLines}\n`;
+                    const aiBackup = s.nano_prompt ? `\n  [AI 백업] nano_prompt:\n  ${s.nano_prompt}\n  grok_prompt:\n  ${s.grok_prompt || '(없음)'}` : '';
+                    return `[장면 ${s.sceneNo}] ${s.real_subject || ''}\n${kwLines}${aiBackup}\n`;
                 })
                 .join('\n');
             document.getElementById('spOut_real').value = realLines || '(실사 장면 없음)';
@@ -20734,9 +20737,14 @@ JSON만 출력. 코드블록 마커 금지.`;
                                 const url = `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(k)}`;
                                 return `<a href="${url}" target="_blank" rel="noopener" style="display:inline-block;margin:3px 4px 3px 0;padding:5px 10px;background:#fff;border:1px solid #d2b48c;border-radius:6px;color:#8b4513;text-decoration:none;font-size:0.8rem;font-weight:600;" title="구글 이미지에서 검색">🔍 ${i+1}. ${safeK}</a>`;
                             }).join('');
+                        const _esc = (t) => (t||'').replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
+                        const aiBackup = s.nano_prompt
+                            ? `<details style="margin-top:6px;"><summary style="cursor:pointer;font-size:0.78rem;color:#6b21a8;font-weight:600;">🎨 AI 백업 프롬프트 (실사 대체용)</summary><div style="margin-top:4px;padding:8px;background:#f8f4ff;border-radius:6px;font-size:0.75rem;line-height:1.5;"><div style="margin-bottom:6px;"><strong>nano_prompt:</strong><br><span style="color:#333;">${_esc(s.nano_prompt)}</span></div>${s.grok_prompt ? `<div><strong>grok_prompt:</strong><br><span style="color:#333;">${_esc(s.grok_prompt)}</span></div>` : ''}</div></details>`
+                            : '';
                         return `<div style="padding:10px 0;border-bottom:1px solid #eaddc7;">
                             <div style="font-weight:700;color:#8b4513;margin-bottom:4px;">[장면 ${s.sceneNo}] ${subject}</div>
                             <div>${links}</div>
+                            ${aiBackup}
                         </div>`;
                     }).join('');
                 }
