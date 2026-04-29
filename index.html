@@ -2612,6 +2612,17 @@
                         🚀 변환 시작 (Gemini Pro 맥락 분석)
                     </button>
                     <div id="spStatus" style="margin-top:8px;font-size:0.85rem;color:#888;"></div>
+
+                    <!-- JSON 직접 붙여넣기 -->
+                    <details style="margin-top:12px;">
+                        <summary style="cursor:pointer;font-size:0.85rem;color:#6b21a8;font-weight:600;">📋 JSON 직접 붙여넣기 (Claude 대화에서 만든 결과 import)</summary>
+                        <div style="margin-top:8px;">
+                            <textarea id="spJsonImport" rows="6" placeholder='{"scenes":[{"sceneNo":1,"type":"ai","duration":10,...},...]}' style="width:100%;padding:10px;border:2px solid #d4a437;border-radius:8px;font-size:0.75rem;font-family:'Courier New',monospace;line-height:1.4;resize:vertical;"></textarea>
+                            <button class="search-btn" onclick="spImportJson()" style="width:100%;margin-top:6px;font-size:0.9rem;padding:10px;background:#d4a437;border-color:#d4a437;">
+                                📥 JSON Import → 결과 표시
+                            </button>
+                        </div>
+                    </details>
                 </div>
             </div>
 
@@ -20867,6 +20878,34 @@ JSON만 출력. 코드블록 마커 금지.`;
             } finally {
                 btn.disabled = false;
                 btn.textContent = `🚀 변환 시작 (${_modelLabel} 맥락 분석)`;
+            }
+        }
+
+        function spImportJson() {
+            const raw = document.getElementById('spJsonImport').value.trim();
+            if (!raw) { alert('JSON을 붙여넣어주세요.'); return; }
+            const status = document.getElementById('spStatus');
+            try {
+                let txt = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '');
+                const fb = txt.indexOf('{'); const lb = txt.lastIndexOf('}');
+                if (fb >= 0 && lb > fb) txt = txt.substring(fb, lb + 1);
+                const parsed = JSON.parse(txt);
+                const scenes = parsed.scenes || [];
+                if (!scenes.length) { alert('scenes 배열이 비어있습니다.'); return; }
+                scenes.forEach((s, i) => {
+                    s.sceneNo = s.sceneNo || (i + 1);
+                    s.type = s.type || 'ai';
+                    s.duration = s.duration || 10;
+                    s.text = s.text || s.narration || '';
+                });
+                const stylePrompt = document.getElementById('spStylePrompt').value.trim();
+                _spLastResult = { scenes, channel: _spChannel, stylePrompt };
+                _spRenderResults(_spLastResult);
+                status.innerHTML = `<span style="color:#28a745;">✅ JSON Import 완료: ${scenes.length}장면 로드됨 (수동 import)</span>`;
+                document.getElementById('spResultSection').style.display = '';
+                document.getElementById('spResultSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } catch (e) {
+                status.innerHTML = `<span style="color:#dc3545;">❌ JSON 파싱 실패: ${e.message}</span>`;
             }
         }
 
