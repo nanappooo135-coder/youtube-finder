@@ -20735,6 +20735,19 @@ JSON만 출력. 코드블록 마커 금지.`;
         // ============================================================
         // 결과 렌더링 — 5탭
         // ============================================================
+        function _spSetCountLabel(textareaId, text) {
+            const labelId = textareaId + '_count';
+            let el = document.getElementById(labelId);
+            if (!el) {
+                el = document.createElement('div');
+                el.id = labelId;
+                el.style.cssText = 'margin-top:6px;padding:8px 12px;background:#f8f5f0;border:1px solid #e0d5c5;border-radius:6px;font-size:0.85rem;font-weight:700;color:#5a4a3a;text-align:center;';
+                const textarea = document.getElementById(textareaId);
+                if (textarea) textarea.parentNode.insertBefore(el, textarea.nextSibling);
+            }
+            el.textContent = text;
+        }
+
         function _spRenderResults(result) {
             const scenes = result.scenes;
             // 2026-04-27: 일괄 이름 변경 도구용 — 종류별 장면번호 순서 저장
@@ -20774,6 +20787,8 @@ JSON만 출력. 코드블록 마커 금지.`;
                 .map(s => `[장면 ${s.sceneNo}] ${s.type === 'intro' ? '(도입부)' : ''}\n${s.nano_prompt}\n`)
                 .join('\n');
             document.getElementById('spOut_nano').value = nanoLines || '(AI 이미지 장면 없음)';
+            const nanoCount = scenes.filter(s => s.type === 'ai' && s.nano_prompt).length;
+            _spSetCountLabel('spOut_nano', `🍌 총 ${nanoCount}개 이미지 프롬프트`);
 
             // 3) 그록 영상 — type=ai만, 6초/10초 + 슬로우/분할 표시
             const grokScenes = scenes.filter(s => s.type === 'ai' && s.grok_prompt);
@@ -20795,6 +20810,7 @@ JSON만 출력. 코드블록 마커 금지.`;
                 })
                 .join('\n');
             document.getElementById('spOut_grok').value = grokLines || '(AI 영상 장면 없음)';
+            _spSetCountLabel('spOut_grok', `🎬 총 ${grokScenes.length}개 영상 프롬프트`);
             // 2026-04-27: 그록 일괄 입력용 — 빈줄로만 구분, 장면번호 X
             const grokPasteText = grokScenes
                 .map(s => s.grok_prompt.trim())
@@ -20822,6 +20838,7 @@ JSON만 출력. 코드블록 마커 금지.`;
                 })
                 .join('\n');
             document.getElementById('spOut_real').value = realLines || '(실사 장면 없음)';
+            _spSetCountLabel('spOut_real', `📷 총 ${realScenes.length}개 실사 검색`);
             // 클릭 가능 링크 영역
             const linksEl = document.getElementById('spOut_realLinks');
             if (linksEl) {
@@ -20857,6 +20874,8 @@ JSON만 출력. 코드블록 마커 금지.`;
                 .map(s => `[장면 ${s.sceneNo}] ⏱ ${s.duration || '?'}초 · (${s.claude_kind || '인포그래픽'})\n${s.claude_prompt || ''}\n`)
                 .join('\n');
             document.getElementById('spOut_claude').value = claudeLines || '(Claude Design 장면 없음)';
+            const claudeCount = scenes.filter(s => s.type === 'claude_design').length;
+            _spSetCountLabel('spOut_claude', `📊 총 ${claudeCount}개 Claude Design 프롬프트`);
 
             // 첫 탭으로
             _spSwitchResultTab('sellpot');
