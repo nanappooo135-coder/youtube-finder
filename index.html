@@ -1384,10 +1384,7 @@
             <button class="process-btn" id="procBtn_topic" onclick="switchProcess('topic')">주제찾기</button>
             <button class="process-btn inactive" id="procBtn_formula" onclick="switchProcess('formula')" style="background:#0066cc;border-color:#0066cc;">🎯 AI 주제추천</button>
             <button class="process-btn inactive" id="procBtn_thumbnail" onclick="switchProcess('thumbnail')">썸네일</button>
-            <button class="process-btn inactive" id="procBtn_thumbtext" onclick="switchProcess('thumbtext')">텍스트</button>
-            <button class="process-btn inactive" id="procBtn_title" onclick="switchProcess('title')">영상제목</button>
             <button class="process-btn inactive" id="procBtn_review" onclick="switchProcess('review')">검수</button>
-            <button class="process-btn inactive" id="procBtn_factcheck" onclick="switchProcess('factcheck')">팩트검증</button>
             <button class="process-btn inactive" id="procBtn_visual" onclick="switchProcess('visual')">시각화</button>
             <button class="process-btn inactive" id="procBtn_json" onclick="switchProcess('json')">JSON</button>
             <button class="process-btn inactive" id="procBtn_sellpot" onclick="switchProcess('sellpot')">셀팟 기본</button>
@@ -2177,124 +2174,6 @@
 
         </div><!-- /process-thumbnail -->
 
-        <!-- ===== 프로세스 3: 썸네일 텍스트 ===== -->
-        <div id="process-thumbtext" style="display:none;">
-
-            <div class="section">
-                <div class="section-title">썸네일 텍스트 만들기</div>
-                <div class="section-content">
-                    <div id="ttServerStatus" class="fc-server-status disconnected">
-                        <span>서버 확인 중...</span>
-                    </div>
-                    <p style="font-size:0.85rem;color:#888;margin-bottom:12px;">
-                        대본 또는 주제를 넣으면 후킹되는 썸네일 텍스트 2줄을 10개 만들어줘요.
-                    </p>
-
-                    <div class="input-group">
-                        <label>대본 또는 주제 <span style="color:#888;font-weight:400;">(대본 전체 또는 주제 한 줄)</span></label>
-                        <textarea id="ttContent" rows="6" placeholder="대본 전체를 붙여넣거나, 주제를 한 줄로 입력하세요&#10;예: 미국과 이란의 전쟁 비용 청구서가 한국에도 날아온다" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;resize:vertical;font-family:inherit;line-height:1.6;"></textarea>
-                    </div>
-
-                    <div class="input-group">
-                        <label>필수 키워드 <span style="color:#888;font-weight:400;">(쉼표로 구분 — 반드시 들어갈 단어)</span></label>
-                        <input type="text" id="ttKeywords" placeholder="예: 이란, 미국, 전쟁, 청구서" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;">
-                    </div>
-
-                    <div class="input-group">
-                        <label>내 스타일 예시 <span style="color:#888;font-weight:400;">(수정 가능 — 기본값은 채널 스타일 기반)</span></label>
-                        <textarea id="ttExamples" rows="6" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;resize:vertical;font-family:inherit;">"혁명수비대의 콘크리트 무덤" / "이란 지하벙커 생매장"
-"대통령도 수도 포기 선언" / "물부족으로 무너지는 □□"
-"나라 90%가 갱단이 점령중" / "아이티의 붕괴"
-"이제 우리를 건드리지 마라" / "떠오르는 강국 폴란드"
-"국가를 삼킨 괴물 집단" / "헤즈볼라의 실체"
-"전쟁해도 잡히고 잡습니다" / "이스라엘 경제의 비밀"
-"북한 찬양했던 독재자의 최후" / "시리아의 몰락"
-"중국인들 씨를 말려라!" / "위구르의 잔혹한 테러"
-"관광은 천국 삶은 지옥" / "이탈리아의 몰락"
-"선진국은 절대 불가능" / "베트남의 어두운 미래"
-"제발 너네 나라로 꺼져!" / "스페인의 추락"
-"한·가문이 나라를 망쳤다" / "필리핀이 가난해진 □"
-"한국의 나이지리아 밑으로?" / "골드만삭스가 폭로한 □"
-"국민은 굶는데 대통령은 구찌쇼핑?" / "짐바브웨의 붕괴"
-"행복도 1위 낙원에서 탈출중" / "하와이의 몰락"
-"주가는 역대 최고 국민은 가난" / "일본의 몰락"
-"전문직 사무직 모두 끝났다" / "AI 시대 살아남는 직업 5"
-"에너지·시장·기술 다 끝났다" / "독일의 위기"
-"샤넬과 와인의 나라가 빛 잔치" / "프랑스의 위기"
-"이제 탈출만이 살길이다" / "파키스탄의 종말"
-"자고 일어나면 빵값이 2배" / "스리랑카의 몰락"
-"살다살다 이건 불경기는 처음" / "한국 제조업의 몰락"
-"지금 여기는 지옥입니다" / "캐나다의 몰락"
-"일론 머스크 한국 상륙" / "통신사 3대장의 몰락"
-"중국 내부가 상상치 않다" / "서열 2인자를 숙청한 □"
-"50조나 쏟아부었는데..." / "두바이 인공섬의 위기"
-"전국민이 빈곤에 시달리는중" / "영국의 몰락"
-"모두가 떠나고 텅텅 비는중" / "싱가포르의 몰락"
-"군대 갈바엔 점령 당할래요" / "독일 군사력의 몰락"
-"인구 25%가 미국으로 탈출중" / "쿠바의 몰락"
-"트럼프 멕시코 지상 공격" / "카르텔 겨냥한 충격적 □"
-"세계의 공장이 무너진다" / "중국 추락 신호 5가지"
-"마두로 지키던 무적 신화" / "쿠바 G2 요원 실체"
-"그린란드 방어 나토군 투입" / "전쟁도 각오한 덴마크"
-"우린 중국과 달라" / "인도가 천재가 많은 이유"</textarea>
-                        <p style="font-size:0.8rem;color:#888;margin-top:4px;">이 예시의 톤/길이/패턴을 따라갑니다. 자유롭게 수정하세요.</p>
-                    </div>
-
-                    <div class="input-group">
-                        <label>텍스트 길이</label>
-                        <div class="tb-options" id="ttLength">
-                            <button class="tb-opt" data-val="short" onclick="toggleTbOpt(this,'ttLength',1)">
-                                <div class="opt-title">짧게</div>
-                                <div class="opt-desc">1줄 5~10자</div>
-                            </button>
-                            <button class="tb-opt selected" data-val="medium" onclick="toggleTbOpt(this,'ttLength',1)">
-                                <div class="opt-title">보통</div>
-                                <div class="opt-desc">1줄 10~18자</div>
-                            </button>
-                            <button class="tb-opt" data-val="long" onclick="toggleTbOpt(this,'ttLength',1)">
-                                <div class="opt-title">길게</div>
-                                <div class="opt-desc">1줄 15~25자</div>
-                            </button>
-                        </div>
-                    </div>
-
-                    <button id="ttBtn" class="search-btn" onclick="generateThumbText()" style="margin-top:8px;">
-                        텍스트 10개 생성
-                    </button>
-                </div>
-            </div>
-
-            <!-- 메인 텍스트 결과 -->
-            <div id="ttResultSection" style="display:none;">
-                <div class="section">
-                    <div class="section-title">메인 텍스트 후보 (2줄)</div>
-                    <div class="section-content">
-                        <div id="ttResults"></div>
-                        <div style="display:flex;gap:8px;margin-top:12px;">
-                            <button class="search-btn" onclick="generateThumbText()" style="flex:1;">10개 더 생성</button>
-                        </div>
-                        <div id="ttUsage" class="fc-usage"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 서브텍스트 결과 -->
-            <div class="section">
-                <div class="section-title">서브텍스트 (상단 작은 글씨)</div>
-                <div class="section-content">
-                    <p style="font-size:0.85rem;color:#888;margin-bottom:12px;">
-                        썸네일 상단에 들어가는 짧은 훅. 메인 텍스트와 별도로 생성돼요.
-                    </p>
-                    <button id="stBtn" class="search-btn" onclick="generateSubText()">
-                        서브텍스트 10개 생성
-                    </button>
-                    <div id="stResults" style="margin-top:12px;"></div>
-                    <div id="stUsage" class="fc-usage"></div>
-                </div>
-            </div>
-
-        </div><!-- /process-thumbtext -->
-
         <!-- ===== 프로세스: 시각화 프롬프트 ===== -->
         <div id="process-visual" style="display:none;">
 
@@ -2906,56 +2785,6 @@
             </div>
         </div><!-- /process-tts -->
 
-        <!-- ===== 프로세스: 썸네일 제목 ===== -->
-        <div id="process-title" style="display:none;">
-            <div class="section">
-                <div class="section-title">영상 제목 만들기</div>
-                <div class="section-content">
-                    <p style="font-size:0.85rem;color:#888;margin-bottom:12px;">
-                        대본을 넣으면 클릭률 높은 유튜브 제목 10개 + SEO 최적화 설명란을 만들어줘요.
-                    </p>
-
-                    <div class="input-group">
-                        <label>대본 전체 붙여넣기</label>
-                        <textarea id="titleScript" rows="8" placeholder="대본 전체를 붙여넣으세요" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;resize:vertical;font-family:inherit;line-height:1.6;"></textarea>
-                        <p id="titleCharCount" style="font-size:0.8rem;color:#888;margin-top:4px;text-align:right;">0자</p>
-                    </div>
-
-                    <div class="input-group">
-                        <label>핵심 키워드 <span style="color:#888;font-weight:400;">(쉼표로 구분 — 제목에 반드시 포함)</span></label>
-                        <input type="text" id="titleKeywords" placeholder="예: 이란, 물 위기, 카나트, 3000년" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;">
-                    </div>
-
-                    <button id="titleBtn" onclick="generateTitles()" style="width:100%;padding:14px;background:#dc3545;color:white;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;margin-top:8px;">
-                        제목 + 설명란 생성
-                    </button>
-                    <p id="titleUsage" style="font-size:0.8rem;color:#888;margin-top:6px;text-align:right;"></p>
-                </div>
-            </div>
-
-            <!-- 제목 결과 -->
-            <div id="titleResultSection" style="display:none;">
-                <div class="section">
-                    <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
-                        제목 후보 10개
-                        <button onclick="copyTitles()" style="padding:6px 16px;background:#dc3545;color:white;border:none;border-radius:8px;font-size:0.85rem;cursor:pointer;">전체 복사</button>
-                    </div>
-                    <div class="section-content" id="titleResults" style="line-height:1.8;"></div>
-                </div>
-            </div>
-
-            <!-- 설명란 결과 -->
-            <div id="descResultSection" style="display:none;">
-                <div class="section">
-                    <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
-                        노출 최적화 설명란
-                        <button onclick="copyDesc()" style="padding:6px 16px;background:#dc3545;color:white;border:none;border-radius:8px;font-size:0.85rem;cursor:pointer;">복사</button>
-                    </div>
-                    <div class="section-content" id="descResult" style="white-space:pre-wrap;line-height:1.8;font-size:0.9rem;"></div>
-                </div>
-            </div>
-        </div><!-- /process-title -->
-
         <!-- ===== 프로세스: 대본 검수 ===== -->
         <div id="process-review" style="display:none;">
 
@@ -3055,76 +2884,6 @@
             </div>
 
         </div><!-- /process-review -->
-
-        <!-- ===== 프로세스 5: 팩트검증 ===== -->
-        <div id="process-factcheck" style="display:none;">
-
-            <div class="section">
-                <div class="section-title">대본 팩트검증</div>
-                <div class="section-content">
-                    <div id="fcServerStatus" class="fc-server-status disconnected">
-                        <span>서버 연결 확인 중...</span>
-                    </div>
-                    <p style="font-size:0.85rem;color:#888;margin-bottom:12px;">
-                        <strong>Step 1.</strong> 원본 대본 넣고 → 1차 팩트검증 (AI + 웹검색)<br>
-                        <strong>Step 2.</strong> 의심 항목을 Perplexity에서 확인 → 결과 붙여넣기<br>
-                        <strong>Step 3.</strong> 수정 대본 받기 → 팩트만 고친 최종본
-                    </p>
-
-                    <div class="input-group">
-                        <label>원본 대본</label>
-                        <textarea id="fcScript" rows="10" placeholder="원본 대본 전체를 붙여넣으세요" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;resize:vertical;font-family:inherit;line-height:1.6;"></textarea>
-                        <div style="display:flex;justify-content:space-between;margin-top:4px;">
-                            <span id="fcCharCount" style="font-size:0.8rem;color:#aaa;">0자</span>
-                            <span style="font-size:0.8rem;color:#aaa;">Gemini Pro (무료) → Claude 자동 전환</span>
-                        </div>
-                    </div>
-                    <button id="fcBtn" class="search-btn" onclick="runFactCheck()" style="margin-top:8px;">
-                        1차 팩트검증 시작
-                    </button>
-                </div>
-            </div>
-
-            <!-- 1차 검증 결과 -->
-            <div id="fcResultSection" style="display:none;">
-                <div class="section">
-                    <div class="section-title">1차 검증 결과 (의심 항목)</div>
-                    <div class="section-content">
-                        <div id="fcWebSources" style="display:none;margin-bottom:12px;padding:10px;background:#e8f4e8;border-radius:8px;font-size:0.8rem;">
-                            <strong>참고한 웹 소스:</strong>
-                            <div id="fcWebSourceList"></div>
-                        </div>
-                        <div id="fcResult" class="fc-result"></div>
-                        <div id="fcUsage" class="fc-usage"></div>
-                        <p style="font-size:0.85rem;color:#dc3545;margin-top:12px;font-weight:600;">
-                            위 의심 항목을 Perplexity에서 확인하고 결과를 아래에 붙여넣으세요.
-                        </p>
-                        <div class="input-group" style="margin-top:8px;">
-                            <label>Perplexity 검증 결과</label>
-                            <textarea id="fcPerplexity" rows="6" placeholder="의심 항목을 Perplexity에 물어본 결과를 여기 붙여넣으세요" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;resize:vertical;font-family:inherit;line-height:1.6;"></textarea>
-                        </div>
-                        <button id="fcCorrectBtn" class="search-btn" onclick="runCorrectScript()" style="margin-top:8px;">
-                            팩트 수정된 최종 대본 받기
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 수정 대본 -->
-            <div id="fcCorrectedSection" style="display:none;">
-                <div class="section">
-                    <div class="section-title">팩트 수정된 최종 대본</div>
-                    <div class="section-content">
-                        <div id="fcCorrected" class="fc-result" style="background:white;border:2px solid #e0e0e0;"></div>
-                        <div style="display:flex;gap:8px;margin-top:12px;">
-                            <button class="search-btn" onclick="copyCorrectedScript()" style="flex:1;">최종 대본 복사</button>
-                        </div>
-                        <div id="fcCorrectUsage" class="fc-usage"></div>
-                    </div>
-                </div>
-            </div>
-
-        </div><!-- /process-factcheck -->
 
         <!-- ===== 프로세스: 레퍼런스 (댓글 + 자막) ===== -->
         <div id="process-ref" style="display:none;">
@@ -6853,23 +6612,18 @@ ${_retryRound > 0 ? `⚠️ 이번은 ${_retryRound}차 추가 요청입니다. 
             }
             // 각 탭 고유 콘텐츠 (process-topic 밖)
             document.getElementById('process-thumbnail').style.display = proc === 'thumbnail' ? '' : 'none';
-            document.getElementById('process-thumbtext').style.display = proc === 'thumbtext' ? '' : 'none';
             document.getElementById('process-visual').style.display = proc === 'visual' ? '' : 'none';
             document.getElementById('process-json').style.display = proc === 'json' ? '' : 'none';
             document.getElementById('process-sellpot').style.display = proc === 'sellpot' ? '' : 'none';
             document.getElementById('process-review').style.display = proc === 'review' ? '' : 'none';
-            document.getElementById('process-factcheck').style.display = proc === 'factcheck' ? '' : 'none';
-            document.getElementById('process-title').style.display = proc === 'title' ? '' : 'none';
             document.getElementById('process-tts').style.display = proc === 'tts' ? '' : 'none';
             document.getElementById('process-ref').style.display = proc === 'ref' ? '' : 'none';
             document.getElementById('process-trend').style.display = proc === 'trend' ? '' : 'none';
             document.getElementById('process-breaking').style.display = proc === 'breaking' ? '' : 'none';
             if (proc === 'breaking') renderBreakingStatus();
 
-            if (proc === 'thumbtext') checkFcServer('ttServerStatus');
             if (proc === 'visual') checkFcServer('vsServerStatus');
             if (proc === 'review') checkFcServer('rvServerStatus');
-            if (proc === 'factcheck') checkFcServer();
             if (proc === 'trend') { fetchIssueRadar(); fetchGoogleTrends(); fetchEconYoutube(); }
             if (proc === 'sellpot') _spInit();
             } catch(err) {
