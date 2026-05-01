@@ -1594,9 +1594,26 @@
                         </select>
                     </div>
                 </div>
-                <button id="ftBtn" class="search-btn" onclick="findTopicByFormula()">
-                    🔍 주제 찾기
+                <!-- 수동 모드 (기본) -->
+                <button class="search-btn" onclick="copyFormulaPrompt()" style="background:#0066cc;">
+                    📋 주제 추천 프롬프트 복사
                 </button>
+                <div class="input-group" style="margin-top:10px;">
+                    <label>외부 AI 결과 붙여넣기 <span style="color:#888;font-weight:400;">(Claude/ChatGPT에서 받은 JSON)</span></label>
+                    <textarea id="formulaResultInput" rows="6" style="width:100%;padding:10px;border:2px solid #cce0ff;border-radius:8px;font-size:0.82rem;resize:vertical;font-family:monospace;" placeholder='외부 AI에서 받은 JSON을 여기 붙여넣으세요&#10;&#10;{"topics": [{"순위": 1, "트랙": "breaking", ...}], "best_pick_today": {...}}'></textarea>
+                </div>
+                <button class="search-btn" onclick="processManualFormulaResult()" style="background:#28a745;">
+                    📊 결과 표시
+                </button>
+
+                <!-- 자동 모드 (Gemini API) -->
+                <div style="margin-top:14px;padding-top:14px;border-top:2px dashed #e0e0e0;">
+                    <p style="font-size:0.78rem;color:#888;margin-bottom:8px;">또는 Gemini API로 자동 추천 (API 과부하 시 실패할 수 있음)</p>
+                    <button id="ftBtn" class="search-btn" onclick="findTopicByFormula()" style="background:#888;">
+                        🤖 Gemini 자동 추천 (불안정)
+                    </button>
+                </div>
+
                 <button class="search-btn" style="background: #888; margin-top: 8px;" onclick="resetBlockedTopics()">
                     🔄 차단 목록 초기화 (다시 안 보기 해제)
                 </button>
@@ -5737,7 +5754,127 @@ JSON 출력만, 다른 설명 금지:
         // 페이지 로드 시 속보 상태 표시
         document.addEventListener('DOMContentLoaded', () => { setTimeout(renderBreakingStatus, 500); });
 
-        async function findTopicByFormula(_isUniformityRetry = false) {
+        function copyFormulaPrompt() {
+            findTopicByFormula(false, true);
+        }
+
+        function processManualFormulaResult() {
+            const rawText = document.getElementById('formulaResultInput').value.trim();
+            if (!rawText) { alert('JSON을 붙여넣어 주세요.'); return; }
+            const resultsEl = document.getElementById('ftResults');
+            const count = parseInt(document.getElementById('ftCount').value);
+
+            let parsed = null, parseError = '';
+            let jsonStr = null;
+            const codeBlock = rawText.match(/```(?:json)?\s*([\s\S]*?)```/);
+            if (codeBlock) jsonStr = codeBlock[1].trim();
+            if (!jsonStr) {
+                const fb = rawText.indexOf('{');
+                const lb = rawText.lastIndexOf('}');
+                if (fb >= 0 && lb > fb) jsonStr = rawText.slice(fb, lb + 1);
+            }
+            if (jsonStr) {
+                try { parsed = JSON.parse(jsonStr); }
+                catch(e) {
+                    parseError = e.message;
+                    try {
+                        let depth = 0, inStr = false, esc = false, lastD0 = -1;
+                        for (let i = 0; i < jsonStr.length; i++) {
+                            const ch = jsonStr[i];
+                            if (esc) { esc = false; continue; }
+                            if (ch === '\\' && inStr) { esc = true; continue; }
+                            if (ch === '"') { inStr = !inStr; continue; }
+                            if (inStr) continue;
+                            if (ch === '{') depth++;
+                            else if (ch === '}') { depth--; if (depth === 0) lastD0 = i; }
+                        }
+                        if (lastD0 > 0) parsed = JSON.parse(jsonStr.slice(0, lastD0 + 1));
+                    } catch(e2) {}
+                }
+            }
+            if (!parsed || !parsed.topics) {
+                resultsEl.innerHTML = `<div style="padding:16px;background:#fff5f5;border:1px solid #ffcccc;border-radius:8px;">
+                    <div style="font-weight:700;color:#dc3545;margin-bottom:8px;">JSON 파싱 실패</div>
+                    <div style="font-size:0.85rem;color:#666;">${parseError ? '파싱 오류: ' + escapeHtml(parseError) : '응답에서 topics 추출 실패'}</div></div>`;
+                return;
+            }
+
+            const allTopics = Array.isArray(parsed.topics) ? parsed.topics.filter(t => t && typeof t === 'object') : [];
+            if (allTopics.length === 0) {
+                resultsEl.innerHTML = '<div style="padding:16px;color:#888;">유효한 topics가 없습니다.</div>';
+                return;
+            }
+            allTopics.forEach(t => {
+                const ax = t['4축_점수'];
+                if (ax) {
+                    const axes = ['주체_의외성', '결말_미지', '한국_정서', '본능_트리거'];
+                    let sum = 0;
+                    axes.forEach(k => { if (typeof ax[k] === 'number') { ax[k] = Math.min(3, Math.max(0, ax[k])); sum += ax[k]; } });
+                    ax.총점 = sum;
+                    ax.최종_점수 = sum + (typeof ax.속보_보너스 === 'number' ? ax.속보_보너스 : 0);
+                }
+            });
+
+            const __ch = getCurrentChannel();
+            let passed, notes = [];
+
+            if (__ch === 'psychology') {
+                const failed = { lowTotal: 0, lowV1: 0, lowV2: 0, dup: 0 };
+                passed = allTopics.filter(t => {
+                    const v = t.V_점수 || {};
+                    if (typeof t.V_합계 === 'number' && t.V_합계 < 70) { failed.lowTotal++; return false; }
+                    if (typeof v.V1_보편성 === 'number' && v.V1_보편성 < 7) { failed.lowV1++; return false; }
+                    if (typeof v.V2_결과선명도 === 'number' && v.V2_결과선명도 < 7) { failed.lowV2++; return false; }
+                    if (typeof v.V6_자가복제 === 'number' && v.V6_자가복제 === 0) { failed.dup++; return false; }
+                    return true;
+                });
+                if (failed.lowTotal) notes.push(`총점 70 미만 ${failed.lowTotal}개`);
+                if (failed.lowV1) notes.push(`V1 보편성 7 미만 ${failed.lowV1}개`);
+                if (failed.lowV2) notes.push(`V2 결과선명도 7 미만 ${failed.lowV2}개`);
+                if (failed.dup) notes.push(`V6 자가복제 0점 ${failed.dup}개`);
+                renderPsychologyResults(passed, parsed);
+            } else {
+                const passed4Axis = allTopics.filter(t => {
+                    const ax = t['4축_점수'];
+                    return !ax || typeof ax.최종_점수 !== 'number' || ax.최종_점수 >= 9;
+                });
+                const axF = allTopics.length - passed4Axis.length;
+                if (axF > 0) notes.push(`4축 점수 9점 미만 ${axF}개`);
+
+                const structSeen = new Map();
+                const passedStruct = passed4Axis.filter(t => {
+                    const tag = (t.구조_요약 || '').trim();
+                    if (!tag) return true;
+                    const score = (t['4축_점수'] && t['4축_점수'].최종_점수) || 0;
+                    if (structSeen.has(tag)) {
+                        if (score > structSeen.get(tag).score) { structSeen.get(tag).keep = false; structSeen.set(tag, { score, keep: true, ref: t }); return true; }
+                        return false;
+                    }
+                    structSeen.set(tag, { score, keep: true, ref: t });
+                    return true;
+                });
+                const sF = passed4Axis.length - passedStruct.length;
+                if (sF > 0) notes.push(`구조 유사도 중복 ${sF}개`);
+
+                passed = passedStruct.filter(t => {
+                    if (!t.감정_출구) return true;
+                    const sum = t.감정_출구.활성_합계 ?? (['분노','연민','동경','공포'].filter(k => t.감정_출구[k] === true).length);
+                    return sum >= 3;
+                });
+                const eF = passedStruct.length - passed.length;
+                if (eF > 0) notes.push(`감정 출구 3개 미만 ${eF}개`);
+
+                renderFormulaResults(passed.slice(0, count), parsed);
+            }
+            if (notes.length > 0) {
+                const note = document.createElement('div');
+                note.style.cssText = 'padding:8px 12px;background:#fff8e6;border-left:3px solid #ffa500;border-radius:4px;font-size:0.8rem;color:#996600;margin-top:8px;';
+                note.innerHTML = `⚠️ 자동 제외: ${notes.join(' · ')}`;
+                resultsEl.appendChild(note);
+            }
+        }
+
+        async function findTopicByFormula(_isUniformityRetry = false, _copyOnly = false) {
             const userExtra = document.getElementById('ftFormula').value.trim();
             const avoid = document.getElementById('ftAvoid').value.trim();
             const count = parseInt(document.getElementById('ftCount').value);
@@ -6068,6 +6205,21 @@ ${_retryRound > 0 ? `⚠️ 이번은 ${_retryRound}차 추가 요청입니다. 
 - A: 20~50만
 - B: 5~20만
 - C: 5만 이하 (가급적 추천하지 말 것)`;
+
+                // 📋 프롬프트 복사 모드
+                if (_copyOnly) {
+                    const ta = document.createElement('textarea');
+                    ta.value = prompt;
+                    ta.style.cssText = 'position:fixed;left:-9999px;';
+                    document.body.appendChild(ta);
+                    ta.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(ta);
+                    btn.disabled = false;
+                    btn.innerHTML = '🤖 Gemini 자동 추천 (불안정)';
+                    alert('✅ 주제 추천 프롬프트가 클립보드에 복사되었습니다!\n\nClaude 또는 ChatGPT에 붙여넣기(Ctrl+V)하세요.\n결과 JSON을 받으면 "결과 표시" 버튼으로 확인할 수 있습니다.');
+                    return;
+                }
 
                 const result = await callGemini(prompt, {
                     maxTokens: 65536,
