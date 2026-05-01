@@ -5619,12 +5619,14 @@ JSON 출력만, 다른 설명 금지:
     }
   ]
 }`;
-            navigator.clipboard.writeText(prompt).then(() => {
-                const btn = event.target;
-                const orig = btn.textContent;
-                btn.textContent = '✅ 복사됨!';
-                setTimeout(() => btn.textContent = orig, 2000);
-            });
+            const ta = document.createElement('textarea');
+            ta.value = prompt;
+            ta.style.cssText = 'position:fixed;left:-9999px;';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            alert('✅ 속보 발굴 프롬프트가 클립보드에 복사되었습니다!\n\nClaude 또는 ChatGPT에 붙여넣기(Ctrl+V)하세요.');
         }
 
         function loadBreakingNews() {
