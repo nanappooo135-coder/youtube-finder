@@ -1394,6 +1394,7 @@
             <button class="process-btn inactive" id="procBtn_tts" onclick="switchProcess('tts')">TTS변환</button>
             <button class="process-btn inactive" id="procBtn_ref" onclick="switchProcess('ref')">레퍼런스</button>
             <button class="process-btn inactive" id="procBtn_trend" onclick="switchProcess('trend')">🔥트렌드</button>
+            <button class="process-btn inactive" id="procBtn_breaking" onclick="switchProcess('breaking')" style="background:#dc3545;border-color:#dc3545;">🔥속보</button>
         </div>
 
         <!-- ===== 프로세스 1: 주제찾기 ===== -->
@@ -1593,25 +1594,6 @@
                         </select>
                     </div>
                 </div>
-                <!-- 🔥 속보 이슈 입력 -->
-                <div style="margin-top:8px;margin-bottom:12px;border:2px solid #dc3545;border-radius:8px;overflow:hidden;">
-                    <div onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'; this.querySelector('.bn-arrow').textContent=this.nextElementSibling.style.display==='none'?'▶':'▼';" style="padding:10px 14px;background:#fff5f5;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
-                        <span style="font-weight:700;color:#dc3545;font-size:0.9rem;">🔥 속보 이슈 입력 <span style="font-weight:400;font-size:0.78rem;color:#888;">(선택 — 외부 AI 속보 JSON 붙여넣기)</span></span>
-                        <span><span id="bnStatusBadge" style="font-size:0.75rem;margin-right:8px;"></span><span class="bn-arrow" style="color:#dc3545;font-weight:700;">▶</span></span>
-                    </div>
-                    <div style="display:none;padding:14px;">
-                        <p style="font-size:0.82rem;color:#555;margin-bottom:10px;">① 아래 프롬프트를 복사 → Claude/ChatGPT에 붙여넣기 → ② 받은 JSON을 아래 입력란에 붙여넣기 → ③ 적용</p>
-                        <button onclick="copyBreakingPrompt()" class="btn-small btn-primary" style="margin-bottom:10px;font-size:0.82rem;padding:8px 16px;">📋 속보 발굴 프롬프트 복사</button>
-                        <textarea id="breakingNewsInput" rows="4" style="width:100%;padding:10px;border:2px solid #ffcccc;border-radius:8px;font-size:0.82rem;resize:vertical;font-family:monospace;" placeholder='외부 AI에서 받은 속보 JSON을 여기 붙여넣으세요&#10;&#10;{"issues": [{"headline_topic": "...", "detail_angle": "...", ...}]}'></textarea>
-                        <p style="font-size:0.75rem;color:#dc3545;margin:6px 0 10px;font-weight:600;">⚠️ 받은 JSON의 source_urls를 1-2개 클릭해서 디테일이 실제로 있는지 확인 후 사용하세요. AI가 그럴듯하게 지어낼 수 있습니다.</p>
-                        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                            <button onclick="applyBreakingNews()" class="btn-small" style="background:#dc3545;color:white;border:none;border-radius:6px;padding:8px 16px;font-size:0.82rem;font-weight:700;cursor:pointer;">✅ 적용</button>
-                            <button onclick="clearBreakingNews()" class="btn-small" style="background:#888;color:white;border:none;border-radius:6px;padding:8px 16px;font-size:0.82rem;cursor:pointer;">🗑️ 초기화</button>
-                            <span id="bnStatusText" style="font-size:0.78rem;color:#888;"></span>
-                        </div>
-                    </div>
-                </div>
-
                 <button id="ftBtn" class="search-btn" onclick="findTopicByFormula()">
                     🔍 주제 찾기
                 </button>
@@ -3364,6 +3346,49 @@
                 </div>
             </div>
         </div><!-- /process-trend -->
+
+        <!-- ===== 프로세스: 🔥속보 이슈 수집 ===== -->
+        <div id="process-breaking" style="display:none;">
+            <div class="section" style="border:2px solid #dc3545;">
+                <div class="section-title" style="color:#dc3545;">
+                    🔥 속보 이슈 수집 <span style="font-size:0.75rem;color:#888;font-weight:400;">(외부 AI에서 디테일 발굴 → JSON 입력)</span>
+                </div>
+                <div class="section-content">
+                    <div style="background:#fff5f5;border-radius:8px;padding:14px;margin-bottom:14px;">
+                        <p style="font-size:0.88rem;color:#333;font-weight:700;margin-bottom:8px;">사용법</p>
+                        <ol style="font-size:0.82rem;color:#555;margin:0;padding-left:20px;line-height:1.8;">
+                            <li>아래 <b>"속보 발굴 프롬프트 복사"</b> 클릭</li>
+                            <li>Claude 또는 ChatGPT에 붙여넣기 → 실행</li>
+                            <li>받은 JSON 결과를 아래 입력란에 붙여넣기</li>
+                            <li><b>"적용"</b> 클릭 → AI 주제추천 탭에서 자동 반영됨</li>
+                        </ol>
+                    </div>
+
+                    <button onclick="copyBreakingPrompt()" style="width:100%;padding:14px;background:#dc3545;color:white;border:none;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer;margin-bottom:14px;">📋 속보 발굴 프롬프트 복사</button>
+
+                    <div class="input-group">
+                        <label>받은 JSON 붙여넣기</label>
+                        <textarea id="breakingNewsInput" rows="10" style="width:100%;padding:12px;border:2px solid #ffcccc;border-radius:8px;font-size:0.82rem;resize:vertical;font-family:monospace;" placeholder='외부 AI에서 받은 속보 JSON을 여기 붙여넣으세요
+
+{"issues": [{"headline_topic": "...", "detail_angle": "...", "concrete_facts": [...], ...}]}'></textarea>
+                    </div>
+
+                    <div style="background:#fff8e6;border:1px solid #ffd966;border-radius:8px;padding:10px 14px;margin:10px 0;font-size:0.8rem;color:#996600;font-weight:600;">
+                        ⚠️ 받은 JSON의 source_urls를 1-2개 클릭해서 디테일이 실제로 있는지 확인 후 사용하세요. AI가 그럴듯하게 지어낼 수 있습니다.
+                    </div>
+
+                    <div style="display:flex;gap:8px;margin-top:10px;">
+                        <button onclick="applyBreakingNews()" style="flex:1;padding:12px;background:#28a745;color:white;border:none;border-radius:8px;font-size:0.95rem;font-weight:700;cursor:pointer;">✅ 적용</button>
+                        <button onclick="clearBreakingNews()" style="padding:12px 20px;background:#888;color:white;border:none;border-radius:8px;font-size:0.95rem;cursor:pointer;">🗑️ 초기화</button>
+                    </div>
+
+                    <div id="bnStatusPanel" style="margin-top:14px;padding:14px;background:#f8f9fa;border-radius:8px;border:1px solid #e0e0e0;">
+                        <div style="font-weight:700;font-size:0.88rem;margin-bottom:6px;">현재 상태</div>
+                        <div id="bnStatusDetail" style="font-size:0.85rem;color:#555;">속보 미입력</div>
+                    </div>
+                </div>
+            </div>
+        </div><!-- /process-breaking -->
 
         </div><!-- /process-topic -->
 
@@ -5677,21 +5702,36 @@ JSON 출력만, 다른 설명 금지:
         }
 
         function renderBreakingStatus() {
-            const badge = document.getElementById('bnStatusBadge');
-            const text = document.getElementById('bnStatusText');
-            if (!badge || !text) return;
             const stored = loadBreakingNews();
+            const detail = document.getElementById('bnStatusDetail');
+            const tabBtn = document.getElementById('procBtn_breaking');
             if (!stored) {
-                badge.textContent = '';
-                text.textContent = '속보 미입력';
+                if (detail) detail.innerHTML = '<span style="color:#888;">속보 미입력 — 프롬프트를 복사해서 외부 AI에 던져보세요.</span>';
+                if (tabBtn) tabBtn.textContent = '🔥속보';
                 return;
             }
             const count = stored.issues.length;
             const elapsed = Date.now() - stored.savedAt;
             const remainH = Math.max(0, Math.ceil((_BREAKING_NEWS_EXPIRY_MS - elapsed) / 3600000));
             const freshness = elapsed < 6 * 3600000 ? '🔥' : elapsed < 12 * 3600000 ? '🟡' : elapsed < 24 * 3600000 ? '🟠' : '❌';
-            badge.innerHTML = `<span style="background:#dc3545;color:white;padding:2px 8px;border-radius:10px;font-weight:700;">${freshness} ${count}개 적용중</span>`;
-            text.textContent = `${remainH}시간 후 만료`;
+            if (detail) {
+                const issueList = stored.issues.map((iss, i) =>
+                    `<div style="padding:8px 10px;background:white;border-radius:6px;margin-bottom:6px;border-left:3px solid #dc3545;font-size:0.82rem;">
+                        <div style="font-weight:700;color:#333;">${i+1}. ${iss.headline_topic || ''}</div>
+                        <div style="color:#dc3545;font-size:0.78rem;margin-top:2px;">★ ${iss.detail_angle || ''}</div>
+                        ${iss.freshness_hours ? `<span style="color:#888;font-size:0.72rem;">${iss.freshness_hours}시간 전</span>` : ''}
+                        ${iss.korean_youtube_coverage ? ` · <span style="font-size:0.72rem;color:${iss.korean_youtube_coverage === '없음' ? '#28a745' : iss.korean_youtube_coverage === '소수' ? '#ffa500' : '#dc3545'};">${iss.korean_youtube_coverage === '없음' ? '🏆 경쟁 없음' : iss.korean_youtube_coverage === '소수' ? '⚡ 소수 커버' : '⚠️ 경쟁 많음'}</span>` : ''}
+                    </div>`
+                ).join('');
+                detail.innerHTML = `
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                        <span style="font-weight:700;color:#dc3545;">${freshness} ${count}개 적용중</span>
+                        <span style="font-size:0.78rem;color:#888;">${remainH}시간 후 만료</span>
+                    </div>
+                    ${issueList}
+                    <div style="margin-top:8px;font-size:0.75rem;color:#888;">→ AI 주제추천 탭에서 "주제 찾기" 시 자동 반영됩니다.</div>`;
+            }
+            if (tabBtn) tabBtn.textContent = `🔥속보 (${count})`;
         }
 
         // 페이지 로드 시 속보 상태 표시
@@ -6671,6 +6711,8 @@ ${_retryRound > 0 ? `⚠️ 이번은 ${_retryRound}차 추가 요청입니다. 
             document.getElementById('process-tts').style.display = proc === 'tts' ? '' : 'none';
             document.getElementById('process-ref').style.display = proc === 'ref' ? '' : 'none';
             document.getElementById('process-trend').style.display = proc === 'trend' ? '' : 'none';
+            document.getElementById('process-breaking').style.display = proc === 'breaking' ? '' : 'none';
+            if (proc === 'breaking') renderBreakingStatus();
 
             if (proc === 'thumbtext') checkFcServer('ttServerStatus');
             if (proc === 'visual') checkFcServer('vsServerStatus');
