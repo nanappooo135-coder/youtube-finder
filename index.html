@@ -5776,6 +5776,7 @@ JSON 출력만, 다른 설명 금지:
             for (let _retryRound = 0; _retryRound <= _maxRetries; _retryRound++) {
             if (_retryRound > 0) {
                 btn.innerHTML = `<div class="spinner"></div> 더 좋은 주제 찾는 중... (${_retryRound}/${_maxRetries})`;
+                resultsEl.innerHTML = `<div style="padding:20px;text-align:center;color:#888;">필터 통과 주제가 부족해서 추가 검색 중... (${_accPassed.length}/${count}개 확보)</div>`;
             }
             const _excludeSection = _allExcludeTitles.length > 0
                 ? `\n[이미 추천된 주제 — 중복 추천 금지]\n${_allExcludeTitles.map((t,i) => `${i+1}. ${t}`).join('\n')}\n`
@@ -6031,6 +6032,7 @@ ${_retryRound > 0 ? `⚠️ 이번은 ${_retryRound}차 추가 요청입니다. 
                     temperature: 0.7,
                     model: 'gemini-2.5-pro',
                     useSearch: true,
+                    noFallback: true,
                 });
 
                 const text = result.text || '';
