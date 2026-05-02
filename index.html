@@ -1391,7 +1391,6 @@
             <button class="process-btn inactive" id="procBtn_tts" onclick="switchProcess('tts')">TTS변환</button>
             <button class="process-btn inactive" id="procBtn_ref" onclick="switchProcess('ref')">레퍼런스</button>
             <button class="process-btn inactive" id="procBtn_trend" onclick="switchProcess('trend')">🔥트렌드</button>
-            <button class="process-btn inactive" id="procBtn_breaking" onclick="switchProcess('breaking')" style="background:#dc3545;border-color:#dc3545;">🔥속보</button>
         </div>
 
         <!-- ===== 프로세스 1: 주제찾기 ===== -->
@@ -1518,6 +1517,62 @@
                 🧠 한눈에 심리학
             </button>
         </div>
+
+        <!-- 모드 선택 (구조형 / 속보) -->
+        <div style="display:flex;gap:6px;margin-bottom:14px;">
+            <button id="ftMode_structural" onclick="switchFormulaMode('structural')" style="flex:1;padding:9px;background:#0066cc;color:white;border:none;border-radius:6px;font-size:0.85rem;font-weight:700;cursor:pointer;">
+                🎯 구조형 주제
+            </button>
+            <button id="ftMode_breaking" onclick="switchFormulaMode('breaking')" style="flex:1;padding:9px;background:transparent;color:#666;border:2px solid #ccc;border-radius:6px;font-size:0.85rem;font-weight:700;cursor:pointer;">
+                🔥 속보 이슈
+            </button>
+        </div>
+
+        <!-- 속보 이슈 모드 -->
+        <div id="ft-breaking" style="display:none;">
+            <div class="section" style="border:2px solid #dc3545;">
+                <div class="section-title" style="color:#dc3545;">
+                    🔥 속보 이슈 수집 <span style="font-size:0.75rem;color:#888;font-weight:400;">(외부 AI에서 디테일 발굴 → JSON 입력)</span>
+                </div>
+                <div class="section-content">
+                    <div style="background:#fff5f5;border-radius:8px;padding:14px;margin-bottom:14px;">
+                        <p style="font-size:0.88rem;color:#333;font-weight:700;margin-bottom:8px;">사용법</p>
+                        <ol style="font-size:0.82rem;color:#555;margin:0;padding-left:20px;line-height:1.8;">
+                            <li>아래 <b>"속보 발굴 프롬프트 복사"</b> 클릭</li>
+                            <li>Claude 또는 ChatGPT에 붙여넣기 → 실행</li>
+                            <li>받은 JSON 결과를 아래 입력란에 붙여넣기</li>
+                            <li><b>"적용"</b> 클릭 → 구조형 주제 탭에서 자동 반영됨</li>
+                        </ol>
+                    </div>
+
+                    <button onclick="copyBreakingPrompt()" style="width:100%;padding:14px;background:#dc3545;color:white;border:none;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer;margin-bottom:14px;">📋 속보 발굴 프롬프트 복사</button>
+
+                    <div class="input-group">
+                        <label>받은 JSON 붙여넣기</label>
+                        <textarea id="breakingNewsInput" rows="10" style="width:100%;padding:12px;border:2px solid #ffcccc;border-radius:8px;font-size:0.82rem;resize:vertical;font-family:monospace;" placeholder='외부 AI에서 받은 속보 JSON을 여기 붙여넣으세요
+
+{"issues": [{"headline_topic": "...", "detail_angle": "...", "concrete_facts": [...], ...}]}'></textarea>
+                    </div>
+
+                    <div style="background:#fff8e6;border:1px solid #ffd966;border-radius:8px;padding:10px 14px;margin:10px 0;font-size:0.8rem;color:#996600;font-weight:600;">
+                        ⚠️ 받은 JSON의 source_urls를 1-2개 클릭해서 디테일이 실제로 있는지 확인 후 사용하세요.
+                    </div>
+
+                    <div style="display:flex;gap:8px;margin-top:10px;">
+                        <button onclick="applyBreakingNews()" style="flex:1;padding:12px;background:#28a745;color:white;border:none;border-radius:8px;font-size:0.95rem;font-weight:700;cursor:pointer;">✅ 적용</button>
+                        <button onclick="clearBreakingNews()" style="padding:12px 20px;background:#888;color:white;border:none;border-radius:8px;font-size:0.95rem;cursor:pointer;">🗑️ 초기화</button>
+                    </div>
+
+                    <div id="bnStatusPanel" style="margin-top:14px;padding:14px;background:#f8f9fa;border-radius:8px;border:1px solid #e0e0e0;">
+                        <div style="font-weight:700;font-size:0.88rem;margin-bottom:6px;">현재 상태</div>
+                        <div id="bnStatusDetail" style="font-size:0.85rem;color:#555;">속보 미입력</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 구조형 주제 모드 -->
+        <div id="ft-structural">
 
         <!-- 🔬 내 채널 자가 분석 -->
         <div class="section" style="border:2px solid #cce5ff;">
@@ -1730,6 +1785,7 @@
             </div>
         </div>
 
+        </div><!-- /ft-structural -->
         </div><!-- /process-formula -->
 
         <!-- ===== 프로세스 1 계속: 주제찾기 ===== -->
@@ -3133,48 +3189,6 @@
             </div>
         </div><!-- /process-trend -->
 
-        <!-- ===== 프로세스: 🔥속보 이슈 수집 ===== -->
-        <div id="process-breaking" style="display:none;">
-            <div class="section" style="border:2px solid #dc3545;">
-                <div class="section-title" style="color:#dc3545;">
-                    🔥 속보 이슈 수집 <span style="font-size:0.75rem;color:#888;font-weight:400;">(외부 AI에서 디테일 발굴 → JSON 입력)</span>
-                </div>
-                <div class="section-content">
-                    <div style="background:#fff5f5;border-radius:8px;padding:14px;margin-bottom:14px;">
-                        <p style="font-size:0.88rem;color:#333;font-weight:700;margin-bottom:8px;">사용법</p>
-                        <ol style="font-size:0.82rem;color:#555;margin:0;padding-left:20px;line-height:1.8;">
-                            <li>아래 <b>"속보 발굴 프롬프트 복사"</b> 클릭</li>
-                            <li>Claude 또는 ChatGPT에 붙여넣기 → 실행</li>
-                            <li>받은 JSON 결과를 아래 입력란에 붙여넣기</li>
-                            <li><b>"적용"</b> 클릭 → AI 주제추천 탭에서 자동 반영됨</li>
-                        </ol>
-                    </div>
-
-                    <button onclick="copyBreakingPrompt()" style="width:100%;padding:14px;background:#dc3545;color:white;border:none;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer;margin-bottom:14px;">📋 속보 발굴 프롬프트 복사</button>
-
-                    <div class="input-group">
-                        <label>받은 JSON 붙여넣기</label>
-                        <textarea id="breakingNewsInput" rows="10" style="width:100%;padding:12px;border:2px solid #ffcccc;border-radius:8px;font-size:0.82rem;resize:vertical;font-family:monospace;" placeholder='외부 AI에서 받은 속보 JSON을 여기 붙여넣으세요
-
-{"issues": [{"headline_topic": "...", "detail_angle": "...", "concrete_facts": [...], ...}]}'></textarea>
-                    </div>
-
-                    <div style="background:#fff8e6;border:1px solid #ffd966;border-radius:8px;padding:10px 14px;margin:10px 0;font-size:0.8rem;color:#996600;font-weight:600;">
-                        ⚠️ 받은 JSON의 source_urls를 1-2개 클릭해서 디테일이 실제로 있는지 확인 후 사용하세요. AI가 그럴듯하게 지어낼 수 있습니다.
-                    </div>
-
-                    <div style="display:flex;gap:8px;margin-top:10px;">
-                        <button onclick="applyBreakingNews()" style="flex:1;padding:12px;background:#28a745;color:white;border:none;border-radius:8px;font-size:0.95rem;font-weight:700;cursor:pointer;">✅ 적용</button>
-                        <button onclick="clearBreakingNews()" style="padding:12px 20px;background:#888;color:white;border:none;border-radius:8px;font-size:0.95rem;cursor:pointer;">🗑️ 초기화</button>
-                    </div>
-
-                    <div id="bnStatusPanel" style="margin-top:14px;padding:14px;background:#f8f9fa;border-radius:8px;border:1px solid #e0e0e0;">
-                        <div style="font-weight:700;font-size:0.88rem;margin-bottom:6px;">현재 상태</div>
-                        <div id="bnStatusDetail" style="font-size:0.85rem;color:#555;">속보 미입력</div>
-                    </div>
-                </div>
-            </div>
-        </div><!-- /process-breaking -->
 
         </div><!-- /process-topic -->
 
@@ -5504,10 +5518,10 @@ JSON 출력만, 다른 설명 금지:
         function renderBreakingStatus() {
             const stored = loadBreakingNews();
             const detail = document.getElementById('bnStatusDetail');
-            const tabBtn = document.getElementById('procBtn_breaking');
+            const tabBtn = document.getElementById('ftMode_breaking');
             if (!stored) {
                 if (detail) detail.innerHTML = '<span style="color:#888;">속보 미입력 — 프롬프트를 복사해서 외부 AI에 던져보세요.</span>';
-                if (tabBtn) tabBtn.textContent = '🔥속보';
+                if (tabBtn) tabBtn.textContent = '🔥 속보 이슈';
                 return;
             }
             const count = stored.issues.length;
@@ -5531,7 +5545,7 @@ JSON 출력만, 다른 설명 금지:
                     ${issueList}
                     <div style="margin-top:8px;font-size:0.75rem;color:#888;">→ AI 주제추천 탭에서 "주제 찾기" 시 자동 반영됩니다.</div>`;
             }
-            if (tabBtn) tabBtn.textContent = `🔥속보 (${count})`;
+            if (tabBtn) tabBtn.textContent = `🔥 속보 이슈 (${count})`;
         }
 
         // 페이지 로드 시 속보 상태 표시
@@ -5788,7 +5802,7 @@ JSON 출력만, 다른 설명 금지:
 → 추천 시 반드시 "이 주제를 뉴스 앵커가 다루는 방식인가, 아니면 뒤틀린 각도인가?" 자문할 것. 뉴스 앵커 방식이면 탈락.
 
 [🔑 핵심 원칙 2가지 — 모든 추천에 적용]
-원칙1. 의외 주체 렌즈: 국가/사건을 다루더라도 반드시 "그 안의 의외 주체(특정 인물, 소수 집단, 숨은 조직)"를 렌즈로 세울 것. 국가 단위로 다루면 뉴스/다큐 느낌 → 안 터짐. 의외 주체 렌즈로 들어가면 유지율 상승 (F-15 조종사 8:17, 북한 설계자 8:02, 나이지리아 사기꾼 8:45)
+원칙1. 의외 주체 렌즈: 국가/사건을 다루더라도 반드시 "그 안의 의외 주체(특정 인물, 소수 집단, 숨은 조직)"를 렌즈로 세울 것. 국가 단위로 다루면 뉴스/다큐 느낌 → 안 터짐. 의외 주체 렌즈로 들어가면 유지율 상승 (F-15 조종사 8:17, 북한 설계자 8:02, 나이지리아 사기꾼 8:45). 단, 해당 사건/전쟁이 현재 진행 중이거나 대중의 관심 안에 있을 때만 유효. 종료/소강/종전 협상 중인 사건의 의외 각도는 추천하지 말 것.
 원칙2. 롱테일 주제 섞기: 뉴질랜드(72일째 유입), 머스크 AI(108일째 유입)처럼 "시간이 지나도 궁금한 주제"를 의식적으로 섞을 것. 이민, 직업 소멸, 살기 좋은/나쁜 나라 등. 현재 검색 유입 1.4%를 키우는 핵심
 
 [✅ 검증된 성공 패턴 — 우선 추천]
@@ -6709,6 +6723,7 @@ ${_retryRound > 0 ? `⚠️ 이번은 ${_retryRound}차 추가 요청입니다. 
                 renderBlockedTopicsList();
                 renderTopicCapsList();
                 renderFeedback();
+                renderBreakingStatus();
             }
             // 각 탭 고유 콘텐츠 (process-topic 밖)
             document.getElementById('process-thumbnail').style.display = proc === 'thumbnail' ? '' : 'none';
@@ -6719,8 +6734,6 @@ ${_retryRound > 0 ? `⚠️ 이번은 ${_retryRound}차 추가 요청입니다. 
             document.getElementById('process-tts').style.display = proc === 'tts' ? '' : 'none';
             document.getElementById('process-ref').style.display = proc === 'ref' ? '' : 'none';
             document.getElementById('process-trend').style.display = proc === 'trend' ? '' : 'none';
-            document.getElementById('process-breaking').style.display = proc === 'breaking' ? '' : 'none';
-            if (proc === 'breaking') renderBreakingStatus();
 
             if (proc === 'visual') checkFcServer('vsServerStatus');
             if (proc === 'review') checkFcServer('rvServerStatus');
@@ -6729,6 +6742,23 @@ ${_retryRound > 0 ? `⚠️ 이번은 ${_retryRound}차 추가 요청입니다. 
             } catch(err) {
                 console.error('[switchProcess ERROR]', err);
                 alert('탭 전환 오류: ' + err.message + ' (F12 콘솔 확인)');
+            }
+        }
+
+        function switchFormulaMode(mode) {
+            const structBtn = document.getElementById('ftMode_structural');
+            const breakBtn = document.getElementById('ftMode_breaking');
+            const structDiv = document.getElementById('ft-structural');
+            const breakDiv = document.getElementById('ft-breaking');
+            if (mode === 'structural') {
+                structBtn.style.background = '#0066cc'; structBtn.style.color = 'white'; structBtn.style.border = 'none';
+                breakBtn.style.background = 'transparent'; breakBtn.style.color = '#666'; breakBtn.style.border = '2px solid #ccc';
+                structDiv.style.display = ''; breakDiv.style.display = 'none';
+            } else {
+                breakBtn.style.background = '#dc3545'; breakBtn.style.color = 'white'; breakBtn.style.border = 'none';
+                structBtn.style.background = 'transparent'; structBtn.style.color = '#666'; structBtn.style.border = '2px solid #ccc';
+                structDiv.style.display = 'none'; breakDiv.style.display = '';
+                renderBreakingStatus();
             }
         }
 
