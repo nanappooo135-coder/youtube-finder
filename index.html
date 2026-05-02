@@ -5703,10 +5703,6 @@ JSON 출력만, 다른 설명 금지:
                 ? `\n[과거 추천 정확도 — 학습용]\n총 ${feedbackList.length}건. 최근 5건:\n${feedbackList.slice(-5).map(f => `- "${f.title}" 예상 ${f.predicted} → 실제 ${f.actualGrade} (${f.actual.toLocaleString()}회)`).join('\n')}\n→ 위 패턴을 참고해서 등급 예상을 더 보수적으로/공격적으로 조정하세요.\n`
                 : '';
 
-            // 속보 이슈 데이터
-            const _breakingData = loadBreakingNews();
-            const _breakingIssues = _breakingData ? _breakingData.issues : [];
-
             const _channel = getCurrentChannel();
 
             // 한눈에 심리학 채널이면 완전히 다른 프롬프트 사용
@@ -5740,25 +5736,10 @@ JSON 출력만, 다른 설명 금지:
                 ? `\n[이미 추천된 주제 — 중복 추천 금지]\n${_allExcludeTitles.map((t,i) => `${i+1}. ${t}`).join('\n')}\n`
                 : '';
             const _needMore = count - _accPassed.length;
-            const _breakingSection = _breakingIssues.length > 0
-                ? `\n[🔥 속보 이슈 — 사용자가 입력한 실시간 핫이슈 (최우선 반영)]
-아래는 별도 AI가 24시간 이내 글로벌 뉴스에서 디테일을 발굴한 결과입니다.
-⚠️ ${_needMore}개 추천 중 최소 ${Math.min(Math.round(_needMore * 0.65), _breakingIssues.length)}개는 아래 속보 이슈를 기반으로 주제를 만드세요.
-각 속보의 detail_angle과 concrete_facts를 활용하되, 4축 점수 9점 이상인 것만 추천하세요.
-속보 기반 주제는 트랙을 "breaking"으로 설정하고 골든타임을 명시하세요.
-
-${_breakingIssues.map((iss, i) => `속보 ${i+1}. [${iss.headline_topic}]
-  ★ 핵심 각도: ${iss.detail_angle}
-  디테일: ${Array.isArray(iss.concrete_facts) ? iss.concrete_facts.map(f => typeof f === 'string' ? f : f.fact).join(' / ') : '없음'}
-  한국 연결: ${iss.korea_hook || '없음'}
-  신선도: ${iss.freshness_hours || '?'}시간 전
-  한국 유튜브 경쟁: ${iss.korean_youtube_coverage || '미확인'}`).join('\n\n')}
-\n`
-                : '';
 
             const prompt = _channel === 'psychology' ? buildPsychologyPrompt({
                 today, count, recencyText, recentTitles, blockedSection, capsSection, feedbackSection, userExtra, avoid
-            }) : _uniformityHint + `⚠️ 오늘은 ${today}입니다. 모든 뉴스 검색과 이슈 판단은 반드시 ${today} 기준으로 하세요. 오래된 기사 사용 금지.
+            }) : _uniformityHint + `⚠️ 오늘은 ${today}입니다. 추천하는 주제의 내용이 ${today} 기준으로 사실(팩트)인지 반드시 검증하세요.
 
 당신은 유튜브 채널 "푸짐한 경제학"의 콘텐츠 기획자입니다.
 
@@ -5849,26 +5830,26 @@ ${avoid ? `- 사용자 추가 금지: ${avoid}` : ''}
 [❌ 자가복제 금지 — 이미 다룬 주제는 새 각도 명시 필수]
 → 새 각도 = ① 반대진영 ② 인물 교체 ③ 한국 적용 ④ 후속 검증 중 하나 명시 필수
 
-[⏰ 현재 시점 — 절대 준수 (가장 중요)]
-⚠️ 오늘은 ${today}입니다. 아래 규칙을 반드시 지킬 것:
-- 웹 검색 시 ${today} 기준 최근 뉴스·이슈만 사용. 6개월 이상 지난 기사로 주제 추천 절대 금지.
-- "최근_뉴스" 필드에 반드시 실제 보도 날짜(YYYY-MM-DD)를 명시할 것. 날짜 없는 뉴스 인용 금지.
-- 이미 결론난 사건을 "~한다면", "~된다면" 가정형으로 추천 금지.
+[⏰ 팩트 유효성 — 절대 준수 (가장 중요)]
+⚠️ 오늘은 ${today}입니다.
+이 탭은 속보/최신 뉴스가 아닌, 채널 결에 맞는 구조형 주제를 추천하는 탭입니다.
+주제 자체는 과거 사건이어도 OK — 단, 아래 규칙을 반드시 지킬 것:
+
+[팩트 검증 규칙]
+- 추천하는 주제의 핵심 내용이 ${today} 기준으로 여전히 사실인지 웹 검색으로 반드시 확인
+- 이미 결론난 사건을 "~한다면", "~된다면" 가정형으로 추천 금지
+- 이미 해결·종료·철회·합의된 사건은 추천 금지 (예: 전쟁 종전, 협상 타결, 정책 철회)
+- 상황이 크게 바뀐 경우: 바뀐 현재 상황 기준으로 각도를 재설정하거나 제외
+- "최근_뉴스" 필드에 관련 보도 날짜(YYYY-MM-DD)를 명시할 것
 - 현재 세계 정세 기준 (${today}):
   · 미국 대통령: 도널드 트럼프 (2기, 2025년 1월 취임)
   · 한국 대통령: 이재명 (2025년 취임)
   · 위 인물들의 취임 전 예측 기사(2024년 이전)는 시대착오 — 제외할 것
-- 과거 사건을 다루더라도 ${today} 시점에서 새로운 후속 전개·신규 보도가 있는 것만 추천
 
-[🔄 정보 유효성 검증 — 구조형 주제 필수]
-모든 주제(특히 트랙=structural)를 추천할 때 반드시 아래를 확인:
-- 추천 근거가 되는 정보가 ${today} 기준 아직 유효한지 웹 검색으로 재확인
-- 이미 해결·종료·철회·합의된 사건은 추천 금지 (예: 전쟁 종전, 협상 타결, 정책 철회)
-- 상황이 크게 바뀐 경우: 바뀐 현재 상황 기준으로 각도를 재설정하거나 제외
-- 각 주제 JSON에 아래 필드를 필수 포함:
-  · "정보_시점": 추천 근거가 된 핵심 정보의 날짜 (YYYY-MM-DD)
-  · "현재_유효성": "진행중" / "상황변동" / "종료" 중 하나
-  · "현재_유효성_메모": 현재 상황을 1줄로 설명 (예: "2025-04 기준 협상 결렬로 재격화")
+[정보 유효성 필드 — 각 주제 JSON에 필수 포함]
+- "정보_시점": 추천 근거가 된 핵심 정보의 날짜 (YYYY-MM-DD)
+- "현재_유효성": "진행중" / "상황변동" / "종료" 중 하나
+- "현재_유효성_메모": ${today} 기준 현재 상황을 1줄로 설명 (예: "2025-04 기준 협상 결렬로 재격화")
 - "현재_유효성"이 "종료"인 주제는 추천하지 말 것
 - "상황변동"인 경우: 변동된 현재 상황에 맞게 주제_한줄·후킹_포인트를 현재 시점에 맞춰 작성
 
@@ -5890,8 +5871,8 @@ ${blockedSection}${capsSection}${feedbackSection}
 - 검증_필수_사실: 현재 추천 데이터 중 출처 확인 필수 항목 (날짜·수치·인용문 등 팩트체크 대상)
 → 이 필드들이 비어있거나 추상적이면 대본 품질이 떨어지므로, 반드시 구체적 인명·기관명·수치를 포함할 것.
 
-${_breakingSection}${_excludeSection}[작업]
-${recencyText} 동안의 실제 뉴스/이슈를 웹에서 검색하여, 4축 점수 9점 이상인 영상 주제 ${_needMore}개를 추천하세요.
+${_excludeSection}[작업]
+채널 결에 맞는 유튜브 영상 주제 ${_needMore}개를 추천하세요. 4축 점수 9점 이상만.
 ⚠️ 카테고리(패턴 A/B/C/D) 비율 강제 분배 없음 — 오직 4축 점수와 구조 다양성만으로 평가.
 지정학·중동·전쟁 주제도 4축 점수 높으면 자유롭게 추천. 키워드 단위 차단 없음.
 ${_retryRound > 0 ? `⚠️ 이번은 ${_retryRound}차 추가 요청입니다. 위 "이미 추천된 주제" 목록과 절대 겹치지 않는 완전히 새로운 주제만 추천하세요. 4축 점수 9점 이상만 추천!` : ''}
@@ -5901,8 +5882,7 @@ ${_retryRound > 0 ? `⚠️ 이번은 ${_retryRound}차 추가 요청입니다. 
   "topics": [
     {
       "순위": 1,
-      "트랙": "breaking",
-      "골든타임": "24~48시간",
+      "트랙": "structural",
       "구조_요약": "의외주체+극한생존",
       "주제_한줄": "내용 요약 한 줄",
       "예상_제목": "유튜브 제목",
