@@ -1599,9 +1599,19 @@
                     <label>외부 AI 결과 붙여넣기 <span style="color:#888;font-weight:400;">(Claude/ChatGPT에서 받은 JSON)</span></label>
                     <textarea id="formulaResultInput" rows="6" style="width:100%;padding:10px;border:2px solid #cce0ff;border-radius:8px;font-size:0.82rem;resize:vertical;font-family:monospace;" placeholder='외부 AI에서 받은 JSON을 여기 붙여넣으세요&#10;&#10;{"topics": [{"순위": 1, "트랙": "breaking", ...}], "best_pick_today": {...}}'></textarea>
                 </div>
-                <button class="search-btn" onclick="processManualFormulaResult()" style="background:#28a745;">
-                    📊 결과 표시
-                </button>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <button class="search-btn" onclick="processManualFormulaResult()" style="background:#28a745;flex:1;">
+                        📊 결과 표시
+                    </button>
+                </div>
+                <div id="ftRetryBtn" style="display:none;margin-top:8px;">
+                    <button class="search-btn" onclick="copyFormulaPromptRetry()" style="background:#e67e00;">
+                        🔄 다른 주제 추천 프롬프트 복사 (<span id="ftExcludeCount">0</span>개 제외)
+                    </button>
+                    <button class="search-btn" onclick="window._formulaExcludeTitles=[];document.getElementById('ftRetryBtn').style.display='none';alert('제외 목록 초기화됨');" style="background:#888;margin-top:4px;font-size:0.8rem;">
+                        🗑️ 제외 목록 초기화
+                    </button>
+                </div>
 
                 <!-- 자동 모드 (Gemini API) -->
                 <div style="margin-top:14px;padding-top:14px;border-top:2px dashed #e0e0e0;">
@@ -5529,7 +5539,17 @@ JSON 출력만, 다른 설명 금지:
         // 페이지 로드 시 속보 상태 표시
         document.addEventListener('DOMContentLoaded', () => { setTimeout(renderBreakingStatus, 500); });
 
+        window._formulaExcludeTitles = [];
+
         function copyFormulaPrompt() {
+            findTopicByFormula(false, true);
+        }
+
+        function copyFormulaPromptRetry() {
+            if (window._formulaExcludeTitles.length === 0) {
+                alert('먼저 주제 추천을 한 번 실행해주세요.');
+                return;
+            }
             findTopicByFormula(false, true);
         }
 
@@ -5645,6 +5665,14 @@ JSON 출력만, 다른 설명 금지:
 
                 renderFormulaResults(passed.slice(0, count), parsed);
             }
+
+            allTopics.forEach(t => {
+                const title = t.예상_제목 || t.주제_한줄 || '';
+                if (title && !window._formulaExcludeTitles.includes(title)) window._formulaExcludeTitles.push(title);
+            });
+            document.getElementById('ftRetryBtn').style.display = 'block';
+            document.getElementById('ftExcludeCount').textContent = window._formulaExcludeTitles.length;
+
             if (notes.length > 0) {
                 const note = document.createElement('div');
                 note.style.cssText = 'padding:8px 12px;background:#fff8e6;border-left:3px solid #ffa500;border-radius:4px;font-size:0.8rem;color:#996600;margin-top:8px;';
@@ -5732,8 +5760,10 @@ JSON 출력만, 다른 설명 금지:
                 btn.innerHTML = `<div class="spinner"></div> 더 좋은 주제 찾는 중... (${_retryRound}/${_maxRetries})`;
                 resultsEl.innerHTML = `<div style="padding:20px;text-align:center;color:#888;">필터 통과 주제가 부족해서 추가 검색 중... (${_accPassed.length}/${count}개 확보)</div>`;
             }
-            const _excludeSection = _allExcludeTitles.length > 0
-                ? `\n[이미 추천된 주제 — 중복 추천 금지]\n${_allExcludeTitles.map((t,i) => `${i+1}. ${t}`).join('\n')}\n`
+            const _prevExclude = window._formulaExcludeTitles || [];
+            const _allExcludes = [...new Set([..._allExcludeTitles, ..._prevExclude])];
+            const _excludeSection = _allExcludes.length > 0
+                ? `\n[이미 추천된 주제 — 중복 추천 절대 금지]\n${_allExcludes.map((t,i) => `${i+1}. ${t}`).join('\n')}\n위 주제와 같은 사건·인물·각도의 주제는 절대 추천하지 마세요.\n`
                 : '';
             const _needMore = count - _accPassed.length;
 
