@@ -1574,37 +1574,23 @@
         <!-- 구조형 주제 모드 -->
         <div id="ft-structural">
 
-        <!-- ✨ 채널 공식 기반 주제 추천 -->
+        <!-- ✨ AI 주제 추천 -->
+        <input type="hidden" id="ftFormula" value="">
+        <input type="hidden" id="ftAvoid" value="">
+        <input type="hidden" id="ftValidateToggle" value="">
         <div class="section" style="border:2px solid #ffe0e0;">
             <div class="section-title" style="color:#dc3545;">
-                💡 내 채널 공식으로 주제 찾기 <span style="font-size:0.75rem;color:#888;font-weight:400;">(AI + 실시간 웹 검색)</span>
+                💡 AI 주제 추천 <span style="font-size:0.75rem;color:#888;font-weight:400;">(프롬프트 복사 → 외부 AI → 결과 붙여넣기)</span>
             </div>
             <div class="section-content">
-                <p style="font-size:0.85rem;color:#666;margin-bottom:12px;">
-                    내 채널이 잘 되는 공식을 적으면 AI가 최근 뉴스를 검색해서 공식에 맞는 주제 후보를 추천해줘요.
-                </p>
-                <div class="input-group">
-                    <label for="ftFormula">내 채널 공식 <span style="color:#888;font-weight:400;">(왜 영상이 잘 되는지)</span></label>
-                    <textarea id="ftFormula" rows="3" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:0.9rem;resize:vertical;font-family:inherit;" placeholder="예: 선진국 이미지 강한 나라인데 한국인이 잘 모르는 숨은 경제 위기. 이미 망한 나라(아이티 등)는 안 됨 — 멀쩡해 보이는데 사실 무너지는 중인 나라가 대박남.">선진국 이미지 강한 나라인데 한국인이 잘 모르는 숨은 경제 위기. 이미 망한 나라는 안 됨 — 멀쩡해 보이는데 사실 무너지는 중인 나라가 대박남 (예: 뉴질랜드 100만뷰).</textarea>
-                </div>
-                <div style="margin-top:6px;margin-bottom:10px;padding:10px 12px;background:#fff8e6;border:1px solid #ffd966;border-radius:6px;display:flex;align-items:center;gap:8px;">
-                    <input type="checkbox" id="ftValidateToggle" checked style="cursor:pointer;width:18px;height:18px;flex-shrink:0;">
-                    <label for="ftValidateToggle" style="font-size:0.85rem;color:#996600;cursor:pointer;margin:0;flex:1;font-weight:600;">
-                        🔍 AI 자체 검증 사용 <span style="color:#888;font-weight:400;">(시점 유효성·구조성·채널 적합성 — 약 5~10초 추가)</span>
-                    </label>
-                </div>
-                <div class="input-group">
-                    <label for="ftAvoid">피하고 싶은 주제 <span style="color:#888;font-weight:400;">(선택)</span></label>
-                    <textarea id="ftAvoid" rows="2" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:0.9rem;resize:vertical;font-family:inherit;" placeholder="예: 일본, 중동전쟁, 이미 망한 나라"></textarea>
-                </div>
                 <div class="grid-2">
                     <div class="input-group">
                         <label for="ftCount">추천 개수</label>
                         <select id="ftCount">
                             <option value="3">3개</option>
-                            <option value="5" selected>5개</option>
+                            <option value="5">5개</option>
                             <option value="7">7개</option>
-                            <option value="10">10개</option>
+                            <option value="10" selected>10개</option>
                         </select>
                     </div>
                     <div class="input-group">
