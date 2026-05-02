@@ -5658,10 +5658,10 @@ JSON 출력만, 다른 설명 금지:
                 passed = passedValidity.filter(t => {
                     if (!t.감정_출구) return true;
                     const sum = t.감정_출구.활성_합계 ?? (['분노','연민','동경','공포'].filter(k => t.감정_출구[k] === true).length);
-                    return sum >= 3;
+                    return sum >= 2;
                 });
                 const eF = passedValidity.length - passed.length;
-                if (eF > 0) notes.push(`감정 출구 3개 미만 ${eF}개`);
+                if (eF > 0) notes.push(`감정 출구 2개 미만 ${eF}개`);
 
                 renderFormulaResults(passed.slice(0, count), parsed);
             }
@@ -5900,8 +5900,8 @@ ${avoid ? `- 사용자 추가 금지: ${avoid}` : ''}
 ${recentTitles}
 ${blockedSection}${capsSection}${feedbackSection}
 
-[감정 출구 4종 — 3개 이상 활성화 필수]
-분노/연민/동경/공포 중 3개 미만은 추천 금지.
+[감정 출구 4종 — 2개 이상 활성화 필수]
+분노/연민/동경/공포 중 2개 미만은 추천 금지. 3개 이상이면 우수.
 
 [⭐ 대본 검색 단서 — 각 주제마다 반드시 생성]
 아래 7개 필드를 각 주제 JSON에 포함. 이 필드들은 나중에 대본 작성 AI가 웹검색할 때 사용하는 검색 가이드:
@@ -6262,15 +6262,15 @@ ${_retryRound > 0 ? `⚠️ 이번은 ${_retryRound}차 추가 요청입니다. 
                     const validityFiltered = passedStruct.length - passedValidity.length;
                     if (validityFiltered > 0) notes.push(`정보 종료(유효성X) ${validityFiltered}개`);
 
-                    // 4) 감정 출구 3개 미만 제외
+                    // 4) 감정 출구 2개 미만 제외
                     passed = passedValidity.filter(t => {
                         if (!t.감정_출구) return true;
                         const sum = t.감정_출구.활성_합계 ??
                             (['분노','연민','동경','공포'].filter(k => t.감정_출구[k] === true).length);
-                        return sum >= 3;
+                        return sum >= 2;
                     });
                     const emoFiltered = passedValidity.length - passed.length;
-                    if (emoFiltered > 0) notes.push(`감정 출구 3개 미만 ${emoFiltered}개`);
+                    if (emoFiltered > 0) notes.push(`감정 출구 2개 미만 ${emoFiltered}개`);
 
                     // === 누적 + 재요청 루프 판단 ===
                     passed.forEach(t => { if (_accPassed.length < count) _accPassed.push(t); });
@@ -6540,7 +6540,7 @@ ${_retryRound > 0 ? `⚠️ 이번은 ${_retryRound}차 추가 요청입니다. 
                         const e = t.감정_출구;
                         const sum = e.활성_합계 ?? (['분노','연민','동경','공포'].filter(k => e[k]===true).length);
                         const items = [['분노','😡'],['연민','😢'],['동경','🤩'],['공포','😨']];
-                        const sumColor = sum >= 4 ? '#dc3545' : sum >= 3 ? '#28a745' : '#888';
+                        const sumColor = sum >= 4 ? '#dc3545' : sum >= 3 ? '#28a745' : sum >= 2 ? '#e67e00' : '#888';
                         return `<div style="background:#fff8e6;padding:8px 10px;border-radius:6px;margin-bottom:10px;border-left:3px solid ${sumColor};">
                             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
                                 <span style="font-size:0.75rem;font-weight:700;color:#996600;">💬 댓글 폭발 출구</span>
