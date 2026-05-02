@@ -1574,35 +1574,6 @@
         <!-- 구조형 주제 모드 -->
         <div id="ft-structural">
 
-        <!-- 🔬 내 채널 자가 분석 -->
-        <div class="section" style="border:2px solid #cce5ff;">
-            <div class="section-title" style="color:#0066cc;">
-                🔬 내 채널 자가 분석 <span style="font-size:0.75rem;color:#888;font-weight:400;">(어떤 영상이 잘 됐는지 패턴 추출)</span>
-            </div>
-            <div class="section-content">
-                <p style="font-size:0.85rem;color:#666;margin-bottom:12px;">
-                    내 채널 영상의 조회수를 분석해서 <b>잘된 영상 vs 못된 영상의 공통 패턴</b>을 자동 추출해요.<br>
-                    추출된 공식은 아래 "주제 찾기"에 자동 입력됩니다.
-                </p>
-                <div class="input-group">
-                    <label for="caHandle">내 채널 핸들 또는 URL</label>
-                    <input type="text" id="caHandle" placeholder="예: @PujimEcon 또는 https://youtube.com/@PujimEcon" value="@PujimEcon">
-                </div>
-                <div class="input-group">
-                    <label for="caCount">분석할 영상 개수</label>
-                    <select id="caCount">
-                        <option value="20">최근 20개 (빠름)</option>
-                        <option value="50" selected>최근 50개 (권장)</option>
-                        <option value="100">최근 100개 (정밀)</option>
-                    </select>
-                </div>
-                <button id="caBtn" class="search-btn" onclick="analyzeMyChannel()" style="background:#0066cc;">
-                    🔬 내 채널 분석하기
-                </button>
-                <div id="caResults" style="margin-top:16px;"></div>
-            </div>
-        </div>
-
         <!-- ✨ 채널 공식 기반 주제 추천 -->
         <div class="section" style="border:2px solid #ffe0e0;">
             <div class="section-title" style="color:#dc3545;">
