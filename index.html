@@ -2537,6 +2537,10 @@
                     <details style="margin-top:12px;">
                         <summary style="cursor:pointer;font-size:0.85rem;color:#6b21a8;font-weight:600;">📋 JSON 직접 붙여넣기 (Claude 대화에서 만든 결과 import)</summary>
                         <div style="margin-top:8px;">
+                            <button class="search-btn" onclick="spCopyClaudePrompt(this)" style="width:100%;margin-bottom:8px;font-size:0.9rem;padding:10px;background:#8b5cf6;border-color:#8b5cf6;">
+                                📋 Claude용 프롬프트 자동 복사
+                            </button>
+                            <p style="font-size:0.72rem;color:#8b5cf6;margin-bottom:8px;">💡 위 버튼 클릭 → Claude 대화에 붙여넣기 → 생성된 JSON을 아래에 붙여넣기 → Import</p>
                             <textarea id="spJsonImport" rows="6" placeholder='{"scenes":[{"sceneNo":1,"type":"ai","duration":10,...},...]}' style="width:100%;padding:10px;border:2px solid #d4a437;border-radius:8px;font-size:0.75rem;font-family:'Courier New',monospace;line-height:1.4;resize:vertical;"></textarea>
                             <button class="search-btn" onclick="spImportJson()" style="width:100%;margin-top:6px;font-size:0.9rem;padding:10px;background:#d4a437;border-color:#d4a437;">
                                 📥 JSON Import → 결과 표시
@@ -20213,6 +20217,105 @@ overall mood: bright, psychologically safe illustration, uplifting and reassurin
                 }
             });
         })();
+
+        // ============================================================
+        // Claude용 프롬프트 자동 복사 — spConvert와 동일 프롬프트를 클립보드에
+        // ============================================================
+
+        function spCopyClaudePrompt(btn) {
+            const stylePrompt = document.getElementById('spStylePrompt').value.trim();
+            const introRaw = document.getElementById('spIntro').value;
+            const bodyRaw = document.getElementById('spBody').value;
+
+            const introScenes = _spParseIntro(introRaw);
+            const bodySentences = _spSplitSentences(bodyRaw);
+
+            if (introScenes.length === 0 && bodySentences.length === 0) {
+                alert('도입부 또는 본문 대본을 먼저 입력해주세요.');
+                return;
+            }
+
+            const introSceneList = introScenes.map((s, i) => ({
+                sceneNo: i + 1, type: 'intro', duration: s.duration, text: s.text,
+            }));
+            const numberedBody = bodySentences.map((s, i) => `B${i+1}. ${s}`).join('\n');
+            const introBlock = introSceneList.length === 0 ? '(없음)' :
+                introSceneList.map(s => `[도입부 장면 ${s.sceneNo}] (${s.duration}초)\n${s.text}`).join('\n\n');
+            const fullScript = (introRaw + '\n\n' + bodyRaw).trim();
+            const startBodyNo = introSceneList.length + 1;
+            const _isPsych = _spChannel === 'psychology';
+            const channelLabel = _isPsych ? '심리학' : '경제';
+            const _channelNote = _isPsych
+                ? '심리학 채널: 정적·내면 톤 (인물·감정·일상 장면 위주). 그록 영상이 본래 정적이라 슬로우 더 잘 티남 → 장면 길이 짧게 유지. claude_design은 교육적 도식·그래프·인포그래픽·뇌구조·법칙 곡선·단계 다이어그램 등 설명력 필요한 장면에 적극 활용 (10~15%).'
+                : '경제 채널: 동적·서사 톤 (인물·풍경·도시 장면 위주). 진짜 그래프·지도·데이터만 claude_design.';
+            const _aiCharCap = 100;
+            const _aiCharRecommend = '권장 65~95자 (10~14.5초) — 본문 sweet spot. 최대 100자(15초) 절대 초과 금지';
+            const _aiDurationRange = '권장 10~15초 (sweet spot, 본문 평균 12~13초가 제일 자연스러움). 최대 15초, 16초 초과 절대 금지';
+            const _cdCapRatio = _isPsych ? 0.15 : 0.10;
+
+            const prompt = `당신은 유튜브 ${channelLabel} 채널의 영상 제작 디렉터입니다. 아래 대본 전체를 읽고 맥락을 완전히 이해한 뒤, 본문을 **응집도 있는 장면 단위로 자동 묶기** + **각 장면별 시각화 방법 결정**을 해야 합니다.
+
+=== 채널 특성 ===
+${_channelNote}
+
+=== 전체 대본 (맥락 이해용) ===
+${fullScript}
+
+=== 도입부 (이미 분할됨, 그대로 두세요) ===
+${introBlock}
+
+=== 본문 문장 (B1, B2, ... 순서대로. 당신이 묶음을 결정) ===
+${numberedBody}
+
+=== 그림체 규약 (AI 일러스트·Claude Design 모두 이 톤 유지) ===
+${stylePrompt}
+
+=== 본문 묶음 규칙 (중요) ===
+- **사용자 힌트**: 약 ${_spN}문장 단위로 묶는 것을 기본. 단, 아래 우선순위가 더 중요:
+- **응집도 우선**: 한 장면 = 하나의 시각적 순간/주제. 묶음 안 문장들이 **같은 시각으로 표현 가능**해야 함.
+- **주제 전환 시 분할**: 묶음 중간에 다른 시각/장소/감정/통계로 넘어가면 거기서 끊어 새 장면.
+- **🚨 글자수 캡 (AI 장면 절대 준수)**: AI 일러스트 장면은 **묶음 한국어 글자수 ≤ ${_aiCharCap}자**. ${_aiCharCap}자 초과면 분할.
+- **🚨 짧은 묶음 강제 합치기 (절대 준수)**: 글자수 **60자 미만 묶음은 무조건 옆 장면과 합칠 것**.
+- **이상적 묶음 글자수**: 70~110자 (10~17초). 짧으면 합치고, 너무 길면 (120자 초과) 분할.
+- **claude_design은 글자수 캡 완화**: ≤ 150자 (23초).
+- **real(실사)는 글자수 캡 완화**: ≤ 130자.
+- **문장 수 상한**: 최대 7문장. 단 위 글자수 캡이 우선.
+
+=== 장면 타입 분류 ===
+1. **ai** — AI 일러스트(나노바나나2). 일반 장면, 감정·내면·비유·일상 상황. 기본값.
+2. **real** — 실사(구글 이미지). 실존 인물(이름 명시된 학자/정치인/유명인), 실제 책, 유명 기관·장소만.
+3. **claude_design** — Claude Design 인포그래픽. 비율 제한: 전체 장면의 ${_isPsych ? '10~15%' : '5~10%'}, 최대 ${_isPsych ? '12' : '8'}개 이내.
+
+=== 각 본문 장면 출력 ===
+- sceneNo: 도입부 ${introSceneList.length}개 다음부터 ${startBodyNo}, ${startBodyNo+1}, ... 순차
+- bodyIndices: 이 묶음에 포함된 본문 문장 인덱스 배열 (예: [1,2,3] = B1+B2+B3)
+- duration: 본문 추정초 = 한국어 글자수 ÷ 8.0 (소수 반올림). AI 장면은 ${_aiDurationRange}.
+- type: ai | real | claude_design
+- nano_prompt: (ai/real) 영문. 한 장면 = 한 그림만. 끝에 반드시 "ABSOLUTE RULE: NO text, NO letters..." 문구 포함.
+- grok_prompt: (ai/real) 영문. STRICT RULES 고정 문구 포함. duration별 모션 강도 차등.
+- real_keywords: (real만) 영문 검색어 배열, 정확히 3개. 구글 이미지 검색용.
+- real_subject: (real만) 한 줄 한글 설명.
+- claude_prompt: (claude_design만) 한글. 16:9 전체 화면. 배경색 헥스 명시. 애니메이션 영상 형식.
+- claude_kind: (claude_design만) 도식 종류 라벨.
+
+=== 출력 형식 (JSON만, 다른 설명 없이) ===
+{
+  "scenes": [
+    {"sceneNo": 1, "type": "ai", "duration": 6, "isIntro": true, "bodyIndices": [], "nano_prompt": "...", "grok_prompt": "..."},
+    {"sceneNo": ${startBodyNo}, "type": "ai", "duration": 10, "isIntro": false, "bodyIndices": [1,2,3], "nano_prompt": "...", "grok_prompt": "..."},
+    {"sceneNo": ${startBodyNo+1}, "type": "real", "duration": 8, "isIntro": false, "bodyIndices": [4,5], "nano_prompt": "...", "grok_prompt": "...", "real_keywords": ["...", "...", "..."], "real_subject": "..."},
+    {"sceneNo": ${startBodyNo+2}, "type": "claude_design", "duration": 13, "isIntro": false, "bodyIndices": [6,7,8,9], "claude_prompt": "...", "claude_kind": "..."}
+  ]
+}
+
+JSON만 출력하세요. 코드블록 마커 금지.`;
+
+            safeCopy(prompt).then(() => {
+                const orig = btn.textContent;
+                btn.textContent = '✓ 프롬프트 복사됨! Claude에 붙여넣기';
+                setTimeout(() => btn.textContent = orig, 2500);
+            });
+        }
 
         // ============================================================
         // 변환 메인 — Gemini Pro에 전체 대본 맥락 + 장면 분류 요청
