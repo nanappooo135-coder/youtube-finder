@@ -5631,12 +5631,16 @@ JSON 출력만, 다른 설명 금지:
                 const sF = passed4Axis.length - passedStruct.length;
                 if (sF > 0) notes.push(`구조 유사도 중복 ${sF}개`);
 
-                passed = passedStruct.filter(t => {
+                const passedValidity = passedStruct.filter(t => t.현재_유효성 !== '종료');
+                const vF = passedStruct.length - passedValidity.length;
+                if (vF > 0) notes.push(`정보 종료(유효성X) ${vF}개`);
+
+                passed = passedValidity.filter(t => {
                     if (!t.감정_출구) return true;
                     const sum = t.감정_출구.활성_합계 ?? (['분노','연민','동경','공포'].filter(k => t.감정_출구[k] === true).length);
                     return sum >= 3;
                 });
-                const eF = passedStruct.length - passed.length;
+                const eF = passedValidity.length - passed.length;
                 if (eF > 0) notes.push(`감정 출구 3개 미만 ${eF}개`);
 
                 renderFormulaResults(passed.slice(0, count), parsed);
@@ -5856,6 +5860,18 @@ ${avoid ? `- 사용자 추가 금지: ${avoid}` : ''}
   · 위 인물들의 취임 전 예측 기사(2024년 이전)는 시대착오 — 제외할 것
 - 과거 사건을 다루더라도 ${today} 시점에서 새로운 후속 전개·신규 보도가 있는 것만 추천
 
+[🔄 정보 유효성 검증 — 구조형 주제 필수]
+모든 주제(특히 트랙=structural)를 추천할 때 반드시 아래를 확인:
+- 추천 근거가 되는 정보가 ${today} 기준 아직 유효한지 웹 검색으로 재확인
+- 이미 해결·종료·철회·합의된 사건은 추천 금지 (예: 전쟁 종전, 협상 타결, 정책 철회)
+- 상황이 크게 바뀐 경우: 바뀐 현재 상황 기준으로 각도를 재설정하거나 제외
+- 각 주제 JSON에 아래 필드를 필수 포함:
+  · "정보_시점": 추천 근거가 된 핵심 정보의 날짜 (YYYY-MM-DD)
+  · "현재_유효성": "진행중" / "상황변동" / "종료" 중 하나
+  · "현재_유효성_메모": 현재 상황을 1줄로 설명 (예: "2025-04 기준 협상 결렬로 재격화")
+- "현재_유효성"이 "종료"인 주제는 추천하지 말 것
+- "상황변동"인 경우: 변동된 현재 상황에 맞게 주제_한줄·후킹_포인트를 현재 시점에 맞춰 작성
+
 [최근 4주 다룬 영상]
 ${recentTitles}
 ${blockedSection}${capsSection}${feedbackSection}
@@ -5957,7 +5973,10 @@ ${_retryRound > 0 ? `⚠️ 이번은 ${_retryRound}차 추가 요청입니다. 
       "숨은_진실_단서": ["비공개 사실 + 소스 힌트", "...(3~4개)"],
       "한국_연결_검색_단서": ["한국 기관/인물 + 키워드", "...(3~5개)"],
       "반박_논쟁점": ["통념 → 실은 반대 (반전)", "...(3~4개)"],
-      "검증_필수_사실": ["팩트체크 대상 + 출처", "..."]
+      "검증_필수_사실": ["팩트체크 대상 + 출처", "..."],
+      "정보_시점": "2025-04-28",
+      "현재_유효성": "진행중",
+      "현재_유효성_메모": "2025-04 기준 여전히 진행 중인 사안"
     }
   ],
   "best_pick_today": {
@@ -6215,14 +6234,19 @@ ${_retryRound > 0 ? `⚠️ 이번은 ${_retryRound}차 추가 요청입니다. 
                     const structFiltered = passed4Axis.length - passedStruct.length;
                     if (structFiltered > 0) notes.push(`구조 유사도 중복 ${structFiltered}개`);
 
-                    // 3) 감정 출구 3개 미만 제외
-                    passed = passedStruct.filter(t => {
+                    // 3) 정보 유효성 종료 제외
+                    const passedValidity = passedStruct.filter(t => t.현재_유효성 !== '종료');
+                    const validityFiltered = passedStruct.length - passedValidity.length;
+                    if (validityFiltered > 0) notes.push(`정보 종료(유효성X) ${validityFiltered}개`);
+
+                    // 4) 감정 출구 3개 미만 제외
+                    passed = passedValidity.filter(t => {
                         if (!t.감정_출구) return true;
                         const sum = t.감정_출구.활성_합계 ??
                             (['분노','연민','동경','공포'].filter(k => t.감정_출구[k] === true).length);
                         return sum >= 3;
                     });
-                    const emoFiltered = passedStruct.length - passed.length;
+                    const emoFiltered = passedValidity.length - passed.length;
                     if (emoFiltered > 0) notes.push(`감정 출구 3개 미만 ${emoFiltered}개`);
 
                     // === 누적 + 재요청 루프 판단 ===
@@ -6430,6 +6454,19 @@ ${_retryRound > 0 ? `⚠️ 이번은 ${_retryRound}차 추가 요청입니다. 
                         <div style="font-size:0.7rem;font-weight:700;color:#dc3545;margin-bottom:2px;">🔥 최근 뉴스 근거</div>
                         <div style="font-size:0.83rem;color:#333;">${escapeHtml(t.최근_뉴스)}</div>
                     </div>` : ''}
+
+                    ${t.현재_유효성 ? (() => {
+                        const status = t.현재_유효성;
+                        const statusMap = { '진행중': { icon: '🟢', color: '#28a745', bg: '#f0fff4' }, '상황변동': { icon: '🟡', color: '#e67e00', bg: '#fff8e6' }, '종료': { icon: '🔴', color: '#dc3545', bg: '#fff5f5' } };
+                        const s = statusMap[status] || statusMap['상황변동'];
+                        return `<div style="margin-bottom:10px;padding:8px 12px;background:${s.bg};border-left:3px solid ${s.color};border-radius:4px;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">
+                                <span style="font-size:0.7rem;font-weight:700;color:${s.color};">${s.icon} 정보 유효성: ${escapeHtml(status)}</span>
+                                ${t.정보_시점 ? `<span style="font-size:0.68rem;color:#888;">📅 정보 시점: ${escapeHtml(t.정보_시점)}</span>` : ''}
+                            </div>
+                            ${t.현재_유효성_메모 ? `<div style="font-size:0.8rem;color:#333;">${escapeHtml(t.현재_유효성_메모)}</div>` : ''}
+                        </div>`;
+                    })() : ''}
 
                     ${Array.isArray(t.핵심_데이터) && t.핵심_데이터.length > 0 ? `<div style="margin-bottom:10px;">
                         <div style="font-size:0.75rem;font-weight:700;color:#666;margin-bottom:4px;">📊 핵심 데이터</div>
