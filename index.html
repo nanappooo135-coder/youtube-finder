@@ -21986,7 +21986,8 @@ JSON만 출력. 코드블록 마커 금지.`;
                     if (status === 'COMPLETED') {
                         console.log('[프리픽 테스트] 완료 응답:', JSON.stringify(pollData, null, 2));
                         const d = pollData.data || pollData;
-                        const imgUrl = d.generated_images?.[0] || d.image?.url || d.result?.image || d.output?.url || d.url || d.image || '';
+                        const gen = d.generated || d.generated_images || d.result || [];
+                        const imgUrl = (Array.isArray(gen) && gen.length > 0) ? (gen[0].url || gen[0].image || gen[0]) : (d.image?.url || d.url || d.image || '');
                         if (statusEl) statusEl.textContent = '✅ 완료!';
                         if (resultEl) resultEl.innerHTML = imgUrl
                             ? `<img src="${imgUrl}" style="max-width:100%;border-radius:8px;border:2px solid #7048e8;margin-top:6px;" onclick="window.open(this.src)"><br><a href="${imgUrl}" download="test_image.png" style="font-size:0.78rem;">💾 다운로드</a>`
