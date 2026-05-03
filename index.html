@@ -21605,10 +21605,50 @@ JSON만 출력. 코드블록 마커 금지.`;
                     s.duration = s.duration || 10;
                     s.text = s.text || s.narration || '';
                 });
+
+                // claude_design 캡 적용 (JSON Import에도 동일 비율 제한)
+                const _isPsychImport = _spChannel === 'psychology';
+                const _cdCapRatioImport = _isPsychImport ? 0.15 : 0.10;
+                const _cdCapImport = Math.min(8, Math.max(1, Math.floor(scenes.length * _cdCapRatioImport)));
+                const _cdScenesImport = scenes.filter(s => s.type === 'claude_design');
+                let _cdFixedImport = 0;
+                if (_cdScenesImport.length > _cdCapImport) {
+                    const excess = _cdScenesImport.length - _cdCapImport;
+                    const scored = _cdScenesImport.map(s => {
+                        let score = 0;
+                        const t = s.text || '';
+                        const nums = (t.match(/\d+/g) || []).length;
+                        score += Math.min(nums * 2, 8);
+                        if (nums >= 3) score += 5;
+                        if (/vs|대비|비교|반면/.test(t)) score += 3;
+                        if ((t.match(/\d+\s*%/g) || []).length >= 2) score += 4;
+                        if (/법칙|곡선|이론|모델|피라미드|계층/.test(t)) score += 4;
+                        if (/뇌|전전두엽|편도체|도파민|세로토닌/.test(t)) score += 4;
+                        if (/단계|순서|과정|흐름|사이클/.test(t)) score += 3;
+                        if (/도식|차트|그래프|다이어그램|인포그래픽/.test(t)) score += 3;
+                        if (t.length < 30) score -= 4;
+                        return { scene: s, fitness: score };
+                    });
+                    scored.sort((a, b) => a.fitness - b.fitness);
+                    const toConvert = new Set(scored.slice(0, excess).map(item => item.scene.sceneNo));
+                    scenes.forEach(s => {
+                        if (s.type === 'claude_design' && toConvert.has(s.sceneNo)) {
+                            s.type = 'ai';
+                            if (!s.nano_prompt) {
+                                s.nano_prompt = 'Warm editorial illustration depicting the concept. Clean composition, soft natural lighting. ABSOLUTE RULE: NO text, NO letters, NO words, NO numbers, NO typography anywhere in the image.';
+                            }
+                            delete s.claude_prompt;
+                            _cdFixedImport++;
+                        }
+                    });
+                    console.log(`[JSON Import] claude_design 캡 적용: ${_cdScenesImport.length}개 → ${_cdCapImport}개 (${_cdFixedImport}개 ai로 변환)`);
+                }
+
                 const stylePrompt = document.getElementById('spStylePrompt').value.trim();
                 _spLastResult = { scenes, channel: _spChannel, stylePrompt };
                 _spRenderResults(_spLastResult);
-                status.innerHTML = `<span style="color:#28a745;">✅ JSON Import 완료: ${scenes.length}장면 로드됨 (수동 import)</span>`;
+                const cdMsg = _cdFixedImport > 0 ? ` ⚠️ claude_design ${_cdScenesImport.length}개 → ${_cdCapImport}개 캡 적용 (${_cdFixedImport}개 ai 변환)` : '';
+                status.innerHTML = `<span style="color:#28a745;">✅ JSON Import 완료: ${scenes.length}장면 로드됨 (수동 import)${cdMsg}</span>`;
                 document.getElementById('spResultSection').style.display = '';
                 document.getElementById('spResultSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
             } catch (e) {
