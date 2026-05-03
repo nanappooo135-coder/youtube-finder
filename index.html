@@ -21846,7 +21846,8 @@ JSON만 출력. 코드블록 마커 금지.`;
             if (!scene) return '';
             let prompt = scene.nano_prompt || '';
             const style = (document.getElementById('fpStylePrompt')?.value || '').trim();
-            if (style) prompt = prompt + '\n\nStyle: ' + style;
+            if (style) prompt = prompt + ', ' + style;
+            if (prompt.length > 2900) prompt = prompt.substring(0, 2900);
             return prompt;
         }
 
