@@ -2743,8 +2743,8 @@
                                     <label style="font-size:0.75rem;font-weight:600;color:#555;">해상도</label>
                                     <select id="fpResolution" style="padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:0.8rem;">
                                         <option value="1k">1K (빠름)</option>
-                                        <option value="2k" selected>2K (기본)</option>
-                                        <option value="4k">4K (고품질)</option>
+                                        <option value="2k">2K</option>
+                                        <option value="4k" selected>4K (고품질·기본)</option>
                                     </select>
                                 </div>
                                 <div>
@@ -21882,20 +21882,20 @@ JSON만 출력. 코드블록 마커 금지.`;
                 return {
                     endpoint: 'https://api.magnific.com/v1/ai/text-to-image/nano-banana-pro',
                     pollBase: 'https://api.magnific.com/v1/ai/text-to-image/nano-banana-pro',
-                    body: (prompt) => ({ prompt, aspect_ratio: nanoAspectMap[aspectRatio] || '16:9', resolution: nanoRes[resolution] || '2K' })
+                    body: (prompt) => ({ prompt, aspect_ratio: nanoAspectMap[aspectRatio] || '16:9', resolution: nanoRes[resolution] || '4K' })
                 };
             } else if (val === 'nano_flash') {
                 return {
                     endpoint: 'https://api.magnific.com/v1/ai/text-to-image/nano-banana-pro-flash',
                     pollBase: 'https://api.magnific.com/v1/ai/text-to-image/nano-banana-pro-flash',
-                    body: (prompt) => ({ prompt, aspect_ratio: nanoAspectMap[aspectRatio] || '16:9', resolution: nanoRes[resolution] || '2K' })
+                    body: (prompt) => ({ prompt, aspect_ratio: nanoAspectMap[aspectRatio] || '16:9', resolution: nanoRes[resolution] || '4K' })
                 };
             } else {
                 const mysticModel = val.replace('mystic_', '');
                 return {
                     endpoint: 'https://api.magnific.com/v1/ai/mystic',
                     pollBase: 'https://api.magnific.com/v1/ai/mystic',
-                    body: (prompt) => ({ prompt, resolution, aspect_ratio: aspectRatio, model: mysticModel })
+                    body: (prompt) => ({ prompt, resolution, aspect_ratio: aspectRatio, model: mysticModel, creative_detailing: 80 })
                 };
             }
         }
