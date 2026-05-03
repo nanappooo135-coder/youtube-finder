@@ -2705,7 +2705,7 @@
                                 Magnific(프리픽) API로 AI 이미지를 직접 생성합니다. 젠스파크 리밋 이후 나머지 이미지를 여기서 만드세요.
                             </p>
 
-                            <!-- API Key -->
+                            <!-- API Key + CORS 프록시 -->
                             <div style="margin-bottom:10px;padding:10px;background:#f8f4ff;border:2px solid #7048e8;border-radius:8px;">
                                 <label style="font-size:0.8rem;font-weight:600;color:#6b21a8;">🔑 Magnific API Key</label>
                                 <div style="display:flex;gap:6px;margin-top:4px;">
@@ -2713,6 +2713,13 @@
                                     <button onclick="_fpToggleKey()" class="search-btn" style="background:#868e96;border-color:#868e96;padding:6px 10px;font-size:0.75rem;">👁</button>
                                     <button onclick="_fpSaveApiKey()" class="search-btn" style="background:#7048e8;border-color:#7048e8;white-space:nowrap;font-size:0.82rem;">💾 저장</button>
                                 </div>
+                                <details style="margin-top:8px;">
+                                    <summary style="font-size:0.72rem;color:#888;cursor:pointer;">⚙️ CORS 프록시 설정 (Failed to fetch 에러 시)</summary>
+                                    <div style="margin-top:4px;">
+                                        <input type="text" id="fpCorsProxy" placeholder="https://corsproxy.io/?" style="width:100%;padding:6px 8px;border:1px solid #d4bfff;border-radius:4px;font-size:0.75rem;font-family:monospace;">
+                                        <p style="font-size:0.68rem;color:#999;margin-top:4px;">브라우저 CORS 차단 우회용. 프록시 URL 뒤에 API URL이 붙습니다. 비워두면 직접 호출.</p>
+                                    </div>
+                                </details>
                             </div>
 
                             <!-- 대본 컨텍스트 (자동 로드) -->
@@ -21763,12 +21770,20 @@ JSON만 출력. 코드블록 마커 금지.`;
                 || localStorage.getItem(FP_API_KEY_STORAGE) || '';
         }
 
-        // 페이지 로드 시 저장된 키 복원
+        // 페이지 로드 시 저장된 키 + 프록시 복원
         document.addEventListener('DOMContentLoaded', () => {
             const saved = localStorage.getItem(FP_API_KEY_STORAGE);
             if (saved) {
                 const el = document.getElementById('fpApiKey');
                 if (el) el.value = saved;
+            }
+            const proxy = localStorage.getItem('magnific_cors_proxy');
+            const proxyEl = document.getElementById('fpCorsProxy');
+            if (proxyEl) {
+                proxyEl.value = proxy || 'https://corsproxy.io/?';
+                proxyEl.addEventListener('change', () => {
+                    localStorage.setItem('magnific_cors_proxy', proxyEl.value);
+                });
             }
         });
 
@@ -21835,13 +21850,19 @@ JSON만 출력. 코드블록 마커 금지.`;
             return prompt;
         }
 
+        // CORS 프록시 래핑
+        function _fpProxyUrl(url) {
+            const proxy = (document.getElementById('fpCorsProxy')?.value || '').trim();
+            if (!proxy) return url;
+            return proxy + encodeURIComponent(url);
+        }
+
         // 모델 → 엔드포인트/파라미터 매핑
         function _fpGetModelConfig() {
             const val = document.getElementById('fpModel')?.value || 'nano_pro';
             const resolution = document.getElementById('fpResolution')?.value || '2k';
             const aspectRatio = document.getElementById('fpAspectRatio')?.value || 'landscape_16_9';
 
-            // Nano Banana 계열은 aspect_ratio 형식이 다름 (16:9 vs landscape_16_9)
             const nanoAspectMap = {
                 'landscape_16_9': '16:9', 'square_1_1': '1:1', 'portrait_9_16': '9:16'
             };
@@ -21860,7 +21881,6 @@ JSON만 출력. 코드블록 마커 금지.`;
                     body: (prompt) => ({ prompt, aspect_ratio: nanoAspectMap[aspectRatio] || '16:9', resolution: nanoRes[resolution] || '2K' })
                 };
             } else {
-                // Mystic 계열
                 const mysticModel = val.replace('mystic_', '');
                 return {
                     endpoint: 'https://api.magnific.com/v1/ai/mystic',
@@ -21897,7 +21917,7 @@ JSON만 출력. 코드블록 마커 금지.`;
             try {
                 const config = _fpGetModelConfig();
 
-                const createRes = await fetch(config.endpoint, {
+                const createRes = await fetch(_fpProxyUrl(config.endpoint), {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -21941,7 +21961,7 @@ JSON만 출력. 코드블록 마커 금지.`;
                     return;
                 }
                 try {
-                    const res = await fetch(`${base}/${taskId}`, {
+                    const res = await fetch(_fpProxyUrl(`${base}/${taskId}`), {
                         headers: { 'x-magnific-api-key': apiKey }
                     });
                     if (!res.ok) continue;
