@@ -2722,6 +2722,17 @@
                                 </details>
                             </div>
 
+                            <!-- xAI API Key -->
+                            <div id="fpXaiKeyBox" style="margin-bottom:10px;padding:10px;background:#f0f4ff;border:2px solid #4c6ef5;border-radius:8px;display:none;">
+                                <label style="font-size:0.8rem;font-weight:600;color:#364fc7;">🤖 xAI API Key (Grok)</label>
+                                <div style="display:flex;gap:6px;margin-top:4px;">
+                                    <input type="password" id="fpXaiApiKey" placeholder="xAI API key 입력 (console.x.ai에서 발급)" style="flex:1;padding:8px 10px;border:2px solid #bac8ff;border-radius:6px;font-size:0.82rem;">
+                                    <button onclick="document.getElementById('fpXaiApiKey').type=document.getElementById('fpXaiApiKey').type==='password'?'text':'password'" class="search-btn" style="background:#868e96;border-color:#868e96;padding:6px 10px;font-size:0.75rem;">👁</button>
+                                    <button onclick="_fpSaveXaiKey()" class="search-btn" style="background:#4c6ef5;border-color:#4c6ef5;white-space:nowrap;font-size:0.82rem;">💾 저장</button>
+                                </div>
+                                <p style="font-size:0.68rem;color:#999;margin-top:4px;">$0.07/장 · 동기식 (즉시 반환) · console.x.ai에서 API 키 발급</p>
+                            </div>
+
                             <!-- 대본 컨텍스트 (자동 로드) -->
                             <details style="margin-bottom:10px;">
                                 <summary style="font-size:0.8rem;font-weight:600;color:#333;cursor:pointer;">📝 대본 컨텍스트 (변환 결과에서 자동 로드됨)</summary>
@@ -2767,6 +2778,9 @@
                                         <optgroup label="── 나노바나나 ──">
                                             <option value="nano_pro" selected>🍌 나노바나나2 (기본)</option>
                                             <option value="nano_flash">⚡ 나노바나나2 Flash (초고속)</option>
+                                        </optgroup>
+                                        <optgroup label="── Grok (xAI) ──">
+                                            <option value="grok_aurora">🤖 Grok Aurora (고품질)</option>
                                         </optgroup>
                                     </select>
                                 </div>
@@ -21780,6 +21794,11 @@ JSON만 출력. 코드블록 마커 금지.`;
                 const el = document.getElementById('fpApiKey');
                 if (el) el.value = saved;
             }
+            const savedXai = localStorage.getItem(FP_XAI_KEY_STORAGE);
+            if (savedXai) {
+                const xel = document.getElementById('fpXaiApiKey');
+                if (xel) xel.value = savedXai;
+            }
             const proxy = localStorage.getItem('magnific_cors_proxy');
             const proxyEl = document.getElementById('fpCorsProxy');
             if (proxyEl) {
@@ -21892,14 +21911,26 @@ JSON만 출력. 코드블록 마커 금지.`;
             };
             const nanoRes = { '1k': '1K', '2k': '2K', '4k': '4K' };
 
-            if (val === 'nano_pro') {
+            const grokAspectMap = {
+                'landscape_16_9': '16:9', 'square_1_1': '1:1', 'portrait_9_16': '9:16'
+            };
+
+            if (val === 'grok_aurora') {
                 return {
+                    type: 'grok',
+                    endpoint: 'https://api.x.ai/v1/images/generations',
+                    body: (prompt) => ({ model: 'grok-2-image-gen', prompt, n: 1, response_format: 'url' })
+                };
+            } else if (val === 'nano_pro') {
+                return {
+                    type: 'magnific',
                     endpoint: 'https://api.magnific.com/v1/ai/text-to-image/nano-banana-pro',
                     pollBase: 'https://api.magnific.com/v1/ai/text-to-image/nano-banana-pro',
                     body: (prompt) => ({ prompt, aspect_ratio: nanoAspectMap[aspectRatio] || '16:9', resolution: nanoRes[resolution] || '2K', use_google_search_tool: true })
                 };
             } else if (val === 'nano_flash') {
                 return {
+                    type: 'magnific',
                     endpoint: 'https://api.magnific.com/v1/ai/text-to-image/nano-banana-pro-flash',
                     pollBase: 'https://api.magnific.com/v1/ai/text-to-image/nano-banana-pro-flash',
                     body: (prompt) => ({ prompt, aspect_ratio: nanoAspectMap[aspectRatio] || '16:9', resolution: nanoRes[resolution] || '2K', use_google_search_tool: true })
@@ -21907,6 +21938,7 @@ JSON만 출력. 코드블록 마커 금지.`;
             } else {
                 const mysticModel = val.replace('mystic_', '');
                 return {
+                    type: 'magnific',
                     endpoint: 'https://api.magnific.com/v1/ai/mystic',
                     pollBase: 'https://api.magnific.com/v1/ai/mystic',
                     body: (prompt) => ({ prompt, resolution, aspect_ratio: aspectRatio, model: mysticModel, creative_detailing: 80 })
@@ -21916,16 +21948,32 @@ JSON만 출력. 코드블록 마커 금지.`;
 
         function _fpOnModelChange() {
             const val = document.getElementById('fpModel')?.value || '';
-            const hint = val.startsWith('nano') ? '🍌 나노바나나 — 빠른 생성, Google Gemini 기반' : '🎨 Mystic — 고품질 일러스트/실사';
+            const isGrok = val.startsWith('grok');
+            const hint = isGrok ? '🤖 Grok Aurora — xAI, 동기식 즉시 반환, $0.07/장' : val.startsWith('nano') ? '🍌 나노바나나 — 빠른 생성, Google Gemini 기반' : '🎨 Mystic — 고품질 일러스트/실사';
             const prog = document.getElementById('fpProgress');
             if (prog) prog.textContent = hint;
             setTimeout(() => { if (prog && prog.textContent === hint) prog.textContent = ''; }, 3000);
+            const xaiBox = document.getElementById('fpXaiKeyBox');
+            if (xaiBox) xaiBox.style.display = isGrok ? '' : 'none';
+        }
+
+        const FP_XAI_KEY_STORAGE = 'fp_xai_api_key';
+        function _fpSaveXaiKey() {
+            const key = document.getElementById('fpXaiApiKey').value.trim();
+            if (!key) return alert('xAI API key를 입력하세요.');
+            localStorage.setItem(FP_XAI_KEY_STORAGE, key);
+            alert('✅ xAI API key 저장됨!');
+        }
+        function _fpGetXaiKey() {
+            return (document.getElementById('fpXaiApiKey')?.value || '').trim() || localStorage.getItem(FP_XAI_KEY_STORAGE) || '';
         }
 
         // 커스텀 프롬프트 테스트
         async function _fpTestGenerate() {
-            const apiKey = _fpGetApiKey();
-            if (!apiKey) return alert('API key를 먼저 입력/저장하세요.');
+            const config = _fpGetModelConfig();
+            const isGrok = config.type === 'grok';
+            const apiKey = isGrok ? _fpGetXaiKey() : _fpGetApiKey();
+            if (!apiKey) return alert(isGrok ? 'xAI API key를 먼저 입력/저장하세요.' : 'API key를 먼저 입력/저장하세요.');
             let prompt = (document.getElementById('fpTestPrompt')?.value || '').trim();
             if (!prompt) return alert('프롬프트를 입력하세요.');
             const statusEl = document.getElementById('fpTestStatus');
@@ -21934,8 +21982,30 @@ JSON만 출력. 코드블록 마커 금지.`;
             if (statusEl) statusEl.textContent = '⏳ 생성 요청 중...';
             if (resultEl) resultEl.innerHTML = '';
             try {
-                const config = _fpGetModelConfig();
                 const reqBody = JSON.stringify(config.body(prompt));
+
+                if (isGrok) {
+                    const reqHeaders = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey };
+                    let res;
+                    try {
+                        res = await fetch(config.endpoint, { method: 'POST', headers: reqHeaders, body: reqBody });
+                    } catch (e) {
+                        if (statusEl) statusEl.textContent = '🔄 프록시 경유 시도...';
+                        res = await fetch(_fpProxyUrl(config.endpoint), { method: 'POST', headers: reqHeaders, body: reqBody });
+                    }
+                    if (!res.ok) {
+                        const errText = await res.text();
+                        throw new Error(`API ${res.status}: ${errText.substring(0, 300)}`);
+                    }
+                    const data = await res.json();
+                    const imgUrl = data.data?.[0]?.url || '';
+                    if (statusEl) statusEl.textContent = '✅ 완료!';
+                    if (resultEl) resultEl.innerHTML = imgUrl
+                        ? `<img src="${imgUrl}" style="max-width:100%;border-radius:8px;border:2px solid #4c6ef5;margin-top:6px;" onclick="window.open(this.src)"><br><a href="${imgUrl}" download="grok_test.png" style="font-size:0.78rem;">💾 다운로드</a>`
+                        : '<span style="color:red;">이미지 URL 없음</span><br><details><summary style="cursor:pointer;font-size:0.72rem;color:#888;">API 응답 보기</summary><pre style="font-size:0.65rem;max-height:200px;overflow:auto;background:#f5f5f5;padding:8px;border-radius:4px;">' + JSON.stringify(data, null, 2) + '</pre></details>';
+                    return;
+                }
+
                 const reqHeaders = { 'Content-Type': 'application/json', 'x-magnific-api-key': apiKey };
                 let createRes;
                 try {
@@ -21989,8 +22059,10 @@ JSON만 출력. 코드블록 마커 금지.`;
 
         // 단건 생성
         async function _fpGenerateOne(sceneNo) {
-            const apiKey = _fpGetApiKey();
-            if (!apiKey) return alert('API key를 먼저 입력/저장하세요.');
+            const config = _fpGetModelConfig();
+            const isGrok = config.type === 'grok';
+            const apiKey = isGrok ? _fpGetXaiKey() : _fpGetApiKey();
+            if (!apiKey) return alert(isGrok ? 'xAI API key를 먼저 입력/저장하세요.' : 'API key를 먼저 입력/저장하세요.');
 
             const resultEl = document.getElementById('fpResult_' + sceneNo);
             const card = document.querySelector(`.fp-scene-card[data-scene="${sceneNo}"]`);
@@ -22004,15 +22076,41 @@ JSON만 출력. 코드블록 마커 금지.`;
             }
 
             try {
-                const config = _fpGetModelConfig();
-
                 const reqBody = JSON.stringify(config.body(prompt));
+
+                if (isGrok) {
+                    const reqHeaders = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey };
+                    let res;
+                    try {
+                        res = await fetch(config.endpoint, { method: 'POST', headers: reqHeaders, body: reqBody });
+                    } catch (e) {
+                        if (resultEl) resultEl.innerHTML = '<span style="color:#fd7e14;">🔄 프록시 경유 시도...</span>';
+                        res = await fetch(_fpProxyUrl(config.endpoint), { method: 'POST', headers: reqHeaders, body: reqBody });
+                    }
+                    if (!res.ok) {
+                        const errText = await res.text();
+                        throw new Error(`API ${res.status}: ${errText.substring(0, 300)}`);
+                    }
+                    const data = await res.json();
+                    const imgUrl = data.data?.[0]?.url || '';
+                    if (!imgUrl) throw new Error('이미지 URL 없음. 응답: ' + JSON.stringify(data).substring(0, 300));
+                    _fpResults[sceneNo] = { status: 'COMPLETED', imageUrl: imgUrl, blob: null };
+                    if (resultEl) {
+                        resultEl.innerHTML = `<img src="${imgUrl}" style="max-width:100%;border-radius:6px;cursor:pointer;border:2px solid #37b24d;" onclick="window.open(this.src)">`;
+                    }
+                    if (card) card.style.borderColor = '#37b24d';
+                    try {
+                        const blobRes = await fetch(imgUrl);
+                        _fpResults[sceneNo].blob = await blobRes.blob();
+                    } catch (e) {}
+                    return;
+                }
+
                 const reqHeaders = {
                     'Content-Type': 'application/json',
                     'x-magnific-api-key': apiKey
                 };
 
-                // 직접 호출 시도 → 실패 시 프록시 경유
                 let createRes;
                 try {
                     createRes = await fetch(config.endpoint, {
