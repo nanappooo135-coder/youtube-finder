@@ -21984,11 +21984,13 @@ JSON만 출력. 코드블록 마커 금지.`;
                     const pollData = await pollRes.json();
                     const status = pollData.data?.status || pollData.status;
                     if (status === 'COMPLETED') {
-                        const imgUrl = pollData.data?.generated_images?.[0] || pollData.data?.image?.url || '';
+                        console.log('[프리픽 테스트] 완료 응답:', JSON.stringify(pollData, null, 2));
+                        const d = pollData.data || pollData;
+                        const imgUrl = d.generated_images?.[0] || d.image?.url || d.result?.image || d.output?.url || d.url || d.image || '';
                         if (statusEl) statusEl.textContent = '✅ 완료!';
                         if (resultEl) resultEl.innerHTML = imgUrl
                             ? `<img src="${imgUrl}" style="max-width:100%;border-radius:8px;border:2px solid #7048e8;margin-top:6px;" onclick="window.open(this.src)"><br><a href="${imgUrl}" download="test_image.png" style="font-size:0.78rem;">💾 다운로드</a>`
-                            : '<span style="color:red;">이미지 URL 없음 (안전 필터에 의해 차단되었을 수 있음)</span>';
+                            : '<span style="color:red;">이미지 URL 없음 (안전 필터에 의해 차단되었을 수 있음)</span><br><details><summary style="cursor:pointer;font-size:0.72rem;color:#888;">API 응답 보기 (디버깅)</summary><pre style="font-size:0.65rem;max-height:200px;overflow:auto;background:#f5f5f5;padding:8px;border-radius:4px;">' + JSON.stringify(pollData, null, 2) + '</pre></details>';
                         return;
                     } else if (status === 'FAILED') {
                         throw new Error('생성 실패: ' + JSON.stringify(pollData.data || pollData).substring(0, 200));
