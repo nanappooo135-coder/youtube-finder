@@ -22150,21 +22150,24 @@ JSON만 출력. 코드블록 마커 금지.`;
             if (!apiKey) return alert('API key를 먼저 입력/저장하세요.');
 
             _fpStopFlag = false;
+            const BATCH = 5;
             const prog = document.getElementById('fpProgress');
             const bar = document.getElementById('fpProgressBar');
             const fill = document.getElementById('fpProgressFill');
             if (bar) bar.style.display = '';
+            let done = 0;
 
-            for (let i = 0; i < selected.length; i++) {
+            for (let i = 0; i < selected.length; i += BATCH) {
                 if (_fpStopFlag) {
-                    if (prog) prog.textContent = `⏹ 중지됨 (${i}/${selected.length} 완료)`;
+                    if (prog) prog.textContent = `⏹ 중지됨 (${done}/${selected.length} 완료)`;
                     break;
                 }
-                if (prog) prog.textContent = `🖼️ ${i+1}/${selected.length} 생성 중... (장면 ${selected[i]})`;
-                if (fill) fill.style.width = `${Math.round(((i+1)/selected.length)*100)}%`;
-                await _fpGenerateOne(selected[i]);
-                // API 레이트 리밋 방지 — 2초 대기
-                if (i < selected.length - 1) await new Promise(r => setTimeout(r, 2000));
+                const batch = selected.slice(i, i + BATCH);
+                if (prog) prog.textContent = `🖼️ ${done+1}~${Math.min(done+batch.length, selected.length)}/${selected.length} 동시 생성 중...`;
+                await Promise.all(batch.map(sceneNo => _fpGenerateOne(sceneNo)));
+                done += batch.length;
+                if (fill) fill.style.width = `${Math.round((done/selected.length)*100)}%`;
+                if (i + BATCH < selected.length && !_fpStopFlag) await new Promise(r => setTimeout(r, 1000));
             }
 
             if (!_fpStopFlag && prog) prog.textContent = `✅ ${selected.length}개 장면 생성 완료!`;
