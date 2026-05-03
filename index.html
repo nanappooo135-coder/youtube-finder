@@ -2715,11 +2715,10 @@
                                 </div>
                             </div>
 
-                            <!-- 대본 컨텍스트 -->
+                            <!-- 대본 컨텍스트 (자동 로드) -->
                             <details style="margin-bottom:10px;">
-                                <summary style="font-size:0.8rem;font-weight:600;color:#333;cursor:pointer;">📝 대본 컨텍스트 (선택 — AI가 맥락을 이해하고 프롬프트에 반영)</summary>
-                                <textarea id="fpScriptContext" rows="4" placeholder="전체 대본을 붙여넣으면 프롬프트 생성 시 맥락이 반영됩니다 (선택사항)" style="width:100%;margin-top:6px;padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:0.78rem;resize:vertical;line-height:1.5;"></textarea>
-                                <button onclick="document.getElementById('fpScriptContext').value=(document.getElementById('spIntro').value||'')+'\n'+(document.getElementById('spBody').value||'')" class="search-btn" style="margin-top:4px;background:#9333ea;border-color:#9333ea;font-size:0.72rem;padding:4px 8px;">← 위 대본에서 자동 채우기</button>
+                                <summary style="font-size:0.8rem;font-weight:600;color:#333;cursor:pointer;">📝 대본 컨텍스트 (변환 결과에서 자동 로드됨)</summary>
+                                <textarea id="fpScriptContext" rows="4" readonly style="width:100%;margin-top:6px;padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:0.78rem;resize:vertical;line-height:1.5;background:#f8f9fa;color:#555;"></textarea>
                             </details>
 
                             <!-- 아트 스타일 -->
@@ -21786,6 +21785,12 @@ JSON만 출력. 코드블록 마커 금지.`;
             const srcStyle = document.getElementById('spStylePrompt');
             if (styleEl && srcStyle && !styleEl.value.trim()) {
                 styleEl.value = srcStyle.value;
+            }
+            // 대본 컨텍스트 자동 로드 (변환 결과에서)
+            const ctxEl = document.getElementById('fpScriptContext');
+            if (ctxEl) {
+                const scenes = window._spLastScenes || [];
+                ctxEl.value = scenes.map(s => s.text || '').join('\n');
             }
 
             container.innerHTML = aiScenes.map(s => {
