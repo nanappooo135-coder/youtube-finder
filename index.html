@@ -22158,12 +22158,12 @@ JSON만 출력. 코드블록 마커 금지.`;
             }
         }
 
-        // 폴링
+        // 폴링 (최대 120초 타임아웃)
         async function _fpPollTask(sceneNo, taskId, pollBase) {
             const apiKey = _fpGetApiKey();
             const resultEl = document.getElementById('fpResult_' + sceneNo);
             const card = document.querySelector(`.fp-scene-card[data-scene="${sceneNo}"]`);
-            const maxAttempts = 60;
+            const maxAttempts = 24;
             const base = pollBase || 'https://api.magnific.com/v1/ai/mystic';
 
             for (let i = 0; i < maxAttempts; i++) {
@@ -22229,7 +22229,7 @@ JSON만 출력. 코드블록 마커 금지.`;
                     if (resultEl) resultEl.innerHTML = `<span style="color:#fd7e14;">🔄 생성 중... (폴링 재시도)</span>`;
                 }
             }
-            if (resultEl) resultEl.innerHTML = '<span style="color:red;">⏰ 시간 초과 (5분)</span>';
+            if (resultEl) resultEl.innerHTML = '<span style="color:red;">⏰ 시간 초과 (120초) — 건너뜀</span>';
             if (card) card.style.borderColor = '#e03131';
         }
 
