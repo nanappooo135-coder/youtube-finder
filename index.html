@@ -2563,6 +2563,7 @@
                             <button class="sp-result-tab" data-tab="grok" onclick="_spSwitchResultTab('grok')" style="padding:10px 16px;background:#f1f3f5;color:#495057;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">🎬 그록 영상</button>
                             <button class="sp-result-tab" data-tab="real" onclick="_spSwitchResultTab('real')" style="padding:10px 16px;background:#f1f3f5;color:#495057;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">📷 실사 검색</button>
                             <button class="sp-result-tab" data-tab="claude" onclick="_spSwitchResultTab('claude')" style="padding:10px 16px;background:#f1f3f5;color:#495057;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">📊 Claude Design</button>
+                            <button class="sp-result-tab" data-tab="freepik" onclick="_spSwitchResultTab('freepik')" style="padding:10px 16px;background:#f1f3f5;color:#495057;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">🖼️ 프리픽 이미지</button>
                         </div>
 
                         <!-- 셀팟 붙여넣기 탭 -->
@@ -2697,6 +2698,94 @@
                             </div>
 
                         </div>
+
+                        <!-- 프리픽/매그니픽 이미지 생성 탭 -->
+                        <div id="spTab_freepik" class="sp-result-pane" style="display:none;">
+                            <p style="font-size:0.78rem;color:#666;margin-bottom:10px;">
+                                Magnific(프리픽) API로 AI 이미지를 직접 생성합니다. 젠스파크 리밋 이후 나머지 이미지를 여기서 만드세요.
+                            </p>
+
+                            <!-- API Key -->
+                            <div style="margin-bottom:10px;padding:10px;background:#f8f4ff;border:2px solid #7048e8;border-radius:8px;">
+                                <label style="font-size:0.8rem;font-weight:600;color:#6b21a8;">🔑 Magnific API Key</label>
+                                <div style="display:flex;gap:6px;margin-top:4px;">
+                                    <input type="password" id="fpApiKey" placeholder="API key 입력 (magnific.ai/api에서 발급)" style="flex:1;padding:8px 10px;border:2px solid #d4bfff;border-radius:6px;font-size:0.82rem;">
+                                    <button onclick="_fpToggleKey()" class="search-btn" style="background:#868e96;border-color:#868e96;padding:6px 10px;font-size:0.75rem;">👁</button>
+                                    <button onclick="_fpSaveApiKey()" class="search-btn" style="background:#7048e8;border-color:#7048e8;white-space:nowrap;font-size:0.82rem;">💾 저장</button>
+                                </div>
+                            </div>
+
+                            <!-- 대본 컨텍스트 -->
+                            <details style="margin-bottom:10px;">
+                                <summary style="font-size:0.8rem;font-weight:600;color:#333;cursor:pointer;">📝 대본 컨텍스트 (선택 — AI가 맥락을 이해하고 프롬프트에 반영)</summary>
+                                <textarea id="fpScriptContext" rows="4" placeholder="전체 대본을 붙여넣으면 프롬프트 생성 시 맥락이 반영됩니다 (선택사항)" style="width:100%;margin-top:6px;padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:0.78rem;resize:vertical;line-height:1.5;"></textarea>
+                                <button onclick="document.getElementById('fpScriptContext').value=(document.getElementById('spIntro').value||'')+'\n'+(document.getElementById('spBody').value||'')" class="search-btn" style="margin-top:4px;background:#9333ea;border-color:#9333ea;font-size:0.72rem;padding:4px 8px;">← 위 대본에서 자동 채우기</button>
+                            </details>
+
+                            <!-- 아트 스타일 -->
+                            <div style="margin-bottom:10px;">
+                                <div style="display:flex;justify-content:space-between;align-items:center;">
+                                    <label style="font-size:0.8rem;font-weight:600;color:#333;">🎨 그림체 프롬프트</label>
+                                    <button onclick="document.getElementById('fpStylePrompt').value=document.getElementById('spStylePrompt').value" class="search-btn" style="background:#fd7e14;border-color:#fd7e14;font-size:0.72rem;padding:4px 8px;">← 채널 스타일 가져오기</button>
+                                </div>
+                                <textarea id="fpStylePrompt" rows="3" placeholder="예: editorial illustration, muted earth tones, soft lighting..." style="width:100%;margin-top:4px;padding:10px;border:2px solid #ffd8a8;border-radius:8px;font-size:0.78rem;resize:vertical;line-height:1.4;font-family:'Courier New',monospace;"></textarea>
+                            </div>
+
+                            <!-- 해상도 / 비율 설정 -->
+                            <div style="display:flex;gap:12px;margin-bottom:10px;flex-wrap:wrap;align-items:center;">
+                                <div>
+                                    <label style="font-size:0.75rem;font-weight:600;color:#555;">해상도</label>
+                                    <select id="fpResolution" style="padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:0.8rem;">
+                                        <option value="1k">1K (빠름)</option>
+                                        <option value="2k" selected>2K (기본)</option>
+                                        <option value="4k">4K (고품질)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="font-size:0.75rem;font-weight:600;color:#555;">비율</label>
+                                    <select id="fpAspectRatio" style="padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:0.8rem;">
+                                        <option value="landscape_16_9" selected>16:9 (가로)</option>
+                                        <option value="square_1_1">1:1 (정사각)</option>
+                                        <option value="portrait_9_16">9:16 (세로)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="font-size:0.75rem;font-weight:600;color:#555;">모델</label>
+                                    <select id="fpModel" style="padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:0.8rem;" onchange="_fpOnModelChange()">
+                                        <optgroup label="── Mystic (일러스트/실사) ──">
+                                            <option value="mystic_realism">Mystic Realism (초실사)</option>
+                                            <option value="mystic_zen">Mystic Zen (깔끔 일러스트)</option>
+                                            <option value="mystic_flexible">Mystic Flexible (만능)</option>
+                                            <option value="mystic_fluid">Mystic Fluid</option>
+                                        </optgroup>
+                                        <optgroup label="── Nano Banana (빠른 생성) ──">
+                                            <option value="nano_pro" selected>🍌 Nano Banana Pro (고품질)</option>
+                                            <option value="nano_flash">⚡ Nano Banana Pro Flash (초고속)</option>
+                                        </optgroup>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- 컨트롤 버튼 -->
+                            <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;">
+                                <button onclick="_fpSelectAll()" class="search-btn" style="background:#495057;border-color:#495057;font-size:0.78rem;">☑️ 전체선택</button>
+                                <button onclick="_fpDeselectAll()" class="search-btn" style="background:#868e96;border-color:#868e96;font-size:0.78rem;">⬜ 전체해제</button>
+                                <button onclick="_fpGenerateSelected()" class="search-btn" style="background:#37b24d;border-color:#37b24d;font-size:0.82rem;font-weight:700;">🚀 선택 생성</button>
+                                <button onclick="_fpGenerateAll()" class="search-btn" style="background:#e03131;border-color:#e03131;font-size:0.82rem;font-weight:700;">⚡ 전체 생성</button>
+                                <button onclick="_fpStopGeneration()" class="search-btn" style="background:#868e96;border-color:#868e96;font-size:0.78rem;">⏹ 중지</button>
+                                <button onclick="_fpDownloadSelected()" class="search-btn" style="background:#1c7ed6;border-color:#1c7ed6;font-size:0.78rem;">📦 선택 다운로드 (ZIP)</button>
+                            </div>
+
+                            <!-- 진행 상태 -->
+                            <div id="fpProgress" style="font-size:0.82rem;color:#7048e8;margin-bottom:8px;font-weight:600;"></div>
+                            <div id="fpProgressBar" style="display:none;margin-bottom:10px;background:#e9ecef;border-radius:6px;overflow:hidden;height:8px;">
+                                <div id="fpProgressFill" style="height:100%;background:#7048e8;transition:width 0.3s;width:0%;"></div>
+                            </div>
+
+                            <!-- 장면 리스트 -->
+                            <div id="fpSceneList" style="display:flex;flex-direction:column;gap:8px;"></div>
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -21636,8 +21725,357 @@ JSON만 출력. 코드블록 마커 금지.`;
             const claudeCount = scenes.filter(s => s.type === 'claude_design').length;
             _spSetCountLabel('spOut_claude', `📊 총 ${claudeCount}개 Claude Design 프롬프트`);
 
+            // 6) 프리픽 이미지 — type=ai 장면 체크박스 목록
+            if (typeof _fpRenderSceneList === 'function') {
+                _fpRenderSceneList(scenes.filter(s => s.type === 'ai' && s.nano_prompt));
+            }
+
             // 첫 탭으로
             _spSwitchResultTab('sellpot');
+        }
+    </script>
+
+    <script>
+        // ═══════════════════════════════════════════════════════════════
+        // 🖼️ 프리픽/매그니픽 이미지 생성
+        // ═══════════════════════════════════════════════════════════════
+        const FP_API_KEY_STORAGE = 'magnific_api_key';
+        let _fpResults = {};
+        let _fpStopFlag = false;
+
+        function _fpToggleKey() {
+            const el = document.getElementById('fpApiKey');
+            el.type = el.type === 'password' ? 'text' : 'password';
+        }
+
+        function _fpSaveApiKey() {
+            const key = document.getElementById('fpApiKey').value.trim();
+            if (!key) return alert('API key를 입력하세요.');
+            localStorage.setItem(FP_API_KEY_STORAGE, key);
+            const btn = event.target;
+            const orig = btn.textContent;
+            btn.textContent = '✅ 저장됨!';
+            setTimeout(() => btn.textContent = orig, 1500);
+        }
+
+        function _fpGetApiKey() {
+            return (document.getElementById('fpApiKey')?.value || '').trim()
+                || localStorage.getItem(FP_API_KEY_STORAGE) || '';
+        }
+
+        // 페이지 로드 시 저장된 키 복원
+        document.addEventListener('DOMContentLoaded', () => {
+            const saved = localStorage.getItem(FP_API_KEY_STORAGE);
+            if (saved) {
+                const el = document.getElementById('fpApiKey');
+                if (el) el.value = saved;
+            }
+        });
+
+        // 장면 리스트 렌더링
+        function _fpRenderSceneList(aiScenes) {
+            const container = document.getElementById('fpSceneList');
+            if (!container) return;
+            if (!aiScenes || aiScenes.length === 0) {
+                container.innerHTML = '<div style="color:#888;text-align:center;padding:20px;">AI 이미지 장면 없음</div>';
+                return;
+            }
+            // 스타일 프롬프트 자동 채우기
+            const styleEl = document.getElementById('fpStylePrompt');
+            const srcStyle = document.getElementById('spStylePrompt');
+            if (styleEl && srcStyle && !styleEl.value.trim()) {
+                styleEl.value = srcStyle.value;
+            }
+
+            container.innerHTML = aiScenes.map(s => {
+                const esc = t => (t || '').replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
+                const existing = _fpResults[s.sceneNo];
+                const preview = existing?.imageUrl
+                    ? `<div style="margin-top:6px;"><img src="${existing.imageUrl}" style="max-width:100%;border-radius:6px;border:2px solid #37b24d;"><div style="margin-top:4px;"><span style="color:#37b24d;font-size:0.78rem;">✅ 완료</span></div></div>`
+                    : '';
+                return `
+                <div class="fp-scene-card" data-scene="${s.sceneNo}" style="padding:10px;background:#f8f9fa;border:2px solid #dee2e6;border-radius:8px;">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                        <input type="checkbox" class="fp-scene-check" data-scene="${s.sceneNo}" checked>
+                        <span style="font-weight:700;color:#7048e8;font-size:0.88rem;">[장면 ${s.sceneNo}]</span>
+                        <span style="font-size:0.72rem;color:#888;margin-left:auto;">⏱ ${s.duration || '?'}초</span>
+                        <button onclick="_fpGenerateOne(${s.sceneNo})" class="search-btn" style="background:#37b24d;border-color:#37b24d;font-size:0.72rem;padding:4px 10px;">🖼️ 생성</button>
+                        <button onclick="_fpDownloadOne(${s.sceneNo})" class="search-btn" style="background:#1c7ed6;border-color:#1c7ed6;font-size:0.72rem;padding:4px 10px;">💾</button>
+                    </div>
+                    <div style="font-size:0.75rem;color:#555;font-family:'Courier New',monospace;word-break:break-all;max-height:60px;overflow:auto;background:#fff;padding:6px 8px;border-radius:4px;border:1px solid #eee;">${esc(s.nano_prompt)}</div>
+                    <div id="fpResult_${s.sceneNo}" style="margin-top:6px;">${preview}</div>
+                </div>`;
+            }).join('');
+        }
+
+        function _fpSelectAll() {
+            document.querySelectorAll('.fp-scene-check').forEach(cb => cb.checked = true);
+        }
+        function _fpDeselectAll() {
+            document.querySelectorAll('.fp-scene-check').forEach(cb => cb.checked = false);
+        }
+
+        function _fpGetSelectedScenes() {
+            return [...document.querySelectorAll('.fp-scene-check:checked')].map(cb => parseInt(cb.dataset.scene));
+        }
+
+        function _fpBuildPrompt(sceneNo) {
+            const scenes = window._spLastScenes || [];
+            const scene = scenes.find(s => s.sceneNo === sceneNo);
+            if (!scene) return '';
+            let prompt = scene.nano_prompt || '';
+            const style = (document.getElementById('fpStylePrompt')?.value || '').trim();
+            if (style) prompt = prompt + '\n\nStyle: ' + style;
+            return prompt;
+        }
+
+        // 모델 → 엔드포인트/파라미터 매핑
+        function _fpGetModelConfig() {
+            const val = document.getElementById('fpModel')?.value || 'nano_pro';
+            const resolution = document.getElementById('fpResolution')?.value || '2k';
+            const aspectRatio = document.getElementById('fpAspectRatio')?.value || 'landscape_16_9';
+
+            // Nano Banana 계열은 aspect_ratio 형식이 다름 (16:9 vs landscape_16_9)
+            const nanoAspectMap = {
+                'landscape_16_9': '16:9', 'square_1_1': '1:1', 'portrait_9_16': '9:16'
+            };
+            const nanoRes = { '1k': '1K', '2k': '2K', '4k': '4K' };
+
+            if (val === 'nano_pro') {
+                return {
+                    endpoint: 'https://api.magnific.com/v1/ai/text-to-image/nano-banana-pro',
+                    pollBase: 'https://api.magnific.com/v1/ai/text-to-image/nano-banana-pro',
+                    body: (prompt) => ({ prompt, aspect_ratio: nanoAspectMap[aspectRatio] || '16:9', resolution: nanoRes[resolution] || '2K' })
+                };
+            } else if (val === 'nano_flash') {
+                return {
+                    endpoint: 'https://api.magnific.com/v1/ai/text-to-image/nano-banana-pro-flash',
+                    pollBase: 'https://api.magnific.com/v1/ai/text-to-image/nano-banana-pro-flash',
+                    body: (prompt) => ({ prompt, aspect_ratio: nanoAspectMap[aspectRatio] || '16:9', resolution: nanoRes[resolution] || '2K' })
+                };
+            } else {
+                // Mystic 계열
+                const mysticModel = val.replace('mystic_', '');
+                return {
+                    endpoint: 'https://api.magnific.com/v1/ai/mystic',
+                    pollBase: 'https://api.magnific.com/v1/ai/mystic',
+                    body: (prompt) => ({ prompt, resolution, aspect_ratio: aspectRatio, model: mysticModel })
+                };
+            }
+        }
+
+        function _fpOnModelChange() {
+            const val = document.getElementById('fpModel')?.value || '';
+            const hint = val.startsWith('nano') ? '🍌 나노바나나 — 빠른 생성, Google Gemini 기반' : '🎨 Mystic — 고품질 일러스트/실사';
+            const prog = document.getElementById('fpProgress');
+            if (prog) prog.textContent = hint;
+            setTimeout(() => { if (prog && prog.textContent === hint) prog.textContent = ''; }, 3000);
+        }
+
+        // 단건 생성
+        async function _fpGenerateOne(sceneNo) {
+            const apiKey = _fpGetApiKey();
+            if (!apiKey) return alert('API key를 먼저 입력/저장하세요.');
+
+            const resultEl = document.getElementById('fpResult_' + sceneNo);
+            const card = document.querySelector(`.fp-scene-card[data-scene="${sceneNo}"]`);
+            if (card) card.style.borderColor = '#fd7e14';
+            if (resultEl) resultEl.innerHTML = '<span style="color:#7048e8;">⏳ 생성 요청 중...</span>';
+
+            const prompt = _fpBuildPrompt(sceneNo);
+            if (!prompt) {
+                if (resultEl) resultEl.innerHTML = '<span style="color:red;">❌ 프롬프트 없음</span>';
+                return;
+            }
+
+            try {
+                const config = _fpGetModelConfig();
+
+                const createRes = await fetch(config.endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-magnific-api-key': apiKey
+                    },
+                    body: JSON.stringify(config.body(prompt))
+                });
+
+                if (!createRes.ok) {
+                    const errText = await createRes.text();
+                    throw new Error(`API ${createRes.status}: ${errText.substring(0, 200)}`);
+                }
+
+                const createData = await createRes.json();
+                const taskId = createData.data?.task_id || createData.task_id;
+                if (!taskId) throw new Error('task_id를 받지 못했습니다');
+
+                _fpResults[sceneNo] = { taskId, status: 'IN_PROGRESS', imageUrl: null, blob: null };
+                if (resultEl) resultEl.innerHTML = '<span style="color:#fd7e14;">🔄 생성 중... (10~90초 소요)</span>';
+
+                await _fpPollTask(sceneNo, taskId, config.pollBase);
+            } catch (e) {
+                if (resultEl) resultEl.innerHTML = `<span style="color:red;">❌ ${e.message}</span>`;
+                if (card) card.style.borderColor = '#e03131';
+            }
+        }
+
+        // 폴링
+        async function _fpPollTask(sceneNo, taskId, pollBase) {
+            const apiKey = _fpGetApiKey();
+            const resultEl = document.getElementById('fpResult_' + sceneNo);
+            const card = document.querySelector(`.fp-scene-card[data-scene="${sceneNo}"]`);
+            const maxAttempts = 60;
+            const base = pollBase || 'https://api.magnific.com/v1/ai/mystic';
+
+            for (let i = 0; i < maxAttempts; i++) {
+                await new Promise(r => setTimeout(r, 5000));
+                if (_fpStopFlag) {
+                    if (resultEl) resultEl.innerHTML = '<span style="color:#868e96;">⏹ 중지됨</span>';
+                    if (card) card.style.borderColor = '#dee2e6';
+                    return;
+                }
+                try {
+                    const res = await fetch(`${base}/${taskId}`, {
+                        headers: { 'x-magnific-api-key': apiKey }
+                    });
+                    if (!res.ok) continue;
+                    const data = await res.json();
+                    const status = data.data?.status || data.status;
+
+                    if (status === 'COMPLETED') {
+                        const gen = data.data?.generated || data.data?.result || data.generated;
+                        let imageUrl = null;
+                        if (Array.isArray(gen) && gen.length > 0) {
+                            imageUrl = gen[0].url || gen[0].image || gen[0];
+                        } else if (typeof gen === 'object' && gen?.url) {
+                            imageUrl = gen.url;
+                        }
+                        if (!imageUrl) imageUrl = data.data?.image_url || data.data?.url || data.image_url;
+
+                        _fpResults[sceneNo].status = 'COMPLETED';
+                        _fpResults[sceneNo].imageUrl = imageUrl;
+
+                        if (imageUrl) {
+                            try {
+                                const imgRes = await fetch(imageUrl);
+                                _fpResults[sceneNo].blob = await imgRes.blob();
+                            } catch(e) {}
+                        }
+
+                        if (resultEl) {
+                            resultEl.innerHTML = imageUrl
+                                ? `<div><img src="${imageUrl}" style="max-width:100%;border-radius:6px;border:2px solid #37b24d;cursor:pointer;" onclick="window.open('${imageUrl}','_blank')">
+                                   <div style="margin-top:4px;display:flex;gap:8px;align-items:center;">
+                                       <span style="color:#37b24d;font-size:0.78rem;font-weight:700;">✅ 완료</span>
+                                       <button onclick="_fpDownloadOne(${sceneNo})" class="search-btn" style="background:#1c7ed6;border-color:#1c7ed6;font-size:0.7rem;padding:3px 8px;">💾 다운로드</button>
+                                   </div></div>`
+                                : '<span style="color:#37b24d;">✅ 완료 (이미지 URL 확인 불가)</span>';
+                        }
+                        if (card) card.style.borderColor = '#37b24d';
+                        return;
+                    } else if (status === 'FAILED' || status === 'ERROR') {
+                        _fpResults[sceneNo].status = 'FAILED';
+                        if (resultEl) resultEl.innerHTML = `<span style="color:red;">❌ 생성 실패: ${data.data?.error || '알 수 없는 오류'}</span>`;
+                        if (card) card.style.borderColor = '#e03131';
+                        return;
+                    }
+
+                    if (resultEl) resultEl.innerHTML = `<span style="color:#fd7e14;">🔄 생성 중... ${Math.round((i+1)*5)}초 경과</span>`;
+                } catch (e) {
+                    if (resultEl) resultEl.innerHTML = `<span style="color:#fd7e14;">🔄 생성 중... (폴링 재시도)</span>`;
+                }
+            }
+            if (resultEl) resultEl.innerHTML = '<span style="color:red;">⏰ 시간 초과 (5분)</span>';
+            if (card) card.style.borderColor = '#e03131';
+        }
+
+        // 선택 생성
+        async function _fpGenerateSelected() {
+            const selected = _fpGetSelectedScenes();
+            if (selected.length === 0) return alert('생성할 장면을 선택하세요.');
+            const apiKey = _fpGetApiKey();
+            if (!apiKey) return alert('API key를 먼저 입력/저장하세요.');
+
+            _fpStopFlag = false;
+            const prog = document.getElementById('fpProgress');
+            const bar = document.getElementById('fpProgressBar');
+            const fill = document.getElementById('fpProgressFill');
+            if (bar) bar.style.display = '';
+
+            for (let i = 0; i < selected.length; i++) {
+                if (_fpStopFlag) {
+                    if (prog) prog.textContent = `⏹ 중지됨 (${i}/${selected.length} 완료)`;
+                    break;
+                }
+                if (prog) prog.textContent = `🖼️ ${i+1}/${selected.length} 생성 중... (장면 ${selected[i]})`;
+                if (fill) fill.style.width = `${Math.round(((i+1)/selected.length)*100)}%`;
+                await _fpGenerateOne(selected[i]);
+                // API 레이트 리밋 방지 — 2초 대기
+                if (i < selected.length - 1) await new Promise(r => setTimeout(r, 2000));
+            }
+
+            if (!_fpStopFlag && prog) prog.textContent = `✅ ${selected.length}개 장면 생성 완료!`;
+            if (bar) setTimeout(() => bar.style.display = 'none', 3000);
+        }
+
+        function _fpGenerateAll() {
+            _fpSelectAll();
+            _fpGenerateSelected();
+        }
+
+        function _fpStopGeneration() {
+            _fpStopFlag = true;
+            const prog = document.getElementById('fpProgress');
+            if (prog) prog.textContent = '⏹ 중지 요청됨... 현재 작업 완료 후 멈춥니다.';
+        }
+
+        // 단건 다운로드
+        function _fpDownloadOne(sceneNo) {
+            const r = _fpResults[sceneNo];
+            if (!r || !r.imageUrl) return alert('먼저 이미지를 생성하세요.');
+            const a = document.createElement('a');
+            if (r.blob) {
+                a.href = URL.createObjectURL(r.blob);
+            } else {
+                a.href = r.imageUrl;
+            }
+            a.download = `scene_${sceneNo}.png`;
+            a.click();
+            if (r.blob) setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+        }
+
+        // 선택 다운로드 (ZIP)
+        async function _fpDownloadSelected() {
+            const selected = _fpGetSelectedScenes();
+            const completed = selected.filter(no => _fpResults[no]?.status === 'COMPLETED' && (_fpResults[no].blob || _fpResults[no].imageUrl));
+            if (completed.length === 0) return alert('다운로드할 완성 이미지가 없습니다.\n먼저 이미지를 생성하세요.');
+
+            const prog = document.getElementById('fpProgress');
+            if (prog) prog.textContent = `📦 ${completed.length}개 이미지 ZIP 생성 중...`;
+
+            const JSZip = await _loadJSZip();
+            const zip = new JSZip();
+
+            for (const sceneNo of completed) {
+                const r = _fpResults[sceneNo];
+                let blob = r.blob;
+                if (!blob && r.imageUrl) {
+                    try { blob = await (await fetch(r.imageUrl)).blob(); } catch(e) { continue; }
+                }
+                if (blob) {
+                    const ext = blob.type?.includes('png') ? 'png' : 'jpg';
+                    zip.file(`scene_${sceneNo}.${ext}`, blob);
+                }
+            }
+
+            const content = await zip.generateAsync({ type: 'blob' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(content);
+            a.download = 'freepik_images.zip';
+            a.click();
+            URL.revokeObjectURL(a.href);
+
+            if (prog) prog.textContent = `✅ ${completed.length}개 이미지 ZIP 다운로드 완료!`;
         }
     </script>
 
