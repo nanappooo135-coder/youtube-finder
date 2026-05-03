@@ -21844,11 +21844,15 @@ JSON만 출력. 코드블록 마커 금지.`;
             const scenes = window._spLastScenes || [];
             const scene = scenes.find(s => s.sceneNo === sceneNo);
             if (!scene) return '';
-            let prompt = scene.nano_prompt || '';
-            const style = (document.getElementById('fpStylePrompt')?.value || '').trim();
-            if (style) prompt = prompt + ', ' + style;
-            if (prompt.length > 2900) prompt = prompt.substring(0, 2900);
-            return prompt;
+            const imagePrompt = scene.nano_prompt || '';
+            let style = (document.getElementById('fpStylePrompt')?.value || '').trim();
+            // 이미지 프롬프트 원본 보존, 그림체가 길면 그림체를 줄임
+            const maxStyle = 2900 - imagePrompt.length;
+            if (style && maxStyle > 50) {
+                style = style.substring(0, maxStyle);
+                return imagePrompt + ', ' + style;
+            }
+            return imagePrompt.substring(0, 2900);
         }
 
         // CORS 프록시 래핑
