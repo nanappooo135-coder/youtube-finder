@@ -2722,16 +2722,6 @@
                                 </details>
                             </div>
 
-                            <!-- xAI API Key -->
-                            <div id="fpXaiKeyBox" style="margin-bottom:10px;padding:10px;background:#f0f4ff;border:2px solid #4c6ef5;border-radius:8px;display:none;">
-                                <label style="font-size:0.8rem;font-weight:600;color:#364fc7;">🤖 xAI API Key (Grok)</label>
-                                <div style="display:flex;gap:6px;margin-top:4px;">
-                                    <input type="password" id="fpXaiApiKey" placeholder="xAI API key 입력 (console.x.ai에서 발급)" style="flex:1;padding:8px 10px;border:2px solid #bac8ff;border-radius:6px;font-size:0.82rem;">
-                                    <button onclick="document.getElementById('fpXaiApiKey').type=document.getElementById('fpXaiApiKey').type==='password'?'text':'password'" class="search-btn" style="background:#868e96;border-color:#868e96;padding:6px 10px;font-size:0.75rem;">👁</button>
-                                    <button onclick="_fpSaveXaiKey()" class="search-btn" style="background:#4c6ef5;border-color:#4c6ef5;white-space:nowrap;font-size:0.82rem;">💾 저장</button>
-                                </div>
-                                <p style="font-size:0.68rem;color:#999;margin-top:4px;">$0.07/장 · 동기식 (즉시 반환) · console.x.ai에서 API 키 발급</p>
-                            </div>
 
                             <!-- 대본 컨텍스트 (자동 로드) -->
                             <details style="margin-bottom:10px;">
@@ -2778,9 +2768,6 @@
                                         <optgroup label="── 나노바나나 ──">
                                             <option value="nano_pro" selected>🍌 나노바나나2 (기본)</option>
                                             <option value="nano_flash">⚡ 나노바나나2 Flash (초고속)</option>
-                                        </optgroup>
-                                        <optgroup label="── Grok (xAI) ──">
-                                            <option value="grok_aurora">🤖 Grok Aurora (고품질)</option>
                                         </optgroup>
                                     </select>
                                 </div>
@@ -19177,21 +19164,45 @@ Clothing: functional civilian or military-style clothing, cold-weather gear allo
 MOOD:
 Serious, analytical, geopolitical documentary tone.`;
 
-        const SP_STYLE_PSYCHOLOGY = `semi-realistic 2D editorial illustration style, hand-drawn pencil sketch feeling, clearly illustrated, not rendered, not photographic, visible pencil linework with natural grain and softness, pencil sketch outlines combined with gentle colored-pencil shading, mostly flat base colors with soft pencil-based shading only, subtle canvas or drawing-paper texture visible in background and shadows, no text, no letters, no numbers, no typography, no written words anywhere in the image, NO 3D, NO CGI, NO anime, NO fantasy style, NO Pixar, NO Unreal Engine, NO glossy or plastic surfaces, NO photorealism.
+        const SP_STYLE_PSYCHOLOGY = `STYLE:
+hand-drawn pencil sketch illustration,
+visible pencil linework with natural grain and softness,
+pencil sketch outlines with gentle colored-pencil shading,
+flat base colors with soft pencil-based shading,
+subtle canvas or drawing-paper texture in background and shadows.
 
-characters: simple off-white round-headed character (not pure white, slightly warm cream tone), clearly 2D illustrated (not a 3D sphere), human-like cartoon proportions, simplified human proportions (slightly stylized, not realistic anatomy), minimal facial features: small dot or oval eyes, simple mouth line, subtle eyebrows for emotion, expressions are restrained and calm (worried, thoughtful, neutral, quietly focused), NOT exaggerated, NOT chibi, NOT mascot-like.
+CHARACTERS:
+simple off-white round-headed character (slightly warm cream tone),
+clearly 2D illustrated, human-like cartoon proportions,
+simplified human proportions (slightly stylized),
+minimal facial features: small dot or oval eyes, simple mouth line, subtle eyebrows,
+restrained calm expressions (worried, thoughtful, neutral, quietly focused).
 
-body & pose: simplified but human-like limbs, natural proportions, gentle, everyday body language, observational poses, NOT heroic, NOT dramatic.
+BODY & POSE:
+simplified but human-like limbs, natural proportions,
+gentle everyday body language, observational poses.
 
-clothing rule (STRICT): ONLY modern South Korean everyday clothing. Allowed: t-shirts, sweaters, hoodies, cardigans, shirts, jeans, slacks, skirts, simple jackets, padding jackets, coats, sneakers, loafers, flat shoes. NOT allowed: robes, gowns, bathrobes, kimonos, hanbok, traditional clothing, ceremonial outfits, historical garments, fantasy or symbolic costumes.
+CLOTHING:
+modern South Korean everyday clothing only: t-shirts, sweaters, hoodies, cardigans, shirts, jeans, slacks, skirts, simple jackets, padding jackets, coats, sneakers, loafers, flat shoes.
 
-background & environment: modern South Korean everyday environments, Korean apartments, small living rooms, bedrooms, local cafes, offices, classrooms, streets, contemporary Korean urban and residential scenery, wide compositions with clear depth and scale, backgrounds feel illustrated but spatially believable.
+BACKGROUND:
+modern South Korean everyday environments: apartments, small living rooms, bedrooms, local cafes, offices, classrooms, streets,
+wide compositions with clear depth and scale, illustrated but spatially believable.
 
-lighting & light emphasis: bright natural or artificial light sources clearly present (sunlight through windows, warm sunset light, soft moonlight, streetlights, car headlights, indoor lamps). Light-emitting areas are visually emphasized with richer color, higher saturation, and brighter highlights, while non-lit areas remain soft and balanced. Light creates gentle color bloom and warmth, using colored-pencil style highlight emphasis (not realistic glow or rendering). Contrast is controlled but light sources feel vivid and lively.
+LIGHTING:
+bright natural or artificial light sources (sunlight through windows, warm sunset light, soft moonlight, streetlights, indoor lamps),
+light areas emphasized with richer color, higher saturation, brighter highlights,
+gentle color bloom and warmth, colored-pencil style highlight emphasis.
 
-color tone: overall bright and warm palette, light creams, warm beiges, soft wood tones, muted greens and gentle blues for shadows, BUT areas touched by light show clearer, more vivid color intensity, no neon, no harsh glare, no dark or gloomy mood.
+COLOR:
+bright warm palette, light creams, warm beiges, soft wood tones,
+muted greens and gentle blues for shadows,
+light-touched areas show vivid color intensity.
 
-overall mood: bright, psychologically safe illustration, uplifting and reassuring, emotionally warm rather than dramatic, feels like a modern Korean psychology illustration where light gently guides the viewer's attention.`;
+MOOD:
+bright, psychologically safe, uplifting and reassuring,
+emotionally warm, modern Korean psychology illustration,
+light gently guides the viewer's attention.`;
 
         let _spN = 5;
         let _spChannel = 'economics';
