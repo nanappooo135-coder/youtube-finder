@@ -2791,6 +2791,19 @@
                                 <button onclick="_fpDownloadSelected()" class="search-btn" style="background:#1c7ed6;border-color:#1c7ed6;font-size:0.78rem;">📦 선택 다운로드 (ZIP)</button>
                             </div>
 
+                            <!-- 커스텀 프롬프트 테스트 -->
+                            <details style="margin-bottom:12px;border:2px solid #e9ecef;border-radius:8px;padding:0;">
+                                <summary style="cursor:pointer;padding:10px 14px;font-weight:700;font-size:0.82rem;color:#7048e8;background:#f8f0ff;border-radius:6px;">🧪 커스텀 프롬프트 테스트 (직접 입력)</summary>
+                                <div style="padding:12px;">
+                                    <textarea id="fpTestPrompt" rows="3" placeholder="테스트할 프롬프트를 입력하세요... (예: Donald Trump giving a speech at a podium)" style="width:100%;padding:10px;border:2px solid #d0bfff;border-radius:8px;font-size:0.82rem;resize:vertical;line-height:1.4;font-family:'Courier New',monospace;box-sizing:border-box;"></textarea>
+                                    <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
+                                        <button onclick="_fpTestGenerate()" class="search-btn" style="background:#7048e8;border-color:#7048e8;font-size:0.82rem;font-weight:700;">🚀 테스트 생성</button>
+                                        <span id="fpTestStatus" style="font-size:0.78rem;color:#666;"></span>
+                                    </div>
+                                    <div id="fpTestResult" style="margin-top:10px;"></div>
+                                </div>
+                            </details>
+
                             <!-- 진행 상태 -->
                             <div id="fpProgress" style="font-size:0.82rem;color:#7048e8;margin-bottom:8px;font-weight:600;"></div>
                             <div id="fpProgressBar" style="display:none;margin-bottom:10px;background:#e9ecef;border-radius:6px;overflow:hidden;height:8px;">
@@ -21921,6 +21934,72 @@ JSON만 출력. 코드블록 마커 금지.`;
             const prog = document.getElementById('fpProgress');
             if (prog) prog.textContent = hint;
             setTimeout(() => { if (prog && prog.textContent === hint) prog.textContent = ''; }, 3000);
+        }
+
+        // 커스텀 프롬프트 테스트
+        async function _fpTestGenerate() {
+            const apiKey = _fpGetApiKey();
+            if (!apiKey) return alert('API key를 먼저 입력/저장하세요.');
+            let prompt = (document.getElementById('fpTestPrompt')?.value || '').trim();
+            if (!prompt) return alert('프롬프트를 입력하세요.');
+            const statusEl = document.getElementById('fpTestStatus');
+            const resultEl = document.getElementById('fpTestResult');
+            const qualityBoost = document.getElementById('fpQualityBoost')?.checked;
+            if (qualityBoost) {
+                prompt = 'masterpiece, best quality, ultra-detailed, sharp focus, professional lighting, cinematic composition, 8K render, ' + prompt + ', highly detailed textures, volumetric lighting, photorealistic rendering';
+            }
+            if (prompt.length > 3000) prompt = prompt.substring(0, 3000);
+            if (statusEl) statusEl.textContent = '⏳ 생성 요청 중...';
+            if (resultEl) resultEl.innerHTML = '';
+            try {
+                const config = _fpGetModelConfig();
+                const reqBody = JSON.stringify(config.body(prompt));
+                const reqHeaders = { 'Content-Type': 'application/json', 'x-magnific-api-key': apiKey };
+                let createRes;
+                try {
+                    createRes = await fetch(config.endpoint, { method: 'POST', headers: reqHeaders, body: reqBody });
+                } catch (e) {
+                    if (statusEl) statusEl.textContent = '🔄 프록시 경유 시도...';
+                    createRes = await fetch(_fpProxyUrl(config.endpoint), { method: 'POST', headers: reqHeaders, body: reqBody });
+                }
+                if (!createRes.ok) {
+                    const errText = await createRes.text();
+                    throw new Error(`API ${createRes.status}: ${errText.substring(0, 300)}`);
+                }
+                const createData = await createRes.json();
+                const taskId = createData.data?.task_id || createData.task_id;
+                if (!taskId) throw new Error('task_id 없음');
+                if (statusEl) statusEl.textContent = '🔄 생성 중... (10~90초 소요)';
+                // 폴링
+                const pollUrl = config.pollBase + '/' + taskId;
+                for (let i = 0; i < 60; i++) {
+                    await new Promise(r => setTimeout(r, 5000));
+                    let pollRes;
+                    try {
+                        pollRes = await fetch(pollUrl, { headers: { 'x-magnific-api-key': apiKey } });
+                    } catch (e) {
+                        pollRes = await fetch(_fpProxyUrl(pollUrl), { headers: { 'x-magnific-api-key': apiKey } });
+                    }
+                    if (!pollRes.ok) continue;
+                    const pollData = await pollRes.json();
+                    const status = pollData.data?.status || pollData.status;
+                    if (status === 'COMPLETED') {
+                        const imgUrl = pollData.data?.generated_images?.[0] || pollData.data?.image?.url || '';
+                        if (statusEl) statusEl.textContent = '✅ 완료!';
+                        if (resultEl) resultEl.innerHTML = imgUrl
+                            ? `<img src="${imgUrl}" style="max-width:100%;border-radius:8px;border:2px solid #7048e8;margin-top:6px;" onclick="window.open(this.src)"><br><a href="${imgUrl}" download="test_image.png" style="font-size:0.78rem;">💾 다운로드</a>`
+                            : '<span style="color:red;">이미지 URL 없음 (안전 필터에 의해 차단되었을 수 있음)</span>';
+                        return;
+                    } else if (status === 'FAILED') {
+                        throw new Error('생성 실패: ' + JSON.stringify(pollData.data || pollData).substring(0, 200));
+                    }
+                    if (statusEl) statusEl.textContent = `🔄 생성 중... (${(i+1)*5}초 경과)`;
+                }
+                throw new Error('타임아웃 (5분 초과)');
+            } catch (e) {
+                if (statusEl) statusEl.textContent = '';
+                if (resultEl) resultEl.innerHTML = `<span style="color:red;">❌ ${e.message}</span>`;
+            }
         }
 
         // 단건 생성
