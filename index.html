@@ -2772,13 +2772,9 @@
                                 </div>
                             </div>
 
-                            <!-- 품질 부스트 -->
-                            <div style="margin-bottom:10px;display:flex;align-items:center;gap:10px;">
-                                <label style="display:flex;align-items:center;gap:5px;font-size:0.8rem;cursor:pointer;">
-                                    <input type="checkbox" id="fpQualityBoost" checked style="width:16px;height:16px;">
-                                    <span style="font-weight:600;">✨ 품질 부스트</span>
-                                    <span style="color:#888;font-size:0.72rem;">(프롬프트에 고품질 키워드 자동 추가 — GenSpark 수준 품질)</span>
-                                </label>
+                            <!-- Google Search Grounding 안내 -->
+                            <div style="margin-bottom:10px;padding:6px 10px;background:#e8f5e9;border-radius:6px;font-size:0.75rem;color:#2e7d32;">
+                                🔍 Google Search Grounding 활성화됨 — 실제 사물/장소 참조로 이미지 품질 향상
                             </div>
 
                             <!-- 컨트롤 버튼 -->
@@ -21868,19 +21864,12 @@ JSON만 출력. 코드블록 마커 금지.`;
             if (!scene) return '';
             const imagePrompt = scene.nano_prompt || '';
             let style = (document.getElementById('fpStylePrompt')?.value || '').trim();
-            const qualityBoost = document.getElementById('fpQualityBoost')?.checked;
-            const boostPrefix = qualityBoost ? 'masterpiece, best quality, ultra-detailed, sharp focus, professional lighting, cinematic composition, 8K render, ' : '';
-            const boostSuffix = qualityBoost ? ', highly detailed textures, volumetric lighting, photorealistic rendering' : '';
-            const base = boostPrefix + imagePrompt;
-            const maxTotal = 3000;
-            let parts = [base];
-            if (style) parts.push(style);
-            parts.push(boostSuffix.replace(/^, /, ''));
-            let result = parts.filter(Boolean).join(', ');
-            if (result.length > maxTotal) {
-                result = (boostPrefix + imagePrompt).substring(0, maxTotal - boostSuffix.length) + boostSuffix;
+            const maxStyle = 2900 - imagePrompt.length;
+            if (style && maxStyle > 50) {
+                style = style.substring(0, maxStyle);
+                return (imagePrompt + ', ' + style).substring(0, 3000);
             }
-            return result.substring(0, maxTotal);
+            return imagePrompt.substring(0, 3000);
         }
 
         // CORS 프록시 래핑
@@ -21910,13 +21899,13 @@ JSON만 출력. 코드블록 마커 금지.`;
                 return {
                     endpoint: 'https://api.magnific.com/v1/ai/text-to-image/nano-banana-pro',
                     pollBase: 'https://api.magnific.com/v1/ai/text-to-image/nano-banana-pro',
-                    body: (prompt) => ({ prompt, aspect_ratio: nanoAspectMap[aspectRatio] || '16:9', resolution: nanoRes[resolution] || '2K' })
+                    body: (prompt) => ({ prompt, aspect_ratio: nanoAspectMap[aspectRatio] || '16:9', resolution: nanoRes[resolution] || '2K', use_google_search_tool: true })
                 };
             } else if (val === 'nano_flash') {
                 return {
                     endpoint: 'https://api.magnific.com/v1/ai/text-to-image/nano-banana-pro-flash',
                     pollBase: 'https://api.magnific.com/v1/ai/text-to-image/nano-banana-pro-flash',
-                    body: (prompt) => ({ prompt, aspect_ratio: nanoAspectMap[aspectRatio] || '16:9', resolution: nanoRes[resolution] || '2K' })
+                    body: (prompt) => ({ prompt, aspect_ratio: nanoAspectMap[aspectRatio] || '16:9', resolution: nanoRes[resolution] || '2K', use_google_search_tool: true })
                 };
             } else {
                 const mysticModel = val.replace('mystic_', '');
@@ -21944,10 +21933,6 @@ JSON만 출력. 코드블록 마커 금지.`;
             if (!prompt) return alert('프롬프트를 입력하세요.');
             const statusEl = document.getElementById('fpTestStatus');
             const resultEl = document.getElementById('fpTestResult');
-            const qualityBoost = document.getElementById('fpQualityBoost')?.checked;
-            if (qualityBoost) {
-                prompt = 'masterpiece, best quality, ultra-detailed, sharp focus, professional lighting, cinematic composition, 8K render, ' + prompt + ', highly detailed textures, volumetric lighting, photorealistic rendering';
-            }
             if (prompt.length > 3000) prompt = prompt.substring(0, 3000);
             if (statusEl) statusEl.textContent = '⏳ 생성 요청 중...';
             if (resultEl) resultEl.innerHTML = '';
