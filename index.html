@@ -19137,46 +19137,31 @@ Example format:
         // 셀팟 기본 변환 (나레이션만 모드) — N문장 묶음 + Gemini 분석
         // ============================================================
 
-        const SP_STYLE_ECONOMICS = `STYLE BASE (ALWAYS APPLY):
-semi-realistic 2D editorial illustration style,
-fully illustrated and hand-drawn,
-NOT rendered, NOT photorealistic,
-NOT animation-style, NOT anime-style,
+        const SP_STYLE_ECONOMICS = `STYLE:
+semi-realistic 2D editorial illustration,
+fully hand-drawn with clean human linework and slight imperfections,
+flat graphic color fills with controlled tonal variation,
+matte flat surfaces, hand-painted texture feel.
 
-clean but human linework with slight imperfections,
-flat or graphic color fills with controlled tonal variation,
-3D rendering prohibited,
-CGI prohibited,
-Pixar style prohibited,
-Unreal Engine style prohibited,
-no photorealistic material simulation,
-no plastic or glossy surface realism.
-
-COLOR & VISUAL TONE:
+COLOR & TONE:
 balanced warm-cool color palette,
-both painterly and graphic poster-style looks are allowed,
-clear, bold color separation is allowed when appropriate,
-higher contrast compositions are allowed,
-designed, editorial, or poster-like clarity is acceptable,
-lighting effects may be stylized and expressive.
+bold color separation, higher contrast compositions,
+editorial poster-like clarity,
+stylized expressive lighting.
 
-CHARACTER RULES (CRITICAL):
-1) REAL PUBLIC FIGURES (EXPLICITLY NAMED): keep recognizable likeness, semi-realistic editorial portrait style.
+CHARACTERS:
+1) REAL PUBLIC FIGURES (named): recognizable likeness, semi-realistic editorial portrait.
+2) ALL OTHER PEOPLE (unnamed):
+simplified semi-realistic human figures,
+natural body proportions, realistic head-to-body ratio,
+arms and legs with visible volume and moderate thickness,
+solid 2D illustrated anatomy, structurally accurate body form.
+Face: visible eyes/nose/mouth, soft jawline, restrained serious expression.
+Hair: simplified natural hair mass, flat color with minimal shading.
+Clothing: functional civilian or military-style clothing, cold-weather gear allowed.
 
-2) ALL OTHER PEOPLE (NO REAL NAME GIVEN):
-All unnamed individuals (soldiers, civilians, residents, protesters, journalists, officials, diplomats, workers, crowds, anonymous politicians) MUST be rendered as simplified semi-realistic human figures.
-- natural human body proportions, realistic head-to-body ratio
-- arms and legs with visible volume, moderate limb thickness (NOT thin lines)
-- solid 2D illustrated anatomy, simplified detail but structurally accurate body form
-- subtle muscle or fabric fold indication allowed (non-photorealistic)
-Face: simplified but natural facial structure, visible eyes/nose/mouth (not dot-only), soft jawline, restrained expressions (serious, neutral, focused, calm), never cartoonish, never chibi.
-STRICTLY PROHIBITED: classic stick figure, round floating head with line body, line-only limbs, ultra-thin arms or legs.
-Hair: simplified natural hair mass, flat color with minimal shading, no strand realism.
-Clothing: functional civilian or military-style clothing, cold-weather gear allowed, NO logos, NO readable text, NO fictional symbols.
-
-OVERALL MOOD & INTENT:
-Serious, analytical, geopolitical, documentary tone.
-Avoid: hero worship, romanticization, sentimental framing, propaganda-style imagery, emotional manipulation.`;
+MOOD:
+Serious, analytical, geopolitical documentary tone.`;
 
         const SP_STYLE_PSYCHOLOGY = `semi-realistic 2D editorial illustration style, hand-drawn pencil sketch feeling, clearly illustrated, not rendered, not photographic, visible pencil linework with natural grain and softness, pencil sketch outlines combined with gentle colored-pencil shading, mostly flat base colors with soft pencil-based shading only, subtle canvas or drawing-paper texture visible in background and shadows, no text, no letters, no numbers, no typography, no written words anywhere in the image, NO 3D, NO CGI, NO anime, NO fantasy style, NO Pixar, NO Unreal Engine, NO glossy or plastic surfaces, NO photorealism.
 
@@ -21858,18 +21843,30 @@ JSON만 출력. 코드블록 마커 금지.`;
             return [...document.querySelectorAll('.fp-scene-check:checked')].map(cb => parseInt(cb.dataset.scene));
         }
 
+        function _fpStripCondensedStyle(prompt) {
+            let p = prompt;
+            p = p.replace(/\s*ABSOLUTE RULE:\s*NO text[\s\S]*$/i, '');
+            p = p.replace(/\s*simplified semi-realistic human figure[^.]*\.\s*/gi, ' ');
+            p = p.replace(/\s*A semi-realistic 2D editorial illustration[^.]*\.\s*/gi, ' ');
+            p = p.replace(/\s*serious analytical documentary tone[^.]*\.\s*/gi, ' ');
+            p = p.replace(/\s*fully illustrated and hand-drawn[^.]*\.\s*/gi, ' ');
+            return p.trim();
+        }
+
+        const _fpAbsoluteRule = 'ABSOLUTE RULE: NO text, NO letters, NO words, NO numbers, NO typography, NO captions, NO labels, NO signs, NO logos, NO watermarks, NO Korean text, NO English text, NO characters of ANY language anywhere in the image. The image must be 100% purely visual with ZERO text elements.';
+
         function _fpBuildPrompt(sceneNo) {
             const scenes = window._spLastScenes || [];
             const scene = scenes.find(s => s.sceneNo === sceneNo);
             if (!scene) return '';
-            const imagePrompt = scene.nano_prompt || '';
+            const rawPrompt = scene.nano_prompt || '';
             let style = (document.getElementById('fpStylePrompt')?.value || '').trim();
-            const maxStyle = 2900 - imagePrompt.length;
-            if (style && maxStyle > 50) {
-                style = style.substring(0, maxStyle);
-                return (imagePrompt + ', ' + style).substring(0, 3000);
+            if (style) {
+                const sceneDesc = _fpStripCondensedStyle(rawPrompt);
+                const combined = sceneDesc + '\n\n' + style + '\n\n' + _fpAbsoluteRule;
+                return combined.substring(0, 3000);
             }
-            return imagePrompt.substring(0, 3000);
+            return rawPrompt.substring(0, 3000);
         }
 
         // CORS 프록시 래핑
