@@ -19152,72 +19152,62 @@ Example format:
         // 셀팟 기본 변환 (나레이션만 모드) — N문장 묶음 + Gemini 분석
         // ============================================================
 
-        const SP_STYLE_ECONOMICS = `STYLE:
-semi-realistic 2D editorial illustration,
-fully hand-drawn with clean human linework and slight imperfections,
-flat graphic color fills with controlled tonal variation,
-matte flat surfaces, hand-painted texture feel.
+        const SP_STYLE_ECONOMICS = `STYLE BASE (ALWAYS APPLY):
+semi-realistic 2D editorial illustration style,
+fully illustrated and hand-drawn,
+NOT rendered, NOT photorealistic,
+NOT animation-style, NOT anime-style,
 
-COLOR & TONE:
-rich saturated color palette, deep vibrant tones,
-bold color depth with strong contrast,
-editorial poster-like clarity with vivid hues,
-stylized expressive lighting with warm color bloom.
+clean but human linework with slight imperfections,
+flat or graphic color fills with controlled tonal variation,
+3D rendering prohibited,
+CGI prohibited,
+Pixar style prohibited,
+Unreal Engine style prohibited,
+no photorealistic material simulation,
+no plastic or glossy surface realism.
 
-CHARACTERS:
-1) REAL PUBLIC FIGURES (named): recognizable likeness, semi-realistic editorial portrait.
-2) ALL OTHER PEOPLE (unnamed):
-simplified semi-realistic human figures,
-natural body proportions, realistic head-to-body ratio,
-arms and legs with visible volume and moderate thickness,
-solid 2D illustrated anatomy, structurally accurate body form.
-Face: visible eyes/nose/mouth, soft jawline, restrained serious expression.
-Hair: simplified natural hair mass, flat color with minimal shading.
-Clothing: functional professional or casual clothing, context-appropriate attire.
+COLOR & VISUAL TONE:
+balanced warm-cool color palette,
+both painterly and graphic poster-style looks are allowed,
+clear, bold color separation is allowed when appropriate,
+higher contrast compositions are allowed,
+designed, editorial, or poster-like clarity is acceptable,
+lighting effects may be stylized and expressive.
 
-MOOD:
-Serious, analytical, educational documentary tone.`;
+CHARACTER RULES (CRITICAL):
+1) REAL PUBLIC FIGURES (EXPLICITLY NAMED): keep recognizable likeness, semi-realistic editorial portrait style.
 
-        const SP_STYLE_PSYCHOLOGY = `STYLE:
-hand-drawn pencil sketch illustration with strong visible pencil strokes,
-bold pencil linework with natural grain and confident texture,
-pencil sketch outlines with rich colored-pencil shading,
-vivid base colors with layered pencil-based depth,
-textured canvas or drawing-paper feel throughout.
+2) ALL OTHER PEOPLE (NO REAL NAME GIVEN):
+All unnamed individuals (soldiers, civilians, residents, protesters, journalists, officials, diplomats, workers, crowds, anonymous politicians) MUST be rendered as simplified semi-realistic human figures.
+- natural human body proportions, realistic head-to-body ratio
+- arms and legs with visible volume, moderate limb thickness (NOT thin lines)
+- solid 2D illustrated anatomy, simplified detail but structurally accurate body form
+- subtle muscle or fabric fold indication allowed (non-photorealistic)
+Face: simplified but natural facial structure, visible eyes/nose/mouth (not dot-only), soft jawline, restrained expressions (serious, neutral, focused, calm), never cartoonish, never chibi.
+STRICTLY PROHIBITED: classic stick figure, round floating head with line body, line-only limbs, ultra-thin arms or legs.
+Hair: simplified natural hair mass, flat color with minimal shading, no strand realism.
+Clothing: functional civilian or military-style clothing, cold-weather gear allowed, NO logos, NO readable text, NO fictional symbols.
 
-CHARACTERS:
-simple off-white round-headed character (slightly warm cream tone),
-clearly 2D illustrated, human-like cartoon proportions,
-simplified human proportions (slightly stylized),
-minimal facial features: small dot or oval eyes, simple mouth line, subtle eyebrows,
-restrained calm expressions (worried, thoughtful, neutral, quietly focused).
+OVERALL MOOD & INTENT:
+Serious, analytical, geopolitical, documentary tone.
+Avoid: hero worship, romanticization, sentimental framing, propaganda-style imagery, emotional manipulation.`;
 
-BODY & POSE:
-simplified but human-like limbs, natural proportions,
-gentle everyday body language, observational poses.
+        const SP_STYLE_PSYCHOLOGY = `semi-realistic 2D editorial illustration style, hand-drawn pencil sketch feeling, clearly illustrated, not rendered, not photographic, visible pencil linework with natural grain and softness, pencil sketch outlines combined with gentle colored-pencil shading, mostly flat base colors with soft pencil-based shading only, subtle canvas or drawing-paper texture visible in background and shadows, no text, no letters, no numbers, no typography, no written words anywhere in the image, NO 3D, NO CGI, NO anime, NO fantasy style, NO Pixar, NO Unreal Engine, NO glossy or plastic surfaces, NO photorealism.
 
-CLOTHING:
-modern South Korean everyday clothing only: t-shirts, sweaters, hoodies, cardigans, shirts, jeans, slacks, skirts, simple jackets, padding jackets, coats, sneakers, loafers, flat shoes.
+characters: simple off-white round-headed character (not pure white, slightly warm cream tone), clearly 2D illustrated (not a 3D sphere), human-like cartoon proportions, simplified human proportions (slightly stylized, not realistic anatomy), minimal facial features: small dot or oval eyes, simple mouth line, subtle eyebrows for emotion, expressions are restrained and calm (worried, thoughtful, neutral, quietly focused), NOT exaggerated, NOT chibi, NOT mascot-like.
 
-BACKGROUND:
-modern South Korean everyday environments: apartments, small living rooms, bedrooms, local cafes, offices, classrooms, streets,
-wide compositions with clear depth and scale, illustrated but spatially believable.
+body & pose: simplified but human-like limbs, natural proportions, gentle, everyday body language, observational poses, NOT heroic, NOT dramatic.
 
-LIGHTING:
-bright natural or artificial light sources (sunlight through windows, warm sunset light, soft moonlight, streetlights, indoor lamps),
-light areas emphasized with richer color, higher saturation, brighter highlights,
-gentle color bloom and warmth, colored-pencil style highlight emphasis.
+clothing rule (STRICT): ONLY modern South Korean everyday clothing. Allowed: t-shirts, sweaters, hoodies, cardigans, shirts, jeans, slacks, skirts, simple jackets, padding jackets, coats, sneakers, loafers, flat shoes. NOT allowed: robes, gowns, bathrobes, kimonos, hanbok, traditional clothing, ceremonial outfits, historical garments, fantasy or symbolic costumes.
 
-COLOR:
-rich warm saturated palette, deep creams, warm golden beiges,
-soft wood tones with depth, muted greens and gentle blues for shadows,
-light-touched areas show strong vivid color intensity,
-overall deep and vibrant color presence.
+background & environment: modern South Korean everyday environments, Korean apartments, small living rooms, bedrooms, local cafes, offices, classrooms, streets, contemporary Korean urban and residential scenery, wide compositions with clear depth and scale, backgrounds feel illustrated but spatially believable.
 
-MOOD:
-bright, psychologically safe, uplifting and reassuring,
-emotionally warm, modern Korean psychology illustration,
-light gently guides the viewer's attention.`;
+lighting & light emphasis: bright natural or artificial light sources clearly present (sunlight through windows, warm sunset light, soft moonlight, streetlights, car headlights, indoor lamps). Light-emitting areas are visually emphasized with richer color, higher saturation, and brighter highlights, while non-lit areas remain soft and balanced. Light creates gentle color bloom and warmth, using colored-pencil style highlight emphasis (not realistic glow or rendering). Contrast is controlled but light sources feel vivid and lively.
+
+color tone: overall bright and warm palette, light creams, warm beiges, soft wood tones, muted greens and gentle blues for shadows, BUT areas touched by light show clearer, more vivid color intensity, no neon, no harsh glare, no dark or gloomy mood.
+
+overall mood: bright, psychologically safe illustration, uplifting and reassuring, emotionally warm rather than dramatic, feels like a modern Korean psychology illustration where light gently guides the viewer's attention.`;
 
         let _spN = 5;
         let _spChannel = 'economics';
