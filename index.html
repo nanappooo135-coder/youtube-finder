@@ -2556,16 +2556,6 @@
                     <div class="section-content">
                         <div id="spSummary" style="margin-bottom:12px;padding:12px;background:#f5f5f5;border-radius:8px;font-size:0.9rem;"></div>
 
-                        <!-- 🏷️ 썸네일 텍스트 추천 (푸짐한경제학 3요소 공식) -->
-                        <div id="spThumbTextSection" style="margin-bottom:18px;padding:14px;background:linear-gradient(135deg,#fff5f5 0%,#fff0f6 100%);border:2px solid #e83e8c;border-radius:10px;">
-                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
-                                <div style="font-weight:700;color:#c2185b;font-size:0.98rem;">🏷️ 썸네일 텍스트 추천 <span style="font-size:0.78rem;font-weight:400;color:#888;">(푸짐한경제학 3요소 공식 · 대본 전체 핵심 기반 · Gemini Pro)</span></div>
-                                <button id="spThumbTextBtn" class="search-btn" onclick="spGenerateThumbnailTexts()" style="padding:8px 18px;font-size:0.88rem;background:#e83e8c;border-color:#e83e8c;">✨ 5개 생성</button>
-                            </div>
-                            <div id="spThumbTextStatus" style="font-size:0.8rem;color:#888;margin-bottom:8px;"></div>
-                            <div id="spThumbTextResults"></div>
-                        </div>
-
                         <!-- 결과 탭 헤더 -->
                         <div style="display:flex;gap:4px;margin-bottom:12px;border-bottom:2px solid #dee2e6;flex-wrap:wrap;">
                             <button class="sp-result-tab active" data-tab="sellpot" onclick="_spSwitchResultTab('sellpot')" style="padding:10px 16px;background:#7048e8;color:#fff;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">📋 셀팟 붙여넣기</button>
@@ -2574,6 +2564,7 @@
                             <button class="sp-result-tab" data-tab="real" onclick="_spSwitchResultTab('real')" style="padding:10px 16px;background:#f1f3f5;color:#495057;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">📷 실사 검색</button>
                             <button class="sp-result-tab" data-tab="claude" onclick="_spSwitchResultTab('claude')" style="padding:10px 16px;background:#f1f3f5;color:#495057;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">📊 Claude Design</button>
                             <button class="sp-result-tab" data-tab="freepik" onclick="_spSwitchResultTab('freepik')" style="padding:10px 16px;background:#f1f3f5;color:#495057;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">🖼️ 프리픽 이미지</button>
+                            <button class="sp-result-tab" data-tab="thumbtext" onclick="_spSwitchResultTab('thumbtext')" style="padding:10px 16px;background:#f1f3f5;color:#495057;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">🏷️ 썸네일 텍스트</button>
                         </div>
 
                         <!-- 셀팟 붙여넣기 탭 -->
@@ -2819,6 +2810,19 @@
 
                             <!-- 장면 리스트 -->
                             <div id="fpSceneList" style="display:flex;flex-direction:column;gap:8px;"></div>
+                        </div>
+
+                        <!-- 🏷️ 썸네일 텍스트 탭 (푸짐한경제학 3요소 공식, 10개) -->
+                        <div id="spTab_thumbtext" class="sp-result-pane" style="display:none;">
+                            <div style="margin-bottom:12px;padding:12px 14px;background:linear-gradient(135deg,#fff5f5 0%,#fff0f6 100%);border:2px solid #e83e8c;border-radius:10px;">
+                                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:8px;">
+                                    <div style="font-weight:700;color:#c2185b;font-size:0.95rem;">🏷️ 썸네일 텍스트 추천 <span style="font-size:0.78rem;font-weight:400;color:#888;">(푸짐한경제학 3요소 공식 · 대본 전체 핵심 기반 · Gemini Pro)</span></div>
+                                    <button id="spThumbTextBtn" class="search-btn" onclick="spGenerateThumbnailTexts()" style="padding:8px 18px;font-size:0.88rem;background:#e83e8c;border-color:#e83e8c;">✨ 10개 생성</button>
+                                </div>
+                                <div id="spThumbTextStatus" style="font-size:0.8rem;color:#888;margin-bottom:6px;"></div>
+                                <div id="spThumbTextCore" style="font-size:0.85rem;color:#c2185b;background:#fff;padding:8px 10px;border-radius:6px;border:1px dashed #f8b6d0;display:none;"></div>
+                            </div>
+                            <div id="spThumbTextResults"></div>
                         </div>
 
                     </div>
@@ -21669,7 +21673,43 @@ JSON만 출력. 코드블록 마커 금지.`;
         // ===== 🏷️ 썸네일 텍스트 추천 (푸짐한경제학 3요소 공식) =====
         const THUMB_TEXT_PROMPT = `당신은 푸짐한경제학(유튜브 채널) 썸네일 텍스트 카피라이터입니다.
 
-## 채널 검증 공식 (실제 33만~46만 조회수 영상 분석)
+# ⚠️ 가장 중요한 원칙 — 먼저 핵심 1줄을 잡고, 그것만으로 10개를 만든다
+
+## STEP 1. 대본 전체에서 "핵심 메시지" 한 줄 추출
+대본을 처음부터 끝까지 읽고, "이 영상이 결국 무엇에 관한 영상인가?"를 **2~6 단어 묶음**으로 압축하세요.
+
+핵심 메시지는 **시청자가 영상을 본 후 머리에 남길 단 하나의 사실/감정**입니다. 절대 곁가지 일화·통계·비유를 핵심으로 잡지 마세요.
+
+### ❌ 잘못된 핵심 추출 예시 (실제로 자주 일어나는 실수)
+대본 주제: "중국이 자국민 여권 압수, 탈출 못 하게 막는다"
+
+대본 안에는 부수적으로 이런 게 등장합니다:
+- 1680억 달러 자본 유출
+- 한 명의 회계사가 시작한 사건
+- 외국인 무비자 50개국 확대
+- 동독 베를린 장벽 90배 비유
+- 베이징 공무원 30년 근무 일화
+
+이것들은 **모두 곁가지**입니다. 핵심이 아닙니다. 썸네일에 절대 가져오면 안 됩니다.
+
+✅ 올바른 핵심: \`중국 자국민 여권 압수 + 탈출 불가능 + 전면 통제\`
+
+## STEP 2. 핵심에 정렬된 10개 썸네일 텍스트 만들기
+10개 추천은 모두 **같은 핵심**을 다른 각도로 표현합니다. **각 추천마다 위에서 잡은 핵심 단어 묶음(여권/탈출/통제 등)이 반드시 들어가야 합니다.** 곁가지 일화·숫자·비유로 빠지면 즉시 실패입니다.
+
+### 다양성 확보를 위한 10가지 각도
+1. 직설형 (핵심 그대로): "여권 다 뺏는다"
+2. 모순/비대칭형: G2 강대국 ↔ 자국민 통제
+3. 시점 전환형: "이젠 못 나간다", "어제까진 됐는데"
+4. 인용/육성형: "여권 돌려주세요" 같은 시민 인용
+5. 권위 굴복형: "공산당이 두려워한다"
+6. 미래 위협형: "다음 차례는 외국인"
+7. 비교형: "G2가 북한처럼"
+8. 단일 사건 단언형: "전 국민 여권 압수령"
+9. 의문 자극형: "왜 갑자기?"
+10. 결과 단언형: "탈출 봉쇄 시작됐다"
+
+# 채널 검증 공식 (실제 33만~46만 조회수 영상 분석)
 모든 썸네일은 **3요소 구조**:
 
 1. **상단 캡션** (caption): 큰따옴표 안 짧은 인용/충격 한마디 (~12자 권장, 짧/길 OK)
@@ -21684,28 +21724,28 @@ JSON만 출력. 코드블록 마커 금지.`;
    - 예: F-15 조종사 충격 생존법 / 이란 지하벙커 생매장 위기 / 물부족으로 무너지는 이란
    - 🚫 **절대 금지**: "~이유", "~까닭" 패턴. 채널 영상 0건. "~선언/시작/위기/몰락" 등 사건화 동명사로.
 
-## 추가 규칙
+# 추가 규칙
 - **비대칭/모순 단어 필수** (G2↔봉쇄, 대통령↔포기, 미사일↔물부족, 강대국↔두려움)
 - **채널 금지 표현**: "충격적인", "경악", "소름", "대박", "결국 터졌다", "오늘은"
 - 길이는 짧을 수도 길 수도 있음 — 자연스러우면 OK
 - "여러분" 사용 금지
 
-## 🎯 핵심 원칙: 대본 전체의 핵심 1줄 메시지
-- ❗ **파트별 디테일·중간 사건을 가져오면 안 됨**.
-- 대본을 처음부터 끝까지 읽고 "이 영상이 결국 무엇을 말하는가" 한 줄 메시지를 도출.
-- 시청자가 영상을 본 후 머리에 남길 **단 한 가지 사실/감정**을 잡아 대표 썸네일로.
-- 5개 추천은 같은 핵심을 **다른 각도**로 (비대칭형, 시점전환형, 숫자대비형, 권력→몰락형, 모순형 등).
-
-## 출력 형식 — JSON 배열만, 다른 텍스트 절대 금지
+# 출력 형식 — JSON 객체만, 다른 텍스트 절대 금지
 \`\`\`json
-[
-  {"caption": "상단 캡션 텍스트", "main1": "메인 1줄 (큰따옴표 안 내용만, 따옴표 자체는 빼고 작성)", "main2": "메인 2줄 (따옴표 없는 압축)", "angle": "이 추천의 트리거 한 줄 (예: 권력↔통제불안 비대칭)"},
-  ... 총 5개
-]
+{
+  "core_message": "이 영상의 핵심 1줄 (2~6 단어 묶음, 핵심 키워드 포함)",
+  "recommendations": [
+    {"caption": "상단 캡션", "main1": "메인 1줄 (큰따옴표 안 내용만)", "main2": "메인 2줄 (따옴표 없음)", "angle": "이 추천의 각도 (예: 모순형, 시점전환형 등)"},
+    ... 총 10개
+  ]
+}
 \`\`\`
 
-main1은 큰따옴표 자체는 빼고 안에 들어갈 텍스트만 작성하세요 (UI에서 자동으로 큰따옴표 감쌉니다).
-caption도 마찬가지로 큰따옴표 안 내용만.
+⚠️ 자가 검증: 작성 후 반드시 확인하세요.
+- 10개 추천 모두에 \`core_message\` 안 핵심 키워드 중 1개 이상이 등장하나요?
+- 곁가지 일화/숫자/비유에 매몰된 추천은 없나요? (있다면 그 자리에 다른 각도로 다시 만드세요)
+
+main1과 caption은 큰따옴표 자체는 빼고 안에 들어갈 텍스트만 작성하세요 (UI에서 자동으로 큰따옴표 감쌉니다).
 `;
 
         async function spGenerateThumbnailTexts() {
@@ -21737,7 +21777,7 @@ caption도 마찬가지로 큰따옴표 안 내용만.
             try {
                 const prompt = THUMB_TEXT_PROMPT + '\n\n## 대본 전체\n\n' + fullScript;
                 const result = await callGemini(prompt, {
-                    maxTokens: 4000,
+                    maxTokens: 6000,
                     temperature: 0.85,
                     model: 'gemini-2.5-pro'
                 });
@@ -21752,20 +21792,29 @@ caption도 마찬가지로 큰따옴표 안 내용만.
                     .replace(/^```json\s*/i, '')
                     .replace(/^```\s*/i, '')
                     .replace(/```\s*$/i, '');
-                const fb = txt.indexOf('['); const lb = txt.lastIndexOf(']');
+                const fb = txt.indexOf('{'); const lb = txt.lastIndexOf('}');
                 if (fb >= 0 && lb > fb) {
                     txt = txt.substring(fb, lb + 1);
                 } else if (fb < 0) {
-                    throw new Error('JSON 배열을 찾을 수 없음. 응답: ' + raw.slice(0, 200));
+                    throw new Error('JSON 객체를 찾을 수 없음. 응답: ' + raw.slice(0, 200));
                 }
 
-                let arr;
+                let parsed;
                 try {
-                    arr = JSON.parse(txt);
+                    parsed = JSON.parse(txt);
                 } catch (parseErr) {
                     throw new Error('JSON 파싱 실패. 응답 일부: ' + txt.slice(0, 300) + '...');
                 }
-                if (!Array.isArray(arr) || arr.length === 0) throw new Error('배열이 비어있습니다.');
+                const arr = parsed.recommendations || parsed.items || (Array.isArray(parsed) ? parsed : null);
+                const coreMsg = parsed.core_message || parsed.core || '';
+                if (!Array.isArray(arr) || arr.length === 0) throw new Error('recommendations 배열이 비어있습니다.');
+
+                // 핵심 메시지 표시
+                const coreEl = document.getElementById('spThumbTextCore');
+                if (coreEl && coreMsg) {
+                    coreEl.style.display = '';
+                    coreEl.innerHTML = `<strong>🎯 추출된 핵심 메시지:</strong> ${coreMsg.replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))}`;
+                }
 
                 results.innerHTML = arr.map((item, i) => {
                     const cap = (item.caption || '').replace(/^["""]|["""]$/g, '').trim();
@@ -21799,7 +21848,7 @@ caption도 마찬가지로 큰따옴표 안 내용만.
                 console.error('[spGenerateThumbnailTexts]', e);
             } finally {
                 btn.disabled = false;
-                btn.textContent = btn.dataset.generated === '1' ? '🔄 다시 생성' : '✨ 5개 생성';
+                btn.textContent = btn.dataset.generated === '1' ? '🔄 다시 생성' : '✨ 10개 생성';
             }
         }
 
