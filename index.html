@@ -21736,11 +21736,12 @@ caption도 마찬가지로 큰따옴표 안 내용만.
 
             try {
                 const prompt = THUMB_TEXT_PROMPT + '\n\n## 대본 전체\n\n' + fullScript;
-                const raw = await callGemini(prompt, {
+                const result = await callGemini(prompt, {
                     maxTokens: 2000,
                     temperature: 0.85,
                     model: 'gemini-2.5-pro'
                 });
+                const raw = (result && typeof result === 'object') ? (result.text || '') : (result || '');
 
                 let txt = (raw || '').trim()
                     .replace(/^```json\s*/i, '')
