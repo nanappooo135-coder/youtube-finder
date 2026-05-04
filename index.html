@@ -21709,15 +21709,23 @@ caption도 마찬가지로 큰따옴표 안 내용만.
 `;
 
         async function spGenerateThumbnailTexts() {
-            const intro = (document.getElementById('spIntro').value || '').trim();
-            const body = (document.getElementById('spBody').value || '').trim();
-            const fullScript = [intro, body].filter(Boolean).join('\n\n').trim();
+            const intro = (document.getElementById('spIntro')?.value || '').trim();
+            const body = (document.getElementById('spBody')?.value || '').trim();
+            let fullScript = [intro, body].filter(Boolean).join('\n\n').trim();
+            // 입력 필드가 비어있으면(새로고침/import 경로) 결과 영역의 셀팟 텍스트에서 가져옴
+            if (!fullScript) {
+                const outText = (document.getElementById('spOut_sellpot')?.value || '').trim();
+                if (outText) {
+                    // 길이 prefix(6| 10|) 제거 + 빈 줄 정리
+                    fullScript = outText.split(/\r?\n/).map(l => l.replace(/^\s*\d+\|\s*/, '').trim()).filter(Boolean).join(' ').trim();
+                }
+            }
             const status = document.getElementById('spThumbTextStatus');
             const results = document.getElementById('spThumbTextResults');
             const btn = document.getElementById('spThumbTextBtn');
 
             if (!fullScript) {
-                alert('대본이 비어있습니다. 도입부 또는 본문에 대본을 먼저 입력하세요.');
+                alert('대본이 비어있습니다. 셀팟 변환을 먼저 실행하거나 도입부/본문에 대본을 입력하세요.');
                 return;
             }
 
