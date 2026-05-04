@@ -21792,13 +21792,14 @@ caption도 마찬가지로 큰따옴표 안 내용만.
                     `;
                 }).join('');
 
-                status.innerHTML = `<span style="color:#28a745;">✅ ${arr.length}개 생성 완료</span>`;
+                status.innerHTML = `<span style="color:#28a745;">✅ ${arr.length}개 생성 완료 — 마음에 안 들면 [🔄 다시 생성] 버튼으로 새로 뽑기</span>`;
+                btn.dataset.generated = '1';
             } catch (e) {
                 status.innerHTML = `<span style="color:#dc3545;">❌ 실패: ${e.message}</span>`;
                 console.error('[spGenerateThumbnailTexts]', e);
             } finally {
                 btn.disabled = false;
-                btn.textContent = '✨ 5개 생성';
+                btn.textContent = btn.dataset.generated === '1' ? '🔄 다시 생성' : '✨ 5개 생성';
             }
         }
 
