@@ -2556,6 +2556,16 @@
                     <div class="section-content">
                         <div id="spSummary" style="margin-bottom:12px;padding:12px;background:#f5f5f5;border-radius:8px;font-size:0.9rem;"></div>
 
+                        <!-- 🏷️ 썸네일 텍스트 추천 (푸짐한경제학 3요소 공식) -->
+                        <div id="spThumbTextSection" style="margin-bottom:18px;padding:14px;background:linear-gradient(135deg,#fff5f5 0%,#fff0f6 100%);border:2px solid #e83e8c;border-radius:10px;">
+                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+                                <div style="font-weight:700;color:#c2185b;font-size:0.98rem;">🏷️ 썸네일 텍스트 추천 <span style="font-size:0.78rem;font-weight:400;color:#888;">(푸짐한경제학 3요소 공식 · 대본 전체 핵심 기반 · Gemini Pro)</span></div>
+                                <button id="spThumbTextBtn" class="search-btn" onclick="spGenerateThumbnailTexts()" style="padding:8px 18px;font-size:0.88rem;background:#e83e8c;border-color:#e83e8c;">✨ 5개 생성</button>
+                            </div>
+                            <div id="spThumbTextStatus" style="font-size:0.8rem;color:#888;margin-bottom:8px;"></div>
+                            <div id="spThumbTextResults"></div>
+                        </div>
+
                         <!-- 결과 탭 헤더 -->
                         <div style="display:flex;gap:4px;margin-bottom:12px;border-bottom:2px solid #dee2e6;flex-wrap:wrap;">
                             <button class="sp-result-tab active" data-tab="sellpot" onclick="_spSwitchResultTab('sellpot')" style="padding:10px 16px;background:#7048e8;color:#fff;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">📋 셀팟 붙여넣기</button>
@@ -21653,6 +21663,119 @@ JSON만 출력. 코드블록 마커 금지.`;
                 document.getElementById('spResultSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
             } catch (e) {
                 status.innerHTML = `<span style="color:#dc3545;">❌ JSON 파싱 실패: ${e.message}</span>`;
+            }
+        }
+
+        // ===== 🏷️ 썸네일 텍스트 추천 (푸짐한경제학 3요소 공식) =====
+        const THUMB_TEXT_PROMPT = `당신은 푸짐한경제학(유튜브 채널) 썸네일 텍스트 카피라이터입니다.
+
+## 채널 검증 공식 (실제 33만~46만 조회수 영상 분석)
+모든 썸네일은 **3요소 구조**:
+
+1. **상단 캡션** (caption): 큰따옴표 안 짧은 인용/충격 한마디 (~12자 권장, 짧/길 OK)
+   - 끝맺음: \`?\` 또는 \`...\`
+   - 예: "북한이 직접 설계했다고?" / "이란이 현상금까지..." / "미사일보다 무섭다..." / "지도엔 없는 유령 국가"
+
+2. **메인 1줄** (main1): **반드시 큰따옴표로 감싼** 단언/인용 (8~13자 권장, 짧/길 OK)
+   - 끝맺음: 단호한 동사·명사 (?, 선언, 무덤, 버텼다?, 터졌다, 압수령 등)
+   - 예: "개미 먹으면서 버텼다?" / "혁명수비대의 콘크리트 무덤" / "대통령도 수도 포기 선언" / "이스라엘이 건드린 금기가 터졌다"
+
+3. **메인 2줄** (main2): **따옴표 없음**, 명사+사건 압축 (9~14자 권장)
+   - 예: F-15 조종사 충격 생존법 / 이란 지하벙커 생매장 위기 / 물부족으로 무너지는 이란
+   - 🚫 **절대 금지**: "~이유", "~까닭" 패턴. 채널 영상 0건. "~선언/시작/위기/몰락" 등 사건화 동명사로.
+
+## 추가 규칙
+- **비대칭/모순 단어 필수** (G2↔봉쇄, 대통령↔포기, 미사일↔물부족, 강대국↔두려움)
+- **채널 금지 표현**: "충격적인", "경악", "소름", "대박", "결국 터졌다", "오늘은"
+- 길이는 짧을 수도 길 수도 있음 — 자연스러우면 OK
+- "여러분" 사용 금지
+
+## 🎯 핵심 원칙: 대본 전체의 핵심 1줄 메시지
+- ❗ **파트별 디테일·중간 사건을 가져오면 안 됨**.
+- 대본을 처음부터 끝까지 읽고 "이 영상이 결국 무엇을 말하는가" 한 줄 메시지를 도출.
+- 시청자가 영상을 본 후 머리에 남길 **단 한 가지 사실/감정**을 잡아 대표 썸네일로.
+- 5개 추천은 같은 핵심을 **다른 각도**로 (비대칭형, 시점전환형, 숫자대비형, 권력→몰락형, 모순형 등).
+
+## 출력 형식 — JSON 배열만, 다른 텍스트 절대 금지
+\`\`\`json
+[
+  {"caption": "상단 캡션 텍스트", "main1": "메인 1줄 (큰따옴표 안 내용만, 따옴표 자체는 빼고 작성)", "main2": "메인 2줄 (따옴표 없는 압축)", "angle": "이 추천의 트리거 한 줄 (예: 권력↔통제불안 비대칭)"},
+  ... 총 5개
+]
+\`\`\`
+
+main1은 큰따옴표 자체는 빼고 안에 들어갈 텍스트만 작성하세요 (UI에서 자동으로 큰따옴표 감쌉니다).
+caption도 마찬가지로 큰따옴표 안 내용만.
+`;
+
+        async function spGenerateThumbnailTexts() {
+            const intro = (document.getElementById('spIntro').value || '').trim();
+            const body = (document.getElementById('spBody').value || '').trim();
+            const fullScript = [intro, body].filter(Boolean).join('\n\n').trim();
+            const status = document.getElementById('spThumbTextStatus');
+            const results = document.getElementById('spThumbTextResults');
+            const btn = document.getElementById('spThumbTextBtn');
+
+            if (!fullScript) {
+                alert('대본이 비어있습니다. 도입부 또는 본문에 대본을 먼저 입력하세요.');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = '⏳ 생성 중...';
+            status.innerHTML = `<span style="color:#6f42c1;">🤖 Gemini Pro가 대본 전체 핵심 추출 중... (${fullScript.length.toLocaleString()}자)</span>`;
+            results.innerHTML = '';
+
+            try {
+                const prompt = THUMB_TEXT_PROMPT + '\n\n## 대본 전체\n\n' + fullScript;
+                const raw = await callGemini(prompt, {
+                    maxTokens: 2000,
+                    temperature: 0.85,
+                    model: 'gemini-2.5-pro'
+                });
+
+                let txt = (raw || '').trim()
+                    .replace(/^```json\s*/i, '')
+                    .replace(/^```\s*/i, '')
+                    .replace(/```\s*$/i, '');
+                const fb = txt.indexOf('['); const lb = txt.lastIndexOf(']');
+                if (fb >= 0 && lb > fb) txt = txt.substring(fb, lb + 1);
+
+                const arr = JSON.parse(txt);
+                if (!Array.isArray(arr) || arr.length === 0) throw new Error('배열이 비어있습니다.');
+
+                results.innerHTML = arr.map((item, i) => {
+                    const cap = (item.caption || '').replace(/^["""]|["""]$/g, '').trim();
+                    const m1 = (item.main1 || '').replace(/^["""]|["""]$/g, '').trim();
+                    const m2 = (item.main2 || '').trim();
+                    const angle = (item.angle || '').trim();
+                    const fullText = `"${cap}"\n"${m1}"\n${m2}`;
+                    const escapedFull = fullText
+                        .replace(/\\/g,'\\\\')
+                        .replace(/`/g,'\\`')
+                        .replace(/\$/g,'\\$')
+                        .replace(/"/g,'&quot;');
+                    return `
+                        <div style="margin-bottom:10px;padding:12px 14px;background:#fff;border:1px solid #f8b6d0;border-radius:8px;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                                <span style="font-weight:700;color:#c2185b;font-size:0.85rem;">추천 ${i+1}</span>
+                                <button onclick="navigator.clipboard.writeText(\`${escapedFull}\`).then(()=>{this.textContent='✅ 복사됨';setTimeout(()=>this.textContent='📋 3줄 복사',1500);})" style="padding:4px 10px;font-size:0.75rem;background:#e83e8c;color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:600;">📋 3줄 복사</button>
+                            </div>
+                            <div style="font-size:0.82rem;color:#666;margin-bottom:6px;">상단 캡션: <span style="color:#212529;font-weight:600;">"${cap}"</span></div>
+                            <div style="font-size:1.05rem;color:#212529;font-weight:700;margin-bottom:4px;">"${m1}"</div>
+                            <div style="font-size:1.05rem;color:#212529;font-weight:700;margin-bottom:8px;">${m2}</div>
+                            ${angle ? `<div style="font-size:0.75rem;color:#888;font-style:italic;border-top:1px dashed #f8b6d0;padding-top:6px;">🎯 ${angle}</div>` : ''}
+                        </div>
+                    `;
+                }).join('');
+
+                status.innerHTML = `<span style="color:#28a745;">✅ ${arr.length}개 생성 완료</span>`;
+            } catch (e) {
+                status.innerHTML = `<span style="color:#dc3545;">❌ 실패: ${e.message}</span>`;
+                console.error('[spGenerateThumbnailTexts]', e);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '✨ 5개 생성';
             }
         }
 
