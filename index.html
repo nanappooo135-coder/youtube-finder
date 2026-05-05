@@ -2836,12 +2836,6 @@
                                 </p>
                             </div>
 
-                            <!-- 대본 컨텍스트 (자동 로드) -->
-                            <details style="margin-bottom:10px;">
-                                <summary style="font-size:0.8rem;font-weight:600;color:#333;cursor:pointer;">📝 대본 컨텍스트 (변환 결과에서 자동 로드됨)</summary>
-                                <textarea id="kieScriptContext" rows="4" readonly style="width:100%;margin-top:6px;padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:0.78rem;resize:vertical;line-height:1.5;background:#f8f9fa;color:#555;box-sizing:border-box;"></textarea>
-                            </details>
-
                             <!-- 그림체 프롬프트 -->
                             <div style="margin-bottom:10px;">
                                 <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -22815,13 +22809,6 @@ main1과 caption은 큰따옴표 자체는 빼고 안에 들어갈 텍스트만 
             const srcStyle = document.getElementById('spStylePrompt');
             if (styleEl && srcStyle && !styleEl.value.trim()) styleEl.value = srcStyle.value;
 
-            // 대본 컨텍스트 자동 로드
-            const ctxEl = document.getElementById('kieScriptContext');
-            if (ctxEl) {
-                const scenes = window._spLastScenes || [];
-                ctxEl.value = scenes.map(s => s.text || '').join('\n');
-            }
-
             list.innerHTML = _kieScenes.map((s, i) => {
                 const prompt = s.nano_prompt || s.aiPrompt || '';
                 const short = prompt.length > 100 ? prompt.substring(0, 100) + '...' : prompt;
@@ -22938,15 +22925,11 @@ main1과 caption은 큰따옴표 자체는 빼고 안에 들어갈 텍스트만 
             const resolution = document.getElementById('kieResolution')?.value || '2K';
             const aspectRatio = document.getElementById('kieAspectRatio')?.value || '16:9';
             const stylePrompt = document.getElementById('kieStylePrompt')?.value?.trim() || '';
-            const scriptContext = document.getElementById('kieScriptContext')?.value?.trim() || '';
             const scenePrompt = scene.nano_prompt || scene.aiPrompt || '';
 
             let prompt = '';
-            if (scriptContext) {
-                prompt += `[Full Script Context — use this to understand WHO appears in each scene, WHAT is happening, and generate accurate depictions of real people, places, and events mentioned]\n\n${scriptContext.substring(0, 15000)}\n\n---\n\n`;
-            }
-            if (stylePrompt) prompt += `[Art Style] ${stylePrompt}\n\n`;
-            prompt += `[Scene to generate] ${scenePrompt}`;
+            if (stylePrompt) prompt += stylePrompt + ', ';
+            prompt += scenePrompt;
 
             const taskId = await _kieCreateTask(prompt, resolution, aspectRatio);
             const imageUrl = await _kiePollResult(taskId);
