@@ -2556,6 +2556,9 @@
                     <div class="section-content">
                         <div id="spSummary" style="margin-bottom:12px;padding:12px;background:#f5f5f5;border-radius:8px;font-size:0.9rem;"></div>
 
+                        <!-- 분할 토글 박스 (나레이션 ~15초 초과 장면 자동 감지) -->
+                        <div id="spSplitToggleBox" style="display:none;margin-bottom:12px;padding:10px 14px;background:#fff8e1;border:2px solid #ffc107;border-radius:8px;font-size:0.85rem;"></div>
+
                         <!-- 결과 탭 헤더 -->
                         <div style="display:flex;gap:4px;margin-bottom:12px;border-bottom:2px solid #dee2e6;flex-wrap:wrap;">
                             <button class="sp-result-tab active" data-tab="sellpot" onclick="_spSwitchResultTab('sellpot')" style="padding:10px 16px;background:#7048e8;color:#fff;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">📋 셀팟 붙여넣기</button>
@@ -2616,7 +2619,8 @@
                             <div style="padding:10px;background:#f3e5ff;border:2px solid #9333ea;border-radius:8px;margin-top:14px;">
                                 <div style="font-weight:700;color:#6b21a8;margin-bottom:8px;font-size:0.9rem;">🎨 클로드 디자인 → MP4 변환 (애니메이션 그대로)</div>
                                 <p style="font-size:0.78rem;color:#666;margin-bottom:8px;">
-                                    클로드 디자인 export한 <strong>HTML</strong>을 떨구면 장면 길이만큼 자동 화면녹화 → mp4. CSS 애니메이션 그대로 살아있음. 파일명을 <strong>scene_5.html</strong>로 저장하면 장면 매칭 자동.
+                                    클로드 디자인 export한 <strong>HTML</strong>을 떨구면 자동 화면녹화 → mp4. CSS 애니메이션 그대로 살아있음. 각 파일마다 <strong>녹화 길이(초)</strong>를 직접 입력하세요. 장면 길이만큼 자동 채워지고 직접 수정 가능.
+                                    <br><span style="color:#0c4a6e;">💡 애니 패턴: <strong>"애니메이션은 (총길이-5)초 동안 진행, 마지막 5초는 완전 정지로 시청자가 자세히 읽도록"</strong>. 예: 20초 영상 → 15초 애니 + 5초 정지.</span>
                                     <br><span style="color:#6b21a8;">⚠️ 변환 시작 시 브라우저가 "이 탭을 공유하시겠어요?" 물어봄 → <strong>"이 탭" 선택 후 공유</strong> 한 번만 누르면 끝. 이후 N개 자동.</span>
                                     <br><span style="color:#856404;">⚠️ ffmpeg 인코딩 실패 시 자동으로 <strong>.webm 형식</strong>으로 저장됨. 셀팟에 webm 안 들어가면 CapCut이나 온라인 도구로 mp4 변환 필요.</span>
                                 </p>
@@ -2686,7 +2690,7 @@
                             <div style="padding:10px;background:#fff9db;border:2px solid #fab005;border-radius:8px;margin-top:12px;">
                                 <div style="font-weight:700;color:#856404;margin-bottom:8px;font-size:0.9rem;">🐢 그록 영상 슬로우 처리 (브라우저 자체 처리)</div>
                                 <p style="font-size:0.78rem;color:#666;margin-bottom:8px;">
-                                    그록 영상(<strong>6초/10초</strong>)을 셀팟 장면 길이에 맞게 자동 슬로우. 파일명에 장면번호 들어있으면 PTS 자동 적용 → webm 자동 다운로드.
+                                    여러 영상을 한 번에 드롭하고 <strong>각 영상마다 원하는 길이(초)를 직접 입력</strong>하세요. 모두 한 번에 슬로우 처리되어 .webm으로 자동 다운로드됩니다. 파일명에 장면번호가 있으면 길이가 자동 채워집니다.
                                     <br><span style="color:#856404;">⚠️ ffmpeg 없이 브라우저 자체 처리 (HTML video + canvas 재녹화). 출력은 .webm 형식. 셀팟이 webm 거부하면 CapCut에 한 번만 변환.</span>
                                 </p>
                                 <div id="slowDropZone" style="border:2px dashed #fab005;border-radius:6px;padding:24px;text-align:center;background:#fff;cursor:pointer;font-size:0.85rem;color:#856404;font-weight:600;">
@@ -19711,18 +19715,17 @@ overall mood: bright, psychologically safe illustration, uplifting and reassurin
             let html = '<div style="font-size:0.78rem;color:#495057;font-weight:700;margin-bottom:6px;">처리 대기 ' + window._slowFiles.length + '개</div>';
             html += '<div style="display:flex;flex-direction:column;gap:6px;">';
             window._slowFiles.forEach((item, idx) => {
-                const matched = item.ptsRatio !== null;
-                const bg = item.status === 'done' ? '#d3f9d8' : item.status === 'error' ? '#ffe3e3' : matched ? '#fff' : '#fff3bf';
-                const border = matched ? '#fab005' : '#ff922b';
-                html += '<div style="padding:8px 10px;background:' + bg + ';border:1px solid ' + border + ';border-radius:4px;font-size:0.78rem;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">';
-                html += '<span style="font-weight:700;flex:1;">' + (item.file.name) + '</span>';
+                const bg = item.status === 'done' ? '#d3f9d8' : item.status === 'error' ? '#ffe3e3' : '#fff';
+                html += '<div style="padding:8px 10px;background:' + bg + ';border:1px solid #fab005;border-radius:4px;font-size:0.78rem;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">';
+                html += '<span style="font-weight:700;flex:1;min-width:120px;word-break:break-all;">' + (item.file.name) + '</span>';
                 if (item.sceneId !== null) html += '<span style="background:#fab005;color:#000;padding:1px 6px;border-radius:3px;font-size:0.7rem;font-weight:700;">장면 ' + item.sceneId + '</span>';
-                if (matched) {
-                    html += '<span style="color:#856404;font-size:0.72rem;">PTS ' + item.ptsRatio + '× → ' + item.narrSec + '초</span>';
-                } else {
-                    html += '<span style="color:#d9480f;font-size:0.72rem;">자동 매칭 실패. PTS:</span>';
-                    html += '<input type="number" step="0.05" min="1.0" max="2.0" value="1.3" data-idx="' + idx + '" onchange="_slowSetManualPts(this)" style="width:60px;padding:2px 4px;font-size:0.75rem;border:1px solid #ff922b;border-radius:3px;">';
-                }
+                const origTxt = item.origDur ? item.origDur.toFixed(1) + '초' : '...';
+                html += '<span style="color:#666;font-size:0.72rem;">원본 ' + origTxt + '</span>';
+                html += '<span style="color:#856404;font-size:0.72rem;font-weight:700;">목표:</span>';
+                const targetVal = item.targetSec != null ? item.targetSec : '';
+                html += '<input type="number" step="0.1" min="0.5" max="60" value="' + targetVal + '" data-idx="' + idx + '" onchange="_slowSetTargetSec(this)" oninput="_slowSetTargetSec(this)" style="width:64px;padding:2px 4px;font-size:0.75rem;border:1px solid #fab005;border-radius:3px;">';
+                const ptsTxt = item.ptsRatio ? item.ptsRatio.toFixed(2) + '×' : '?';
+                html += '<span style="color:#856404;font-size:0.72rem;">초 (PTS ' + ptsTxt + ')</span>';
                 if (item.status === 'processing') html += '<span style="color:#1971c2;font-size:0.72rem;">⏳ 처리중...</span>';
                 if (item.status === 'done') html += '<span style="color:#2b8a3e;font-size:0.72rem;font-weight:700;">✓ 완료</span>';
                 if (item.status === 'error') html += '<span style="color:#c92a2a;font-size:0.72rem;">✗ ' + (item.error || '실패') + '</span>';
@@ -19733,22 +19736,47 @@ overall mood: bright, psychologically safe illustration, uplifting and reassurin
             if (btn) btn.style.display = '';
         }
 
-        window._slowSetManualPts = function(input) {
+        window._slowSetTargetSec = function(input) {
             const idx = parseInt(input.dataset.idx, 10);
             const v = parseFloat(input.value);
-            if (!isNaN(v) && v >= 1.0 && v <= 2.0 && window._slowFiles[idx]) {
-                window._slowFiles[idx].ptsRatio = v;
-                window._slowFiles[idx].narrSec = Math.round(v * (window._slowFiles[idx].grokDur || 10) * 10) / 10;
+            const item = window._slowFiles[idx];
+            if (!item || isNaN(v) || v <= 0) return;
+            item.targetSec = v;
+            item.narrSec = v;
+            if (item.origDur && item.origDur > 0) {
+                item.ptsRatio = Math.round((v / item.origDur) * 100) / 100;
             }
         };
 
-        function _addSlowFiles(files) {
+        function _readVideoDuration(file) {
+            return new Promise((resolve) => {
+                const url = URL.createObjectURL(file);
+                const v = document.createElement('video');
+                v.preload = 'metadata';
+                v.muted = true;
+                v.src = url;
+                let done = false;
+                const finish = (d) => {
+                    if (done) return; done = true;
+                    URL.revokeObjectURL(url);
+                    resolve(isFinite(d) && d > 0 ? d : null);
+                };
+                v.onloadedmetadata = () => finish(v.duration);
+                v.onerror = () => finish(null);
+                setTimeout(() => finish(null), 5000);
+            });
+        }
+
+        async function _addSlowFiles(files) {
+            const startIdx = window._slowFiles.length;
             for (const file of files) {
                 if (!file.type.startsWith('video/') && !/\.mp4$/i.test(file.name)) continue;
                 const sceneId = _detectSceneId(file.name);
                 const lookup = _lookupSceneSlowdown(sceneId);
                 window._slowFiles.push({
                     file, sceneId,
+                    origDur: null,
+                    targetSec: lookup ? lookup.narrSec : null,
                     ptsRatio: lookup ? lookup.ptsRatio : null,
                     narrSec: lookup ? lookup.narrSec : null,
                     grokDur: lookup ? lookup.grokDur : 10,
@@ -19756,6 +19784,19 @@ overall mood: bright, psychologically safe illustration, uplifting and reassurin
                 });
             }
             _renderSlowFileList();
+            // 메타데이터 비동기 로드 (UI는 즉시 표시, 길이는 들어오는 대로 채움)
+            for (let i = startIdx; i < window._slowFiles.length; i++) {
+                const item = window._slowFiles[i];
+                const dur = await _readVideoDuration(item.file);
+                if (dur) {
+                    item.origDur = dur;
+                    if (item.targetSec == null) {
+                        item.targetSec = Math.round(dur * 10) / 10;
+                    }
+                    item.ptsRatio = Math.round((item.targetSec / dur) * 100) / 100;
+                }
+                _renderSlowFileList();
+            }
         }
 
         // 2026-04-27 v6: ffmpeg 없이 브라우저로 영상 슬로우 처리
@@ -19837,7 +19878,7 @@ overall mood: bright, psychologically safe illustration, uplifting and reassurin
             const btn = document.getElementById('slowProcessBtn');
             const pending = window._slowFiles.filter(f => f.status !== 'done' && f.ptsRatio !== null);
             if (pending.length === 0) {
-                progress.textContent = '⚠️ 처리할 파일이 없습니다 (자동 매칭 실패 파일은 PTS 직접 입력).';
+                progress.textContent = '⚠️ 처리할 파일이 없습니다 (각 파일에 목표 길이(초)를 입력하세요).';
                 return;
             }
             btn.disabled = true; btn.textContent = '🐢 처리 중...';
@@ -20094,21 +20135,17 @@ overall mood: bright, psychologically safe illustration, uplifting and reassurin
                 if (btn) btn.style.display = 'none';
                 return;
             }
-            let html = '<div style="font-size:0.78rem;color:#495057;font-weight:700;margin-bottom:6px;">변환 대기 ' + window._designFiles.length + '개</div>';
+            let html = '<div style="font-size:0.78rem;color:#495057;font-weight:700;margin-bottom:6px;">변환 대기 ' + window._designFiles.length + '개 <span style="color:#888;font-weight:400;">(장면 길이 자동 · 직접 수정 가능)</span></div>';
             html += '<div style="display:flex;flex-direction:column;gap:6px;">';
             window._designFiles.forEach((item, idx) => {
-                const matched = item.durationSec !== null;
-                const bg = item.status === 'done' ? '#d3f9d8' : item.status === 'error' ? '#ffe3e3' : matched ? '#fff' : '#fff3bf';
-                const border = matched ? '#9333ea' : '#ff922b';
-                html += '<div style="padding:8px 10px;background:' + bg + ';border:1px solid ' + border + ';border-radius:4px;font-size:0.78rem;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">';
-                html += '<span style="font-weight:700;flex:1;">' + (item.file.name) + '</span>';
+                const bg = item.status === 'done' ? '#d3f9d8' : item.status === 'error' ? '#ffe3e3' : '#fff';
+                html += '<div style="padding:8px 10px;background:' + bg + ';border:1px solid #9333ea;border-radius:4px;font-size:0.78rem;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">';
+                html += '<span style="font-weight:700;flex:1;min-width:120px;word-break:break-all;">' + (item.file.name) + '</span>';
                 if (item.sceneId !== null) html += '<span style="background:#9333ea;color:#fff;padding:1px 6px;border-radius:3px;font-size:0.7rem;font-weight:700;">장면 ' + item.sceneId + '</span>';
-                if (matched) {
-                    html += '<span style="color:#6b21a8;font-size:0.72rem;">' + item.durationSec + '초 녹화</span>';
-                } else {
-                    html += '<span style="color:#d9480f;font-size:0.72rem;">매칭 실패. 초:</span>';
-                    html += '<input type="number" step="1" min="2" max="60" value="10" data-idx="' + idx + '" onchange="_designSetManualDuration(this)" style="width:60px;padding:2px 4px;font-size:0.75rem;border:1px solid #ff922b;border-radius:3px;">';
-                }
+                html += '<span style="color:#6b21a8;font-size:0.72rem;font-weight:700;">길이:</span>';
+                const durVal = item.durationSec != null ? item.durationSec : 10;
+                html += '<input type="number" step="1" min="2" max="60" value="' + durVal + '" data-idx="' + idx + '" onchange="_designSetManualDuration(this)" oninput="_designSetManualDuration(this)" style="width:60px;padding:2px 4px;font-size:0.75rem;border:1px solid #9333ea;border-radius:3px;">';
+                html += '<span style="color:#6b21a8;font-size:0.72rem;">초</span>';
                 if (item.status === 'recording') html += '<span style="color:#1971c2;font-size:0.72rem;">🔴 녹화중...</span>';
                 if (item.status === 'encoding') html += '<span style="color:#1971c2;font-size:0.72rem;">⏳ 인코딩...</span>';
                 if (item.status === 'done') html += '<span style="color:#2b8a3e;font-size:0.72rem;font-weight:700;">✓ 완료</span>';
@@ -20134,7 +20171,8 @@ overall mood: bright, psychologically safe illustration, uplifting and reassurin
                 const sceneId = _detectSceneId(file.name);
                 const dur = _designLookupDuration(sceneId);
                 window._designFiles.push({
-                    file, sceneId, durationSec: dur,
+                    file, sceneId,
+                    durationSec: dur != null ? dur : 10,
                     status: 'pending', error: null
                 });
             }
@@ -20623,20 +20661,31 @@ ${stylePrompt}
   - 경제 채널 팔레트: 따뜻한 회베이지(#E8E2D8), 차분한 블루그레이(#D5DDE5), 머스타드 옅은(#E5DEC8), 다크 그레이그린(#C8D2C5), 워시드 테라코타(#E5D2C8).
   - **장면 분위기 매칭 예시**: 차분/명상 → 라벤더·블루그레이, 무기력 → 세이지·블루그레이, 활기/긍정 → 크림·살구, 비교/대조 → 좌우 다른 팔레트 색, 통계/숫자 → 크림 베이스에 포인트색, 갈등/긴장 → 베이지+테라코타.
   - claude_prompt에 **"배경색은 #XXXXXX 채널 팔레트로"** 식으로 구체 헥스 명시할 것.
-  **★ 애니메이션 영상으로 출력 ★**
+  **★ 애니메이션 영상으로 출력 (★ 길게 펼치다가 마지막 5초만 정지 ★) ★**
   - Claude Design의 **HTML/CSS 애니메이션 슬라이드** 형식으로 요청. 정지 이미지 X, 움직이는 영상 O.
-  - 도식 요소가 **순차적으로 나타나는** 모션 명시 (예: "그래프 곡선이 좌→우로 그려지며 등장", "박스 호흡 4단계가 시계방향으로 차례로 빛나며 강조", "비교 도식 좌측 먼저 → 우측 나중", "통계 숫자가 0에서 목표값까지 카운트업", "단계 카드가 1→2→3→4로 위에서 아래로 슬라이드인").
-  - **총 길이 = 장면 나레이션 추정초 × 1.3** (TTS 속도·쉼표 변동 흡수용 30% 버퍼). 추정초는 한국어 글자수(.length) ÷ 8.0.
-  - 예: 나레이션 60자 → 10초 추정 → duration 13초로 설정. 90자 → 15초 추정 → 20초로 설정 (상한 20초).
-  - 짧은 펀치라인이라도 최소 5초. 긴 설명은 20초 상한. 기존 8~10초 고정 X.
-  - 정한 duration에 맞춰 모션 페이싱 조정 (긴 영상이면 단계 더 느리게, 카운트업·페이드인 텀 길게).
+  - **★ 애니 페이싱 규칙 (반드시 이 형식 그대로 출력 프롬프트에 명시) ★**:
+    "**애니메이션은 영상 시작부터 (총길이-5)초 동안 천천히 펼쳐지며, 마지막 5초는 완전 정지 상태**. 정지 구간 동안 시청자가 완성된 인포그래픽을 차분히 읽을 수 있어야 함. 등장 후에도 흔들림/지속 회전/펄스 금지."
+    예: 영상 14초 → 애니 9초 진행 + 마지막 5초 정지. 영상 20초 → 애니 15초 + 5초 정지. 영상 10초 → 애니 5초 + 5초 정지.
+  - **OUTPUT 프롬프트 안에 구체적 애니 스펙을 한 줄 이상 반드시 포함** (이게 빠지면 정지 이미지로 나옴). duration에 맞춰 페이싱을 늘려서 적용:
+    ✓ 막대그래프: "막대가 0에서 최종값까지 천천히 차오르며, stagger 간격을 길게 두어 (총길이-5)초에 걸쳐 순차 등장. 마지막 5초 완전 정지."
+    ✓ 꺾은선/곡선: "선이 stroke-dashoffset로 좌→우로 (총길이-5)초 동안 천천히 그려짐. 데이터 포인트도 선에 맞춰 순차 페이드인. 마지막 5초 정지."
+    ✓ 도넛/파이: "stroke-dashoffset로 0%에서 목표%까지 (총길이-5)초 동안 천천히 채워짐. 가운데 숫자도 동일 시간 동안 카운트업. 마지막 5초 정지."
+    ✓ 비교 인포그래픽: "좌측 요소부터 페이드+슬라이드인 → 우측 요소 → 강조 색상 → 보조 라벨 순으로 (총길이-5)초에 걸쳐 천천히 펼쳐짐. 마지막 5초 정지."
+    ✓ 단계 카드 (N단계): "카드가 (총길이-5)/N초 간격으로 위→아래 순차 페이드인. 모든 카드 등장 후 5초 정지."
+    ✓ 숫자 강조: "큰 숫자가 0에서 목표값까지 (총길이-5)초 동안 천천히 카운트업 (예: 0 → 65,000). 카운트업 후 5초 정지."
+  - **총 길이 = 장면 나레이션 추정초 그대로** — 캡 없음. 셀팟에서 영상을 잘라 쓸 수 있게 장면 길이만큼 풀로.
+    추정초는 한국어 글자수(.length) ÷ 6.5.
+  - 예: 나레이션 60자 → 10초 → duration 10 (애니 5초 + 정지 5초). 90자 → 14초 → duration 14 (애니 9초 + 정지 5초). 130자 → 20초 → duration 20 (애니 15초 + 정지 5초).
+  - 최소 8초 (애니 3초 + 정지 5초). 8초 미만 X.
+  - **정지 5초는 절대 줄이지 말 것** — 시청자가 인포그래픽 읽을 핵심 시간. 더 늘리는 건 가능 (긴 영상이면 정지 6~7초도 OK).
   **★ 중간 잘림 안전장치 ★**
-  - **마지막 1~2초는 정적 마무리** — 모든 요소 등장 완료 후 정지된 안정 상태 유지 (페이드아웃·축소·이동 금지).
-  - **TTS가 영상보다 짧게 끝나면** 셀팟이 영상을 자름 → 잘려도 어색하지 않게 모든 핵심 요소는 영상 60% 시점까지 등장 완료.
-  - **반복 루프 가능한 디자인** — 마지막 프레임이 첫 프레임과 시각적으로 충돌하지 않게.
+  - **(총길이-5)초 이후~끝까지 완전 정지** — 마지막 5초 동안 픽셀 한 점도 안 움직여야 함 (페이드아웃·축소·이동·회전·펄스 금지).
+  - **TTS가 영상보다 짧게 끝나면** 셀팟이 영상을 자름 → 잘려도 어색하지 않게 모든 핵심 요소(제목·축·주요 라벨·강조 색)는 **영상 70% 시점까지 등장 완료**. 마지막 30%는 보조 라벨·미세 마무리만.
+  - **반복 루프 가능한 디자인** — 마지막 프레임이 첫 프레임과 시각적으로 충돌하지 않게 (어차피 정지라 자연스러움).
   - 페이드아웃·blackout·종료 트랜지션 절대 금지 (마지막에 화면이 어두워지면 잘렸을 때 검은 화면으로 끊김).
-  - 캐릭터가 있으면 캐릭터도 살짝 움직임 (눈 깜빡, 호흡 등 미세 모션).
-  - 텍스트 라벨은 도식 요소 등장 후 부드럽게 페이드인.
+  - 캐릭터는 등장 시 페이드인만, **이후 미세 모션도 금지** (호흡·눈깜빡 X — 어디서 잘려도 정지 화면이 자연스러워야 함).
+  - 텍스트 라벨은 도식 요소 등장 후 부드럽게 페이드인. 마지막 5초 진입 전까지 모든 라벨 등장 완료.
+  - **JS 없이 순수 CSS animation으로**. animation-fill-mode는 "forwards"로 (애니 끝난 상태가 끝까지 유지되게).
   **★ 텍스트 규칙 (2026-04-27 개정 — 풍부함 + 겹침 방지) ★**
   - **풍부함 우선**: 핵심 라벨만 두고 끝내면 휑함. 보조 부제·영문 병기·작은 캡션을 곁들여 잡지·교과서 인포그래픽 톤으로 풍부하게 만들 것.
   - **권장 구성**:
@@ -21858,8 +21907,167 @@ main1과 caption은 큰따옴표 자체는 빼고 안에 들어갈 텍스트만 
             el.textContent = text;
         }
 
+        // ═══ 분할 토글: 헬퍼/상태 ═══
+        // narrSec > 15초 → 그록 10초 × 슬로우 1.43배(=14.3초)로도 부족 → 분할 가능 대상
+        function _spNarrSec(s) {
+            return Math.round(((s.text || '').length / 8.0) * 10) / 10;
+        }
+        function _spSceneNeedsSplit(s) {
+            return s && s.type === 'ai' && s.grok_prompt && _spNarrSec(s) > 15;
+        }
+        // 한 조각이 ≤14초가 되도록 분할 수 결정
+        function _spSplitPartsCount(narrSec) {
+            return Math.max(2, Math.ceil(narrSec / 14));
+        }
+        // 분할 선택 + 캐시 결과 적용한 expanded scenes 반환 (sceneNo 1..N로 재번호)
+        function _spExpandSplitScenes(originalScenes) {
+            const expanded = [];
+            let newNo = 1;
+            originalScenes.forEach(s => {
+                const isSplit = window._spSplitChoices?.[s.sceneNo] === true;
+                const cached = window._spSplitCache?.[s.sceneNo];
+                if (isSplit && Array.isArray(cached) && cached.length > 0) {
+                    cached.forEach((child, idx) => {
+                        expanded.push({
+                            ...s,
+                            ...child,
+                            sceneNo: newNo++,
+                            _origSceneNo: s.sceneNo,
+                            _splitIdx: idx + 1,
+                            _splitTotal: cached.length
+                        });
+                    });
+                } else {
+                    expanded.push({ ...s, sceneNo: newNo++ });
+                }
+            });
+            return expanded;
+        }
+        // 토글 박스 렌더링
+        function _spRenderSplitToggleBox(originalScenes) {
+            const box = document.getElementById('spSplitToggleBox');
+            if (!box) return;
+            const eligible = originalScenes.filter(_spSceneNeedsSplit);
+            if (eligible.length === 0) {
+                box.style.display = 'none';
+                box.innerHTML = '';
+                return;
+            }
+            box.style.display = '';
+            const choices = window._spSplitChoices || {};
+            const loading = window._spSplitLoading || {};
+            const splitOnCount = eligible.filter(s => choices[s.sceneNo] === true).length;
+            let html = '<div style="margin-bottom:8px;font-weight:700;color:#856404;">⚠️ 분할 가능 장면 ' + eligible.length + '개';
+            if (splitOnCount > 0) html += ' <span style="color:#28a745;font-size:0.78rem;font-weight:600;">(분할 ON: ' + splitOnCount + '개)</span>';
+            html += '</div>';
+            html += '<div style="font-size:0.75rem;color:#856404;margin-bottom:8px;">나레이션 15초 초과 장면입니다. 분할하면 같은 자리에 여러 장면이 들어가고, 뒤 장면 번호는 자동으로 밀립니다.</div>';
+            html += '<div style="display:flex;flex-direction:column;gap:6px;">';
+            eligible.forEach(s => {
+                const narrSec = _spNarrSec(s);
+                const parts = _spSplitPartsCount(narrSec);
+                const isSplit = choices[s.sceneNo] === true;
+                const isLoading = loading[s.sceneNo] === true;
+                html += '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#fff;border:1px solid #ffc107;border-radius:6px;flex-wrap:wrap;">';
+                html += '<span style="font-weight:700;color:#856404;min-width:80px;">장면 ' + s.sceneNo + '</span>';
+                html += '<span style="color:#6c757d;font-size:0.78rem;">~' + narrSec + '초</span>';
+                html += '<span style="color:#856404;font-size:0.78rem;">→ ' + parts + '분할</span>';
+                if (isLoading) {
+                    html += '<span style="margin-left:auto;color:#1971c2;font-weight:600;font-size:0.8rem;">⏳ Gemini 호출 중...</span>';
+                } else {
+                    const splitOn = isSplit;
+                    const splitStyle = splitOn
+                        ? 'background:#28a745;color:#fff;border-color:#28a745;'
+                        : 'background:#fff;color:#28a745;border-color:#28a745;';
+                    const keepStyle = !splitOn
+                        ? 'background:#6c757d;color:#fff;border-color:#6c757d;'
+                        : 'background:#fff;color:#6c757d;border-color:#6c757d;';
+                    html += '<div style="margin-left:auto;display:flex;gap:4px;">';
+                    html += '<button onclick="_spToggleSplit(' + s.sceneNo + ', true)" style="padding:4px 12px;border:1px solid;border-radius:4px;cursor:pointer;font-weight:600;font-size:0.78rem;' + splitStyle + '">분할</button>';
+                    html += '<button onclick="_spToggleSplit(' + s.sceneNo + ', false)" style="padding:4px 12px;border:1px solid;border-radius:4px;cursor:pointer;font-weight:600;font-size:0.78rem;' + keepStyle + '">그대로</button>';
+                    html += '</div>';
+                }
+                html += '</div>';
+            });
+            html += '</div>';
+            box.innerHTML = html;
+        }
+        // Gemini 호출해서 자식 장면 N개 생성
+        async function _spGenerateSplitChildren(scene, parts) {
+            const text = (scene.text || '').trim();
+            const nano = (scene.nano_prompt || '').trim();
+            const grok = (scene.grok_prompt || '').trim();
+            const prompt = '당신은 영상 장면 분할 전문가입니다. 한 장면이 너무 길어서 ' + parts + '개로 자연스럽게 나눠야 합니다.\n\n'
+                + '【원본 장면】\n나레이션: ' + text + '\n\n'
+                + '【원본 이미지 프롬프트】\n' + nano + '\n\n'
+                + '【원본 영상 프롬프트】\n' + grok + '\n\n'
+                + '【작업】\n위 나레이션을 ' + parts + '개의 비슷한 길이 조각으로 나누고, 각 조각마다 새 이미지/영상 프롬프트를 만드세요.\n'
+                + '- 나레이션은 문장 경계에서 끊기, 의미 단위 보존\n'
+                + '- 각 조각마다 시각적으로 다른 그림 (지루함 방지) — 같은 장면 흐름 안에서 카메라/구도/포인트만 다르게\n'
+                + '- 이미지 프롬프트(nano_prompt): 원본 스타일·분위기 유지, 그 조각 내용에 맞는 시각 포인트로 수정\n'
+                + '- 영상 프롬프트(grok_prompt): 원본 스타일 유지, 짧은 모션 지시 (image-to-video용)\n\n'
+                + '【출력】 정확히 ' + parts + '개 객체를 담은 JSON 배열만 출력 (다른 설명·코드펜스·마크다운 일체 금지):\n'
+                + '[\n  { "text": "...", "nano_prompt": "...", "grok_prompt": "..." }' + (parts > 1 ? ',\n  ... (총 ' + parts + '개)' : '') + '\n]';
+            const result = await callGemini(prompt, { maxTokens: 8192, temperature: 0.4, model: 'gemini-2.5-flash' });
+            let txt = (result.text || '').trim();
+            txt = txt.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '');
+            const arr = JSON.parse(txt);
+            if (!Array.isArray(arr) || arr.length === 0) throw new Error('빈 배열 응답');
+            arr.forEach(c => {
+                const childNarrSec = Math.round(((c.text || '').length / 8.0) * 10) / 10;
+                c.duration = childNarrSec >= 8 ? 10 : 6;
+                c.type = scene.type;
+            });
+            return arr;
+        }
+        // 분할 토글 (분할 ON: 캐시 없으면 Gemini 호출)
+        window._spToggleSplit = async function(sceneNo, doSplit) {
+            window._spSplitChoices = window._spSplitChoices || {};
+            window._spSplitCache = window._spSplitCache || {};
+            window._spSplitLoading = window._spSplitLoading || {};
+            if (doSplit) {
+                if (!window._spSplitCache[sceneNo]) {
+                    const orig = (window._spOriginalScenes || []).find(s => s.sceneNo === sceneNo);
+                    if (!orig) return;
+                    window._spSplitLoading[sceneNo] = true;
+                    _spRenderSplitToggleBox(window._spOriginalScenes);
+                    try {
+                        const parts = _spSplitPartsCount(_spNarrSec(orig));
+                        const children = await _spGenerateSplitChildren(orig, parts);
+                        window._spSplitCache[sceneNo] = children;
+                    } catch(e) {
+                        alert('분할 생성 실패 (장면 ' + sceneNo + '): ' + e.message);
+                        window._spSplitLoading[sceneNo] = false;
+                        _spRenderSplitToggleBox(window._spOriginalScenes);
+                        return;
+                    }
+                    window._spSplitLoading[sceneNo] = false;
+                }
+                window._spSplitChoices[sceneNo] = true;
+            } else {
+                window._spSplitChoices[sceneNo] = false;
+            }
+            _spRenderResults({ scenes: window._spOriginalScenes });
+        };
+
         function _spRenderResults(result) {
-            const scenes = result.scenes;
+            // 분할 토글 상태/캐시는 변환 결과가 새로 들어올 때만 초기화
+            // (재렌더 시에는 result가 _spLastResult이거나 같은 원본 — 그대로 유지)
+            if (!window._spOriginalScenes || window._spOriginalScenes !== result.scenes) {
+                window._spOriginalScenes = result.scenes;
+                // 새 변환 결과 → 토글 상태 초기화
+                if (window._spLastResultRef !== result) {
+                    window._spSplitChoices = {};
+                    window._spSplitCache = {};
+                    window._spSplitLoading = {};
+                    window._spLastResultRef = result;
+                }
+            }
+            const originalScenes = window._spOriginalScenes;
+            // 분할 토글 박스 렌더 (원본 기준)
+            _spRenderSplitToggleBox(originalScenes);
+            // 분할 적용된 expanded scenes로 모든 탭 렌더
+            const scenes = _spExpandSplitScenes(originalScenes);
+            const splitAppliedCount = Object.values(window._spSplitChoices || {}).filter(v => v === true).length;
             // 2026-04-27: 일괄 이름 변경 도구용 — 종류별 장면번호 순서 저장
             window._spAiSceneNos = scenes.filter(s => s.type === 'ai').map(s => s.sceneNo);
             window._spClaudeSceneNos = scenes.filter(s => s.type === 'claude_design').map(s => s.sceneNo);
@@ -21879,8 +22087,11 @@ main1과 caption은 큰따옴표 자체는 빼고 안에 들어갈 텍스트만 
             });
 
             // 요약
+            const splitNote = splitAppliedCount > 0
+                ? ` <span style="color:#28a745;font-weight:700;">→ ${scenes.length}장면 (분할 ${splitAppliedCount}개 적용)</span>`
+                : '';
             document.getElementById('spSummary').innerHTML = `
-                <strong>📊 변환 결과:</strong> 총 ${scenes.length}장면 ·
+                <strong>📊 변환 결과:</strong> 총 ${originalScenes.length}장면${splitNote} ·
                 🎨 AI 일러스트 ${counts.ai}개 ·
                 📷 실사 ${counts.real}개 ·
                 📊 Claude Design ${counts.claude_design}개
