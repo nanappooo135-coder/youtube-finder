@@ -2836,6 +2836,21 @@
                                 </p>
                             </div>
 
+                            <!-- 대본 컨텍스트 (자동 로드) -->
+                            <details style="margin-bottom:10px;">
+                                <summary style="font-size:0.8rem;font-weight:600;color:#333;cursor:pointer;">📝 대본 컨텍스트 (변환 결과에서 자동 로드됨)</summary>
+                                <textarea id="kieScriptContext" rows="4" readonly style="width:100%;margin-top:6px;padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:0.78rem;resize:vertical;line-height:1.5;background:#f8f9fa;color:#555;box-sizing:border-box;"></textarea>
+                            </details>
+
+                            <!-- 그림체 프롬프트 -->
+                            <div style="margin-bottom:10px;">
+                                <div style="display:flex;justify-content:space-between;align-items:center;">
+                                    <label style="font-size:0.8rem;font-weight:600;color:#333;">🎨 그림체 프롬프트</label>
+                                    <button onclick="document.getElementById('kieStylePrompt').value=document.getElementById('spStylePrompt')?.value||''" class="search-btn" style="background:#fd7e14;border-color:#fd7e14;font-size:0.72rem;padding:4px 8px;">← 채널 스타일 가져오기</button>
+                                </div>
+                                <textarea id="kieStylePrompt" rows="3" placeholder="예: editorial illustration, muted earth tones, soft lighting..." style="width:100%;margin-top:4px;padding:10px;border:2px solid #86efac;border-radius:8px;font-size:0.78rem;resize:vertical;line-height:1.4;font-family:'Courier New',monospace;box-sizing:border-box;"></textarea>
+                            </div>
+
                             <!-- 해상도 / 비율 설정 -->
                             <div style="display:flex;gap:12px;margin-bottom:10px;flex-wrap:wrap;align-items:center;">
                                 <div>
@@ -22795,26 +22810,39 @@ main1과 caption은 큰따옴표 자체는 빼고 안에 들어갈 텍스트만 
             const list = document.getElementById('kieSceneList');
             if (!list || _kieScenes.length === 0) { if (list) list.innerHTML = '<p style="color:#888;font-size:0.82rem;">AI 이미지 장면이 없습니다.</p>'; return; }
 
-            let html = '';
-            _kieScenes.forEach((s, i) => {
+            // 스타일 프롬프트 자동 채우기
+            const styleEl = document.getElementById('kieStylePrompt');
+            const srcStyle = document.getElementById('spStylePrompt');
+            if (styleEl && srcStyle && !styleEl.value.trim()) styleEl.value = srcStyle.value;
+
+            // 대본 컨텍스트 자동 로드
+            const ctxEl = document.getElementById('kieScriptContext');
+            if (ctxEl) {
+                const scenes = window._spLastScenes || [];
+                ctxEl.value = scenes.map(s => s.text || '').join('\n');
+            }
+
+            list.innerHTML = _kieScenes.map((s, i) => {
                 const prompt = s.nano_prompt || s.aiPrompt || '';
                 const short = prompt.length > 100 ? prompt.substring(0, 100) + '...' : prompt;
-                const existing = _kieResults[s.id];
-                const imgHtml = existing ? `<img src="${existing.imageUrl}" style="width:100%;border-radius:4px;margin-top:6px;" loading="lazy">` : '';
-                const statusHtml = existing ? '<span style="color:#10b981;font-weight:700;">✅ 완료</span>' : '';
-                html += `
-                    <div id="kieScene_${s.id}" style="padding:10px;background:#f8fdf8;border:1px solid #d1fae5;border-radius:8px;">
-                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-                            <input type="checkbox" class="kie-cb" data-idx="${i}" checked>
-                            <span style="font-weight:700;color:#059669;font-size:0.85rem;">장면 ${s.id}</span>
-                            ${statusHtml}
-                        </div>
-                        <div style="font-size:0.75rem;color:#666;line-height:1.4;font-family:'Courier New',monospace;">${_escHtml(short)}</div>
-                        ${imgHtml}
+                const no = s.sceneNo || s.id || (i + 1);
+                const existing = _kieResults[no];
+                const preview = existing?.imageUrl
+                    ? `<div style="margin-top:6px;"><img src="${existing.imageUrl}" style="max-width:100%;border-radius:6px;border:2px solid #10b981;"><div style="margin-top:4px;"><span style="color:#10b981;font-size:0.78rem;">✅ 완료</span></div></div>`
+                    : '';
+                return `
+                <div class="kie-scene-card" id="kieScene_${no}" data-scene="${no}" style="padding:10px;background:#f8fdf8;border:2px solid #d1fae5;border-radius:8px;">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                        <input type="checkbox" class="kie-cb" data-idx="${i}" checked>
+                        <span style="font-weight:700;color:#059669;font-size:0.88rem;">[장면 ${no}]</span>
+                        <span style="font-size:0.72rem;color:#888;margin-left:auto;">⏱ ${s.duration || '?'}초</span>
+                        <button onclick="_kieGenerateOneByNo(${no})" class="search-btn" style="background:#10b981;border-color:#10b981;font-size:0.72rem;padding:4px 10px;">🖼️ 생성</button>
+                        <button onclick="_kieDownloadOne(${no})" class="search-btn" style="background:#1c7ed6;border-color:#1c7ed6;font-size:0.72rem;padding:4px 10px;">💾</button>
                     </div>
-                `;
-            });
-            list.innerHTML = html;
+                    <div style="font-size:0.75rem;color:#555;font-family:'Courier New',monospace;word-break:break-all;max-height:60px;overflow:auto;background:#fff;padding:6px 8px;border-radius:4px;border:1px solid #eee;">${_escHtml(short)}</div>
+                    <div id="kieResult_${no}" style="margin-top:6px;">${preview}</div>
+                </div>`;
+            }).join('');
         }
 
         function _escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -22826,6 +22854,40 @@ main1과 caption은 큰따옴표 자체는 빼고 안에 들어갈 텍스트만 
         function _kieGetSelectedScenes() {
             const cbs = document.querySelectorAll('.kie-cb:checked');
             return Array.from(cbs).map(c => _kieScenes[parseInt(c.dataset.idx)]).filter(Boolean);
+        }
+
+        function _kieGetSceneNo(s) { return s.sceneNo || s.id || 0; }
+
+        async function _kieGenerateOneByNo(sceneNo) {
+            const scene = _kieScenes.find(s => _kieGetSceneNo(s) == sceneNo);
+            if (!scene) return alert('장면을 찾을 수 없습니다.');
+            const apiKey = localStorage.getItem(KIE_API_KEY_STORAGE);
+            if (!apiKey) return alert('🔑 API 키를 먼저 저장해주세요.');
+            const card = document.getElementById('kieScene_' + sceneNo);
+            const resultDiv = document.getElementById('kieResult_' + sceneNo);
+            if (card) card.style.border = '2px solid #fbbf24';
+            if (resultDiv) resultDiv.innerHTML = '<div style="color:#059669;font-size:0.78rem;">⏳ 생성 중...</div>';
+            try {
+                const imageUrl = await _kieGenerateOne(scene);
+                if (imageUrl) {
+                    _kieResults[sceneNo] = { imageUrl, sceneId: sceneNo };
+                    if (card) card.style.border = '2px solid #10b981';
+                    if (resultDiv) resultDiv.innerHTML = `<img src="${imageUrl}" style="max-width:100%;border-radius:6px;border:2px solid #10b981;"><div style="margin-top:4px;"><span style="color:#10b981;font-size:0.78rem;">✅ 완료</span> <a href="${imageUrl}" target="_blank" style="font-size:0.72rem;color:#1c7ed6;">🔗 원본</a></div>`;
+                }
+            } catch (err) {
+                if (card) card.style.border = '2px solid #ef4444';
+                if (resultDiv) resultDiv.innerHTML = `<div style="color:#dc2626;font-size:0.75rem;">❌ ${_escHtml(err.message)}</div>`;
+            }
+        }
+
+        function _kieDownloadOne(sceneNo) {
+            const r = _kieResults[sceneNo];
+            if (!r || !r.imageUrl) return alert('아직 생성된 이미지가 없습니다.');
+            const a = document.createElement('a');
+            a.href = r.imageUrl;
+            a.download = `scene_${String(sceneNo).padStart(3, '0')}.png`;
+            a.target = '_blank';
+            a.click();
         }
 
         async function _kieCreateTask(prompt, resolution, aspectRatio) {
@@ -22873,7 +22935,11 @@ main1과 caption은 큰따옴표 자체는 빼고 안에 들어갈 텍스트만 
         async function _kieGenerateOne(scene) {
             const resolution = document.getElementById('kieResolution')?.value || '2K';
             const aspectRatio = document.getElementById('kieAspectRatio')?.value || '16:9';
-            const prompt = scene.nano_prompt || scene.aiPrompt || '';
+            const stylePrompt = document.getElementById('kieStylePrompt')?.value?.trim() || '';
+            const scriptContext = document.getElementById('kieScriptContext')?.value?.trim() || '';
+            let prompt = scene.nano_prompt || scene.aiPrompt || '';
+            if (stylePrompt) prompt = stylePrompt + ', ' + prompt;
+            if (scriptContext) prompt += '\n\n[Script context for reference: ' + scriptContext.substring(0, 500) + ']';
             const taskId = await _kieCreateTask(prompt, resolution, aspectRatio);
             const imageUrl = await _kiePollResult(taskId);
             return imageUrl;
@@ -22909,33 +22975,25 @@ main1과 caption은 큰따옴표 자체는 빼고 안에 들어갈 텍스트만 
 
             for (const scene of scenes) {
                 if (_kieStopFlag) break;
-                const card = document.getElementById('kieScene_' + scene.id);
+                const no = _kieGetSceneNo(scene);
+                const card = document.getElementById('kieScene_' + no);
+                const resultDiv = document.getElementById('kieResult_' + no);
                 if (card) card.style.border = '2px solid #fbbf24';
-                prog.textContent = `⏳ 장면 ${scene.id} 생성 중... (${done}/${scenes.length} 완료, ${failed} 실패)`;
+                if (resultDiv) resultDiv.innerHTML = '<div style="color:#059669;font-size:0.78rem;">⏳ 생성 중...</div>';
+                prog.textContent = `⏳ 장면 ${no} 생성 중... (${done}/${scenes.length} 완료, ${failed} 실패)`;
 
                 try {
                     const imageUrl = await _kieGenerateOne(scene);
                     if (imageUrl) {
-                        _kieResults[scene.id] = { imageUrl, sceneId: scene.id };
+                        _kieResults[no] = { imageUrl, sceneId: no };
                         done++;
-                        if (card) {
-                            card.style.border = '2px solid #10b981';
-                            const existing = card.querySelector('img');
-                            if (existing) existing.remove();
-                            card.insertAdjacentHTML('beforeend', `<img src="${imageUrl}" style="width:100%;border-radius:4px;margin-top:6px;" loading="lazy">`);
-                            const status = card.querySelector('span[style*="color:#10b981"]');
-                            if (!status) {
-                                const titleDiv = card.querySelector('div');
-                                if (titleDiv) titleDiv.insertAdjacentHTML('beforeend', ' <span style="color:#10b981;font-weight:700;">✅</span>');
-                            }
-                        }
+                        if (card) card.style.border = '2px solid #10b981';
+                        if (resultDiv) resultDiv.innerHTML = `<img src="${imageUrl}" style="max-width:100%;border-radius:6px;border:2px solid #10b981;"><div style="margin-top:4px;"><span style="color:#10b981;font-size:0.78rem;">✅ 완료</span></div>`;
                     }
                 } catch (err) {
                     failed++;
-                    if (card) {
-                        card.style.border = '2px solid #ef4444';
-                        card.insertAdjacentHTML('beforeend', `<div style="color:#dc2626;font-size:0.75rem;margin-top:4px;">❌ ${_escHtml(err.message)}</div>`);
-                    }
+                    if (card) card.style.border = '2px solid #ef4444';
+                    if (resultDiv) resultDiv.innerHTML = `<div style="color:#dc2626;font-size:0.75rem;">❌ ${_escHtml(err.message)}</div>`;
                     if (err.message.includes('API 키') || err.message.includes('크레딧')) break;
                 }
 
