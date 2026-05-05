@@ -21908,16 +21908,16 @@ main1과 caption은 큰따옴표 자체는 빼고 안에 들어갈 텍스트만 
         }
 
         // ═══ 분할 토글: 헬퍼/상태 ═══
-        // narrSec > 15초 → 그록 10초 × 슬로우 1.43배(=14.3초)로도 부족 → 분할 가능 대상
+        // narrSec > 18초 → 그록 10초 × 슬로우 1.8배 한계 초과 → 분할 가능 대상
         function _spNarrSec(s) {
             return Math.round(((s.text || '').length / 8.0) * 10) / 10;
         }
         function _spSceneNeedsSplit(s) {
-            return s && s.type === 'ai' && s.grok_prompt && _spNarrSec(s) > 15;
+            return s && s.type === 'ai' && s.grok_prompt && _spNarrSec(s) > 18;
         }
-        // 한 조각이 ≤14초가 되도록 분할 수 결정
+        // 한 조각이 ≤18초가 되도록 분할 수 결정 (슬로우 1.8배까지 허용)
         function _spSplitPartsCount(narrSec) {
-            return Math.max(2, Math.ceil(narrSec / 14));
+            return Math.max(2, Math.ceil(narrSec / 18));
         }
         // 분할 선택 + 캐시 결과 적용한 expanded scenes 반환 (sceneNo 1..N로 재번호)
         function _spExpandSplitScenes(originalScenes) {
@@ -21960,7 +21960,7 @@ main1과 caption은 큰따옴표 자체는 빼고 안에 들어갈 텍스트만 
             let html = '<div style="margin-bottom:8px;font-weight:700;color:#856404;">⚠️ 분할 가능 장면 ' + eligible.length + '개';
             if (splitOnCount > 0) html += ' <span style="color:#28a745;font-size:0.78rem;font-weight:600;">(분할 ON: ' + splitOnCount + '개)</span>';
             html += '</div>';
-            html += '<div style="font-size:0.75rem;color:#856404;margin-bottom:8px;">나레이션 15초 초과 장면입니다. 분할하면 같은 자리에 여러 장면이 들어가고, 뒤 장면 번호는 자동으로 밀립니다.</div>';
+            html += '<div style="font-size:0.75rem;color:#856404;margin-bottom:8px;">나레이션 18초 초과 장면입니다. 분할하면 같은 자리에 여러 장면이 들어가고, 뒤 장면 번호는 자동으로 밀립니다.</div>';
             html += '<div style="display:flex;flex-direction:column;gap:6px;">';
             eligible.forEach(s => {
                 const narrSec = _spNarrSec(s);
@@ -22120,7 +22120,7 @@ main1과 caption은 큰따옴표 자체는 빼고 안에 들어갈 텍스트만 
                     const slowRate = narrSec > grokSec ? Math.round((narrSec / grokSec) * 100) / 100 : 1.0;
 
                     let header;
-                    if (narrSec > 15) {
+                    if (narrSec > 18) {
                         header = `[장면 ${s.sceneNo}] ⚠️ 나레이션 ~${narrSec}초 - 분할 필요`;
                     } else if (slowRate > 1.0) {
                         header = `[장면 ${s.sceneNo}] 🎬 그록 ${grokSec}초 + 슬로우 ${slowRate}배 (나레이션 ~${narrSec}초)`;
