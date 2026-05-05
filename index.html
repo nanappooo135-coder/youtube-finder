@@ -22876,7 +22876,7 @@ main1과 caption은 큰따옴표 자체는 빼고 안에 들어갈 텍스트만 
                 }
             } catch (err) {
                 if (card) card.style.border = '2px solid #ef4444';
-                if (resultDiv) resultDiv.innerHTML = `<div style="color:#dc2626;font-size:0.75rem;">❌ ${_escHtml(err.message)}</div>`;
+                if (resultDiv) resultDiv.innerHTML = `<div style="color:#dc2626;font-size:0.75rem;">❌ ${_escHtml(err.message)} <button onclick="_kieGenerateOneByNo(${sceneNo})" class="search-btn" style="background:#f59e0b;border-color:#f59e0b;font-size:0.7rem;padding:2px 8px;margin-left:6px;">🔄 재생성</button></div>`;
             }
         }
 
@@ -22993,7 +22993,7 @@ main1과 caption은 큰따옴표 자체는 빼고 안에 들어갈 텍스트만 
                 } catch (err) {
                     failed++;
                     if (card) card.style.border = '2px solid #ef4444';
-                    if (resultDiv) resultDiv.innerHTML = `<div style="color:#dc2626;font-size:0.75rem;">❌ ${_escHtml(err.message)}</div>`;
+                    if (resultDiv) resultDiv.innerHTML = `<div style="color:#dc2626;font-size:0.75rem;">❌ ${_escHtml(err.message)} <button onclick="_kieGenerateOneByNo(${no})" class="search-btn" style="background:#f59e0b;border-color:#f59e0b;font-size:0.7rem;padding:2px 8px;margin-left:6px;">🔄 재생성</button></div>`;
                     if (err.message.includes('API 키') || err.message.includes('크레딧')) break;
                 }
 
