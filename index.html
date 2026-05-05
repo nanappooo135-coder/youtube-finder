@@ -22937,9 +22937,15 @@ main1과 caption은 큰따옴표 자체는 빼고 안에 들어갈 텍스트만 
             const aspectRatio = document.getElementById('kieAspectRatio')?.value || '16:9';
             const stylePrompt = document.getElementById('kieStylePrompt')?.value?.trim() || '';
             const scriptContext = document.getElementById('kieScriptContext')?.value?.trim() || '';
-            let prompt = scene.nano_prompt || scene.aiPrompt || '';
-            if (stylePrompt) prompt = stylePrompt + ', ' + prompt;
-            if (scriptContext) prompt += '\n\n[Script context for reference: ' + scriptContext.substring(0, 500) + ']';
+            const scenePrompt = scene.nano_prompt || scene.aiPrompt || '';
+
+            let prompt = '';
+            if (scriptContext) {
+                prompt += `[Full Script Context — use this to understand WHO appears in each scene, WHAT is happening, and generate accurate depictions of real people, places, and events mentioned]\n\n${scriptContext.substring(0, 15000)}\n\n---\n\n`;
+            }
+            if (stylePrompt) prompt += `[Art Style] ${stylePrompt}\n\n`;
+            prompt += `[Scene to generate] ${scenePrompt}`;
+
             const taskId = await _kieCreateTask(prompt, resolution, aspectRatio);
             const imageUrl = await _kiePollResult(taskId);
             return imageUrl;
