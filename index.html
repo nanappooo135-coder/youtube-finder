@@ -2567,6 +2567,7 @@
                             <button class="sp-result-tab" data-tab="real" onclick="_spSwitchResultTab('real')" style="padding:10px 16px;background:#f1f3f5;color:#495057;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">📷 실사 검색</button>
                             <button class="sp-result-tab" data-tab="claude" onclick="_spSwitchResultTab('claude')" style="padding:10px 16px;background:#f1f3f5;color:#495057;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">📊 Claude Design</button>
                             <button class="sp-result-tab" data-tab="freepik" onclick="_spSwitchResultTab('freepik')" style="padding:10px 16px;background:#f1f3f5;color:#495057;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">🖼️ 프리픽 이미지</button>
+                            <button class="sp-result-tab" data-tab="kieai" onclick="_spSwitchResultTab('kieai')" style="padding:10px 16px;background:#f1f3f5;color:#495057;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">🎨 Kie AI</button>
                             <button class="sp-result-tab" data-tab="thumbtext" onclick="_spSwitchResultTab('thumbtext')" style="padding:10px 16px;background:#f1f3f5;color:#495057;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">🏷️ 썸네일 텍스트</button>
                         </div>
 
@@ -2814,6 +2815,78 @@
 
                             <!-- 장면 리스트 -->
                             <div id="fpSceneList" style="display:flex;flex-direction:column;gap:8px;"></div>
+                        </div>
+
+                        <!-- Kie AI 나노바나나2 자동 생성 탭 -->
+                        <div id="spTab_kieai" class="sp-result-pane" style="display:none;">
+                            <p style="font-size:0.78rem;color:#666;margin-bottom:10px;">
+                                Kie AI API로 나노바나나2 이미지를 직접 생성합니다. 2K 기준 장당 82원 ($0.06).
+                            </p>
+
+                            <!-- API Key -->
+                            <div style="margin-bottom:10px;padding:10px;background:#ecfdf5;border:2px solid #10b981;border-radius:8px;">
+                                <label style="font-size:0.8rem;font-weight:600;color:#059669;">🔑 Kie AI API Key</label>
+                                <div style="display:flex;gap:6px;margin-top:4px;">
+                                    <input type="password" id="kieApiKey" placeholder="API key 입력 (kie.ai에서 발급)" style="flex:1;padding:8px 10px;border:2px solid #86efac;border-radius:6px;font-size:0.82rem;">
+                                    <button onclick="_kieToggleKey()" class="search-btn" style="background:#868e96;border-color:#868e96;padding:6px 10px;font-size:0.75rem;">👁</button>
+                                    <button onclick="_kieSaveApiKey()" class="search-btn" style="background:#10b981;border-color:#10b981;white-space:nowrap;font-size:0.82rem;">💾 저장</button>
+                                </div>
+                                <p style="font-size:0.72rem;color:#999;margin-top:4px;">
+                                    발급: <a href="https://kie.ai" target="_blank" style="color:#10b981;">kie.ai</a> → 로그인 → API Key 발급
+                                </p>
+                            </div>
+
+                            <!-- 해상도 / 비율 설정 -->
+                            <div style="display:flex;gap:12px;margin-bottom:10px;flex-wrap:wrap;align-items:center;">
+                                <div>
+                                    <label style="font-size:0.75rem;font-weight:600;color:#555;">해상도</label>
+                                    <select id="kieResolution" style="padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:0.8rem;">
+                                        <option value="1K">1K ($0.04/장)</option>
+                                        <option value="2K" selected>2K ($0.06/장)</option>
+                                        <option value="4K">4K ($0.09/장)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="font-size:0.75rem;font-weight:600;color:#555;">비율</label>
+                                    <select id="kieAspectRatio" style="padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:0.8rem;">
+                                        <option value="16:9" selected>16:9 (가로)</option>
+                                        <option value="1:1">1:1 (정사각)</option>
+                                        <option value="9:16">9:16 (세로)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- 컨트롤 버튼 -->
+                            <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;">
+                                <button onclick="_kieSelectAll()" class="search-btn" style="background:#495057;border-color:#495057;font-size:0.78rem;">☑️ 전체선택</button>
+                                <button onclick="_kieDeselectAll()" class="search-btn" style="background:#868e96;border-color:#868e96;font-size:0.78rem;">⬜ 전체해제</button>
+                                <button onclick="_kieGenerateSelected()" class="search-btn" style="background:#37b24d;border-color:#37b24d;font-size:0.82rem;font-weight:700;">🚀 선택 생성</button>
+                                <button onclick="_kieGenerateAll()" class="search-btn" style="background:#10b981;border-color:#10b981;font-size:0.82rem;font-weight:700;">⚡ 전체 생성</button>
+                                <button onclick="_kieStopGeneration()" class="search-btn" style="background:#868e96;border-color:#868e96;font-size:0.78rem;">⏹ 중지</button>
+                                <button onclick="_kieDownloadSelected()" class="search-btn" style="background:#1c7ed6;border-color:#1c7ed6;font-size:0.78rem;">📦 선택 다운로드 (ZIP)</button>
+                            </div>
+
+                            <!-- 커스텀 프롬프트 테스트 -->
+                            <details style="margin-bottom:12px;border:2px solid #e9ecef;border-radius:8px;padding:0;">
+                                <summary style="cursor:pointer;padding:10px 14px;font-weight:700;font-size:0.82rem;color:#059669;background:#ecfdf5;border-radius:6px;">🧪 커스텀 프롬프트 테스트 (직접 입력)</summary>
+                                <div style="padding:12px;">
+                                    <textarea id="kieTestPrompt" rows="3" placeholder="테스트할 프롬프트를 입력하세요..." style="width:100%;padding:10px;border:2px solid #86efac;border-radius:8px;font-size:0.82rem;resize:vertical;line-height:1.4;font-family:'Courier New',monospace;box-sizing:border-box;"></textarea>
+                                    <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
+                                        <button onclick="_kieTestGenerate()" class="search-btn" style="background:#10b981;border-color:#10b981;font-size:0.82rem;font-weight:700;">🚀 테스트 생성</button>
+                                        <span id="kieTestStatus" style="font-size:0.78rem;color:#666;"></span>
+                                    </div>
+                                    <div id="kieTestResult" style="margin-top:10px;"></div>
+                                </div>
+                            </details>
+
+                            <!-- 진행 상태 -->
+                            <div id="kieProgress" style="font-size:0.82rem;color:#059669;margin-bottom:8px;font-weight:600;"></div>
+                            <div id="kieProgressBar" style="display:none;margin-bottom:10px;background:#e9ecef;border-radius:6px;overflow:hidden;height:8px;">
+                                <div id="kieProgressFill" style="height:100%;background:#10b981;transition:width 0.3s;width:0%;"></div>
+                            </div>
+
+                            <!-- 장면 리스트 -->
+                            <div id="kieSceneList" style="display:flex;flex-direction:column;gap:8px;"></div>
                         </div>
 
                         <!-- 🏷️ 썸네일 텍스트 탭 (푸짐한경제학 3요소 공식, 10개) -->
@@ -22203,6 +22276,11 @@ main1과 caption은 큰따옴표 자체는 빼고 안에 들어갈 텍스트만 
                 _fpRenderSceneList(scenes.filter(s => s.type === 'ai' && s.nano_prompt));
             }
 
+            // 7) Kie AI — type=ai 장면 체크박스 목록
+            if (typeof _kieRenderSceneList === 'function') {
+                _kieRenderSceneList(scenes.filter(s => s.type === 'ai' && s.nano_prompt));
+            }
+
             // 첫 탭으로
             _spSwitchResultTab('sellpot');
         }
@@ -22671,6 +22749,249 @@ main1과 caption은 큰따옴표 자체는 빼고 안에 들어갈 텍스트만 
             const a = document.createElement('a');
             a.href = URL.createObjectURL(content);
             a.download = 'freepik_images.zip';
+            a.click();
+            URL.revokeObjectURL(a.href);
+
+            if (prog) prog.textContent = `✅ ${completed.length}개 이미지 ZIP 다운로드 완료!`;
+        }
+    </script>
+
+    <script>
+        // ═══════════════════════════════════════════════════════════════
+        // 🎨 Kie AI 나노바나나2 이미지 생성
+        // ═══════════════════════════════════════════════════════════════
+        const KIE_API_KEY_STORAGE = 'kie_ai_api_key';
+        let _kieResults = {};
+        let _kieStopFlag = false;
+        let _kieScenes = [];
+
+        function _kieToggleKey() {
+            const el = document.getElementById('kieApiKey');
+            el.type = el.type === 'password' ? 'text' : 'password';
+        }
+
+        function _kieSaveApiKey() {
+            const key = document.getElementById('kieApiKey').value.trim();
+            if (!key) return alert('API key를 입력하세요.');
+            localStorage.setItem(KIE_API_KEY_STORAGE, key);
+            const btn = event.target;
+            const orig = btn.textContent;
+            btn.textContent = '✅ 저장됨!';
+            setTimeout(() => btn.textContent = orig, 1500);
+        }
+
+        (function() {
+            const saved = localStorage.getItem(KIE_API_KEY_STORAGE);
+            if (saved) {
+                document.addEventListener('DOMContentLoaded', () => {
+                    const el = document.getElementById('kieApiKey');
+                    if (el) el.value = saved;
+                });
+            }
+        })();
+
+        function _kieRenderSceneList(aiScenes) {
+            _kieScenes = aiScenes || [];
+            const list = document.getElementById('kieSceneList');
+            if (!list || _kieScenes.length === 0) { if (list) list.innerHTML = '<p style="color:#888;font-size:0.82rem;">AI 이미지 장면이 없습니다.</p>'; return; }
+
+            let html = '';
+            _kieScenes.forEach((s, i) => {
+                const prompt = s.nano_prompt || s.aiPrompt || '';
+                const short = prompt.length > 100 ? prompt.substring(0, 100) + '...' : prompt;
+                const existing = _kieResults[s.id];
+                const imgHtml = existing ? `<img src="${existing.imageUrl}" style="width:100%;border-radius:4px;margin-top:6px;" loading="lazy">` : '';
+                const statusHtml = existing ? '<span style="color:#10b981;font-weight:700;">✅ 완료</span>' : '';
+                html += `
+                    <div id="kieScene_${s.id}" style="padding:10px;background:#f8fdf8;border:1px solid #d1fae5;border-radius:8px;">
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                            <input type="checkbox" class="kie-cb" data-idx="${i}" checked>
+                            <span style="font-weight:700;color:#059669;font-size:0.85rem;">장면 ${s.id}</span>
+                            ${statusHtml}
+                        </div>
+                        <div style="font-size:0.75rem;color:#666;line-height:1.4;font-family:'Courier New',monospace;">${_escHtml(short)}</div>
+                        ${imgHtml}
+                    </div>
+                `;
+            });
+            list.innerHTML = html;
+        }
+
+        function _escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+        function _kieSelectAll() { document.querySelectorAll('.kie-cb').forEach(c => c.checked = true); }
+        function _kieDeselectAll() { document.querySelectorAll('.kie-cb').forEach(c => c.checked = false); }
+        function _kieStopGeneration() { _kieStopFlag = true; }
+
+        function _kieGetSelectedScenes() {
+            const cbs = document.querySelectorAll('.kie-cb:checked');
+            return Array.from(cbs).map(c => _kieScenes[parseInt(c.dataset.idx)]).filter(Boolean);
+        }
+
+        async function _kieCreateTask(prompt, resolution, aspectRatio) {
+            const apiKey = localStorage.getItem(KIE_API_KEY_STORAGE);
+            if (!apiKey) throw new Error('API 키 없음');
+            const res = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    model: 'nano-banana-2',
+                    input: { prompt, aspect_ratio: aspectRatio || '16:9', resolution: resolution || '2K', output_format: 'png' }
+                })
+            });
+            if (!res.ok) {
+                if (res.status === 401) throw new Error('API 키 무효');
+                if (res.status === 402) throw new Error('크레딧 부족');
+                if (res.status === 429) throw new Error('요청 한도 초과');
+                throw new Error('요청 실패: ' + res.status);
+            }
+            const json = await res.json();
+            if (json.code !== 200) throw new Error(json.msg || '요청 실패');
+            return json.data.taskId;
+        }
+
+        async function _kiePollResult(taskId) {
+            const apiKey = localStorage.getItem(KIE_API_KEY_STORAGE);
+            for (let i = 0; i < 60; i++) {
+                if (_kieStopFlag) throw new Error('중지됨');
+                await new Promise(r => setTimeout(r, 3000));
+                const res = await fetch('https://api.kie.ai/api/v1/jobs/recordInfo?taskId=' + taskId, {
+                    headers: { 'Authorization': 'Bearer ' + apiKey }
+                });
+                if (!res.ok) continue;
+                const json = await res.json();
+                const state = json.data?.state;
+                if (state === 'success') {
+                    const result = JSON.parse(json.data.resultJson);
+                    return result.resultUrls?.[0] || null;
+                }
+                if (state === 'fail') throw new Error(json.data.failMsg || '생성 실패');
+            }
+            throw new Error('시간 초과');
+        }
+
+        async function _kieGenerateOne(scene) {
+            const resolution = document.getElementById('kieResolution')?.value || '2K';
+            const aspectRatio = document.getElementById('kieAspectRatio')?.value || '16:9';
+            const prompt = scene.nano_prompt || scene.aiPrompt || '';
+            const taskId = await _kieCreateTask(prompt, resolution, aspectRatio);
+            const imageUrl = await _kiePollResult(taskId);
+            return imageUrl;
+        }
+
+        async function _kieGenerateSelected() {
+            const selected = _kieGetSelectedScenes();
+            if (selected.length === 0) return alert('선택된 장면이 없습니다.');
+            await _kieRunBatch(selected);
+        }
+
+        async function _kieGenerateAll() {
+            if (_kieScenes.length === 0) return alert('장면이 없습니다.');
+            await _kieRunBatch(_kieScenes);
+        }
+
+        async function _kieRunBatch(scenes) {
+            const apiKey = localStorage.getItem(KIE_API_KEY_STORAGE);
+            if (!apiKey) return alert('🔑 Kie AI API 키를 먼저 저장해주세요.');
+
+            const resolution = document.getElementById('kieResolution')?.value || '2K';
+            const priceMap = { '1K': 0.04, '2K': 0.06, '4K': 0.09 };
+            const price = priceMap[resolution] || 0.06;
+            const cost = (scenes.length * price).toFixed(2);
+            if (!confirm(`${scenes.length}개 이미지를 ${resolution}로 생성합니다.\n예상 비용: $${cost} (약 ${Math.round(scenes.length * price * 1370)}원)\n\n진행할까요?`)) return;
+
+            _kieStopFlag = false;
+            const prog = document.getElementById('kieProgress');
+            const bar = document.getElementById('kieProgressBar');
+            const fill = document.getElementById('kieProgressFill');
+            bar.style.display = '';
+            let done = 0, failed = 0;
+
+            for (const scene of scenes) {
+                if (_kieStopFlag) break;
+                const card = document.getElementById('kieScene_' + scene.id);
+                if (card) card.style.border = '2px solid #fbbf24';
+                prog.textContent = `⏳ 장면 ${scene.id} 생성 중... (${done}/${scenes.length} 완료, ${failed} 실패)`;
+
+                try {
+                    const imageUrl = await _kieGenerateOne(scene);
+                    if (imageUrl) {
+                        _kieResults[scene.id] = { imageUrl, sceneId: scene.id };
+                        done++;
+                        if (card) {
+                            card.style.border = '2px solid #10b981';
+                            const existing = card.querySelector('img');
+                            if (existing) existing.remove();
+                            card.insertAdjacentHTML('beforeend', `<img src="${imageUrl}" style="width:100%;border-radius:4px;margin-top:6px;" loading="lazy">`);
+                            const status = card.querySelector('span[style*="color:#10b981"]');
+                            if (!status) {
+                                const titleDiv = card.querySelector('div');
+                                if (titleDiv) titleDiv.insertAdjacentHTML('beforeend', ' <span style="color:#10b981;font-weight:700;">✅</span>');
+                            }
+                        }
+                    }
+                } catch (err) {
+                    failed++;
+                    if (card) {
+                        card.style.border = '2px solid #ef4444';
+                        card.insertAdjacentHTML('beforeend', `<div style="color:#dc2626;font-size:0.75rem;margin-top:4px;">❌ ${_escHtml(err.message)}</div>`);
+                    }
+                    if (err.message.includes('API 키') || err.message.includes('크레딧')) break;
+                }
+
+                fill.style.width = Math.round(((done + failed) / scenes.length) * 100) + '%';
+                if (!_kieStopFlag && (done + failed) < scenes.length) await new Promise(r => setTimeout(r, 500));
+            }
+
+            prog.textContent = `✅ 완료: ${done}개 성공, ${failed}개 실패` + (_kieStopFlag ? ' (중지됨)' : '') + ` · 비용: $${(done * price).toFixed(2)} (${Math.round(done * price * 1370)}원)`;
+        }
+
+        async function _kieTestGenerate() {
+            const prompt = document.getElementById('kieTestPrompt')?.value?.trim();
+            if (!prompt) return alert('프롬프트를 입력하세요.');
+            const apiKey = localStorage.getItem(KIE_API_KEY_STORAGE);
+            if (!apiKey) return alert('API 키를 먼저 저장하세요.');
+
+            const status = document.getElementById('kieTestStatus');
+            const result = document.getElementById('kieTestResult');
+            status.textContent = '⏳ 생성 중...';
+            result.innerHTML = '';
+
+            try {
+                const resolution = document.getElementById('kieResolution')?.value || '2K';
+                const aspectRatio = document.getElementById('kieAspectRatio')?.value || '16:9';
+                const taskId = await _kieCreateTask(prompt, resolution, aspectRatio);
+                const imageUrl = await _kiePollResult(taskId);
+                status.textContent = '✅ 완료!';
+                result.innerHTML = `<img src="${imageUrl}" style="width:100%;border-radius:8px;margin-top:8px;"><div style="margin-top:4px;"><a href="${imageUrl}" target="_blank" style="font-size:0.75rem;color:#10b981;">🔗 원본 보기</a></div>`;
+            } catch (err) {
+                status.textContent = '❌ 실패: ' + err.message;
+            }
+        }
+
+        async function _kieDownloadSelected() {
+            const completed = Object.values(_kieResults);
+            if (completed.length === 0) return alert('생성된 이미지가 없습니다.');
+            const prog = document.getElementById('kieProgress');
+            if (prog) prog.textContent = `📦 ${completed.length}개 이미지 ZIP 준비 중...`;
+
+            const { default: JSZip } = await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm');
+            const zip = new JSZip();
+
+            for (const r of completed) {
+                const sceneNo = String(r.sceneId).padStart(3, '0');
+                let blob = null;
+                try { blob = await (await fetch(r.imageUrl)).blob(); } catch(e) { continue; }
+                if (blob) {
+                    const ext = blob.type?.includes('png') ? 'png' : 'jpg';
+                    zip.file(`scene_${sceneNo}.${ext}`, blob);
+                }
+            }
+
+            const content = await zip.generateAsync({ type: 'blob' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(content);
+            a.download = 'kieai_images.zip';
             a.click();
             URL.revokeObjectURL(a.href);
 
