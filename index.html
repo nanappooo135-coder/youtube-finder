@@ -22832,12 +22832,14 @@ main1과 caption은 큰따옴표 자체는 빼고 안에 들어갈 텍스트만 
                     : '';
                 return `
                 <div class="kie-scene-card" id="kieScene_${no}" data-scene="${no}" style="padding:10px;background:#f8fdf8;border:2px solid #d1fae5;border-radius:8px;">
-                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-                        <input type="checkbox" class="kie-cb" data-idx="${i}" checked>
-                        <span style="font-weight:700;color:#059669;font-size:0.88rem;">[장면 ${no}]</span>
-                        <span style="font-size:0.72rem;color:#888;margin-left:auto;">⏱ ${s.duration || '?'}초</span>
-                        <button onclick="_kieGenerateOneByNo(${no})" class="search-btn" style="background:#10b981;border-color:#10b981;font-size:0.72rem;padding:4px 10px;">🖼️ 생성</button>
-                        <button onclick="_kieDownloadOne(${no})" class="search-btn" style="background:#1c7ed6;border-color:#1c7ed6;font-size:0.72rem;padding:4px 10px;">💾</button>
+                    <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:nowrap;">
+                        <input type="checkbox" class="kie-cb" data-idx="${i}" checked style="flex-shrink:0;">
+                        <span style="font-weight:700;color:#059669;font-size:0.85rem;white-space:nowrap;">[장면 ${no}]</span>
+                        <span style="font-size:0.72rem;color:#888;white-space:nowrap;">⏱${s.duration || '?'}초</span>
+                        <span style="margin-left:auto;display:flex;gap:4px;flex-shrink:0;">
+                            <button onclick="_kieGenerateOneByNo(${no})" class="search-btn" style="background:#10b981;border-color:#10b981;font-size:0.72rem;padding:3px 8px;white-space:nowrap;">🖼️ 생성</button>
+                            <button onclick="_kieDownloadOne(${no})" class="search-btn" style="background:#1c7ed6;border-color:#1c7ed6;font-size:0.72rem;padding:3px 8px;white-space:nowrap;">💾</button>
+                        </span>
                     </div>
                     <div style="font-size:0.75rem;color:#555;font-family:'Courier New',monospace;word-break:break-all;max-height:60px;overflow:auto;background:#fff;padding:6px 8px;border-radius:4px;border:1px solid #eee;">${_escHtml(short)}</div>
                     <div id="kieResult_${no}" style="margin-top:6px;">${preview}</div>
@@ -22940,11 +22942,12 @@ main1과 caption은 큰따옴표 자체는 빼고 안에 들어갈 텍스트만 
             const scenePrompt = scene.nano_prompt || scene.aiPrompt || '';
 
             let prompt = '';
+            if (stylePrompt) prompt += stylePrompt + ', ';
+            prompt += scenePrompt;
             if (scriptContext) {
-                prompt += `[Full Script Context — use this to understand WHO appears in each scene, WHAT is happening, and generate accurate depictions of real people, places, and events mentioned]\n\n${scriptContext.substring(0, 15000)}\n\n---\n\n`;
+                const summary = scriptContext.substring(0, 2000);
+                prompt += `\n\n[Context: ${summary}]`;
             }
-            if (stylePrompt) prompt += `[Art Style] ${stylePrompt}\n\n`;
-            prompt += `[Scene to generate] ${scenePrompt}`;
 
             const taskId = await _kieCreateTask(prompt, resolution, aspectRatio);
             const imageUrl = await _kiePollResult(taskId);
