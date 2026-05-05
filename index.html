@@ -22916,7 +22916,7 @@ main1과 caption은 큰따옴표 자체는 빼고 안에 들어갈 텍스트만 
 
         async function _kiePollResult(taskId) {
             const apiKey = localStorage.getItem(KIE_API_KEY_STORAGE);
-            for (let i = 0; i < 60; i++) {
+            for (let i = 0; i < 120; i++) {
                 if (_kieStopFlag) throw new Error('중지됨');
                 await new Promise(r => setTimeout(r, 3000));
                 const res = await fetch('https://api.kie.ai/api/v1/jobs/recordInfo?taskId=' + taskId, {
@@ -22942,12 +22942,11 @@ main1과 caption은 큰따옴표 자체는 빼고 안에 들어갈 텍스트만 
             const scenePrompt = scene.nano_prompt || scene.aiPrompt || '';
 
             let prompt = '';
-            if (stylePrompt) prompt += stylePrompt + ', ';
-            prompt += scenePrompt;
             if (scriptContext) {
-                const summary = scriptContext.substring(0, 2000);
-                prompt += `\n\n[Context: ${summary}]`;
+                prompt += `[Full Script Context — use this to understand WHO appears in each scene, WHAT is happening, and generate accurate depictions of real people, places, and events mentioned]\n\n${scriptContext.substring(0, 15000)}\n\n---\n\n`;
             }
+            if (stylePrompt) prompt += `[Art Style] ${stylePrompt}\n\n`;
+            prompt += `[Scene to generate] ${scenePrompt}`;
 
             const taskId = await _kieCreateTask(prompt, resolution, aspectRatio);
             const imageUrl = await _kiePollResult(taskId);
