@@ -2550,6 +2550,72 @@
                 </div>
             </div>
 
+            <!-- ===== 📦 단순 묶기 모드 (Claude 후처리, 신규) ===== -->
+            <div class="section" style="border:2px dashed #20c997;background:#f0fff4;">
+                <div class="section-title" style="color:#0f7b5a;">📦 단순 묶기 모드 (Claude 후처리)</div>
+                <div class="section-content">
+                    <p style="font-size:0.85rem;color:#0f7b5a;margin-bottom:12px;">
+                        대본을 <strong>장면 단위로 묶기만</strong> 하고, type/이미지 프롬프트는 Claude에 보내서 채우는 가벼운 방식입니다.
+                        결과 JSON은 위 "JSON 직접 붙여넣기" 박스에 붙여 Import하면 모든 결과 탭(나노바나나2/그록/실사/Claude/프리픽/지도)에 표시됩니다.
+                    </p>
+
+                    <!-- 모드 선택 -->
+                    <div style="margin-bottom:12px;padding:10px 14px;background:#fff;border:2px solid #20c997;border-radius:8px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+                        <span style="font-weight:700;color:#0f7b5a;font-size:0.9rem;">묶기 방식</span>
+                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.88rem;">
+                            <input type="radio" name="gtMode" value="fixed" checked onchange="_gtToggleMode()">
+                            <span>📏 고정 N문장</span>
+                        </label>
+                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.88rem;">
+                            <input type="radio" name="gtMode" value="semantic" onchange="_gtToggleMode()">
+                            <span>🧠 AI 의미 응집 <span style="color:#888;font-size:0.75rem;">(Gemini)</span></span>
+                        </label>
+                    </div>
+
+                    <!-- N문장 (고정 모드만) -->
+                    <div id="gtNRow" style="margin-bottom:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                        <span style="font-weight:700;font-size:0.88rem;color:#0f7b5a;">📦 N문장 묶음 <span style="font-weight:400;font-size:0.75rem;color:#888;">(상한 6문장 — 초과시 자동 split)</span></span>
+                        <button class="search-btn gt-n-btn" data-n="4" onclick="_gtSetN(4)" style="padding:8px 16px;font-size:0.9rem;background:#e9ecef;border-color:#ced4da;color:#495057;">4문장</button>
+                        <button class="search-btn gt-n-btn active-n" data-n="5" onclick="_gtSetN(5)" style="padding:8px 16px;font-size:0.9rem;background:#20c997;border-color:#20c997;">5문장</button>
+                        <button class="search-btn gt-n-btn" data-n="6" onclick="_gtSetN(6)" style="padding:8px 16px;font-size:0.9rem;background:#e9ecef;border-color:#ced4da;color:#495057;">6문장</button>
+                    </div>
+
+                    <!-- 대본 입력 -->
+                    <div class="input-group">
+                        <label>📝 대본 전체 <span style="color:#888;font-weight:400;">(마침표 . 또는 줄바꿈 기준 문장 분리)</span></label>
+                        <textarea id="gtScript" rows="12" placeholder="대본을 붙여넣으세요. 도입부+본문 합쳐서 한 번에." style="width:100%;padding:12px;border:2px solid #20c997;border-radius:10px;font-size:0.9rem;line-height:1.6;resize:vertical;"></textarea>
+                        <div id="gtScriptStats" style="margin-top:6px;font-size:0.78rem;color:#888;"></div>
+                    </div>
+
+                    <button id="gtGroupBtn" class="search-btn" onclick="gtGroup()" style="width:100%;font-size:1.05rem;padding:14px;background:#0f7b5a;border-color:#0f7b5a;">
+                        📦 묶기 실행
+                    </button>
+                    <div id="gtStatus" style="margin-top:8px;font-size:0.85rem;color:#888;"></div>
+
+                    <!-- 결과 -->
+                    <div id="gtResultSection" style="display:none;margin-top:14px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+                            <div id="gtResultSummary" style="font-weight:700;color:#0f7b5a;font-size:0.95rem;"></div>
+                            <button class="search-btn" onclick="_gtCopyClaudePrompt(this)" style="padding:8px 18px;font-size:0.88rem;background:#8b5cf6;border-color:#8b5cf6;">📋 Claude 프롬프트 자동 복사 (이 묶음 기반)</button>
+                        </div>
+
+                        <!-- 카드 미리보기 -->
+                        <div id="gtSceneCards" style="margin-bottom:10px;max-height:400px;overflow:auto;border:1px solid #20c997;border-radius:8px;padding:10px;background:#fff;"></div>
+
+                        <!-- 복사용 텍스트박스 -->
+                        <label style="font-size:0.82rem;color:#0f7b5a;font-weight:700;margin-bottom:4px;display:block;">📋 빈 줄 2개 구분된 묶음 텍스트 (셀팟 직접 붙여넣기용)</label>
+                        <div style="position:relative;">
+                            <button onclick="_gtCopyText(this)" style="position:absolute;top:6px;right:6px;padding:4px 10px;font-size:0.78rem;background:#0f7b5a;color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:600;">📋 복사</button>
+                            <textarea id="gtSceneText" readonly rows="10" style="width:100%;padding:12px 12px 12px 12px;border:2px solid #20c997;border-radius:8px;font-size:0.85rem;line-height:1.7;background:#fafffd;resize:vertical;"></textarea>
+                        </div>
+
+                        <p style="font-size:0.78rem;color:#0f7b5a;margin-top:8px;">
+                            💡 위 [📋 Claude 프롬프트 자동 복사] → Claude에 붙여넣기 → JSON 받아서 → 위 "JSON 직접 붙여넣기" 박스에 paste → Import.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
             <!-- 결과 5탭 -->
             <div id="spResultSection" style="display:none;">
                 <div class="section">
@@ -2569,6 +2635,7 @@
                             <button class="sp-result-tab" data-tab="freepik" onclick="_spSwitchResultTab('freepik')" style="padding:10px 16px;background:#f1f3f5;color:#495057;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">🖼️ 프리픽 이미지</button>
                             <button class="sp-result-tab" data-tab="kieai" onclick="_spSwitchResultTab('kieai')" style="padding:10px 16px;background:#f1f3f5;color:#495057;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">🎨 Kie AI</button>
                             <button class="sp-result-tab" data-tab="thumbtext" onclick="_spSwitchResultTab('thumbtext')" style="padding:10px 16px;background:#f1f3f5;color:#495057;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">🏷️ 썸네일 텍스트</button>
+                            <button class="sp-result-tab" data-tab="map" onclick="_spSwitchResultTab('map')" style="padding:10px 16px;background:#f1f3f5;color:#495057;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">🗺️ 지도</button>
                         </div>
 
                         <!-- 셀팟 붙여넣기 탭 -->
@@ -2909,6 +2976,18 @@
                                 <div id="spThumbTextCore" style="font-size:0.85rem;color:#c2185b;background:#fff;padding:8px 10px;border-radius:6px;border:1px dashed #f8b6d0;display:none;"></div>
                             </div>
                             <div id="spThumbTextResults"></div>
+                        </div>
+
+                        <!-- 🗺️ 지도 탭 (AI 이미지 생성용 한글 라벨 지도 프롬프트) -->
+                        <div id="spTab_map" class="sp-result-pane" style="display:none;">
+                            <div style="margin-bottom:12px;padding:12px 14px;background:linear-gradient(135deg,#e3f2fd 0%,#e8f5e9 100%);border:2px solid #1976d2;border-radius:10px;">
+                                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:8px;">
+                                    <div style="font-weight:700;color:#0d47a1;font-size:0.95rem;">🗺️ 지도 장면 분석 <span style="font-size:0.78rem;font-weight:400;color:#888;">(AI가 지도 어울리는 장면 감지 · 한글 라벨 강조 프롬프트 생성)</span></div>
+                                    <button id="spMapBtn" class="search-btn" onclick="spAnalyzeMaps()" style="padding:8px 18px;font-size:0.88rem;background:#1976d2;border-color:#1976d2;">🗺️ 지도 장면 분석</button>
+                                </div>
+                                <div id="spMapStatus" style="font-size:0.8rem;color:#888;margin-bottom:4px;">변환된 장면이 없으면 먼저 셀팟 변환 또는 JSON Import를 실행하세요.</div>
+                            </div>
+                            <div id="spMapResults"></div>
                         </div>
 
                     </div>
@@ -21970,6 +22049,320 @@ main1과 caption은 큰따옴표 자체는 빼고 안에 들어갈 텍스트만 
             } finally {
                 btn.disabled = false;
                 btn.textContent = btn.dataset.generated === '1' ? '🔄 다시 생성' : '✨ 10개 생성';
+            }
+        }
+
+        // ===== 📦 단순 묶기 모드 (셀팟 기본, 신규) =====
+        let _gtN = 5;
+        const _gtMaxN = 6;
+
+        function _gtSetN(n) {
+            _gtN = n;
+            document.querySelectorAll('.gt-n-btn').forEach(b => {
+                const active = parseInt(b.dataset.n, 10) === n;
+                b.classList.toggle('active-n', active);
+                b.style.background = active ? '#20c997' : '#e9ecef';
+                b.style.borderColor = active ? '#20c997' : '#ced4da';
+                b.style.color = active ? '#fff' : '#495057';
+            });
+        }
+
+        function _gtToggleMode() {
+            const mode = (document.querySelector('input[name="gtMode"]:checked') || {}).value || 'fixed';
+            const nRow = document.getElementById('gtNRow');
+            if (nRow) nRow.style.display = mode === 'fixed' ? '' : 'none';
+        }
+
+        function _gtSplitSentences(text) {
+            // 마침표(.!?), 줄바꿈 기준 분리. 문장 끝 따옴표/괄호 보존
+            return text
+                .replace(/\r\n/g, '\n')
+                .split(/(?<=[.!?。])\s+|\n{1,}/)
+                .map(s => s.trim())
+                .filter(s => s.length > 0);
+        }
+
+        function _gtGroupFixed(sentences, n) {
+            const cap = Math.min(n, _gtMaxN);
+            const scenes = [];
+            for (let i = 0; i < sentences.length; i += cap) {
+                scenes.push(sentences.slice(i, i + cap));
+            }
+            return scenes;
+        }
+
+        async function _gtGroupSemantic(sentences) {
+            const numbered = sentences.map((s, i) => `${i + 1}. ${s}`).join('\n');
+            const prompt = `다음은 ${sentences.length}개 문장으로 구성된 대본입니다. 의미 응집도(같은 주제·사건·감정 흐름)에 따라 장면 단위로 묶으세요.
+
+## 규칙
+- 한 장면 최대 ${_gtMaxN}문장
+- 새 정보·인물·전환점이 나오면 새 장면
+- 모든 문장이 정확히 1개 장면에 속해야 함 (누락·중복 금지)
+- 문장 순서는 절대 바꾸지 말 것
+
+## 출력 (JSON만, 다른 텍스트 금지)
+\`\`\`json
+{"scenes": [[1,2,3], [4,5], [6,7,8,9], ...]}
+\`\`\`
+숫자는 1-base 문장 번호.
+
+## 문장
+${numbered}`;
+
+            const r = await callGemini(prompt, { maxTokens: 4000, temperature: 0.3, model: 'gemini-2.5-pro' });
+            const raw = (r && typeof r === 'object') ? (r.text || '') : (r || '');
+            console.log('[_gtGroupSemantic] raw:', raw);
+            if (!raw || !raw.trim()) throw new Error('Gemini 응답 비어있음');
+            let txt = raw.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '');
+            const fb = txt.indexOf('{'); const lb = txt.lastIndexOf('}');
+            if (fb >= 0 && lb > fb) txt = txt.substring(fb, lb + 1);
+            const parsed = JSON.parse(txt);
+            const arr = parsed.scenes || [];
+            if (!Array.isArray(arr) || !arr.length) throw new Error('scenes 배열 비어있음');
+
+            // 응집 결과를 _gtMaxN 상한으로 split
+            const split = [];
+            for (const grp of arr) {
+                if (!Array.isArray(grp)) continue;
+                const sents = grp.map(i => sentences[i - 1]).filter(Boolean);
+                for (let i = 0; i < sents.length; i += _gtMaxN) {
+                    split.push(sents.slice(i, i + _gtMaxN));
+                }
+            }
+            return split;
+        }
+
+        function _gtRenderScenes(scenes) {
+            const cards = document.getElementById('gtSceneCards');
+            const text = document.getElementById('gtSceneText');
+            const summary = document.getElementById('gtResultSummary');
+            const totalSents = scenes.reduce((a, b) => a + b.length, 0);
+            const avgLen = scenes.length ? (totalSents / scenes.length).toFixed(1) : 0;
+            summary.textContent = `📊 총 ${scenes.length}장면 · 총 ${totalSents}문장 · 평균 ${avgLen}문장/장면`;
+
+            cards.innerHTML = scenes.map((sents, i) => `
+                <div style="margin-bottom:8px;padding:10px 12px;background:#fafffd;border-left:4px solid #20c997;border-radius:4px;">
+                    <div style="font-weight:700;color:#0f7b5a;font-size:0.85rem;margin-bottom:4px;">장면 ${i + 1} <span style="color:#888;font-weight:400;font-size:0.78rem;">(${sents.length}문장)</span></div>
+                    <div style="font-size:0.85rem;color:#212529;line-height:1.6;">${sents.map(s => s.replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]))).join(' ')}</div>
+                </div>
+            `).join('');
+
+            text.value = scenes.map(sents => sents.join(' ')).join('\n\n');
+        }
+
+        async function gtGroup() {
+            const script = (document.getElementById('gtScript').value || '').trim();
+            const status = document.getElementById('gtStatus');
+            const btn = document.getElementById('gtGroupBtn');
+            const resultSection = document.getElementById('gtResultSection');
+            const stats = document.getElementById('gtScriptStats');
+            if (!script) { alert('대본을 입력하세요.'); return; }
+
+            const sentences = _gtSplitSentences(script);
+            if (stats) stats.textContent = `문장 분리: ${sentences.length}개 · ${script.length.toLocaleString()}자`;
+
+            const mode = (document.querySelector('input[name="gtMode"]:checked') || {}).value || 'fixed';
+            btn.disabled = true;
+            const oldLabel = btn.textContent;
+            btn.textContent = '⏳ 묶는 중...';
+            status.innerHTML = `<span style="color:#0f7b5a;">📦 ${mode === 'fixed' ? `고정 ${_gtN}문장` : 'AI 의미 응집'} 모드로 묶는 중... (${sentences.length}문장)</span>`;
+
+            try {
+                let scenes;
+                if (mode === 'fixed') {
+                    scenes = _gtGroupFixed(sentences, _gtN);
+                } else {
+                    scenes = await _gtGroupSemantic(sentences);
+                }
+                _gtRenderScenes(scenes);
+                window._gtLastScenes = scenes;
+                resultSection.style.display = '';
+                status.innerHTML = `<span style="color:#28a745;">✅ ${scenes.length}장면 완료. [📋 Claude 프롬프트 자동 복사] 누르세요.</span>`;
+            } catch (e) {
+                status.innerHTML = `<span style="color:#dc3545;">❌ 실패: ${e.message}</span>`;
+                console.error('[gtGroup]', e);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = oldLabel;
+            }
+        }
+
+        function _gtCopyText(btn) {
+            const ta = document.getElementById('gtSceneText');
+            ta.select();
+            navigator.clipboard.writeText(ta.value).then(() => {
+                btn.textContent = '✅ 복사됨';
+                setTimeout(() => btn.textContent = '📋 복사', 1500);
+            });
+        }
+
+        function _gtCopyClaudePrompt(btn) {
+            const scenes = window._gtLastScenes || [];
+            if (!scenes.length) { alert('먼저 [📦 묶기 실행]을 누르세요.'); return; }
+
+            // 채널 모드 가져오기
+            const channel = (typeof _spChannel !== 'undefined') ? _spChannel : 'economics';
+            const channelLabel = channel === 'psychology' ? '심리학' : '경제';
+
+            const stylePrompt = (document.getElementById('spStylePrompt')?.value || '').trim();
+
+            const sceneList = scenes.map((sents, i) => `### 장면 ${i + 1}\n${sents.join(' ')}`).join('\n\n');
+
+            const prompt = `당신은 유튜브 영상 장면 분류 전문가입니다. 아래 ${scenes.length}개 장면이 이미 묶여있습니다. 각 장면을 그대로 유지하면서 type/duration/이미지 프롬프트만 채워서 JSON으로 출력하세요.
+
+## 채널 모드: ${channelLabel}
+${stylePrompt ? `\n## 그림체 프롬프트\n${stylePrompt}\n` : ''}
+
+## 절대 규칙
+1. 장면 순서·내용 절대 변경 금지. 묶음 그대로 유지.
+2. 각 장면별로 가장 적합한 타입 1개 선택:
+   - "ai" : AI 일러스트 (역사·구조·추상·은유·인물·도시·전쟁 장면)
+   - "real" : 실사 사진/영상 (현대 무기·장비·실존 인물·지역·구체적 사건)
+   - "claude_design" : 데이터 시각화 (숫자 비교·법칙·차트·인포그래픽). ${channel === 'psychology' ? '전체 15%' : '전체 10%'} 이내.
+3. duration: 6초 또는 10초 (긴 문장이거나 복잡한 장면은 10초)
+4. 각 장면별 narration 필드에는 그 장면의 모든 문장을 한 줄로 합쳐 넣기.
+
+## 각 장면 필수 필드
+\`\`\`json
+{
+  "sceneNo": 1,
+  "type": "ai" | "real" | "claude_design",
+  "duration": 6 | 10,
+  "narration": "장면 문장 전체 (한 줄로)",
+  "nano_prompt": "type=ai/claude_design일 때 영문 이미지 프롬프트. ABSOLUTE RULE: NO text/letters/words.",
+  "real_keyword": "type=real일 때 한글 검색 키워드 (공식명·모델번호 포함)",
+  "claude_prompt": "type=claude_design일 때 데이터 시각화 설명"
+}
+\`\`\`
+
+## 출력 (JSON만, 다른 텍스트 금지)
+\`\`\`json
+{"scenes": [{...}, {...}, ...]}
+\`\`\`
+
+## 입력 장면 (이미 묶음 완료)
+${sceneList}`;
+
+            navigator.clipboard.writeText(prompt).then(() => {
+                btn.textContent = '✅ 복사됨';
+                setTimeout(() => btn.textContent = '📋 Claude 프롬프트 자동 복사 (이 묶음 기반)', 2000);
+            });
+        }
+
+        // ===== 🗺️ 지도 탭 (AI 이미지용 한글 라벨 지도 프롬프트) =====
+        async function spAnalyzeMaps() {
+            const status = document.getElementById('spMapStatus');
+            const results = document.getElementById('spMapResults');
+            const btn = document.getElementById('spMapBtn');
+
+            const scenes = window._spLastScenes || [];
+            if (!scenes.length) {
+                alert('변환된 장면이 없습니다. 먼저 셀팟 변환 또는 JSON Import를 실행하세요.');
+                return;
+            }
+
+            btn.disabled = true;
+            const oldLabel = btn.textContent;
+            btn.textContent = '⏳ 분석 중...';
+            status.innerHTML = `<span style="color:#1976d2;">🤖 Gemini Pro가 ${scenes.length}장면 중 지도 어울리는 장면 감지 중...</span>`;
+            results.innerHTML = '';
+
+            const sceneList = scenes.map(s => `장면 ${s.sceneNo || '?'}: ${(s.narration || s.text || '').slice(0, 200)}`).join('\n');
+
+            const prompt = `당신은 유튜브 경제·시사 영상의 지도 시각화 전문가입니다. 아래 장면들 중 **지도(MAP)가 들어가면 시청자 이해도가 높아질 장면**만 골라 한국어 라벨이 명확한 AI 이미지 생성 프롬프트를 만드세요.
+
+## 지도가 어울리는 장면 기준
+- 지명·국가·지역·해협·항로·국경 등 지리적 위치가 핵심인 장면
+- 영토 변화·이동 경로·전쟁 전선·자원 분포·지정학적 관계 설명 장면
+- 단순히 국가명만 언급되는 장면은 제외 (지도 안 만들면 시청자가 혼란할 정도로 위치가 핵심일 때만)
+
+## 한글이 잘 나오는 AI 이미지 프롬프트 작성 원칙
+한글 텍스트는 AI 이미지 모델(나노바나나2/Magnific/Imagen 등)이 가장 어려워하는 부분입니다. 다음 규칙을 반드시 지키세요:
+1. 라벨은 **굵고 큰 한글 폰트(bold large Korean)** 명시
+2. 라벨 개수는 **3~6개로 제한** (너무 많으면 깨짐)
+3. **고딕 산세리프(sans-serif clean)** 명시
+4. 배경은 **단순한 색조** (지도가 잘 보이게)
+5. 한글 라벨 옆에 **영문 병기** ("호르무즈 해협 / Hormuz Strait")
+6. 영문 프롬프트 안에 **한글 라벨을 그대로** 박을 것 (\`Korean labels: "호르무즈 해협", "이란", "오만"\`)
+7. 마지막에 항상: \`high quality, clean typography, Korean text rendered correctly, bold sans-serif font\`
+
+## 지도 종류별 키워드
+- 위치 표시: pin map / point map
+- 영토: territorial map
+- 항로/해협: shipping route map / strait map
+- 지정학: geopolitical map
+- 역사 변화: historical territory change map
+- 자원: resource distribution map
+
+## 출력 (JSON 배열만, 다른 텍스트 금지)
+\`\`\`json
+[
+  {
+    "sceneNo": 5,
+    "narration_excerpt": "원본 장면 일부 (50자 이내)",
+    "map_type": "지도 종류 한글 (예: 호르무즈 해협 항로 지도)",
+    "korean_labels": ["호르무즈 해협", "이란", "오만"],
+    "ai_prompt": "Detailed top-down map of [지역] in clean editorial style. Korean labels rendered correctly: \\"호르무즈 해협\\" / \\"이란\\" / \\"오만\\". Bold sans-serif Korean font, large readable size. Soft pastel colors. Minimal background. high quality, clean typography, Korean text rendered correctly, bold sans-serif font."
+  },
+  ...
+]
+\`\`\`
+
+지도 어울리는 장면이 없으면 빈 배열 \`[]\`을 출력하세요.
+
+## 장면 목록
+${sceneList}`;
+
+            try {
+                const r = await callGemini(prompt, { maxTokens: 6000, temperature: 0.4, model: 'gemini-2.5-pro' });
+                const raw = (r && typeof r === 'object') ? (r.text || '') : (r || '');
+                console.log('[spAnalyzeMaps] raw:', raw);
+                if (!raw || !raw.trim()) throw new Error('Gemini 응답 비어있음');
+
+                let txt = raw.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '');
+                const fb = txt.indexOf('['); const lb = txt.lastIndexOf(']');
+                if (fb >= 0 && lb > fb) txt = txt.substring(fb, lb + 1);
+
+                let arr;
+                try { arr = JSON.parse(txt); } catch (e) {
+                    throw new Error('JSON 파싱 실패. 응답 일부: ' + txt.slice(0, 300));
+                }
+                if (!Array.isArray(arr)) throw new Error('배열 아님');
+
+                if (arr.length === 0) {
+                    status.innerHTML = `<span style="color:#888;">📭 지도가 어울리는 장면이 발견되지 않았습니다.</span>`;
+                    results.innerHTML = '';
+                    return;
+                }
+
+                results.innerHTML = arr.map((item, i) => {
+                    const sceneNo = item.sceneNo || '?';
+                    const excerpt = (item.narration_excerpt || '').replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
+                    const mapType = (item.map_type || '').replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
+                    const labels = (item.korean_labels || []).join(' · ');
+                    const aiPrompt = item.ai_prompt || '';
+                    const escapedPrompt = aiPrompt.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$/g, '\\$').replace(/"/g, '&quot;');
+                    return `
+                        <div style="margin-bottom:10px;padding:12px 14px;background:#fff;border:1px solid #90caf9;border-radius:8px;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:8px;">
+                                <span style="font-weight:700;color:#0d47a1;font-size:0.9rem;">🗺️ 장면 ${sceneNo} — ${mapType}</span>
+                                <button onclick="navigator.clipboard.writeText(\`${escapedPrompt}\`).then(()=>{this.textContent='✅ 복사됨';setTimeout(()=>this.textContent='📋 AI 프롬프트 복사',1500);})" style="padding:4px 10px;font-size:0.78rem;background:#1976d2;color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:600;">📋 AI 프롬프트 복사</button>
+                            </div>
+                            <div style="font-size:0.82rem;color:#666;margin-bottom:6px;">"${excerpt}"</div>
+                            <div style="font-size:0.78rem;color:#0d47a1;margin-bottom:6px;"><strong>한글 라벨:</strong> ${labels}</div>
+                            <textarea readonly style="width:100%;min-height:90px;padding:8px;font-size:0.78rem;font-family:'Courier New',monospace;background:#f5f9ff;border:1px solid #bbdefb;border-radius:4px;line-height:1.5;resize:vertical;">${aiPrompt.replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]))}</textarea>
+                        </div>
+                    `;
+                }).join('');
+
+                status.innerHTML = `<span style="color:#28a745;">✅ ${arr.length}개 지도 장면 추천 — 각 카드 [📋 AI 프롬프트 복사]로 나노바나나2/Magnific에 붙여넣기</span>`;
+            } catch (e) {
+                status.innerHTML = `<span style="color:#dc3545;">❌ 실패: ${e.message}</span>`;
+                console.error('[spAnalyzeMaps]', e);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = oldLabel;
             }
         }
 
