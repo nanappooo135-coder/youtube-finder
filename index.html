@@ -22133,16 +22133,31 @@ main1과 caption은 큰따옴표 자체는 빼고 안에 들어갈 텍스트만 
 ## 문장
 ${numbered}`;
 
-            const r = await callGemini(prompt, { maxTokens: 4000, temperature: 0.3, model: 'gemini-2.5-pro' });
+            // 긴 대본 (~100문장 이상)은 응답 토큰 여유 필요
+            const dynMaxTokens = Math.max(8000, sentences.length * 80);
+            const r = await callGemini(prompt, { maxTokens: dynMaxTokens, temperature: 0.3, model: 'gemini-2.5-pro' });
             const raw = (r && typeof r === 'object') ? (r.text || '') : (r || '');
-            console.log('[_gtGroupSemantic] raw:', raw);
-            if (!raw || !raw.trim()) throw new Error('Gemini 응답 비어있음');
+            console.log('[_gtGroupSemantic] raw response length:', (raw || '').length, 'preview:', (raw || '').slice(0, 500));
+            if (!raw || !raw.trim()) throw new Error('Gemini 응답 비어있음 (키 할당량 또는 안전필터). F12 콘솔 확인');
+
             let txt = raw.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '');
             const fb = txt.indexOf('{'); const lb = txt.lastIndexOf('}');
-            if (fb >= 0 && lb > fb) txt = txt.substring(fb, lb + 1);
-            const parsed = JSON.parse(txt);
+            if (fb < 0) {
+                throw new Error('JSON 객체 시작 { 없음. 응답: ' + raw.slice(0, 200));
+            }
+            if (lb <= fb) {
+                throw new Error('JSON 잘림 (응답이 중간에 끊김, ' + raw.length + '자). maxTokens 부족 가능성. 대본 길이 줄이거나 고정 N문장 모드 사용 권장. 응답 끝 100자: ' + raw.slice(-100));
+            }
+            txt = txt.substring(fb, lb + 1);
+
+            let parsed;
+            try {
+                parsed = JSON.parse(txt);
+            } catch (parseErr) {
+                throw new Error('JSON 파싱 실패: ' + parseErr.message + '. 응답 끝 200자: ' + txt.slice(-200));
+            }
             const arr = parsed.scenes || [];
-            if (!Array.isArray(arr) || !arr.length) throw new Error('scenes 배열 비어있음');
+            if (!Array.isArray(arr) || !arr.length) throw new Error('scenes 배열 비어있음. 응답: ' + JSON.stringify(parsed).slice(0, 200));
 
             // 응집 결과를 _gtMaxN 상한으로 split
             let split = [];
