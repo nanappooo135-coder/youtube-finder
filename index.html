@@ -22148,7 +22148,8 @@ ${numbered}`;
                 </div>
             `).join('');
 
-            text.value = scenes.map(sents => sents.join(' ')).join('\n\n');
+            // 빈 줄 2개 = '\n\n\n' (셀팟 기본 규격, 기존 변환과 동일)
+            text.value = scenes.map(sents => sents.join(' ')).join('\n\n\n');
         }
 
         async function gtGroup() {
