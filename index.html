@@ -22290,21 +22290,45 @@ ${fullText}
 ${stylePrompt ? `\n## 그림체 프롬프트\n${stylePrompt}\n` : ''}
 
 # 채워야 할 필드 (장면 묶음은 그대로!)
-1. **type** (장면별로 가장 적합한 1개 선택):
+
+## 모든 장면 공통 필수
+1. **sceneNo** : 1, 2, ..., ${N} 순서대로
+2. **type** : "ai" | "real" | "claude_design"
    - "ai" : AI 일러스트 (역사·구조·추상·은유·인물·도시·전쟁)
    - "real" : 실사 사진/영상 (현대 무기·장비·실존 인물·지역·구체적 사건)
    - "claude_design" : 데이터 시각화 (숫자 비교·법칙·차트·인포그래픽). 전체 ${channel === 'psychology' ? '15%' : '10%'} 이내.
-2. **duration** : 6초 또는 10초 (장면 문장 수가 4문장 이상이거나 복잡하면 10초)
-3. **narration** : ⚠️ 입력 장면의 모든 문장을 한 줄로 합쳐 그대로 박기
-4. **nano_prompt** : type=ai/claude_design일 때 영문 이미지 프롬프트. \`ABSOLUTE RULE: NO text/letters/words.\`
-5. **real_keyword** : type=real일 때 한글 검색 키워드 (공식명·모델번호 포함)
-6. **claude_prompt** : type=claude_design일 때 데이터 시각화 설명
+3. **duration** : 6 또는 10 (4문장 이상이거나 복잡하면 10)
+4. **narration** : ⚠️ 입력 장면의 모든 문장을 한 줄로 합쳐 그대로 박기
+
+## type별 추가 필수 필드 (반드시 채울 것)
+
+### type="ai" 인 장면
+- **nano_prompt** : 영문 이미지 프롬프트. 그림체 프롬프트 톤 반영. 끝에 \`ABSOLUTE RULE: NO text, NO letters, NO words, NO numbers anywhere in the image.\` 박기
+- **grok_prompt** : 영문 영상화 프롬프트. ⚠️ **반드시 다음 STRICT RULES 고정 문구를 그대로 포함** (어떤 변경도 금지):
+  \`STRICT RULES: maintain the EXACT original 2D illustrated style from the input image. NO photorealism, NO live-action drift, NO style change, NO 3D, NO anime conversion. NO scene transitions, NO location change, NO new background, NO cuts to other shots. Stay in the SAME scene from the input image throughout the entire clip. ABSOLUTELY NO NEW HUMAN FACES anywhere in the video. NO new characters appearing, NO portraits emerging, NO people materializing in empty areas. NO exaggerated actions, NO dramatic gestures, NO talking, NO lip sync. ONLY subtle micro-movements: gentle breathing, slight head tilt, soft blink, light hair sway, subtle camera push-in or slow pan. Keep the composition 95% identical to the input image. The total number of human figures MUST stay constant from frame 1 to last frame.\`
+  + duration 별 모션 강도:
+  - duration ≤ 10: \`gentle breathing, subtle hair sway, very slight ambient drift, camera push-in 5% max\`
+  - 10 < duration ≤ 13: \`visible breathing rhythm, noticeable but soft hair movement, gentle ambient drift, camera push-in or slow pan up to 7%\`
+  - duration > 13: \`fuller breathing arc, distinct hair sway, ambient elements drifting visibly, camera push-in or slow pan up to 10%\`
+
+### type="real" 인 장면
+- **real_keywords** : ⚠️ **영문 검색 키워드 배열, 정확히 3개**. 한글 금지. 공식명·모델번호 포함. 예: \`["Samsung Electronics Seocho headquarters Seoul", "Samsung Digital City Suwon campus", "Samsung Town Gangnam building"]\`
+- **real_subject** : 한글로 검색 대상 한 줄 설명. 예: \`"삼성전자 본사"\`
+- **nano_prompt** : real이라도 AI 백업용 — 반드시 ai 장면과 동일 규칙으로 영문 작성
+- **grok_prompt** : real이라도 AI 백업용 — 반드시 ai 장면과 동일 STRICT RULES 포함
+
+### type="claude_design" 인 장면
+- **claude_prompt** : 한글 데이터 시각화 설명 (배경색·숫자 위치·캡션 등)
+- **claude_kind** : "인포그래픽" | "도식" | "차트" 중 1개
+- **nano_prompt** : 백업용 영문 (ai 규칙 적용)
+- **grok_prompt** : 백업용 (ai STRICT RULES)
 
 # 출력 형식 (JSON만, 다른 텍스트 절대 금지)
 \`\`\`json
 {"scenes": [
-  {"sceneNo": 1, "type": "...", "duration": 6, "narration": "입력 장면 1의 모든 문장", "nano_prompt": "...", ...},
-  {"sceneNo": 2, "type": "...", "duration": 6, "narration": "입력 장면 2의 모든 문장", ...},
+  {"sceneNo": 1, "type": "ai", "duration": 6, "narration": "...", "nano_prompt": "...", "grok_prompt": "STRICT RULES: ..."},
+  {"sceneNo": 2, "type": "real", "duration": 10, "narration": "...", "real_keywords": ["...","...","..."], "real_subject": "...", "nano_prompt": "...", "grok_prompt": "STRICT RULES: ..."},
+  {"sceneNo": 3, "type": "claude_design", "duration": 10, "narration": "...", "claude_prompt": "...", "claude_kind": "인포그래픽", "nano_prompt": "...", "grok_prompt": "STRICT RULES: ..."},
   ... 정확히 ${N}개
 ]}
 \`\`\`
