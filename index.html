@@ -22208,42 +22208,76 @@ ${numbered}`;
 
             const stylePrompt = (document.getElementById('spStylePrompt')?.value || '').trim();
 
-            const sceneList = scenes.map((sents, i) => `### 장면 ${i + 1}\n${sents.join(' ')}`).join('\n\n');
+            const N = scenes.length;
+            const sceneList = scenes.map((sents, i) => {
+                const fullText = sents.join(' ');
+                return `=== INPUT SCENE ${i + 1} of ${N} (DO NOT SPLIT — must remain ONE output scene with sceneNo=${i + 1}) ===
+${fullText}
+=== END SCENE ${i + 1} ===`;
+            }).join('\n\n');
 
-            const prompt = `당신은 유튜브 영상 장면 분류 전문가입니다. 아래 ${scenes.length}개 장면이 이미 묶여있습니다. 각 장면을 그대로 유지하면서 type/duration/이미지 프롬프트만 채워서 JSON으로 출력하세요.
+            const prompt = `당신은 유튜브 영상 장면 분류 전문가입니다.
 
-## 채널 모드: ${channelLabel}
+# 🚨🚨🚨 ABSOLUTE INVARIANT — 위반 시 출력 무효 🚨🚨🚨
+
+입력 장면 수 = **정확히 ${N}개**
+출력 scenes 배열 길이 = **반드시 정확히 ${N}개**
+
+## 절대 금지
+❌ 한 입력 장면을 2개 이상 출력 장면으로 **split** 금지
+❌ 두 입력 장면을 1개 출력 장면으로 **merge** 금지
+❌ 장면 순서 **재배치** 금지
+❌ 입력 장면의 어떤 문장도 **삭제·수정·추가** 금지
+
+## 1:1 매핑 절대 규칙
+- 입력 장면 1 → 출력 sceneNo:1 (입력의 모든 문장 그대로 narration에)
+- 입력 장면 2 → 출력 sceneNo:2 (입력의 모든 문장 그대로 narration에)
+- ... 입력 장면 ${N} → 출력 sceneNo:${N}
+
+각 입력 장면이 5문장이면 출력 narration에도 같은 5문장이 모두 들어가야 합니다.
+각 입력 장면이 2문장이면 출력 narration에도 같은 2문장이 들어가야 합니다.
+**한 글자도 빠짐·추가 금지.**
+
+## ✅ 출력 전 자가 검증 (필수)
+1. scenes 배열 길이가 정확히 ${N}개인가? (다르면 출력 무효, 다시 만드세요)
+2. 각 출력 장면의 narration이 입력 장면의 모든 문장을 그대로 담고 있는가?
+3. 어떤 입력 문장도 다른 장면으로 이동하지 않았는가?
+
+위 3개 모두 YES일 때만 출력하세요.
+
+# 채널 모드: ${channelLabel}
 ${stylePrompt ? `\n## 그림체 프롬프트\n${stylePrompt}\n` : ''}
 
-## 절대 규칙
-1. 장면 순서·내용 절대 변경 금지. 묶음 그대로 유지.
-2. 각 장면별로 가장 적합한 타입 1개 선택:
-   - "ai" : AI 일러스트 (역사·구조·추상·은유·인물·도시·전쟁 장면)
+# 채워야 할 필드 (장면 묶음은 그대로!)
+1. **type** (장면별로 가장 적합한 1개 선택):
+   - "ai" : AI 일러스트 (역사·구조·추상·은유·인물·도시·전쟁)
    - "real" : 실사 사진/영상 (현대 무기·장비·실존 인물·지역·구체적 사건)
-   - "claude_design" : 데이터 시각화 (숫자 비교·법칙·차트·인포그래픽). ${channel === 'psychology' ? '전체 15%' : '전체 10%'} 이내.
-3. duration: 6초 또는 10초 (긴 문장이거나 복잡한 장면은 10초)
-4. 각 장면별 narration 필드에는 그 장면의 모든 문장을 한 줄로 합쳐 넣기.
+   - "claude_design" : 데이터 시각화 (숫자 비교·법칙·차트·인포그래픽). 전체 ${channel === 'psychology' ? '15%' : '10%'} 이내.
+2. **duration** : 6초 또는 10초 (장면 문장 수가 4문장 이상이거나 복잡하면 10초)
+3. **narration** : ⚠️ 입력 장면의 모든 문장을 한 줄로 합쳐 그대로 박기
+4. **nano_prompt** : type=ai/claude_design일 때 영문 이미지 프롬프트. \`ABSOLUTE RULE: NO text/letters/words.\`
+5. **real_keyword** : type=real일 때 한글 검색 키워드 (공식명·모델번호 포함)
+6. **claude_prompt** : type=claude_design일 때 데이터 시각화 설명
 
-## 각 장면 필수 필드
+# 출력 형식 (JSON만, 다른 텍스트 절대 금지)
 \`\`\`json
-{
-  "sceneNo": 1,
-  "type": "ai" | "real" | "claude_design",
-  "duration": 6 | 10,
-  "narration": "장면 문장 전체 (한 줄로)",
-  "nano_prompt": "type=ai/claude_design일 때 영문 이미지 프롬프트. ABSOLUTE RULE: NO text/letters/words.",
-  "real_keyword": "type=real일 때 한글 검색 키워드 (공식명·모델번호 포함)",
-  "claude_prompt": "type=claude_design일 때 데이터 시각화 설명"
-}
+{"scenes": [
+  {"sceneNo": 1, "type": "...", "duration": 6, "narration": "입력 장면 1의 모든 문장", "nano_prompt": "...", ...},
+  {"sceneNo": 2, "type": "...", "duration": 6, "narration": "입력 장면 2의 모든 문장", ...},
+  ... 정확히 ${N}개
+]}
 \`\`\`
 
-## 출력 (JSON만, 다른 텍스트 금지)
-\`\`\`json
-{"scenes": [{...}, {...}, ...]}
-\`\`\`
+# 입력 장면 ${N}개 (절대 split/merge 금지)
 
-## 입력 장면 (이미 묶음 완료)
-${sceneList}`;
+${sceneList}
+
+# 🔁 마지막 확인
+출력 직전 다시 한 번:
+- scenes 배열 길이 = ${N}개? ✅
+- sceneNo가 1, 2, ..., ${N} 순서대로? ✅
+- 각 narration이 INPUT SCENE 텍스트를 한 글자 빠짐없이 담음? ✅
+모두 YES일 때만 출력. 하나라도 NO면 다시 작성.`;
 
             navigator.clipboard.writeText(prompt).then(() => {
                 btn.textContent = '✅ 복사됨';
