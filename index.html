@@ -2492,46 +2492,51 @@
                         <textarea id="spStylePrompt" rows="6" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:0.78rem;font-family:'Courier New',monospace;line-height:1.5;resize:vertical;"></textarea>
                     </div>
 
-                    <!-- 도입부 -->
-                    <div class="input-group">
-                        <label>🎯 도입부 <span style="color:#888;font-weight:400;">(줄바꿈 = 1장면. 줄 앞에 <code>6|</code> 또는 <code>10|</code> 길이 지정, 없으면 6초)</span></label>
-                        <textarea id="spIntro" rows="6" placeholder="6| 첫 후킹 문장입니다.&#10;10| 좀 더 길게 끌고 가는 문장이에요.&#10;6| 짧고 강한 임팩트 한 방." style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:0.88rem;line-height:1.6;resize:vertical;"></textarea>
-                    </div>
+                    <!-- ⬇️ 기존 셀팟 변환 입력 UI 숨김 (2026-05: 신규 단순 묶기 모드로 일원화. 채널·그림체·JSON Import는 유지) -->
+                    <!-- 복구하려면 아래 wrapper의 style="display:none"을 제거 -->
+                    <div style="display:none">
+                        <!-- 도입부 -->
+                        <div class="input-group">
+                            <label>🎯 도입부 <span style="color:#888;font-weight:400;">(줄바꿈 = 1장면. 줄 앞에 <code>6|</code> 또는 <code>10|</code> 길이 지정, 없으면 6초)</span></label>
+                            <textarea id="spIntro" rows="6" placeholder="6| 첫 후킹 문장입니다.&#10;10| 좀 더 길게 끌고 가는 문장이에요.&#10;6| 짧고 강한 임팩트 한 방." style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:0.88rem;line-height:1.6;resize:vertical;"></textarea>
+                        </div>
 
-                    <!-- 본문 -->
-                    <div class="input-group">
-                        <label>📝 본문 대본 <span style="color:#888;font-weight:400;">(마침표 . 기준으로 문장 분리됨)</span></label>
-                        <textarea id="spBody" rows="14" placeholder="본문 대본을 여기에 붙여넣으세요. 마침표를 기준으로 문장이 분리되고, 아래에서 선택한 N문장씩 묶입니다." style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;line-height:1.6;resize:vertical;"></textarea>
-                        <div id="spBodyStats" style="margin-top:6px;font-size:0.78rem;color:#888;"></div>
-                    </div>
+                        <!-- 본문 -->
+                        <div class="input-group">
+                            <label>📝 본문 대본 <span style="color:#888;font-weight:400;">(마침표 . 기준으로 문장 분리됨)</span></label>
+                            <textarea id="spBody" rows="14" placeholder="본문 대본을 여기에 붙여넣으세요. 마침표를 기준으로 문장이 분리되고, 아래에서 선택한 N문장씩 묶입니다." style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;line-height:1.6;resize:vertical;"></textarea>
+                            <div id="spBodyStats" style="margin-top:6px;font-size:0.78rem;color:#888;"></div>
+                        </div>
 
-                    <!-- N문장 선택 -->
-                    <div style="margin-bottom:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                        <span style="font-weight:700;font-size:0.9rem;color:#444;">📦 본문 묶음 <span style="font-weight:400;font-size:0.75rem;color:#888;">(기본 힌트 — Gemini가 응집도 보고 자동 조정)</span></span>
-                        <button class="search-btn sp-n-btn" data-n="4" onclick="_spSetN(4)" style="padding:8px 16px;font-size:0.9rem;background:#e9ecef;border-color:#ced4da;color:#495057;">4문장</button>
-                        <button class="search-btn sp-n-btn active-n" data-n="5" onclick="_spSetN(5)" style="padding:8px 16px;font-size:0.9rem;background:#9333ea;border-color:#9333ea;">5문장</button>
-                        <button class="search-btn sp-n-btn" data-n="6" onclick="_spSetN(6)" style="padding:8px 16px;font-size:0.9rem;background:#e9ecef;border-color:#ced4da;color:#495057;">6문장</button>
-                        <span id="spNHint" style="margin-left:auto;font-size:0.78rem;color:#666;"></span>
-                    </div>
+                        <!-- N문장 선택 -->
+                        <div style="margin-bottom:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                            <span style="font-weight:700;font-size:0.9rem;color:#444;">📦 본문 묶음 <span style="font-weight:400;font-size:0.75rem;color:#888;">(기본 힌트 — Gemini가 응집도 보고 자동 조정)</span></span>
+                            <button class="search-btn sp-n-btn" data-n="4" onclick="_spSetN(4)" style="padding:8px 16px;font-size:0.9rem;background:#e9ecef;border-color:#ced4da;color:#495057;">4문장</button>
+                            <button class="search-btn sp-n-btn active-n" data-n="5" onclick="_spSetN(5)" style="padding:8px 16px;font-size:0.9rem;background:#9333ea;border-color:#9333ea;">5문장</button>
+                            <button class="search-btn sp-n-btn" data-n="6" onclick="_spSetN(6)" style="padding:8px 16px;font-size:0.9rem;background:#e9ecef;border-color:#ced4da;color:#495057;">6문장</button>
+                            <span id="spNHint" style="margin-left:auto;font-size:0.78rem;color:#666;"></span>
+                        </div>
 
-                    <!-- AI 모델 선택 -->
-                    <div id="spModelSelector" style="margin-bottom:12px;padding:10px 14px;background:#f0fdf4;border:2px solid #16a34a;border-radius:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-                        <span style="font-weight:700;color:#15803d;font-size:0.9rem;">🤖 AI 모델</span>
-                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.88rem;">
-                            <input type="radio" name="spModel" value="gemini-pro" checked onchange="_spOnModelChange(this.value)">
-                            <span>Gemini Pro <span style="color:#888;font-size:0.75rem;">(무료)</span></span>
-                        </label>
-                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.88rem;">
-                            <input type="radio" name="spModel" value="claude-opus" onchange="_spOnModelChange(this.value)">
-                            <span>Claude Opus <span style="color:#888;font-size:0.75rem;">(유료·고품질)</span></span>
-                        </label>
-                        <span id="spModelHint" style="margin-left:auto;font-size:0.75rem;color:#888;"></span>
-                    </div>
+                        <!-- AI 모델 선택 -->
+                        <div id="spModelSelector" style="margin-bottom:12px;padding:10px 14px;background:#f0fdf4;border:2px solid #16a34a;border-radius:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                            <span style="font-weight:700;color:#15803d;font-size:0.9rem;">🤖 AI 모델</span>
+                            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.88rem;">
+                                <input type="radio" name="spModel" value="gemini-pro" checked onchange="_spOnModelChange(this.value)">
+                                <span>Gemini Pro <span style="color:#888;font-size:0.75rem;">(무료)</span></span>
+                            </label>
+                            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.88rem;">
+                                <input type="radio" name="spModel" value="claude-opus" onchange="_spOnModelChange(this.value)">
+                                <span>Claude Opus <span style="color:#888;font-size:0.75rem;">(유료·고품질)</span></span>
+                            </label>
+                            <span id="spModelHint" style="margin-left:auto;font-size:0.75rem;color:#888;"></span>
+                        </div>
 
-                    <button id="spConvertBtn" class="search-btn" onclick="spConvert()" style="width:100%;font-size:1.05rem;padding:14px;background:#7048e8;border-color:#7048e8;">
-                        🚀 변환 시작 (Gemini Pro 맥락 분석)
-                    </button>
-                    <div id="spStatus" style="margin-top:8px;font-size:0.85rem;color:#888;"></div>
+                        <button id="spConvertBtn" class="search-btn" onclick="spConvert()" style="width:100%;font-size:1.05rem;padding:14px;background:#7048e8;border-color:#7048e8;">
+                            🚀 변환 시작 (Gemini Pro 맥락 분석)
+                        </button>
+                        <div id="spStatus" style="margin-top:8px;font-size:0.85rem;color:#888;"></div>
+                    </div>
+                    <!-- ⬆️ 숨김 영역 끝 -->
 
                     <!-- JSON 직접 붙여넣기 -->
                     <details style="margin-top:12px;">
