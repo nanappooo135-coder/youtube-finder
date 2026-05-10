@@ -2580,10 +2580,17 @@
                         <button class="search-btn gt-n-btn" data-n="6" onclick="_gtSetN(6)" style="padding:8px 16px;font-size:0.9rem;background:#e9ecef;border-color:#ced4da;color:#495057;">6문장</button>
                     </div>
 
-                    <!-- 대본 입력 -->
+                    <!-- 도입부 입력 (선택, 1줄=1장면) -->
                     <div class="input-group">
-                        <label>📝 대본 전체 <span style="color:#888;font-weight:400;">(마침표 . 또는 줄바꿈 기준 문장 분리)</span></label>
-                        <textarea id="gtScript" rows="12" placeholder="대본을 붙여넣으세요. 도입부+본문 합쳐서 한 번에." style="width:100%;padding:12px;border:2px solid #20c997;border-radius:10px;font-size:0.9rem;line-height:1.6;resize:vertical;"></textarea>
+                        <label>🎯 도입부 <span style="color:#888;font-weight:400;">(선택 · <strong>줄바꿈 1번 = 1장면</strong>. 도입부는 임팩트 위해 짧게 끊음)</span></label>
+                        <textarea id="gtIntro" rows="6" placeholder="줄 하나 = 장면 하나로 처리됩니다. 빈 줄로 분리해도 OK.&#10;&#10;예:&#10;2026년 5월. 한 작은 나라 대통령이 SNS에 단 한 단어를 올렸습니다.&#10;&quot;Hooah.&quot; 미군 특수부대들이 외치는 함성이에요.&#10;정말 이긴 걸까요?" style="width:100%;padding:12px;border:2px solid #20c997;border-radius:10px;font-size:0.9rem;line-height:1.6;resize:vertical;"></textarea>
+                        <div id="gtIntroStats" style="margin-top:6px;font-size:0.78rem;color:#888;"></div>
+                    </div>
+
+                    <!-- 본문 대본 -->
+                    <div class="input-group">
+                        <label>📝 본문 대본 <span style="color:#888;font-weight:400;">(마침표 기준 문장 분리 → 위 묶기 방식대로 그룹화)</span></label>
+                        <textarea id="gtScript" rows="12" placeholder="본문 대본을 붙여넣으세요. 마침표 기준으로 문장 분리되고, 위 모드(고정 N문장 / AI 의미 응집)대로 묶입니다." style="width:100%;padding:12px;border:2px solid #20c997;border-radius:10px;font-size:0.9rem;line-height:1.6;resize:vertical;"></textarea>
                         <div id="gtScriptStats" style="margin-top:6px;font-size:0.78rem;color:#888;"></div>
                     </div>
 
@@ -22189,53 +22196,84 @@ ${numbered}`;
             return fixed;
         }
 
+        // 도입부 split: 줄바꿈 1번 = 1장면 (마침표 무시)
+        function _gtSplitIntro(text) {
+            return text
+                .replace(/\r\n/g, '\n')
+                .split(/\n+/)
+                .map(l => l.trim())
+                .filter(l => l.length > 0);
+        }
+
+        // scenes 구조: [{sents: [...], isIntro: bool}]
         function _gtRenderScenes(scenes) {
             const cards = document.getElementById('gtSceneCards');
             const text = document.getElementById('gtSceneText');
             const summary = document.getElementById('gtResultSummary');
-            const totalSents = scenes.reduce((a, b) => a + b.length, 0);
-            const avgLen = scenes.length ? (totalSents / scenes.length).toFixed(1) : 0;
-            summary.textContent = `📊 총 ${scenes.length}장면 · 총 ${totalSents}문장 · 평균 ${avgLen}문장/장면`;
+            const introCount = scenes.filter(s => s.isIntro).length;
+            const bodyCount = scenes.length - introCount;
+            const totalSents = scenes.reduce((a, b) => a + b.sents.length, 0);
+            summary.textContent = `📊 총 ${scenes.length}장면 (도입부 ${introCount} + 본문 ${bodyCount}) · 총 ${totalSents}문장`;
 
-            cards.innerHTML = scenes.map((sents, i) => `
-                <div style="margin-bottom:8px;padding:10px 12px;background:#fafffd;border-left:4px solid #20c997;border-radius:4px;">
-                    <div style="font-weight:700;color:#0f7b5a;font-size:0.85rem;margin-bottom:4px;">장면 ${i + 1} <span style="color:#888;font-weight:400;font-size:0.78rem;">(${sents.length}문장)</span></div>
-                    <div style="font-size:0.85rem;color:#212529;line-height:1.6;">${sents.map(s => s.replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]))).join(' ')}</div>
+            cards.innerHTML = scenes.map((sc, i) => {
+                const tagBg = sc.isIntro ? '#fff3e0' : '#fafffd';
+                const tagBorder = sc.isIntro ? '#fb8c00' : '#20c997';
+                const tagText = sc.isIntro ? '#e65100' : '#0f7b5a';
+                const label = sc.isIntro ? '🎯 도입부' : '📝 본문';
+                return `
+                <div style="margin-bottom:8px;padding:10px 12px;background:${tagBg};border-left:4px solid ${tagBorder};border-radius:4px;">
+                    <div style="font-weight:700;color:${tagText};font-size:0.85rem;margin-bottom:4px;">${label} · 장면 ${i + 1} <span style="color:#888;font-weight:400;font-size:0.78rem;">(${sc.sents.length}문장)</span></div>
+                    <div style="font-size:0.85rem;color:#212529;line-height:1.6;">${sc.sents.map(s => s.replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]))).join(' ')}</div>
                 </div>
-            `).join('');
+            `; }).join('');
 
             // 빈 줄 2개 = '\n\n\n' (셀팟 기본 규격, 기존 변환과 동일)
-            text.value = scenes.map(sents => sents.join(' ')).join('\n\n\n');
+            text.value = scenes.map(sc => sc.sents.join(' ')).join('\n\n\n');
         }
 
         async function gtGroup() {
-            const script = (document.getElementById('gtScript').value || '').trim();
+            const intro = (document.getElementById('gtIntro')?.value || '').trim();
+            const script = (document.getElementById('gtScript')?.value || '').trim();
             const status = document.getElementById('gtStatus');
             const btn = document.getElementById('gtGroupBtn');
             const resultSection = document.getElementById('gtResultSection');
+            const introStats = document.getElementById('gtIntroStats');
             const stats = document.getElementById('gtScriptStats');
-            if (!script) { alert('대본을 입력하세요.'); return; }
+            if (!intro && !script) { alert('도입부 또는 본문을 입력하세요.'); return; }
 
-            const sentences = _gtSplitSentences(script);
-            if (stats) stats.textContent = `문장 분리: ${sentences.length}개 · ${script.length.toLocaleString()}자`;
+            // 도입부: 줄바꿈 1번 = 1장면
+            const introScenes = _gtSplitIntro(intro).map(line => ({ sents: [line], isIntro: true }));
+
+            // 본문: 마침표 기준 문장 분리 → 모드별 묶기
+            const bodySentences = script ? _gtSplitSentences(script) : [];
+            if (introStats) introStats.textContent = intro ? `도입부 ${introScenes.length}장면 (1줄=1장면)` : '도입부 없음';
+            if (stats) stats.textContent = script ? `본문 ${bodySentences.length}문장 · ${script.length.toLocaleString()}자` : '본문 없음';
 
             const mode = (document.querySelector('input[name="gtMode"]:checked') || {}).value || 'fixed';
             btn.disabled = true;
             const oldLabel = btn.textContent;
             btn.textContent = '⏳ 묶는 중...';
-            status.innerHTML = `<span style="color:#0f7b5a;">📦 ${mode === 'fixed' ? `고정 ${_gtN}문장` : 'AI 의미 응집'} 모드로 묶는 중... (${sentences.length}문장)</span>`;
+            status.innerHTML = `<span style="color:#0f7b5a;">📦 도입부 ${introScenes.length}장면 + 본문 ${bodySentences.length}문장 (${mode === 'fixed' ? `고정 ${_gtN}` : 'AI 응집'} 모드) 묶는 중...</span>`;
 
             try {
-                let scenes;
-                if (mode === 'fixed') {
-                    scenes = _gtGroupFixed(sentences, _gtN);
-                } else {
-                    scenes = await _gtGroupSemantic(sentences);
+                let bodyScenes = [];
+                if (bodySentences.length) {
+                    let bodyGroups;
+                    if (mode === 'fixed') {
+                        bodyGroups = _gtGroupFixed(bodySentences, _gtN);
+                    } else {
+                        bodyGroups = await _gtGroupSemantic(bodySentences);
+                    }
+                    bodyScenes = bodyGroups.map(sents => ({ sents, isIntro: false }));
                 }
+
+                const scenes = [...introScenes, ...bodyScenes];
+                if (!scenes.length) throw new Error('생성된 장면이 없습니다');
+
                 _gtRenderScenes(scenes);
                 window._gtLastScenes = scenes;
                 resultSection.style.display = '';
-                status.innerHTML = `<span style="color:#28a745;">✅ ${scenes.length}장면 완료. [📋 Claude 프롬프트 자동 복사] 누르세요.</span>`;
+                status.innerHTML = `<span style="color:#28a745;">✅ 총 ${scenes.length}장면 (도입부 ${introScenes.length} + 본문 ${bodyScenes.length}) 완료. [📋 Claude 프롬프트 자동 복사] 누르세요.</span>`;
             } catch (e) {
                 status.innerHTML = `<span style="color:#dc3545;">❌ 실패: ${e.message}</span>`;
                 console.error('[gtGroup]', e);
@@ -22265,9 +22303,11 @@ ${numbered}`;
             const stylePrompt = (document.getElementById('spStylePrompt')?.value || '').trim();
 
             const N = scenes.length;
-            const sceneList = scenes.map((sents, i) => {
-                const fullText = sents.join(' ');
-                return `=== INPUT SCENE ${i + 1} of ${N} (DO NOT SPLIT — must remain ONE output scene with sceneNo=${i + 1}) ===
+            const introCount = scenes.filter(s => s.isIntro).length;
+            const sceneList = scenes.map((sc, i) => {
+                const fullText = sc.sents.join(' ');
+                const tag = sc.isIntro ? '🎯 INTRO (도입부 — 짧고 임팩트, isIntro:true 필수)' : '📝 BODY (본문)';
+                return `=== INPUT SCENE ${i + 1} of ${N} [${tag}] (DO NOT SPLIT — must remain ONE output scene with sceneNo=${i + 1}) ===
 ${fullText}
 === END SCENE ${i + 1} ===`;
             }).join('\n\n');
@@ -22308,16 +22348,23 @@ ${stylePrompt ? `\n## 그림체 프롬프트\n${stylePrompt}\n` : ''}
 
 ## 모든 장면 공통 필수
 1. **sceneNo** : 1, 2, ..., ${N} 순서대로
-2. **type** : "ai" | "real" | "claude_design"
-3. **duration** : 6 또는 10 (4문장 이상이거나 복잡하면 10)
-4. **narration** : ⚠️ 입력 장면의 모든 문장을 한 줄로 합쳐 그대로 박기
+2. **isIntro** : true (도입부 장면 ${introCount}개) 또는 false (본문). ⚠️ 입력의 [🎯 INTRO]/[📝 BODY] 태그 그대로 반영
+3. **type** : "ai" | "real" | "claude_design"
+4. **duration** : 도입부 = 6 (짧은 임팩트). 본문 = 6 또는 10 (4문장 이상이거나 복잡하면 10)
+5. **narration** : ⚠️ 입력 장면의 모든 문장을 한 줄로 합쳐 그대로 박기
+
+## 🎯 도입부 처리 규칙 (isIntro:true 장면 ${introCount}개)
+- **type은 무조건 "ai"** (도입부에 실사·차트 부적합. 강한 임팩트 일러스트 위주)
+- **duration은 무조건 6초** (짧고 강하게 끊어 시청자 임팩트 ↑)
+- **nano_prompt는 강한 시각 임팩트 강조**: 한 장면 한 장면이 시청자를 멈추게 할 만한 충격적·은유적 이미지. 단순 묘사 금지.
+- 도입부는 보통 1문장만 들어있음 → 그 1문장의 핵심 단어를 시각화
 
 ## ⚠️ type 분류 — 균형 강제 (실사 누락 방지)
 
 **도입부 처리**
-- 처음 1~3장면 (sceneNo 1, 2, 3): 도입부로 간주, **AI 일러스트 위주** (감정/추상 중심이라 실사 부적합)
+- isIntro:true 장면 (위에 [🎯 INTRO] 태그된 장면들): 무조건 type="ai", duration=6 (별도 도입부 규칙 섹션 참조)
 
-**본문(sceneNo 4 이상) 적극 분류 — 다음 키워드 보이면 무조건 type="real"**
+**본문(isIntro:false, [📝 BODY] 태그된 장면) 적극 분류 — 다음 키워드 보이면 무조건 type="real"**
 - 📍 실존 인물명 (이병철, 트럼프, 시진핑, 푸틴, 트뤼도, 시 회장 등 고유명사)
 - 📍 구체적 장소·건물·기관 (평택 캠퍼스, 백악관, 호르무즈 해협, 삼성전자 본사, NATO 본부, IMF 등)
 - 📍 실제 무기·장비 (F-35, S-400, 후티 드론, 호위함명 등)
@@ -22380,9 +22427,10 @@ ${stylePrompt ? `\n## 그림체 프롬프트\n${stylePrompt}\n` : ''}
 # 출력 형식 (JSON만, 다른 텍스트 절대 금지)
 \`\`\`json
 {"scenes": [
-  {"sceneNo": 1, "type": "ai", "duration": 6, "narration": "...", "nano_prompt": "...", "grok_prompt": "STRICT RULES: ..."},
-  {"sceneNo": 2, "type": "real", "duration": 10, "narration": "...", "real_keywords": ["...","...","..."], "real_subject": "...", "nano_prompt": "...", "grok_prompt": "STRICT RULES: ..."},
-  {"sceneNo": 3, "type": "claude_design", "duration": 10, "narration": "...", "claude_prompt": "...", "claude_kind": "인포그래픽", "nano_prompt": "...", "grok_prompt": "STRICT RULES: ..."},
+  {"sceneNo": 1, "isIntro": true, "type": "ai", "duration": 6, "narration": "도입부 문장", "nano_prompt": "강한 임팩트 시각...", "grok_prompt": "STRICT RULES: ..."},
+  {"sceneNo": 2, "isIntro": false, "type": "ai", "duration": 6, "narration": "본문 문장들", "nano_prompt": "...", "grok_prompt": "STRICT RULES: ..."},
+  {"sceneNo": 3, "isIntro": false, "type": "real", "duration": 10, "narration": "...", "real_keywords": ["...","...","..."], "real_subject": "...", "nano_prompt": "...", "grok_prompt": "STRICT RULES: ..."},
+  {"sceneNo": 4, "isIntro": false, "type": "claude_design", "duration": 10, "narration": "...", "claude_prompt": "...", "claude_kind": "인포그래픽", "nano_prompt": "...", "grok_prompt": "STRICT RULES: ..."},
   ... 정확히 ${N}개
 ]}
 \`\`\`
