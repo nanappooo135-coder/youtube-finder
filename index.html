@@ -2080,9 +2080,12 @@
                 <!-- 🔥 트렌드 키워드 자동 추출 (Gemini) -->
                 <div id="trendKeywordSection" style="display:none;margin:14px 4px;">
                     <div class="section" style="border:2px dashed #f59e0b;background:#fffbeb;">
-                        <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;color:#92400e;">
+                        <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;color:#92400e;gap:8px;flex-wrap:wrap;">
                             🔥 트렌드 키워드 분석 (Gemini)
-                            <button onclick="analyzeTrendKeywords()" id="trendKwBtn" style="padding:8px 18px;background:#f59e0b;color:#fff;border:none;border-radius:8px;font-size:0.88rem;cursor:pointer;font-weight:700;">✨ 키워드 추출</button>
+                            <div style="display:flex;gap:6px;">
+                                <button onclick="_copyAnalysis('trendKwRaw', this)" style="padding:7px 12px;background:#6b7280;color:white;border:none;border-radius:8px;font-size:0.82rem;cursor:pointer;font-weight:600;">📋 복사</button>
+                                <button onclick="analyzeTrendKeywords()" id="trendKwBtn" style="padding:8px 18px;background:#f59e0b;color:#fff;border:none;border-radius:8px;font-size:0.88rem;cursor:pointer;font-weight:700;">✨ 키워드 추출</button>
+                            </div>
                         </div>
                         <div class="section-content">
                             <p style="font-size:0.8rem;color:#78350f;margin-bottom:8px;">검색 결과 영상 제목들을 Gemini가 분석 → 요즘 잘 먹히는 키워드·패턴·다음 영상 주제 힌트.</p>
@@ -3520,9 +3523,12 @@
             <!-- 🎯 영상 요약 (Gemini) -->
             <div id="refSummarySection" style="display:none;">
                 <div class="section">
-                    <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
+                    <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
                         🎯 영상 요약 (Gemini)
-                        <button id="refSummaryBtn" onclick="generateRefSummary()" style="padding:6px 14px;background:#9333ea;color:white;border:none;border-radius:8px;font-size:0.85rem;cursor:pointer;font-weight:600;">✨ 요약 생성</button>
+                        <div style="display:flex;gap:6px;">
+                            <button onclick="_copyAnalysis('refSummaryRaw', this)" style="padding:6px 12px;background:#6b7280;color:white;border:none;border-radius:8px;font-size:0.82rem;cursor:pointer;font-weight:600;">📋 복사</button>
+                            <button id="refSummaryBtn" onclick="generateRefSummary()" style="padding:6px 14px;background:#9333ea;color:white;border:none;border-radius:8px;font-size:0.85rem;cursor:pointer;font-weight:600;">✨ 요약 생성</button>
+                        </div>
                     </div>
                     <div class="section-content">
                         <p style="font-size:0.78rem;color:#888;margin-bottom:8px;">자막을 Gemini로 요약 — 영상 안 보고도 핵심 파악 가능.</p>
@@ -3535,9 +3541,12 @@
             <!-- 💬 댓글 패턴 분석 (Gemini) -->
             <div id="refCommentAnalysisSection" style="display:none;">
                 <div class="section">
-                    <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
+                    <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
                         💬 댓글 패턴 분석 (Gemini)
-                        <button id="refCommentAnalyzeBtn" onclick="analyzeRefComments()" style="padding:6px 14px;background:#ec4899;color:white;border:none;border-radius:8px;font-size:0.85rem;cursor:pointer;font-weight:600;">✨ 분석 시작</button>
+                        <div style="display:flex;gap:6px;">
+                            <button onclick="_copyAnalysis('refCommentAnalysisRaw', this)" style="padding:6px 12px;background:#6b7280;color:white;border:none;border-radius:8px;font-size:0.82rem;cursor:pointer;font-weight:600;">📋 복사</button>
+                            <button id="refCommentAnalyzeBtn" onclick="analyzeRefComments()" style="padding:6px 14px;background:#ec4899;color:white;border:none;border-radius:8px;font-size:0.85rem;cursor:pointer;font-weight:600;">✨ 분석 시작</button>
+                        </div>
                     </div>
                     <div class="section-content">
                         <p style="font-size:0.78rem;color:#888;margin-bottom:8px;">시청자 니즈·관심 주제·자주 등장 키워드 추출 → 다음 대본 주제 발굴.</p>
@@ -18906,6 +18915,8 @@ ${titles}`;
                 const text = (r && typeof r === 'object') ? (r.text || '') : (r || '');
                 if (!text) throw new Error('Gemini 응답 없음');
 
+                window.trendKwRaw = text;
+
                 const html = text
                     .replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]))
                     .replace(/^## (.+)$/gm, '<h3 style="margin-top:14px;margin-bottom:6px;color:#92400e;">$1</h3>')
@@ -18921,6 +18932,17 @@ ${titles}`;
             } finally {
                 btn.disabled = false; btn.textContent = '🔄 다시 분석';
             }
+        }
+
+        // ===== 📋 분석 결과 복사 (공통) =====
+        function _copyAnalysis(varName, btnEl) {
+            const text = window[varName];
+            if (!text) { alert('복사할 내용이 없습니다. 먼저 분석을 실행하세요.'); return; }
+            navigator.clipboard.writeText(text).then(() => {
+                const orig = btnEl.textContent;
+                btnEl.textContent = '✅ 복사됨';
+                setTimeout(() => { btnEl.textContent = orig; }, 1500);
+            });
         }
 
         function renderMatchResults(containerId, results, activeSort) {
@@ -24897,6 +24919,8 @@ ${captionText.slice(0, 15000)}`;
                 const text = (r && typeof r === 'object') ? (r.text || '') : (r || '');
                 if (!text) throw new Error('Gemini 응답 없음');
 
+                window.refSummaryRaw = text;
+
                 // 마크다운 → HTML (간단 변환)
                 const html = text
                     .replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]))
@@ -24975,6 +24999,8 @@ ${commentText.slice(0, 12000)}`;
                 const r = await callGemini(prompt, { maxTokens: 3000, temperature: 0.3, model: 'gemini-2.5-pro' });
                 const text = (r && typeof r === 'object') ? (r.text || '') : (r || '');
                 if (!text) throw new Error('Gemini 응답 없음');
+
+                window.refCommentAnalysisRaw = text;
 
                 const html = text
                     .replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]))
