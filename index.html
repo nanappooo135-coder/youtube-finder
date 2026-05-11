@@ -1999,17 +1999,32 @@
                         <p style="font-size:0.85rem;color:#888;margin-bottom:10px;">
                             등록한 채널의 최신 영상이 자동으로 결과에 포함돼요.
                         </p>
-                        <!-- 🔄 채널 동기화 (GitHub 기반) -->
-                        <div style="margin-bottom:10px;padding:8px 10px;background:#f0f9ff;border:1px solid #93c5fd;border-radius:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                            <span style="font-size:0.78rem;color:#1e40af;font-weight:700;">📡 채널 동기화</span>
-                            <button onclick="_exportChannelsAll()" style="padding:5px 10px;font-size:0.78rem;background:#3b82f6;color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:600;">💾 channels.json 다운로드</button>
-                            <span id="channelSyncStatus" style="font-size:0.72rem;color:#1e40af;"></span>
-                            <details style="flex-basis:100%;margin-top:4px;">
-                                <summary style="font-size:0.72rem;color:#1e40af;cursor:pointer;">📖 동기화 방법 (PC ↔ 폰)</summary>
-                                <div style="font-size:0.72rem;color:#1e40af;line-height:1.6;padding:6px 0 0 0;">
-                                    <div><strong>1.</strong> PC에서 [💾 channels.json 다운로드] 클릭 → 파일 받음</div>
-                                    <div><strong>2.</strong> 받은 channels.json을 youtube-finder repo 루트에 넣고 git commit + push</div>
-                                    <div><strong>3.</strong> 폰/다른 기기에서 youtube-finder 새로고침 → 자동 로드 (localStorage 비어있을 때만)</div>
+                        <!-- 📡 채널 동기화 (GitHub 자동 sync + 수동 export) -->
+                        <div style="margin-bottom:10px;padding:10px 12px;background:#f0f9ff;border:1px solid #93c5fd;border-radius:6px;">
+                            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
+                                <span style="font-size:0.82rem;color:#1e40af;font-weight:700;">📡 채널 자동 동기화 (GitHub)</span>
+                                <span id="channelSyncStatus" style="font-size:0.72rem;color:#1e40af;font-weight:600;"></span>
+                            </div>
+                            <!-- PAT 입력 (자동 sync용, 1회 설정) -->
+                            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:6px;">
+                                <input type="password" id="ghPatInput" placeholder="GitHub PAT (ghp_...) — 1회 등록하면 자동 sync" style="flex:1;min-width:200px;padding:6px 10px;border:1.5px solid #93c5fd;border-radius:4px;font-size:0.78rem;">
+                                <button onclick="_savePat()" style="padding:6px 10px;font-size:0.78rem;background:#10b981;color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:600;">💾 저장</button>
+                                <button onclick="_clearPat()" style="padding:6px 10px;font-size:0.78rem;background:#6b7280;color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:600;">🗑️ 삭제</button>
+                                <button onclick="_exportChannelsAll()" style="padding:6px 10px;font-size:0.78rem;background:#3b82f6;color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:600;">💾 수동 다운로드</button>
+                            </div>
+                            <details>
+                                <summary style="font-size:0.72rem;color:#1e40af;cursor:pointer;font-weight:600;">📖 PAT 발급·설정 방법 (1회만)</summary>
+                                <div style="font-size:0.72rem;color:#1e40af;line-height:1.7;padding:8px 0 0 0;">
+                                    <div><strong>1.</strong> <a href="https://github.com/settings/tokens" target="_blank" style="color:#3b82f6;text-decoration:underline;">GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)</a></div>
+                                    <div><strong>2.</strong> <strong>Generate new token (classic)</strong> 클릭</div>
+                                    <div><strong>3.</strong> Note: <code>youtube-finder sync</code> · Expiration: <code>No expiration</code> (또는 1년)</div>
+                                    <div><strong>4.</strong> Scope 선택: <code>public_repo</code> 만 체크 (다른 거 필요 X)</div>
+                                    <div><strong>5.</strong> <strong>Generate token</strong> → <code>ghp_xxxxxx</code> 복사</div>
+                                    <div><strong>6.</strong> 위 입력창에 paste → [💾 저장]</div>
+                                    <div style="margin-top:6px;padding-top:6px;border-top:1px dashed #93c5fd;">
+                                        <strong>설정 완료 후</strong>: 채널 추가·삭제할 때마다 자동으로 repo에 commit. 폰에서 새로고침만 하면 자동 로드.
+                                    </div>
+                                    <div style="margin-top:6px;color:#6b7280;font-size:0.7rem;">⚠️ PAT는 본인 브라우저(localStorage)에만 저장됨. 다른 사람 PC에서 절대 입력 X.</div>
                                 </div>
                             </details>
                         </div>
@@ -18693,33 +18708,150 @@ Example format:
         function saveBenchChannels(type, channels) {
             const key = type === 'kr' ? ch().krBenchKey : ch().foreignBenchKey;
             localStorage.setItem(key, JSON.stringify(channels));
+            // 자동 GitHub sync 트리거 (PAT 등록되어 있을 때만)
+            if (typeof _scheduleGhSync === 'function') _scheduleGhSync();
         }
 
-        // ===== 📡 채널 동기화 (GitHub channels.json 기반) =====
+        // ===== 📡 채널 동기화 (GitHub channels.json 자동 sync) =====
+        const GH_REPO_OWNER = 'nanappooo135-coder';
+        const GH_REPO_NAME = 'youtube-finder';
+        const GH_FILE_PATH = 'channels.json';
+        const GH_PAT_KEY = 'gh_pat_for_channels';
+        let _ghSyncTimer = null;
+
+        function _savePat() {
+            const v = (document.getElementById('ghPatInput').value || '').trim();
+            if (!v) { alert('PAT를 입력하세요.'); return; }
+            if (!v.startsWith('ghp_') && !v.startsWith('github_pat_')) {
+                if (!confirm('PAT 형식이 ghp_ 또는 github_pat_로 시작하지 않습니다. 그래도 저장할까요?')) return;
+            }
+            localStorage.setItem(GH_PAT_KEY, v);
+            const status = document.getElementById('channelSyncStatus');
+            if (status) status.textContent = '✅ PAT 저장됨 — 이제 자동 sync 작동';
+            document.getElementById('ghPatInput').value = '••••••••';
+            // 즉시 1회 sync
+            _scheduleGhSync();
+        }
+        function _clearPat() {
+            if (!confirm('저장된 GitHub PAT를 삭제할까요? (자동 sync 중단됨)')) return;
+            localStorage.removeItem(GH_PAT_KEY);
+            document.getElementById('ghPatInput').value = '';
+            const status = document.getElementById('channelSyncStatus');
+            if (status) status.textContent = '🗑️ PAT 삭제됨 — 자동 sync 중단';
+        }
+
+        // PAT 표시 (저장됐으면 점 표시)
+        document.addEventListener('DOMContentLoaded', () => {
+            const inp = document.getElementById('ghPatInput');
+            if (inp && localStorage.getItem(GH_PAT_KEY)) {
+                inp.value = '••••••••';
+                const status = document.getElementById('channelSyncStatus');
+                if (status) status.textContent = '🟢 자동 sync 활성';
+            }
+        });
+
+        function _buildChannelsData() {
+            const data = {};
+            for (const [chName, config] of Object.entries(CHANNEL_CONFIG)) {
+                data[chName] = {
+                    kr: JSON.parse(localStorage.getItem(config.krBenchKey) || '[]'),
+                    foreign: JSON.parse(localStorage.getItem(config.foreignBenchKey) || '[]')
+                };
+            }
+            return data;
+        }
+
+        // 채널 변경 시 debounced로 GitHub에 commit
+        function _scheduleGhSync() {
+            if (_ghSyncTimer) clearTimeout(_ghSyncTimer);
+            _ghSyncTimer = setTimeout(_syncChannelsToRepo, 2500);
+        }
+
+        async function _syncChannelsToRepo() {
+            const pat = localStorage.getItem(GH_PAT_KEY);
+            if (!pat || pat === '••••••••') return;
+            const status = document.getElementById('channelSyncStatus');
+            try {
+                if (status) status.textContent = '⏳ GitHub에 sync 중...';
+                const data = _buildChannelsData();
+                const content = JSON.stringify(data, null, 2) + '\n';
+                // base64 encode (UTF-8 safe)
+                const b64 = btoa(unescape(encodeURIComponent(content)));
+                // 현재 파일 SHA 가져오기 (필수)
+                let sha = null;
+                const getRes = await fetch(`https://api.github.com/repos/${GH_REPO_OWNER}/${GH_REPO_NAME}/contents/${GH_FILE_PATH}`, {
+                    headers: { 'Authorization': 'token ' + pat, 'Accept': 'application/vnd.github+json' }
+                });
+                if (getRes.ok) {
+                    const j = await getRes.json();
+                    sha = j.sha;
+                } else if (getRes.status !== 404) {
+                    throw new Error('파일 조회 실패: ' + getRes.status);
+                }
+                // PUT (생성 또는 업데이트)
+                const putRes = await fetch(`https://api.github.com/repos/${GH_REPO_OWNER}/${GH_REPO_NAME}/contents/${GH_FILE_PATH}`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': 'token ' + pat, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: 'channels: auto-sync from app (' + new Date().toISOString() + ')',
+                        content: b64,
+                        sha: sha || undefined
+                    })
+                });
+                if (!putRes.ok) {
+                    const err = await putRes.text();
+                    throw new Error('GitHub commit 실패: ' + putRes.status + ' ' + err.slice(0, 200));
+                }
+                const total = Object.values(data).reduce((s, c) => s + c.kr.length + c.foreign.length, 0);
+                if (status) status.textContent = `✅ ${new Date().toLocaleTimeString()} sync 완료 (${total}개 채널)`;
+                console.log('[ChannelSync] GitHub commit 성공');
+            } catch (e) {
+                if (status) status.textContent = '❌ sync 실패: ' + e.message.slice(0, 80);
+                console.error('[ChannelSync]', e);
+            }
+        }
+
         async function _syncChannelsFromRepo() {
             try {
                 const res = await fetch('channels.json?v=' + Date.now(), { cache: 'no-store' });
                 if (!res.ok) return;
                 const data = await res.json();
-                let loadedCount = 0;
+                // PAT 등록 여부에 따라 동작 다름:
+                // PAT 있음 (이 기기 = source): localStorage가 비어있을 때만 repo로 채움 (로컬 보호)
+                // PAT 없음 (이 기기 = 소비자, 예: 폰): 항상 repo로 덮어씀 (PC가 push한 최신 반영)
+                const hasPat = !!localStorage.getItem(GH_PAT_KEY);
+                let loadedCount = 0, overwriteCount = 0;
                 for (const [chName, chData] of Object.entries(data || {})) {
                     const config = CHANNEL_CONFIG[chName];
                     if (!config) continue;
                     for (const type of ['kr', 'foreign']) {
                         const key = type === 'kr' ? config.krBenchKey : config.foreignBenchKey;
                         const existing = JSON.parse(localStorage.getItem(key) || '[]');
-                        // localStorage가 비어있을 때만 repo 값으로 채움 (사용자 로컬 데이터 보호)
-                        if (existing.length === 0 && Array.isArray(chData[type]) && chData[type].length > 0) {
+                        if (!Array.isArray(chData[type])) continue;
+                        if (!hasPat) {
+                            // 소비자 기기: 항상 repo로 덮어씀
+                            const existingStr = JSON.stringify(existing);
+                            const repoStr = JSON.stringify(chData[type]);
+                            if (existingStr !== repoStr) {
+                                localStorage.setItem(key, repoStr);
+                                overwriteCount += chData[type].length;
+                            }
+                        } else if (existing.length === 0 && chData[type].length > 0) {
+                            // PAT 있음: 비어있을 때만 채움
                             localStorage.setItem(key, JSON.stringify(chData[type]));
                             loadedCount += chData[type].length;
                         }
                     }
                 }
-                if (loadedCount > 0) {
+                const status = document.getElementById('channelSyncStatus');
+                if (overwriteCount > 0) {
+                    console.log(`[ChannelSync] 폰/소비자 모드: repo에서 ${overwriteCount}개 채널 자동 동기화 (덮어쓰기)`);
+                    if (status) status.textContent = `🔄 repo에서 ${overwriteCount}개 채널 동기화됨`;
+                } else if (loadedCount > 0) {
                     console.log(`[ChannelSync] channels.json에서 ${loadedCount}개 채널 자동 로드`);
-                    const status = document.getElementById('channelSyncStatus');
                     if (status) status.textContent = `✅ ${loadedCount}개 채널 자동 로드됨`;
-                    // 현재 화면 다시 그리기
+                }
+                if (overwriteCount > 0 || loadedCount > 0) {
                     try {
                         if (typeof renderBenchChannelList === 'function') {
                             renderBenchChannelList('kr');
