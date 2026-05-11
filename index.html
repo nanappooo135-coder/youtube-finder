@@ -24427,63 +24427,140 @@ ${sceneBlocks}`;
         }
 
         // ---- 자막 ----
-        async function fetchRefCaptions(videoId) {
-            try {
-                // YouTube 자막은 공식 API로 직접 가져올 수 없어서
-                // youtube 내장 timedtext API 사용 (비공식이지만 널리 쓰이는 방법)
-                const listUrl = `https://www.youtube.com/api/timedtext?type=list&v=${videoId}`;
-                const listRes = await fetch(listUrl);
-                const listText = await listRes.text();
-
-                // XML 파싱해서 사용 가능한 언어 목록 가져오기
-                const parser = new DOMParser();
-                const listDoc = parser.parseFromString(listText, 'text/xml');
-                const tracks = listDoc.querySelectorAll('track');
-
-                if (!tracks.length) {
-                    // 자동 생성 자막 시도
-                    const autoUrl = `https://www.youtube.com/api/timedtext?v=${videoId}&lang=ko&fmt=srv3&name=&kind=asr`;
-                    const autoRes = await fetch(autoUrl);
-                    const autoText = await autoRes.text();
-                    if (autoText && autoText.includes('<text')) {
-                        displayCaptions(autoText, '자동 생성 (한국어)');
-                        return;
+        // CORS 프록시 시도 (여러 fallback)
+        async function _fetchViaProxy(url) {
+            const proxies = [
+                u => 'https://corsproxy.io/?url=' + encodeURIComponent(u),
+                u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
+                u => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u)
+            ];
+            for (const wrap of proxies) {
+                try {
+                    const res = await fetch(wrap(url));
+                    if (res.ok) {
+                        const text = await res.text();
+                        if (text && text.length > 0) return text;
                     }
+                } catch(e) {
+                    console.warn('[proxy] 실패:', e.message);
+                }
+            }
+            return null;
+        }
 
-                    document.getElementById('refCaptionSection').style.display = '';
-                    document.getElementById('refCaptions').textContent = '이 영상에는 자막이 없습니다.';
-                    document.getElementById('refCaptionLangs').innerHTML = '';
+        async function fetchRefCaptions(videoId) {
+            const captionsEl = document.getElementById('refCaptions');
+            const langsEl = document.getElementById('refCaptionLangs');
+            const sectionEl = document.getElementById('refCaptionSection');
+            sectionEl.style.display = '';
+            captionsEl.textContent = '⏳ 자막 가져오는 중... (CORS 프록시 사용)';
+            langsEl.innerHTML = '';
+
+            try {
+                // 1) YouTube watch 페이지에서 captionTracks 추출 (가장 안정적)
+                const watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
+                const html = await _fetchViaProxy(watchUrl);
+
+                let tracks = [];
+                if (html) {
+                    // playerResponse 에서 captionTracks 추출
+                    const m = html.match(/"captionTracks":(\[[^\]]+\])/);
+                    if (m) {
+                        try {
+                            const arr = JSON.parse(m[1]);
+                            tracks = arr.map(t => ({
+                                lang: t.languageCode || 'unknown',
+                                name: t.name?.simpleText || '',
+                                kind: t.kind || '',
+                                url: t.baseUrl
+                            }));
+                        } catch(e) { console.warn('captionTracks 파싱 실패', e); }
+                    }
+                }
+
+                if (tracks.length === 0) {
+                    // 2) timedtext list API fallback
+                    const listXml = await _fetchViaProxy(`https://www.youtube.com/api/timedtext?type=list&v=${videoId}`);
+                    if (listXml) {
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(listXml, 'text/xml');
+                        doc.querySelectorAll('track').forEach(t => {
+                            const lang = t.getAttribute('lang_code');
+                            const name = t.getAttribute('name') || '';
+                            tracks.push({
+                                lang,
+                                name,
+                                kind: '',
+                                url: `https://www.youtube.com/api/timedtext?v=${videoId}&lang=${lang}&name=${encodeURIComponent(name)}&fmt=srv3`
+                            });
+                        });
+                    }
+                }
+
+                if (tracks.length === 0) {
+                    // 3) 자동 생성 자막 직접 시도 (한국어/영어)
+                    for (const lang of ['ko', 'en']) {
+                        const asrUrl = `https://www.youtube.com/api/timedtext?v=${videoId}&lang=${lang}&fmt=srv3&kind=asr`;
+                        const asrXml = await _fetchViaProxy(asrUrl);
+                        if (asrXml && asrXml.includes('<text')) {
+                            tracks.push({ lang, name: '자동 생성', kind: 'asr', url: asrUrl });
+                            break;
+                        }
+                    }
+                }
+
+                if (tracks.length === 0) {
+                    captionsEl.innerHTML = `❌ 자막을 가져올 수 없습니다. <br><br>
+                        <strong>대체 방법:</strong><br>
+                        외부 사이트 사용 → <a href="https://downsub.com/?url=https://www.youtube.com/watch?v=${videoId}" target="_blank" style="color:#dc3545;font-weight:700;">DownSub.com에서 자막 다운로드</a><br>
+                        <span style="color:#888;font-size:0.85rem;">새 탭이 열리고 자막 파일을 받을 수 있습니다.</span>`;
                     return;
                 }
 
                 // 언어 버튼 생성
-                const langContainer = document.getElementById('refCaptionLangs');
-                langContainer.innerHTML = '';
-                tracks.forEach((track, i) => {
-                    const lang = track.getAttribute('lang_code');
-                    const name = track.getAttribute('name') || '';
-                    const label = track.getAttribute('lang_translated') || lang;
+                langsEl.innerHTML = '';
+                tracks.forEach((t, i) => {
+                    const label = (t.lang.toUpperCase()) + (t.kind === 'asr' ? ' (자동)' : '') + (t.name ? ` - ${t.name}` : '');
                     const btn = document.createElement('button');
                     btn.textContent = label;
-                    btn.style.cssText = 'padding:6px 14px;border:2px solid #e0e0e0;border-radius:8px;font-size:0.82rem;cursor:pointer;background:' + (i === 0 ? '#dc3545;color:white;border-color:#dc3545;' : '#fff;');
-                    btn.onclick = () => {
-                        langContainer.querySelectorAll('button').forEach(b => { b.style.background = '#fff'; b.style.color = '#333'; b.style.borderColor = '#e0e0e0'; });
+                    btn.style.cssText = `padding:6px 14px;border:2px solid #e0e0e0;border-radius:8px;font-size:0.82rem;cursor:pointer;background:${i === 0 ? '#dc3545;color:white;border-color:#dc3545' : '#fff'};`;
+                    btn.onclick = async () => {
+                        langsEl.querySelectorAll('button').forEach(b => { b.style.background = '#fff'; b.style.color = '#333'; b.style.borderColor = '#e0e0e0'; });
                         btn.style.background = '#dc3545'; btn.style.color = 'white'; btn.style.borderColor = '#dc3545';
-                        loadCaption(videoId, lang, name);
+                        await _loadCaptionFromUrl(t.url);
                     };
-                    langContainer.appendChild(btn);
+                    langsEl.appendChild(btn);
                 });
 
-                // 첫 번째 언어 로드
-                const firstLang = tracks[0].getAttribute('lang_code');
-                const firstName = tracks[0].getAttribute('name') || '';
-                await loadCaption(videoId, firstLang, firstName);
+                // 한국어 우선, 없으면 첫 번째
+                const koTrack = tracks.find(t => t.lang === 'ko') || tracks[0];
+                await _loadCaptionFromUrl(koTrack.url);
 
             } catch (e) {
                 console.error('자막 가져오기 실패:', e);
-                document.getElementById('refCaptionSection').style.display = '';
-                document.getElementById('refCaptions').textContent = '자막을 가져올 수 없습니다. (CORS 제한일 수 있음)';
-                document.getElementById('refCaptionLangs').innerHTML = '';
+                captionsEl.innerHTML = `❌ 자막 가져오기 실패: ${e.message}<br><br>
+                    <strong>대체:</strong> <a href="https://downsub.com/?url=https://www.youtube.com/watch?v=${videoId}" target="_blank" style="color:#dc3545;font-weight:700;">DownSub.com</a>`;
+            }
+        }
+
+        async function _loadCaptionFromUrl(url) {
+            const captionsEl = document.getElementById('refCaptions');
+            captionsEl.textContent = '⏳ 자막 로딩 중...';
+            const xml = await _fetchViaProxy(url);
+            if (!xml) {
+                captionsEl.textContent = '자막 내용을 불러올 수 없습니다.';
+                return;
+            }
+            try {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(xml, 'text/xml');
+                const texts = doc.querySelectorAll('text, p');
+                const result = Array.from(texts).map(t => {
+                    return (t.textContent || '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").trim();
+                }).filter(Boolean).join('\n');
+                captionsEl.textContent = result || '자막 내용이 비어있습니다.';
+            } catch(e) {
+                captionsEl.textContent = '자막 파싱 실패: ' + e.message;
             }
         }
 
