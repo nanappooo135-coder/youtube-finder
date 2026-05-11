@@ -3921,6 +3921,40 @@
                 </div>
             </div>
 
+            <!-- 진행 체크리스트 -->
+            <div class="section">
+                <div class="section-title" style="color:#7048e8;">📋 진행 체크리스트</div>
+                <div class="section-content">
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                        <div style="flex:1;height:10px;background:#e9ecef;border-radius:5px;overflow:hidden;">
+                            <div id="gsProgBar" style="height:100%;width:0%;background:linear-gradient(90deg,#7048e8,#ec4899);transition:width 0.3s;"></div>
+                        </div>
+                        <div id="gsProgText" style="font-size:0.85rem;font-weight:700;color:#7048e8;min-width:55px;text-align:right;">0/5</div>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:6px;">
+                        <label style="font-size:0.9rem;cursor:pointer;display:flex;align-items:center;gap:8px;"><input type="checkbox" id="gsStep_1" onchange="_gsUpdateProgress()"> <span>1단계: 대본 분석 완료</span></label>
+                        <label style="font-size:0.9rem;cursor:pointer;display:flex;align-items:center;gap:8px;"><input type="checkbox" id="gsStep_2" onchange="_gsUpdateProgress()"> <span>2단계: 그림체 합의 완료</span></label>
+                        <label style="font-size:0.9rem;cursor:pointer;display:flex;align-items:center;gap:8px;"><input type="checkbox" id="gsStep_3" onchange="_gsUpdateProgress()"> <span>3단계: 이미지 생성 완료 <span id="gsStep3Count" style="color:#888;font-weight:400;"></span></span></label>
+                        <label style="font-size:0.9rem;cursor:pointer;display:flex;align-items:center;gap:8px;"><input type="checkbox" id="gsStep_4" onchange="_gsUpdateProgress()"> <span>검증: 실패 0개 · 누락 0개</span></label>
+                        <label style="font-size:0.9rem;cursor:pointer;display:flex;align-items:center;gap:8px;"><input type="checkbox" id="gsStep_5" onchange="_gsUpdateProgress()"> <span>AI Drive 업로드 + ZIP 다운로드</span></label>
+                    </div>
+                    <button onclick="_gsResetProgress()" style="margin-top:10px;padding:6px 12px;background:#f1f3f5;color:#666;border:1px solid #ddd;border-radius:6px;font-size:0.78rem;cursor:pointer;">초기화</button>
+                </div>
+            </div>
+
+            <!-- 결과 검증 -->
+            <div class="section">
+                <div class="section-title" style="color:#7048e8;">🔍 결과 검증</div>
+                <div class="section-content">
+                    <p style="font-size:0.82rem;color:#666;margin-bottom:10px;line-height:1.5;">
+                        젠스파크가 생성한 결과의 장면 번호를 붙여넣으세요. 입력값의 의도 제외 번호는 자동으로 빠지고, <strong>진짜 누락 / 실패</strong>만 표시합니다.
+                    </p>
+                    <textarea id="gsVerifyInput" rows="5" placeholder="예: 장면1 생성 중... 장면2 생성 중... 또는 scene_01.png, scene_02.png... (장면 번호만 포함되면 어떤 형식이든 OK)" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:0.85rem;font-family:inherit;line-height:1.5;resize:vertical;"></textarea>
+                    <button onclick="_gsVerify()" style="width:100%;margin-top:10px;padding:12px;background:#10b981;color:white;border:none;border-radius:8px;font-size:0.95rem;font-weight:700;cursor:pointer;">🔍 검증 실행</button>
+                    <div id="gsVerifyResult" style="margin-top:12px;font-size:0.88rem;line-height:1.7;"></div>
+                </div>
+            </div>
+
             <!-- 미리보기 -->
             <div class="section">
                 <div class="section-title" onclick="toggleSection(this)" style="color:#7048e8;">👁️ 단계별 프롬프트 미리보기 <span class="arrow">▼</span></div>
@@ -18130,8 +18164,22 @@ Example format:
                 `   "총 ${total}개 모두 완료.`,
                 `    생성된 장면: ${nums.join(', ')}`,
                 '    누락/추가 없음, 모든 규칙 준수 확인"',
-                `2. 전체 이미지를 하나의 ZIP 파일로 압축 (${_gsZipName()})`,
-                '3. 다운로드 링크 제공',
+                '',
+                '2. ⚠️ **AI Drive 업로드 (필수)**',
+                `   - 생성한 모든 이미지를 AI Drive에 업로드`,
+                `   - 폴더명: ${_gsZipName().replace(/\.zip$/, '')}`,
+                '   - 업로드 완료 후 사용자에게 **AI Drive 폴더 경로** 또는 **공유 가능한 폴더 링크** 안내',
+                '   - ❌ "임시 미리보기 URL만 제공", "썸네일만 보여드림", "다운로드 링크는 만료됩니다" 같은 답변 금지',
+                '   - ❌ 이미지를 메시지에 인라인으로만 띄우고 끝내는 것도 금지',
+                '',
+                `3. ZIP 파일로 묶어서 제공 (${_gsZipName()})`,
+                '   - AI Drive의 폴더를 그대로 ZIP 압축',
+                '   - 다운로드 가능한 영구 링크 제공',
+                '   - 파일명은 [장면번호] 그대로 (예: scene_01.png, scene_05.png)',
+                '',
+                '4. 누락·실패 자체 점검',
+                `   - 출력 직전 파일명 목록을 출력하고, 본 작업의 ${total}개와 1:1 매칭되는지 확인`,
+                '   - 불일치 발견 시 즉시 누락 항목 재생성 후 다시 업로드',
                 '',
                 bar,
                 '',
@@ -18226,6 +18274,11 @@ Example format:
                 _gsToast(`${label} 프롬프트가 복사되었습니다`);
                 _gsFlashBtn(btn);
                 _gsUpdatePreview();
+                // 진행 체크리스트 자동 표시 (복사 = 그 단계 진입)
+                if (stage === 1) _gsMarkStep(1);
+                else if (stage === 2) _gsMarkStep(2);
+                else if (stage === 3) _gsMarkStep(3);
+                else if (stage === 'combined') { _gsMarkStep(1); _gsMarkStep(2); _gsMarkStep(3); }
             } catch(e) {
                 alert('클립보드 복사 실패: ' + e.message);
             }
@@ -18266,11 +18319,152 @@ Example format:
 
         let _gsInited = false;
         function _gsInit() {
-            if (_gsInited) { _gsAnalyze(); return; }
+            if (_gsInited) { _gsAnalyze(); _gsUpdateProgress(); return; }
             _gsInited = true;
             _gsLoadDraft();
             _gsAnalyze();
             _gsUpdatePreview();
+            _gsLoadProgress();
+            _gsUpdateProgress();
+        }
+
+        // ===== 진행 체크리스트 =====
+        const GS_PROGRESS_KEY = 'genspark_progress_v1';
+
+        function _gsLoadProgress() {
+            try {
+                const raw = localStorage.getItem(GS_PROGRESS_KEY);
+                if (!raw) return;
+                const p = JSON.parse(raw);
+                [1,2,3,4,5].forEach(i => {
+                    const el = document.getElementById(`gsStep_${i}`);
+                    if (el) el.checked = !!p[`step${i}`];
+                });
+            } catch(e) {}
+        }
+
+        function _gsSaveProgress() {
+            try {
+                const p = {};
+                [1,2,3,4,5].forEach(i => {
+                    p[`step${i}`] = document.getElementById(`gsStep_${i}`)?.checked || false;
+                });
+                localStorage.setItem(GS_PROGRESS_KEY, JSON.stringify(p));
+            } catch(e) {}
+        }
+
+        function _gsUpdateProgress() {
+            let done = 0;
+            [1,2,3,4,5].forEach(i => {
+                if (document.getElementById(`gsStep_${i}`)?.checked) done++;
+            });
+            const pct = (done / 5) * 100;
+            const bar = document.getElementById('gsProgBar');
+            const txt = document.getElementById('gsProgText');
+            if (bar) bar.style.width = pct + '%';
+            if (txt) txt.textContent = `${done}/5`;
+            // 3단계 개수 표시
+            const scenes = _gsParseScenes(document.getElementById('gsScenes')?.value || '');
+            const total = scenes.length;
+            const cntEl = document.getElementById('gsStep3Count');
+            if (cntEl && total > 0) cntEl.textContent = `(목표 ${total}개)`;
+            _gsSaveProgress();
+        }
+
+        function _gsResetProgress() {
+            if (!confirm('진행 체크리스트를 초기화합니다. 진행하시겠어요?')) return;
+            [1,2,3,4,5].forEach(i => {
+                const el = document.getElementById(`gsStep_${i}`);
+                if (el) el.checked = false;
+            });
+            _gsUpdateProgress();
+        }
+
+        function _gsMarkStep(stepNum) {
+            const el = document.getElementById(`gsStep_${stepNum}`);
+            if (el && !el.checked) {
+                el.checked = true;
+                _gsUpdateProgress();
+            }
+        }
+
+        // ===== 결과 검증 =====
+        function _gsVerify() {
+            const resultEl = document.getElementById('gsVerifyResult');
+            if (!resultEl) return;
+            const input = (document.getElementById('gsVerifyInput')?.value || '').trim();
+            if (!input) {
+                resultEl.innerHTML = '<div style="padding:10px;background:#fff3cd;border:1px solid #ffc107;border-radius:6px;color:#856404;">검증할 결과를 붙여넣어주세요.</div>';
+                return;
+            }
+
+            // 원본 입력에서 기준 데이터 추출
+            const sourceText = document.getElementById('gsScenes')?.value || '';
+            const sourceScenes = _gsParseScenes(sourceText);
+            if (!sourceScenes.length) {
+                resultEl.innerHTML = '<div style="padding:10px;background:#fff3cd;border:1px solid #ffc107;border-radius:6px;color:#856404;">원본 이미지 프롬프트가 비어 있습니다. 위 입력칸에 먼저 [장면N] 형식으로 입력해주세요.</div>';
+                return;
+            }
+            const targetNums = new Set(sourceScenes.map(s => s.number));
+            const targetMin = Math.min(...targetNums);
+            const targetMax = Math.max(...targetNums);
+            const intentionalMissing = [];
+            for (let i = targetMin; i <= targetMax; i++) {
+                if (!targetNums.has(i)) intentionalMissing.push(i);
+            }
+
+            // 결과에서 장면 번호 추출 — [장면N], 장면N, scene_NN, sceneNN 모두 매칭
+            const foundNums = new Set();
+            const patterns = [
+                /\[장면\s*(\d+)\]/g,
+                /장면\s*(\d+)/g,
+                /scene[_\s]*(\d+)/gi,
+                /scene(\d+)/gi
+            ];
+            patterns.forEach(re => {
+                let m;
+                while ((m = re.exec(input)) !== null) {
+                    const n = parseInt(m[1], 10);
+                    if (targetNums.has(n)) foundNums.add(n);
+                }
+            });
+
+            // 누락 = 목표에 있는데 결과에 없는 것
+            const missing = [...targetNums].filter(n => !foundNums.has(n)).sort((a,b) => a-b);
+            // 실패 키워드 검출
+            const failureRe = /(failure|failed|fail|에러|error|실패|타임아웃|timeout)/gi;
+            const failureMatches = input.match(failureRe) || [];
+            const failureCount = failureMatches.length;
+
+            // 결과 렌더
+            const blocks = [];
+            const totalTarget = targetNums.size;
+            const foundCount = foundNums.size;
+
+            if (foundCount === totalTarget && failureCount === 0) {
+                blocks.push(`<div style="padding:12px;background:#d4edda;border:2px solid #28a745;border-radius:8px;color:#155724;font-weight:700;">✅ ${totalTarget}개 모두 정상 — 누락 0개, 실패 0개</div>`);
+                _gsMarkStep(4);
+            } else {
+                blocks.push(`<div style="padding:12px;background:${missing.length || failureCount ? '#f8d7da' : '#d4edda'};border:2px solid ${missing.length || failureCount ? '#dc3545' : '#28a745'};border-radius:8px;font-weight:700;color:${missing.length || failureCount ? '#721c24' : '#155724'};">발견 ${foundCount}/${totalTarget}개 · 누락 ${missing.length}개 · 실패 키워드 ${failureCount}개</div>`);
+            }
+
+            if (missing.length) {
+                blocks.push(`<div style="margin-top:10px;padding:10px;background:#f8d7da;border:1px solid #dc3545;border-radius:6px;color:#721c24;">🔴 <strong>누락된 장면 번호:</strong> ${missing.join(', ')}<br><small>위 번호를 재생성 칸에 붙여넣고 재생성 프롬프트를 복사하세요.</small></div>`);
+            }
+            if (failureCount) {
+                blocks.push(`<div style="margin-top:10px;padding:10px;background:#fff3cd;border:1px solid #ffc107;border-radius:6px;color:#856404;">⚠️ <strong>실패 키워드 ${failureCount}개 감지</strong> (failure / failed / error / 실패 등)</div>`);
+            }
+            if (intentionalMissing.length) {
+                blocks.push(`<div style="margin-top:10px;padding:8px 10px;background:#e7f3ff;border:1px solid #b3d9ff;border-radius:6px;color:#0c5460;font-size:0.82rem;">ℹ️ 의도 제외 번호 (자동 무시): ${intentionalMissing.join(', ')}</div>`);
+            }
+
+            // 누락된 번호를 재생성 칸에 자동 채우기
+            if (missing.length) {
+                const regenInput = document.getElementById('gsRegenList');
+                if (regenInput) regenInput.value = missing.join(', ');
+            }
+
+            resultEl.innerHTML = blocks.join('');
         }
 
         // 채널 pills 토글 (기본 접힘, 클릭 시 펼침)
