@@ -2900,6 +2900,14 @@
                                     <br><span style="color:#6b21a8;">⚠️ 변환 시작 시 브라우저가 "이 탭을 공유하시겠어요?" 물어봄 → <strong>"이 탭" 선택 후 공유</strong> 한 번만 누르면 끝. 이후 N개 자동.</span>
                                     <br><span style="color:#856404;">⚠️ ffmpeg 인코딩 실패 시 자동으로 <strong>.webm 형식</strong>으로 저장됨. 셀팟에 webm 안 들어가면 CapCut이나 온라인 도구로 mp4 변환 필요.</span>
                                 </p>
+                                <!-- 출력 비율 선택 (셀팟 호환용) -->
+                                <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap;">
+                                    <span style="font-weight:700;font-size:0.82rem;color:#6b21a8;">📐 출력 비율</span>
+                                    <button class="design-aspect-btn" data-aspect="9:16" onclick="_designSetAspect('9:16')" style="padding:6px 12px;font-size:0.8rem;background:#9333ea;color:#fff;border:none;border-radius:4px;font-weight:600;cursor:pointer;">9:16 (쇼츠)</button>
+                                    <button class="design-aspect-btn" data-aspect="16:9" onclick="_designSetAspect('16:9')" style="padding:6px 12px;font-size:0.8rem;background:#e9ecef;color:#6c757d;border:none;border-radius:4px;font-weight:600;cursor:pointer;">16:9 (가로)</button>
+                                    <button class="design-aspect-btn" data-aspect="1:1" onclick="_designSetAspect('1:1')" style="padding:6px 12px;font-size:0.8rem;background:#e9ecef;color:#6c757d;border:none;border-radius:4px;font-weight:600;cursor:pointer;">1:1 (정사각)</button>
+                                    <span style="font-size:0.7rem;color:#888;">→ 셀팟 검은띠 fix</span>
+                                </div>
                                 <div id="designDropZone" style="border:2px dashed #9333ea;border-radius:6px;padding:24px;text-align:center;background:#fff;cursor:pointer;font-size:0.85rem;color:#6b21a8;font-weight:600;">
                                     📁 .html 파일을 드래그하거나 <span style="text-decoration:underline;">클릭해서 선택</span>
                                 </div>
@@ -20502,6 +20510,52 @@ overall mood: bright, psychologically safe illustration, uplifting and reassurin
         // ═══════════════════════════════════════════════════════════════
         // 🎨 클로드 디자인 HTML → MP4 (getDisplayMedia 화면 녹화)
         // ═══════════════════════════════════════════════════════════════
+
+        // 출력 비율 (셀팟 호환용 — 9:16 / 16:9 / 1:1)
+        window._designAspect = '9:16';
+        function _designSetAspect(aspect) {
+            window._designAspect = aspect;
+            document.querySelectorAll('.design-aspect-btn').forEach(b => {
+                const active = b.dataset.aspect === aspect;
+                b.style.background = active ? '#9333ea' : '#e9ecef';
+                b.style.color = active ? '#fff' : '#6c757d';
+            });
+        }
+        function _designAspectToSize(aspect) {
+            if (aspect === '9:16') return { w: 1080, h: 1920 };
+            if (aspect === '16:9') return { w: 1920, h: 1080 };
+            return { w: 1080, h: 1080 };
+        }
+        function _designAspectToVf(aspect) {
+            const { w, h } = _designAspectToSize(aspect);
+            if (aspect === '9:16') {
+                return `crop='min(iw,ih*9/16)':'min(ih,iw*16/9)',scale=${w}:${h}`;
+            } else if (aspect === '16:9') {
+                return `crop='min(iw,ih*16/9)':'min(ih,iw*9/16)',scale=${w}:${h}`;
+            }
+            return `crop='min(iw,ih)':'min(iw,ih)',scale=${w}:${h}`;
+        }
+        function _designSizeIframe(aspect) {
+            const iframe = document.getElementById('designRenderFrame');
+            if (!iframe) return;
+            const vw = window.innerWidth, vh = window.innerHeight;
+            let w, h;
+            if (aspect === '9:16') {
+                h = vh; w = h * 9 / 16;
+                if (w > vw) { w = vw; h = w * 16 / 9; }
+            } else if (aspect === '16:9') {
+                w = vw; h = w * 9 / 16;
+                if (h > vh) { h = vh; w = h * 16 / 9; }
+            } else {
+                const s = Math.min(vw, vh); w = s; h = s;
+            }
+            iframe.style.position = 'absolute';
+            iframe.style.width = Math.floor(w) + 'px';
+            iframe.style.height = Math.floor(h) + 'px';
+            iframe.style.left = Math.floor((vw - w) / 2) + 'px';
+            iframe.style.top = Math.floor((vh - h) / 2) + 'px';
+        }
+
         window._designFiles = [];
 
         function _designLookupDuration(sceneId) {
@@ -20629,11 +20683,16 @@ overall mood: bright, psychologically safe illustration, uplifting and reassurin
             return blob;
         }
 
-        async function _webmToMp4(webmBlob, progressEl) {
+        async function _webmToMp4(webmBlob, progressEl, aspect) {
             const ffmpeg = await _loadFFmpeg(progressEl);
             const { fetchFile } = window.FFmpegUtil;
             await ffmpeg.writeFile('rec.webm', await fetchFile(webmBlob));
-            await ffmpeg.exec(['-i', 'rec.webm', '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '23', '-pix_fmt', 'yuv420p', '-an', 'out.mp4']);
+            const args = ['-i', 'rec.webm'];
+            if (aspect && typeof _designAspectToVf === 'function') {
+                args.push('-vf', _designAspectToVf(aspect));
+            }
+            args.push('-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '23', '-pix_fmt', 'yuv420p', '-an', 'out.mp4');
+            await ffmpeg.exec(args);
             const data = await ffmpeg.readFile('out.mp4');
             try { await ffmpeg.deleteFile('rec.webm'); } catch(e){}
             try { await ffmpeg.deleteFile('out.mp4'); } catch(e){}
@@ -20673,6 +20732,8 @@ overall mood: bright, psychologically safe illustration, uplifting and reassurin
                     preferCurrentTab: true
                 });
                 overlay.style.display = '';
+                // 출력 비율에 맞춰 iframe 크기·위치 조정 (검은 띠로 둘러싸여 ffmpeg가 정확히 crop)
+                _designSizeIframe(window._designAspect || '9:16');
                 await _sleep(500);
                 for (let i = 0; i < pending.length; i++) {
                     const item = pending[i];
@@ -20695,7 +20756,7 @@ overall mood: bright, psychologically safe illustration, uplifting and reassurin
                         const baseName = item.file.name.replace(/\.[^.]+$/, '');
                         try {
                             progress.textContent = '⏳ (' + (i+1) + '/' + pending.length + ') mp4 인코딩 시도 중...';
-                            const mp4 = await _webmToMp4(webm, progress);
+                            const mp4 = await _webmToMp4(webm, progress, window._designAspect || '9:16');
                             _downloadBlob(mp4, baseName + '.mp4');
                             item.status = 'done';
                         } catch (encErr) {
