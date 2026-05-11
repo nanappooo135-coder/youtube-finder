@@ -2077,6 +2077,20 @@
                         </div>
                     </div>
                 </div>
+                <!-- 🔥 트렌드 키워드 자동 추출 (Gemini) -->
+                <div id="trendKeywordSection" style="display:none;margin:14px 4px;">
+                    <div class="section" style="border:2px dashed #f59e0b;background:#fffbeb;">
+                        <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;color:#92400e;">
+                            🔥 트렌드 키워드 분석 (Gemini)
+                            <button onclick="analyzeTrendKeywords()" id="trendKwBtn" style="padding:8px 18px;background:#f59e0b;color:#fff;border:none;border-radius:8px;font-size:0.88rem;cursor:pointer;font-weight:700;">✨ 키워드 추출</button>
+                        </div>
+                        <div class="section-content">
+                            <p style="font-size:0.8rem;color:#78350f;margin-bottom:8px;">검색 결과 영상 제목들을 Gemini가 분석 → 요즘 잘 먹히는 키워드·패턴·다음 영상 주제 힌트.</p>
+                            <div id="trendKwStatus" style="font-size:0.82rem;color:#92400e;margin-bottom:8px;"></div>
+                            <div id="trendKwResult" style="font-size:0.9rem;line-height:1.7;"></div>
+                        </div>
+                    </div>
+                </div>
                 <div id="benchResults"></div>
             </div>
 
@@ -3705,6 +3719,15 @@
                     <p style="font-size:0.85rem;color:#666;margin-bottom:12px;">
                         영상 제작 보조 도구 모음. 이미지 압축·변환·기타 유틸리티가 여기에 추가됩니다.
                     </p>
+                </div>
+            </div>
+
+            <!-- ⭐ 북마크한 영상 -->
+            <div class="section">
+                <div class="section-title" style="color:#d97706;">⭐ 북마크한 영상 <span id="bookmarkCount" style="font-size:0.78rem;font-weight:400;color:#888;"></span></div>
+                <div class="section-content">
+                    <p style="font-size:0.82rem;color:#666;margin-bottom:10px;">검색 결과에서 ☆ 별 아이콘 클릭으로 북마크. 좋은 레퍼런스 영상 모아두기.</p>
+                    <div id="bookmarkList" style="display:flex;flex-direction:column;gap:8px;"></div>
                 </div>
             </div>
 
@@ -18732,6 +18755,172 @@ Example format:
         function displayMatchResults(containerId, results) {
             _resultStore[containerId] = { results, currentSort: 'match', renderer: renderMatchResults };
             renderMatchResults(containerId, results, 'match');
+            // 트렌드 키워드 섹션 자동 노출 (검색 결과 있을 때)
+            if (containerId === 'benchResults' && results.length >= 5) {
+                const tk = document.getElementById('trendKeywordSection');
+                if (tk) tk.style.display = '';
+                window._trendKwData = results;
+            }
+        }
+
+        // ===== ⭐ 북마크 (영상 단위) =====
+        const BOOKMARK_KEY = 'video_bookmarks';
+        function _loadBookmarks() {
+            try { return JSON.parse(localStorage.getItem(BOOKMARK_KEY) || '[]'); }
+            catch(e) { return []; }
+        }
+        function _saveBookmarks(list) {
+            localStorage.setItem(BOOKMARK_KEY, JSON.stringify(list));
+            _renderBookmarks();
+        }
+        function _isBookmarked(videoId) {
+            return _loadBookmarks().some(b => b.videoId === videoId);
+        }
+        function toggleBookmark(videoId, btnEl) {
+            const list = _loadBookmarks();
+            const idx = list.findIndex(b => b.videoId === videoId);
+            if (idx >= 0) {
+                list.splice(idx, 1);
+                if (btnEl) btnEl.textContent = '☆';
+            } else {
+                // 영상 데이터 찾기 (현재 검색 결과 또는 카드 DOM에서)
+                const cardData = (window._trendKwData || []).find(v => v.videoId === videoId);
+                if (cardData) {
+                    list.push({
+                        videoId,
+                        title: cardData.title,
+                        channelTitle: cardData.channelTitle,
+                        channelId: cardData.channelId,
+                        thumbnail: cardData.thumbnail,
+                        viewCount: cardData.viewCount,
+                        publishedAt: cardData.publishedAt,
+                        addedAt: Date.now()
+                    });
+                } else {
+                    // 카드 DOM에서 추출
+                    const card = btnEl?.closest('.card');
+                    const titleA = card?.querySelector('.card-title a');
+                    const chA = card?.querySelector('.card-channel a');
+                    const img = card?.querySelector('.card-thumbnail img');
+                    list.push({
+                        videoId,
+                        title: titleA?.textContent?.trim() || videoId,
+                        channelTitle: chA?.textContent?.trim() || '',
+                        channelId: chA?.href?.match(/channel\/([^/?]+)/)?.[1] || '',
+                        thumbnail: img?.src || '',
+                        addedAt: Date.now()
+                    });
+                }
+                if (btnEl) btnEl.textContent = '⭐';
+            }
+            _saveBookmarks(list);
+        }
+        function removeBookmark(videoId) {
+            const list = _loadBookmarks().filter(b => b.videoId !== videoId);
+            _saveBookmarks(list);
+            // 현재 검색 결과 카드의 별도 업데이트
+            document.querySelectorAll(`button[data-vid="${videoId}"]`).forEach(b => b.textContent = '☆');
+        }
+        function _renderBookmarks() {
+            const list = _loadBookmarks();
+            const container = document.getElementById('bookmarkList');
+            const cnt = document.getElementById('bookmarkCount');
+            if (cnt) cnt.textContent = list.length > 0 ? `(${list.length}개)` : '';
+            if (!container) return;
+            if (list.length === 0) {
+                container.innerHTML = '<div style="text-align:center;padding:20px;color:#999;font-size:0.85rem;">북마크한 영상 없음. 검색 결과에서 ☆ 별을 클릭하세요.</div>';
+                return;
+            }
+            // 최신순 정렬
+            list.sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
+            container.innerHTML = list.map(b => `
+                <div style="display:flex;gap:10px;padding:10px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;align-items:center;">
+                    ${b.thumbnail ? `<img src="${b.thumbnail}" style="width:120px;height:68px;object-fit:cover;border-radius:6px;">` : ''}
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-weight:600;font-size:0.92rem;margin-bottom:4px;">
+                            <a href="https://www.youtube.com/watch?v=${b.videoId}" target="_blank" style="color:#92400e;text-decoration:none;">${(b.title||'').replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))}</a>
+                        </div>
+                        <div style="font-size:0.8rem;color:#666;">${(b.channelTitle||'').replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))}${b.viewCount ? ' · 조회 ' + formatNumber(b.viewCount) : ''}</div>
+                        <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">
+                            <button onclick="window.open('https://www.youtube.com/watch?v=${b.videoId}','_blank')" style="padding:4px 10px;font-size:0.75rem;background:#fff;border:1px solid #f59e0b;color:#92400e;border-radius:4px;cursor:pointer;">▶ 영상</button>
+                            <button onclick="_bookmarkSendToRef('${b.videoId}')" style="padding:4px 10px;font-size:0.75rem;background:#10b981;color:#fff;border:none;border-radius:4px;cursor:pointer;">📚 자막·댓글</button>
+                            <button onclick="removeBookmark('${b.videoId}')" style="padding:4px 10px;font-size:0.75rem;background:#ef4444;color:#fff;border:none;border-radius:4px;cursor:pointer;">🗑️ 삭제</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        function _bookmarkSendToRef(videoId) {
+            if (typeof switchProcess === 'function') switchProcess('ref');
+            setTimeout(() => {
+                const input = document.getElementById('refVideoUrl');
+                if (input) {
+                    input.value = videoId;
+                    if (typeof fetchReference === 'function') fetchReference();
+                }
+            }, 200);
+        }
+        document.addEventListener('DOMContentLoaded', () => setTimeout(_renderBookmarks, 500));
+
+        // ===== 🔥 트렌드 키워드 분석 (Gemini) =====
+        async function analyzeTrendKeywords() {
+            const btn = document.getElementById('trendKwBtn');
+            const status = document.getElementById('trendKwStatus');
+            const result = document.getElementById('trendKwResult');
+            const data = window._trendKwData || [];
+            if (data.length === 0) { alert('검색 결과가 없습니다. 먼저 검색해주세요.'); return; }
+
+            btn.disabled = true; btn.textContent = '⏳ 분석 중...';
+            status.textContent = `🤖 Gemini가 ${data.length}개 영상 제목 분석 중...`;
+            result.innerHTML = '';
+
+            try {
+                const titles = data.slice(0, 100).map((v, i) => `${i+1}. ${v.title} (${v.channelTitle || ''} · 조회 ${(v.viewCount||0).toLocaleString()})`).join('\n');
+                const prompt = `다음은 같은 장르 유튜브 채널들의 최근 영상 ${Math.min(data.length, 100)}개 목록입니다. 제목·조회수 분석해서 트렌드 추출.
+
+# 출력 형식 (마크다운)
+## 🔥 요즘 잘 먹히는 키워드 Top 10
+1. 키워드 — 등장 횟수/패턴
+2. ...
+
+## 🎯 공통 후크 패턴 (3개)
+- 패턴: 예시 제목
+
+## 💡 떠오르는 주제 (조회수 높은 영상 기반)
+- 주제: 왜 떠오르는지
+
+## 📌 다음 영상 만들면 좋을 주제 5개
+1. ...
+2. ...
+3. ...
+4. ...
+5. ...
+
+## ⚠️ 식상해진 키워드 (피해야 할 것)
+- ...
+
+# 영상 목록
+${titles}`;
+
+                const r = await callGemini(prompt, { maxTokens: 3000, temperature: 0.4, model: 'gemini-2.5-pro' });
+                const text = (r && typeof r === 'object') ? (r.text || '') : (r || '');
+                if (!text) throw new Error('Gemini 응답 없음');
+
+                const html = text
+                    .replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]))
+                    .replace(/^## (.+)$/gm, '<h3 style="margin-top:14px;margin-bottom:6px;color:#92400e;">$1</h3>')
+                    .replace(/^# (.+)$/gm, '<h2 style="margin-top:14px;margin-bottom:6px;color:#92400e;">$1</h2>')
+                    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/^- (.+)$/gm, '<li>$1</li>')
+                    .replace(/(<li>.+<\/li>\n?)+/g, m => '<ul style="margin-left:18px;">' + m + '</ul>')
+                    .replace(/\n/g, '<br>');
+                result.innerHTML = html;
+                status.textContent = '✅ 분석 완료';
+            } catch (e) {
+                status.innerHTML = '<span style="color:#dc3545;">❌ 실패: ' + e.message + '</span>';
+            } finally {
+                btn.disabled = false; btn.textContent = '🔄 다시 분석';
+            }
         }
 
         function renderMatchResults(containerId, results, activeSort) {
@@ -18761,6 +18950,7 @@ Example format:
                     perfBadge = `<span class="stat-badge" style="background:#adb5bd;color:white">실패</span>`;
                 }
 
+                const isBookmarked = _isBookmarked(item.videoId);
                 html += `
                     <div class="card">
                         <div class="card-inner">
@@ -18772,6 +18962,7 @@ Example format:
                                     <a href="https://www.youtube.com/watch?v=${item.videoId}" target="_blank">
                                         ${escapeHtml(item.title)}
                                     </a>
+                                    <button onclick="toggleBookmark('${item.videoId}', this)" data-vid="${item.videoId}" title="북마크" style="margin-left:8px;background:none;border:none;cursor:pointer;font-size:1.2rem;vertical-align:middle;">${isBookmarked ? '⭐' : '☆'}</button>
                                 </div>
                                 <div class="card-channel">
                                     <a href="https://www.youtube.com/channel/${item.channelId}" target="_blank">
