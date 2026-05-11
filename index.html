@@ -1577,7 +1577,7 @@
         <!-- 업무 프로세스 (최상위) -->
         <div class="process-nav">
             <button class="process-btn" id="procBtn_topic" onclick="switchProcess('topic')">주제찾기</button>
-            <button class="process-btn inactive" id="procBtn_formula" onclick="switchProcess('formula')" style="background:#0066cc;border-color:#0066cc;">🎯 AI 주제추천</button>
+            <button class="process-btn inactive" id="procBtn_genspark" onclick="switchProcess('genspark')" style="background:#7048e8;border-color:#7048e8;">🎨 젠스파크 이미지</button>
             <button class="process-btn inactive" id="procBtn_thumbnail" onclick="switchProcess('thumbnail')">썸네일</button>
             <button class="process-btn inactive" id="procBtn_review" onclick="switchProcess('review')">검수</button>
             <button class="process-btn inactive" id="procBtn_visual" onclick="switchProcess('visual')">시각화</button>
@@ -3776,6 +3776,175 @@
                 </div>
             </div>
         </div><!-- /process-tool -->
+
+
+        <!-- ===== 프로세스: 젠스파크 이미지 (3단계 프롬프트 빌더) ===== -->
+        <div id="process-genspark" style="display:none;">
+            <div class="section">
+                <div class="section-title" style="color:#7048e8;">🎨 젠스파크 이미지 — 3단계 프롬프트 빌더</div>
+                <div class="section-content">
+                    <p style="font-size:0.85rem;color:#666;margin-bottom:10px;line-height:1.5;">
+                        젠스파크(Nano Banana 2)에 <strong>대본 → 그림체+규칙 → 이미지 목록</strong> 순서로 컨텍스트를 쌓아서 40~70장을 일관된 품질로 일괄 생성합니다.
+                    </p>
+                </div>
+            </div>
+
+            <!-- 입력 -->
+            <div class="section">
+                <div class="section-title" style="color:#7048e8;">📥 입력</div>
+                <div class="section-content">
+                    <div class="input-group">
+                        <label for="gsTitle">영상 제목 <span style="color:#888;font-weight:400;">(선택 · ZIP 파일명에 사용)</span></label>
+                        <input type="text" id="gsTitle" placeholder="비워두면 images_YYYY-MM-DD.zip" oninput="_gsSaveDraft()">
+                    </div>
+
+                    <div class="input-group" style="margin-top:14px;">
+                        <label for="gsStyle">🎨 그림체 프롬프트</label>
+                        <textarea id="gsStyle" rows="6" placeholder="예: 따뜻한 수채화풍, 부드러운 파스텔톤, 일러스트 스타일, 손그림 질감, 부드러운 윤곽선, 채도 적당히..." oninput="_gsSaveDraft()" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:0.88rem;font-family:inherit;line-height:1.5;resize:vertical;"></textarea>
+                    </div>
+
+                    <div class="input-group" style="margin-top:14px;">
+                        <label for="gsScript">📝 대본</label>
+                        <textarea id="gsScript" rows="12" placeholder="영상 대본 전체를 붙여넣으세요" oninput="_gsSaveDraft()" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:0.88rem;font-family:inherit;line-height:1.5;resize:vertical;"></textarea>
+                    </div>
+
+                    <div class="input-group" style="margin-top:14px;">
+                        <label for="gsScenes">🖼️ 이미지 프롬프트 <span style="color:#888;font-weight:400;">([장면N] 형식)</span></label>
+                        <textarea id="gsScenes" rows="18" placeholder="[장면1] 주인공이 지하철에서 영상을 보고 있는 모습&#10;[장면2] 이스라엘 예루살렘 법원 외관&#10;[장면3] 한국 직장인이 컴퓨터 앞에서 노후 자산을 걱정하는 모습&#10;[장면5] 환율 그래프가 흔들리는 시각화&#10;..." oninput="_gsAnalyze(); _gsSaveDraft();" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:0.88rem;font-family:inherit;line-height:1.5;resize:vertical;"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 자동 분석 패널 -->
+            <div class="section">
+                <div class="section-title" style="color:#7048e8;">📊 자동 분석</div>
+                <div class="section-content">
+                    <div id="gsAnalysis" style="padding:12px;background:#f3f0ff;border:2px solid #d0c4f7;border-radius:8px;font-size:0.85rem;color:#4a3a8a;line-height:1.7;">
+                        이미지 프롬프트를 입력하면 자동으로 분석됩니다.
+                    </div>
+                </div>
+            </div>
+
+            <!-- 절대 규칙 + 옵션 -->
+            <div class="section">
+                <div class="section-title" style="color:#7048e8;">🛡️ 절대 규칙 / ⚙️ 옵션</div>
+                <div class="section-content">
+                    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">
+                        <label style="font-size:0.88rem;cursor:pointer;"><input type="checkbox" id="gsRule_real" checked> 실사 금지 (일러스트만)</label>
+                        <label style="font-size:0.88rem;cursor:pointer;"><input type="checkbox" id="gsRule_full" checked> 풀스크린 (액자/여백 금지)</label>
+                        <label style="font-size:0.88rem;cursor:pointer;"><input type="checkbox" id="gsRule_text" checked> 텍스트/글자 일체 금지</label>
+                        <label style="font-size:0.88rem;cursor:pointer;"><input type="checkbox" id="gsRule_person" checked> 인물 일관성 + 실존 인물 닮게</label>
+                        <label style="font-size:0.88rem;cursor:pointer;"><input type="checkbox" id="gsRule_context" checked> 대본 맥락 자동 반영</label>
+                        <label style="font-size:0.88rem;cursor:pointer;"><input type="checkbox" id="gsRule_color" checked> 분위기별 색감 조절</label>
+                        <label style="font-size:0.88rem;cursor:pointer;"><input type="checkbox" id="gsRule_retry" checked> 실패 시 재생성 (순서 유지)</label>
+                        <label style="font-size:0.88rem;cursor:pointer;"><input type="checkbox" id="gsRule_filename" checked> 장면 번호 = 파일명</label>
+                    </div>
+                    <div style="display:flex;gap:10px;flex-wrap:wrap;padding-top:12px;border-top:1px solid #e0e0e0;">
+                        <div>
+                            <label style="font-size:0.82rem;color:#666;font-weight:600;display:block;margin-bottom:4px;">비율</label>
+                            <select id="gsAspect" style="padding:8px 10px;border:2px solid #e0e0e0;border-radius:6px;font-size:0.85rem;">
+                                <option value="16:9" selected>16:9</option>
+                                <option value="9:16">9:16</option>
+                                <option value="1:1">1:1</option>
+                                <option value="4:3">4:3</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size:0.82rem;color:#666;font-weight:600;display:block;margin-bottom:4px;">파일명 형식</label>
+                            <select id="gsFilename" style="padding:8px 10px;border:2px solid #e0e0e0;border-radius:6px;font-size:0.85rem;">
+                                <option value="scene_05" selected>scene_05.png</option>
+                                <option value="scene05">장면05.png</option>
+                                <option value="scene_5">scene_5.png</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size:0.82rem;color:#666;font-weight:600;display:block;margin-bottom:4px;">진행 보고 간격</label>
+                            <select id="gsReport" style="padding:8px 10px;border:2px solid #e0e0e0;border-radius:6px;font-size:0.85rem;">
+                                <option value="10" selected>10개마다</option>
+                                <option value="5">5개마다</option>
+                                <option value="0">안 받음</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 단계별 복사 -->
+            <div class="section">
+                <div class="section-title" style="color:#7048e8;">⭐ 추천: 단계별 복사 (최고 품질)</div>
+                <div class="section-content">
+                    <div style="display:flex;flex-direction:column;gap:12px;">
+                        <div style="padding:14px;background:#f3f0ff;border:2px solid #7048e8;border-radius:10px;">
+                            <button id="gsCopyBtn1" onclick="_gsCopy(1)" style="width:100%;padding:14px;background:#7048e8;color:white;border:none;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer;">📋 1단계 복사: 대본 분석 요청</button>
+                            <p style="font-size:0.8rem;color:#666;margin:8px 0 0 0;line-height:1.5;">💡 복사 후 젠스파크에 붙여넣고 <strong>"분석 완료"</strong> 답변을 기다리세요</p>
+                        </div>
+                        <div style="padding:14px;background:#f3f0ff;border:2px solid #7048e8;border-radius:10px;">
+                            <button id="gsCopyBtn2" onclick="_gsCopy(2)" style="width:100%;padding:14px;background:#7048e8;color:white;border:none;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer;">📋 2단계 복사: 그림체 + 규칙</button>
+                            <p style="font-size:0.8rem;color:#666;margin:8px 0 0 0;line-height:1.5;">💡 1단계 답변 받은 후 사용</p>
+                        </div>
+                        <div style="padding:14px;background:#f3f0ff;border:2px solid #7048e8;border-radius:10px;">
+                            <button id="gsCopyBtn3" onclick="_gsCopy(3)" style="width:100%;padding:14px;background:#7048e8;color:white;border:none;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer;">📋 3단계 복사: 이미지 생성</button>
+                            <p style="font-size:0.8rem;color:#666;margin:8px 0 0 0;line-height:1.5;">💡 2단계 답변 받은 후 사용</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 빠른 모드 -->
+            <div class="section">
+                <div class="section-title" style="color:#7048e8;">⚡ 빠른 모드 (10개 이하 짧은 작업용)</div>
+                <div class="section-content">
+                    <button id="gsCopyBtnCombined" onclick="_gsCopy('combined')" style="width:100%;padding:12px;background:#ec4899;color:white;border:none;border-radius:8px;font-size:0.95rem;font-weight:700;cursor:pointer;">📋 통합 복사 (1+2+3 한방)</button>
+                </div>
+            </div>
+
+            <!-- 재생성 -->
+            <div class="section">
+                <div class="section-title" style="color:#7048e8;">🔄 실패 이미지 재생성 요청</div>
+                <div class="section-content">
+                    <div class="input-group">
+                        <label for="gsRegenList">실패한 장면 번호 <span style="color:#888;font-weight:400;">(쉼표 구분, 예: 5,12,23)</span></label>
+                        <input type="text" id="gsRegenList" placeholder="5, 12, 23">
+                    </div>
+                    <div class="input-group" style="margin-top:10px;">
+                        <label for="gsRegenReason">실패 원인</label>
+                        <select id="gsRegenReason" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:0.88rem;">
+                            <option value="텍스트 들어감">텍스트 들어감</option>
+                            <option value="액자/여백 생김">액자/여백 생김</option>
+                            <option value="실사로 나옴">실사로 나옴</option>
+                            <option value="얼굴 이상함">얼굴 이상함</option>
+                            <option value="그림체 다름">그림체 다름</option>
+                            <option value="기타">기타</option>
+                        </select>
+                    </div>
+                    <button id="gsCopyBtnRegen" onclick="_gsCopy('regen')" style="width:100%;margin-top:12px;padding:12px;background:#f59e0b;color:white;border:none;border-radius:8px;font-size:0.95rem;font-weight:700;cursor:pointer;">📋 재생성 프롬프트 복사</button>
+                </div>
+            </div>
+
+            <!-- 미리보기 -->
+            <div class="section">
+                <div class="section-title" onclick="toggleSection(this)" style="color:#7048e8;">👁️ 단계별 프롬프트 미리보기 <span class="arrow">▼</span></div>
+                <div class="section-content hidden">
+                    <div style="display:flex;flex-direction:column;gap:14px;">
+                        <div>
+                            <div style="font-weight:700;font-size:0.88rem;color:#7048e8;margin-bottom:6px;">1단계</div>
+                            <pre id="gsPreview1" style="background:#f8f9fa;border:1px solid #e0e0e0;border-radius:6px;padding:10px;font-size:0.78rem;line-height:1.5;max-height:240px;overflow:auto;white-space:pre-wrap;word-break:break-word;"></pre>
+                        </div>
+                        <div>
+                            <div style="font-weight:700;font-size:0.88rem;color:#7048e8;margin-bottom:6px;">2단계</div>
+                            <pre id="gsPreview2" style="background:#f8f9fa;border:1px solid #e0e0e0;border-radius:6px;padding:10px;font-size:0.78rem;line-height:1.5;max-height:240px;overflow:auto;white-space:pre-wrap;word-break:break-word;"></pre>
+                        </div>
+                        <div>
+                            <div style="font-weight:700;font-size:0.88rem;color:#7048e8;margin-bottom:6px;">3단계</div>
+                            <pre id="gsPreview3" style="background:#f8f9fa;border:1px solid #e0e0e0;border-radius:6px;padding:10px;font-size:0.78rem;line-height:1.5;max-height:240px;overflow:auto;white-space:pre-wrap;word-break:break-word;"></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 토스트 -->
+            <div id="gsToast" style="position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#7048e8;color:white;padding:14px 24px;border-radius:10px;font-weight:700;font-size:0.95rem;box-shadow:0 6px 20px rgba(112,72,232,0.4);z-index:9999;opacity:0;transition:opacity 0.25s;pointer-events:none;"></div>
+        </div><!-- /process-genspark -->
 
 
         </div><!-- /process-topic -->
@@ -7334,7 +7503,10 @@ ${_retryRound > 0 ? `⚠️ 이번은 ${_retryRound}차 추가 요청입니다. 
             document.getElementById('process-trend').style.display = proc === 'trend' ? '' : 'none';
             const toolEl = document.getElementById('process-tool');
             if (toolEl) toolEl.style.display = proc === 'tool' ? '' : 'none';
+            const gensparkEl = document.getElementById('process-genspark');
+            if (gensparkEl) gensparkEl.style.display = proc === 'genspark' ? '' : 'none';
 
+            if (proc === 'genspark' && typeof _gsInit === 'function') _gsInit();
             if (proc === 'visual') checkFcServer('vsServerStatus');
             if (proc === 'review') checkFcServer('rvServerStatus');
             if (proc === 'trend') { fetchIssueRadar(); fetchGoogleTrends(); fetchEconYoutube(); }
@@ -17657,6 +17829,449 @@ Example format:
             } catch(e) {}
         }
         document.addEventListener('DOMContentLoaded', () => setTimeout(_autoCollapseSavedSections, 300));
+
+        // ===========================
+        // 🎨 젠스파크 이미지 — 3단계 프롬프트 빌더
+        // ===========================
+        const GS_DRAFT_KEY = 'genspark_draft_v1';
+
+        function _gsParseScenes(text) {
+            if (!text) return [];
+            const regex = /\[장면\s*(\d+)\]([\s\S]*?)(?=\[장면\s*\d+\]|$)/g;
+            const out = [];
+            let m;
+            while ((m = regex.exec(text)) !== null) {
+                out.push({ number: parseInt(m[1], 10), content: m[2].trim() });
+            }
+            return out;
+        }
+
+        function _gsFindMissing(numbers) {
+            if (!numbers.length) return [];
+            const min = Math.min(...numbers);
+            const max = Math.max(...numbers);
+            const set = new Set(numbers);
+            const missing = [];
+            for (let i = min; i <= max; i++) {
+                if (!set.has(i)) missing.push(i);
+            }
+            return missing;
+        }
+
+        function _gsFindDuplicates(numbers) {
+            const seen = new Set();
+            const dup = new Set();
+            numbers.forEach(n => {
+                if (seen.has(n)) dup.add(n);
+                seen.add(n);
+            });
+            return [...dup];
+        }
+
+        function _gsFormatFilename(num) {
+            const fmt = document.getElementById('gsFilename')?.value || 'scene_05';
+            const padded = String(num).padStart(2, '0');
+            if (fmt === 'scene_05') return `scene_${padded}.png`;
+            if (fmt === 'scene05') return `장면${padded}.png`;
+            return `scene_${num}.png`;
+        }
+
+        function _gsZipName() {
+            const title = (document.getElementById('gsTitle')?.value || '').trim();
+            if (title) return `${title}.zip`;
+            const d = new Date();
+            const ymd = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+            return `images_${ymd}.zip`;
+        }
+
+        function _gsAnalyze() {
+            const el = document.getElementById('gsAnalysis');
+            if (!el) return;
+            const text = document.getElementById('gsScenes')?.value || '';
+            const scenes = _gsParseScenes(text);
+            if (!scenes.length) {
+                el.innerHTML = '이미지 프롬프트를 입력하면 자동으로 분석됩니다.';
+                return;
+            }
+            const nums = scenes.map(s => s.number).sort((a,b) => a-b);
+            const missing = _gsFindMissing(nums);
+            const dups = _gsFindDuplicates(nums);
+            const empties = scenes.filter(s => !s.content).map(s => s.number);
+            const dupOk = dups.length === 0;
+            const emptyOk = empties.length === 0;
+            el.innerHTML = `
+                <div style="display:flex;flex-wrap:wrap;gap:14px 22px;">
+                    <div><strong>인식된 장면:</strong> ${scenes.length}개</div>
+                    <div><strong>최소~최대:</strong> ${nums[0]} ~ ${nums[nums.length-1]}</div>
+                    <div><strong>중복:</strong> ${dupOk ? '✅ 정상' : `❌ ${dups.join(', ')}번`}</div>
+                    <div><strong>빈 항목:</strong> ${emptyOk ? '✅ 정상' : `❌ ${empties.join(', ')}번`}</div>
+                </div>
+                <div style="margin-top:8px;"><strong>장면 번호:</strong> ${nums.join(', ')}</div>
+                ${missing.length ? `<div style="margin-top:6px;color:#d97706;"><strong>빠진 번호 (실사 대체 예정):</strong> ${missing.join(', ')}</div>` : '<div style="margin-top:6px;color:#2e7d32;"><strong>빠진 번호:</strong> 없음</div>'}
+            `;
+        }
+
+        function _gsGetRules() {
+            return {
+                real:     document.getElementById('gsRule_real')?.checked,
+                full:     document.getElementById('gsRule_full')?.checked,
+                text:     document.getElementById('gsRule_text')?.checked,
+                person:   document.getElementById('gsRule_person')?.checked,
+                context:  document.getElementById('gsRule_context')?.checked,
+                color:    document.getElementById('gsRule_color')?.checked,
+                retry:    document.getElementById('gsRule_retry')?.checked,
+                filename: document.getElementById('gsRule_filename')?.checked,
+            };
+        }
+
+        function _gsBuildPrompt1() {
+            const script = (document.getElementById('gsScript')?.value || '').trim() || '(대본을 입력해주세요)';
+            const bar = '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
+            return [
+                '다음은 제가 만들 영상의 대본입니다.',
+                '지금 당장 이미지를 그리지 마시고, 먼저 이 내용을 깊이 있게 분석해 주세요.',
+                '',
+                bar,
+                '📝 대본',
+                bar,
+                '',
+                script,
+                '',
+                bar,
+                '🔍 분석 요청 사항',
+                bar,
+                '',
+                '다음 항목을 분석해서 알려주세요:',
+                '',
+                '1. 시대적 배경 (연도, 시기)',
+                '2. 공간적 배경 (장소, 환경, 국가)',
+                '3. 주요 인물 (외형 특징, 직업, 감정 상태)',
+                '   - 실존 인물이 언급되면 그 인물의 외형 특징도 함께',
+                '4. 핵심 주제와 전반적인 분위기 (밝은/어두운, 긴장/평온 등)',
+                '5. 시각적으로 표현할 만한 상징, 오브젝트, 디테일',
+                '',
+                '분석이 끝나면 마지막에 "분석 완료. 다음 단계 진행 준비됨" 이라고 답해주세요.',
+                '이 분석 내용은 이후 이미지 생성 시 모든 장면의 배경 지식으로 활용됩니다.'
+            ].join('\n');
+        }
+
+        function _gsBuildPrompt2() {
+            const style = (document.getElementById('gsStyle')?.value || '').trim() || '(그림체 프롬프트를 입력해주세요)';
+            const r = _gsGetRules();
+            const bar = '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
+            const lines = [
+                '좋습니다. 이제 이 영상의 모든 이미지에 적용할 그림체와 절대 규칙을 정합니다.',
+                '',
+                bar,
+                '🎨 그림체 / 스타일 가이드',
+                bar,
+                '',
+                style,
+                '',
+                '이 그림체를 이번 영상의 모든 이미지에 통일해서 적용합니다.',
+                '',
+                bar,
+                '🚫 절대 규칙 (모든 이미지에 예외 없이 적용)',
+                bar,
+                '',
+                '[규칙 1] 그림체 통일',
+                '- 위 그림체 프롬프트를 모든 이미지에 동일하게 적용',
+                '- 장면이 바뀌어도 그림체가 흔들리지 않음'
+            ];
+            if (r.real) lines.push(
+                '',
+                '[규칙 2] 실사 이미지 절대 금지 🚫',
+                '- 사진, 실사, 포토리얼리스틱 이미지 절대 생성 금지',
+                '- 무조건 일러스트/그림 스타일로만'
+            );
+            if (r.full) lines.push(
+                '',
+                '[규칙 3] 풀스크린 / 액자 여백 금지 🚫',
+                '- 이미지에 테두리, 액자, 프레임, 흰 여백, 검은 여백 절대 금지',
+                '- 가장자리까지 꽉 차게 (full bleed / edge-to-edge)',
+                '- 폴라로이드, 사진틀, 마스킹 효과 금지'
+            );
+            if (r.text) lines.push(
+                '',
+                '[규칙 4] 텍스트 / 글자 일체 금지 🚫',
+                '- 영어, 한글, 숫자, 기호 절대 이미지에 넣지 말 것',
+                '- 간판, 표지판, 신문, 책 제목, 자막, 캡션, 워터마크, 로고, 서명 모두 금지',
+                '- 자연스러운 글자도 추상적 무늬로 처리'
+            );
+            if (r.person) lines.push(
+                '',
+                '[규칙 5] 인물 일관성',
+                '- 같은 인물이 여러 장면 등장 시 얼굴/체형/옷차림 일관 유지',
+                '- 실존 인물 언급 시 그 인물과 닮은 외형으로 (일러스트 톤으로)'
+            );
+            lines.push(
+                '',
+                '위 규칙을 이해했으면 다음과 같이 답변해주세요:',
+                '',
+                '"스타일 및 규칙 확인 완료.',
+                ' - 일러스트 그림체로만 생성 (실사 금지)',
+                ' - 풀스크린 (액자/여백 금지)',
+                ' - 텍스트 일체 없음',
+                ' - 인물 일관성 유지',
+                ' 이미지 프롬프트를 주시면 시작하겠습니다."'
+            );
+            return lines.join('\n');
+        }
+
+        function _gsBuildPrompt3() {
+            const r = _gsGetRules();
+            const aspect = document.getElementById('gsAspect')?.value || '16:9';
+            const report = parseInt(document.getElementById('gsReport')?.value || '10', 10);
+            const reportTxt = report === 0 ? '진행 보고 생략' : `${report}개 생성마다 진행 보고`;
+            const text = document.getElementById('gsScenes')?.value || '';
+            const scenes = _gsParseScenes(text);
+            const nums = scenes.map(s => s.number).sort((a,b) => a-b);
+            const missing = _gsFindMissing(nums);
+            const total = scenes.length;
+            const exampleNum = nums[0] || 1;
+            const exampleFile = _gsFormatFilename(exampleNum);
+            const bar = '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
+            const lines = [
+                '이제 이미지를 생성합니다.',
+                '',
+                bar,
+                '⚠️ 매우 중요: 장면 번호 규칙',
+                bar,
+                '',
+                '이 작업의 장면 번호는 연속되지 않을 수 있습니다.',
+                '빠진 번호는 실사 이미지로 대체할 예정이므로 의도적으로 제외된 것입니다.',
+                '',
+                '[절대 규칙]',
+                '1. 빠진 번호를 임의로 채우지 마세요',
+                '2. 번호를 임의로 재정렬하지 마세요',
+                `3. 파일명은 반드시 [장면번호]를 그대로 사용 (예: 장면${exampleNum} → ${exampleFile})`,
+                `4. 각 이미지 생성 시 "장면N 생성 중 → 파일명: ${exampleFile.replace(String(exampleNum).padStart(2,'0'), 'NN')}" 명시`,
+                '',
+                bar,
+                '🎨 이번 생성에 반드시 적용할 규칙',
+                bar,
+                ''
+            ];
+            if (r.context) lines.push(
+                '[A] 대본 맥락 깊이 반영 ⭐',
+                '- 1단계에서 분석한 시대/장소/배경/인물/분위기를 모든 이미지에 자동 반영',
+                '- 짧은 이미지 프롬프트라도 대본 디테일을 풍부하게 추가해서 그릴 것',
+                ''
+            );
+            if (r.person) lines.push(
+                '[B] 인물 정확도',
+                '- 실존 인물은 그 사람과 닮은 외형으로 (일러스트 톤)',
+                '- 같은 인물은 모든 장면에서 동일 외형 유지',
+                ''
+            );
+            if (r.color) lines.push(
+                '[C] 분위기별 색감 조절 ⭐',
+                '- 밝고 활기찬 내용 → 채도↑, 색감 풍부, 따뜻한 톤',
+                '- 어두운/슬픈/심각한 내용 → 채도↓, 차분한 톤, 차가운 톤',
+                '- 긴장/위기 → 대비↑, 강렬한 톤',
+                '- 장면 감정에 맞춰 자동 색감 조절',
+                ''
+            );
+            if (r.full) lines.push('[D] 풀스크린 (재강조) — 액자/여백/프레임 절대 금지');
+            if (r.text) lines.push('[E] 텍스트 절대 금지 (재강조) — 어떤 글자도 이미지에 없을 것');
+            if (r.real) lines.push('[F] 실사 절대 금지 (재강조) — 무조건 합의된 일러스트로');
+            if (r.retry) lines.push(
+                '',
+                '[G] 실패 시 재생성 ⭐',
+                '- 텍스트 들어감 / 액자 생김 / 실사로 나옴 / 얼굴 일그러짐 / 그림체 다름 → 즉시 재생성',
+                '- 재생성 시 순서/번호 유지 (장면5 실패 → 장면5 재생성, 다른 번호로 넘기지 말 것)',
+                '- 재생성 시 "장면X 재생성합니다" 명시'
+            );
+            lines.push(
+                '',
+                bar,
+                '📊 시작 전 필수 확인',
+                bar,
+                '',
+                `[이미지 목록]에는 정확히 ${total}개의 프롬프트가 있습니다.`,
+                `포함된 장면 번호: ${nums.join(', ')}`,
+                `빠진 번호: ${missing.length ? missing.join(', ') : '없음'} (의도적 제외, 생성하지 말 것)`,
+                '',
+                '먼저 다음 형식으로 답변해주세요:',
+                '',
+                `"개수 확인 완료: 총 ${total}개의 이미지 프롬프트 확인.`,
+                ` 생성할 장면 번호: ${nums.join(', ')}`,
+                ` 제외할 번호: ${missing.length ? missing.join(', ') : '없음'} (생성하지 않음)`,
+                ' 적용 규칙: 일러스트 그림체, 풀스크린, 무텍스트, 대본 맥락 반영,',
+                ' 인물 일관성, 분위기별 색감 조절, 실패 시 재생성.',
+                ' 생성 시작합니다."',
+                '',
+                bar,
+                '🎬 생성 진행 규칙',
+                bar,
+                '',
+                `- 비율: ${aspect}`,
+                '- 한 메시지에 최대한 많이 생성',
+                `- ${reportTxt}`,
+                '  (예: "현재까지 완료한 장면: 1,2,3,5,6 (10개)")',
+                `- 한 번에 다 못 그리면 "현재 X/${total} 완료. \'계속\' 입력해주세요" 안내`,
+                '- 임의로 개수 줄이거나 합치지 말 것',
+                '',
+                bar,
+                `📋 이미지 목록 (총 ${total}개)`,
+                bar,
+                ''
+            );
+            scenes.forEach(s => {
+                lines.push(`[장면${s.number}] ${s.content}`);
+            });
+            lines.push(
+                '',
+                bar,
+                '📦 완료 후',
+                bar,
+                '',
+                '1. 최종 보고:',
+                `   "총 ${total}개 모두 완료.`,
+                `    생성된 장면: ${nums.join(', ')}`,
+                '    누락/추가 없음, 모든 규칙 준수 확인"',
+                `2. 전체 이미지를 하나의 ZIP 파일로 압축 (${_gsZipName()})`,
+                '3. 다운로드 링크 제공',
+                '',
+                bar,
+                '',
+                '먼저 개수 확인부터 답변해주세요.'
+            );
+            return lines.join('\n');
+        }
+
+        function _gsBuildPromptCombined() {
+            const bar = '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
+            const p1 = _gsBuildPrompt1()
+                .replace('지금 당장 이미지를 그리지 마시고, 먼저 이 내용을 깊이 있게 분석해 주세요.', '먼저 이 내용을 빠르게 분석한 뒤, 이어서 그림체와 규칙을 합의하고, 마지막에 이미지를 일괄 생성합니다.')
+                .replace(/분석이 끝나면[\s\S]*$/, '분석 결과를 짧게 요약하고 바로 다음 섹션의 그림체 합의로 진행해주세요.');
+            const p2 = _gsBuildPrompt2();
+            const p3 = _gsBuildPrompt3();
+            return [
+                '⚡ 빠른 모드 — 분석 + 규칙 합의 + 이미지 생성을 한 번에 진행합니다.',
+                '',
+                bar, bar,
+                '【 PART 1 / 3 — 대본 분석 】',
+                bar, bar,
+                '',
+                p1,
+                '',
+                bar, bar,
+                '【 PART 2 / 3 — 그림체 & 규칙 】',
+                bar, bar,
+                '',
+                p2,
+                '',
+                bar, bar,
+                '【 PART 3 / 3 — 이미지 일괄 생성 】',
+                bar, bar,
+                '',
+                p3
+            ].join('\n');
+        }
+
+        function _gsBuildPromptRegen() {
+            const raw = (document.getElementById('gsRegenList')?.value || '').trim();
+            const list = raw.split(/[,，\s]+/).map(s => s.trim()).filter(Boolean).join(', ') || '(번호 입력 필요)';
+            const reason = document.getElementById('gsRegenReason')?.value || '기타';
+            const firstNum = parseInt((raw.match(/\d+/) || ['1'])[0], 10);
+            const exampleFile = _gsFormatFilename(firstNum);
+            return [
+                `장면 ${list}번을 재생성해주세요.`,
+                '',
+                '[재생성 사유]',
+                reason,
+                '',
+                '[유지 규칙]',
+                '- 1, 2단계에서 합의한 그림체와 모든 절대 규칙 그대로 적용',
+                '- 대본 맥락 그대로 반영',
+                `- 파일명은 원래 장면 번호 그대로 사용 (예: ${exampleFile})`,
+                '- 순서 변경 없이 해당 번호만 재생성',
+                '',
+                '해당 번호만 재생성하고, 다른 이미지는 건드리지 마세요.',
+                `재생성 완료 후 "장면 ${list} 재생성 완료" 보고해주세요.`
+            ].join('\n');
+        }
+
+        function _gsToast(msg) {
+            const t = document.getElementById('gsToast');
+            if (!t) return;
+            t.textContent = msg;
+            t.style.opacity = '1';
+            clearTimeout(t._timer);
+            t._timer = setTimeout(() => { t.style.opacity = '0'; }, 2000);
+        }
+
+        function _gsFlashBtn(btn) {
+            if (!btn) return;
+            const orig = btn.style.background;
+            btn.style.background = '#2e7d32';
+            const origText = btn.textContent;
+            btn.textContent = '✅ 복사됨';
+            setTimeout(() => {
+                btn.style.background = orig;
+                btn.textContent = origText;
+            }, 1200);
+        }
+
+        async function _gsCopy(stage) {
+            let text = '', label = '', btn = null;
+            if (stage === 1) { text = _gsBuildPrompt1(); label = '1단계'; btn = document.getElementById('gsCopyBtn1'); }
+            else if (stage === 2) { text = _gsBuildPrompt2(); label = '2단계'; btn = document.getElementById('gsCopyBtn2'); }
+            else if (stage === 3) { text = _gsBuildPrompt3(); label = '3단계'; btn = document.getElementById('gsCopyBtn3'); }
+            else if (stage === 'combined') { text = _gsBuildPromptCombined(); label = '통합'; btn = document.getElementById('gsCopyBtnCombined'); }
+            else if (stage === 'regen') { text = _gsBuildPromptRegen(); label = '재생성'; btn = document.getElementById('gsCopyBtnRegen'); }
+            try {
+                await navigator.clipboard.writeText(text);
+                _gsToast(`${label} 프롬프트가 복사되었습니다`);
+                _gsFlashBtn(btn);
+                _gsUpdatePreview();
+            } catch(e) {
+                alert('클립보드 복사 실패: ' + e.message);
+            }
+        }
+
+        function _gsUpdatePreview() {
+            const p1 = document.getElementById('gsPreview1');
+            const p2 = document.getElementById('gsPreview2');
+            const p3 = document.getElementById('gsPreview3');
+            if (p1) p1.textContent = _gsBuildPrompt1();
+            if (p2) p2.textContent = _gsBuildPrompt2();
+            if (p3) p3.textContent = _gsBuildPrompt3();
+        }
+
+        function _gsSaveDraft() {
+            try {
+                const draft = {
+                    title:  document.getElementById('gsTitle')?.value || '',
+                    style:  document.getElementById('gsStyle')?.value || '',
+                    script: document.getElementById('gsScript')?.value || '',
+                    scenes: document.getElementById('gsScenes')?.value || '',
+                };
+                localStorage.setItem(GS_DRAFT_KEY, JSON.stringify(draft));
+            } catch(e) {}
+        }
+
+        function _gsLoadDraft() {
+            try {
+                const raw = localStorage.getItem(GS_DRAFT_KEY);
+                if (!raw) return;
+                const d = JSON.parse(raw);
+                if (document.getElementById('gsTitle'))  document.getElementById('gsTitle').value = d.title || '';
+                if (document.getElementById('gsStyle'))  document.getElementById('gsStyle').value = d.style || '';
+                if (document.getElementById('gsScript')) document.getElementById('gsScript').value = d.script || '';
+                if (document.getElementById('gsScenes')) document.getElementById('gsScenes').value = d.scenes || '';
+            } catch(e) {}
+        }
+
+        let _gsInited = false;
+        function _gsInit() {
+            if (_gsInited) { _gsAnalyze(); return; }
+            _gsInited = true;
+            _gsLoadDraft();
+            _gsAnalyze();
+            _gsUpdatePreview();
+        }
 
         // 채널 pills 토글 (기본 접힘, 클릭 시 펼침)
         function _togglePills(type) {
