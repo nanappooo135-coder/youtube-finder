@@ -1999,6 +1999,20 @@
                         <p style="font-size:0.85rem;color:#888;margin-bottom:10px;">
                             등록한 채널의 최신 영상이 자동으로 결과에 포함돼요.
                         </p>
+                        <!-- 🔄 채널 동기화 (GitHub 기반) -->
+                        <div style="margin-bottom:10px;padding:8px 10px;background:#f0f9ff;border:1px solid #93c5fd;border-radius:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                            <span style="font-size:0.78rem;color:#1e40af;font-weight:700;">📡 채널 동기화</span>
+                            <button onclick="_exportChannelsAll()" style="padding:5px 10px;font-size:0.78rem;background:#3b82f6;color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:600;">💾 channels.json 다운로드</button>
+                            <span id="channelSyncStatus" style="font-size:0.72rem;color:#1e40af;"></span>
+                            <details style="flex-basis:100%;margin-top:4px;">
+                                <summary style="font-size:0.72rem;color:#1e40af;cursor:pointer;">📖 동기화 방법 (PC ↔ 폰)</summary>
+                                <div style="font-size:0.72rem;color:#1e40af;line-height:1.6;padding:6px 0 0 0;">
+                                    <div><strong>1.</strong> PC에서 [💾 channels.json 다운로드] 클릭 → 파일 받음</div>
+                                    <div><strong>2.</strong> 받은 channels.json을 youtube-finder repo 루트에 넣고 git commit + push</div>
+                                    <div><strong>3.</strong> 폰/다른 기기에서 youtube-finder 새로고침 → 자동 로드 (localStorage 비어있을 때만)</div>
+                                </div>
+                            </details>
+                        </div>
                         <div class="bench-ch-row">
                             <input type="text" id="krChInput" placeholder="@핸들 또는 채널 URL (예: @syukaworld)"
                                    onkeydown="if(event.key==='Enter') addBenchChannel('kr')">
@@ -18679,6 +18693,76 @@ Example format:
         function saveBenchChannels(type, channels) {
             const key = type === 'kr' ? ch().krBenchKey : ch().foreignBenchKey;
             localStorage.setItem(key, JSON.stringify(channels));
+        }
+
+        // ===== 📡 채널 동기화 (GitHub channels.json 기반) =====
+        async function _syncChannelsFromRepo() {
+            try {
+                const res = await fetch('channels.json?v=' + Date.now(), { cache: 'no-store' });
+                if (!res.ok) return;
+                const data = await res.json();
+                let loadedCount = 0;
+                for (const [chName, chData] of Object.entries(data || {})) {
+                    const config = CHANNEL_CONFIG[chName];
+                    if (!config) continue;
+                    for (const type of ['kr', 'foreign']) {
+                        const key = type === 'kr' ? config.krBenchKey : config.foreignBenchKey;
+                        const existing = JSON.parse(localStorage.getItem(key) || '[]');
+                        // localStorage가 비어있을 때만 repo 값으로 채움 (사용자 로컬 데이터 보호)
+                        if (existing.length === 0 && Array.isArray(chData[type]) && chData[type].length > 0) {
+                            localStorage.setItem(key, JSON.stringify(chData[type]));
+                            loadedCount += chData[type].length;
+                        }
+                    }
+                }
+                if (loadedCount > 0) {
+                    console.log(`[ChannelSync] channels.json에서 ${loadedCount}개 채널 자동 로드`);
+                    const status = document.getElementById('channelSyncStatus');
+                    if (status) status.textContent = `✅ ${loadedCount}개 채널 자동 로드됨`;
+                    // 현재 화면 다시 그리기
+                    try {
+                        if (typeof renderBenchChannelList === 'function') {
+                            renderBenchChannelList('kr');
+                            renderBenchChannelList('foreign');
+                        }
+                    } catch(e) {}
+                }
+            } catch(e) {
+                console.log('[ChannelSync] channels.json 없음 또는 로드 실패:', e.message);
+            }
+        }
+
+        // 페이지 로드 시 자동 동기화
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(_syncChannelsFromRepo, 800);
+        });
+
+        function _exportChannelsAll() {
+            const data = {};
+            for (const [chName, config] of Object.entries(CHANNEL_CONFIG)) {
+                data[chName] = {
+                    kr: JSON.parse(localStorage.getItem(config.krBenchKey) || '[]'),
+                    foreign: JSON.parse(localStorage.getItem(config.foreignBenchKey) || '[]')
+                };
+            }
+            const totalCount = Object.values(data).reduce((sum, ch) => sum + (ch.kr.length + ch.foreign.length), 0);
+            if (totalCount === 0) {
+                alert('등록된 채널이 없습니다.');
+                return;
+            }
+            const json = JSON.stringify(data, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'channels.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            const status = document.getElementById('channelSyncStatus');
+            if (status) status.textContent = `✅ ${totalCount}개 채널 다운로드됨`;
+            alert(`channels.json 다운로드 완료 (총 ${totalCount}개 채널)\n\n다음 단계:\n1. 받은 파일을 youtube-finder repo 루트에 덮어쓰기\n2. git add channels.json && git commit && git push\n3. 폰/다른 기기에서 페이지 새로고침 → 자동 로드`);
         }
 
         function renderBenchChannelList(type) {
