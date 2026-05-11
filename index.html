@@ -24500,10 +24500,24 @@ ${sceneBlocks}`;
                 }
 
                 if (tracks.length === 0) {
-                    captionsEl.innerHTML = `❌ 자막을 가져올 수 없습니다. <br><br>
-                        <strong>대체 방법:</strong><br>
-                        외부 사이트 사용 → <a href="https://downsub.com/?url=https://www.youtube.com/watch?v=${videoId}" target="_blank" style="color:#dc3545;font-weight:700;">DownSub.com에서 자막 다운로드</a><br>
-                        <span style="color:#888;font-size:0.85rem;">새 탭이 열리고 자막 파일을 받을 수 있습니다.</span>`;
+                    const ytUrl = `https://www.youtube.com/watch?v=${videoId}`;
+                    captionsEl.innerHTML = `
+                        <div style="padding:20px;text-align:center;">
+                            <div style="font-size:1rem;color:#dc3545;font-weight:700;margin-bottom:16px;">⚠️ 브라우저로는 자막을 못 가져왔어요</div>
+                            <div style="font-size:0.9rem;color:#666;margin-bottom:20px;">아래 큰 버튼 하나만 누르면 끝:</div>
+                            <a href="https://downsub.com/?url=${encodeURIComponent(ytUrl)}" target="_blank" style="display:inline-block;padding:14px 28px;background:#10b981;color:#fff;text-decoration:none;font-size:1.05rem;font-weight:700;border-radius:10px;box-shadow:0 2px 6px rgba(16,185,129,0.3);">
+                                📥 자막 받기 (DownSub 새 탭)
+                            </a>
+                            <div style="margin-top:14px;font-size:0.82rem;color:#888;line-height:1.7;">
+                                새 탭이 열리면:<br>
+                                ① <strong>SRT</strong> 또는 <strong>TXT</strong> 옆 <strong>[DOWNLOAD]</strong> 클릭<br>
+                                ② 받은 파일 열어서 텍스트 복사
+                            </div>
+                            <details style="margin-top:16px;text-align:left;display:inline-block;">
+                                <summary style="font-size:0.8rem;color:#888;cursor:pointer;">또는 PC에서 더 빠르게 (yt-dlp)</summary>
+                                <pre style="margin-top:8px;padding:10px;background:#f8f9fa;border-radius:6px;font-size:0.75rem;line-height:1.5;color:#333;border:1px solid #e0e0e0;text-align:left;user-select:all;">.venv\\Scripts\\yt-dlp --write-auto-sub --sub-lang ko --skip-download "${ytUrl}"</pre>
+                            </details>
+                        </div>`;
                     return;
                 }
 
