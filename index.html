@@ -3503,6 +3503,36 @@
                 </div>
             </div>
 
+            <!-- 🎯 영상 요약 (Gemini) -->
+            <div id="refSummarySection" style="display:none;">
+                <div class="section">
+                    <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
+                        🎯 영상 요약 (Gemini)
+                        <button id="refSummaryBtn" onclick="generateRefSummary()" style="padding:6px 14px;background:#9333ea;color:white;border:none;border-radius:8px;font-size:0.85rem;cursor:pointer;font-weight:600;">✨ 요약 생성</button>
+                    </div>
+                    <div class="section-content">
+                        <p style="font-size:0.78rem;color:#888;margin-bottom:8px;">자막을 Gemini로 요약 — 영상 안 보고도 핵심 파악 가능.</p>
+                        <div id="refSummaryStatus" style="font-size:0.82rem;color:#9333ea;margin-bottom:8px;"></div>
+                        <div id="refSummaryResult" style="font-size:0.9rem;line-height:1.7;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 💬 댓글 패턴 분석 (Gemini) -->
+            <div id="refCommentAnalysisSection" style="display:none;">
+                <div class="section">
+                    <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
+                        💬 댓글 패턴 분석 (Gemini)
+                        <button id="refCommentAnalyzeBtn" onclick="analyzeRefComments()" style="padding:6px 14px;background:#ec4899;color:white;border:none;border-radius:8px;font-size:0.85rem;cursor:pointer;font-weight:600;">✨ 분석 시작</button>
+                    </div>
+                    <div class="section-content">
+                        <p style="font-size:0.78rem;color:#888;margin-bottom:8px;">시청자 니즈·관심 주제·자주 등장 키워드 추출 → 다음 대본 주제 발굴.</p>
+                        <div id="refCommentAnalysisStatus" style="font-size:0.82rem;color:#ec4899;margin-bottom:8px;"></div>
+                        <div id="refCommentAnalysisResult" style="font-size:0.9rem;line-height:1.7;"></div>
+                    </div>
+                </div>
+            </div>
+
         </div><!-- /process-ref -->
 
         <!-- ===== 프로세스: 실시간 트렌드 ===== -->
@@ -24618,12 +24648,181 @@ ${sceneBlocks}`;
                 const body = div.querySelectorAll('div')[1]?.textContent || '';
                 text += `${name}: ${body}\n\n`;
             });
+            window._refLastCommentsText = text.trim();
             navigator.clipboard.writeText(text.trim()).then(() => {
                 const btn = event.target;
                 btn.textContent = '복사됨!';
                 setTimeout(() => btn.textContent = '복사', 1500);
             });
         }
+
+        // ===== 🎯 영상 요약 (Gemini) =====
+        async function generateRefSummary() {
+            const btn = document.getElementById('refSummaryBtn');
+            const status = document.getElementById('refSummaryStatus');
+            const result = document.getElementById('refSummaryResult');
+            const captionText = (document.getElementById('refCaptions')?.textContent || '').trim();
+            const title = document.getElementById('refTitle')?.textContent || '';
+
+            if (!captionText || captionText.length < 50) {
+                alert('자막이 없거나 너무 짧습니다. 자막을 먼저 가져오세요.');
+                return;
+            }
+
+            btn.disabled = true; btn.textContent = '⏳ 요약 중...';
+            status.textContent = '🤖 Gemini 분석 중...';
+            result.innerHTML = '';
+
+            try {
+                const prompt = `다음 유튜브 영상의 자막을 분석해서 한국어로 요약하세요.
+
+# 영상 제목
+${title}
+
+# 출력 형식 (마크다운)
+## 📌 핵심 한 줄
+(이 영상이 결국 무엇을 말하는가)
+
+## 🎯 5줄 요약
+1. ...
+2. ...
+3. ...
+4. ...
+5. ...
+
+## 🔥 가장 임팩트 있는 후크 (Top 3)
+- (시청자를 멈추게 한 강한 표현·통계·반전)
+
+## 💡 시청자 반응 포인트
+(이 영상이 왜 잘됐는지/안됐는지 분석. 잘된 점·아쉬운 점)
+
+## 🎬 우리가 비슷한 영상 만들면 활용할 만한 것
+- ...
+
+# 자막
+${captionText.slice(0, 15000)}`;
+
+                const r = await callGemini(prompt, { maxTokens: 3000, temperature: 0.3, model: 'gemini-2.5-pro' });
+                const text = (r && typeof r === 'object') ? (r.text || '') : (r || '');
+                if (!text) throw new Error('Gemini 응답 없음');
+
+                // 마크다운 → HTML (간단 변환)
+                const html = text
+                    .replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]))
+                    .replace(/^## (.+)$/gm, '<h3 style="margin-top:14px;margin-bottom:6px;color:#6b21a8;">$1</h3>')
+                    .replace(/^# (.+)$/gm, '<h2 style="margin-top:14px;margin-bottom:6px;color:#6b21a8;">$1</h2>')
+                    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/^- (.+)$/gm, '<li>$1</li>')
+                    .replace(/(<li>.+<\/li>\n?)+/g, m => '<ul style="margin-left:18px;">' + m + '</ul>')
+                    .replace(/\n/g, '<br>');
+                result.innerHTML = html;
+                status.textContent = '✅ 요약 완료';
+            } catch (e) {
+                status.innerHTML = '<span style="color:#dc3545;">❌ 실패: ' + e.message + '</span>';
+            } finally {
+                btn.disabled = false; btn.textContent = '🔄 다시 요약';
+            }
+        }
+
+        // ===== 💬 댓글 패턴 분석 (Gemini) =====
+        async function analyzeRefComments() {
+            const btn = document.getElementById('refCommentAnalyzeBtn');
+            const status = document.getElementById('refCommentAnalysisStatus');
+            const result = document.getElementById('refCommentAnalysisResult');
+
+            // 화면에서 댓글 직접 수집
+            const container = document.getElementById('refComments');
+            let commentText = '';
+            container?.querySelectorAll(':scope > div').forEach(div => {
+                const name = div.querySelector('span')?.textContent || '';
+                const body = div.querySelectorAll('div')[1]?.textContent || '';
+                if (body) commentText += `${name}: ${body}\n`;
+            });
+
+            if (!commentText || commentText.length < 100) {
+                alert('댓글이 없거나 너무 적습니다. 댓글을 먼저 가져오세요.');
+                return;
+            }
+
+            btn.disabled = true; btn.textContent = '⏳ 분석 중...';
+            status.textContent = '🤖 Gemini가 댓글 패턴 분석 중...';
+            result.innerHTML = '';
+
+            try {
+                const title = document.getElementById('refTitle')?.textContent || '';
+                const prompt = `다음 유튜브 영상의 댓글을 분석하세요. 시청자 니즈와 관심사를 파악해서 다음 대본 주제를 발굴할 수 있도록.
+
+# 영상 제목
+${title}
+
+# 출력 형식 (마크다운)
+## 🎯 시청자가 정말 궁금해하는 것 (Top 5)
+1. ...
+2. ...
+3. ...
+4. ...
+5. ...
+
+## 🔥 자주 등장하는 키워드 (감정 포함)
+- 키워드: 등장 횟수·맥락
+
+## 💡 시청자 페인 포인트 (어떤 문제·고민이 있나)
+- ...
+
+## 📌 다음 대본 주제 제안 (이 댓글들 기반)
+1. ...
+2. ...
+3. ...
+
+## 🎬 시청자 반응 톤 (긍정/부정 비율 + 톤 요약)
+긍정 X% / 부정 Y% / 중립 Z%
+- 톤 특징:
+
+# 댓글 (Top 100)
+${commentText.slice(0, 12000)}`;
+
+                const r = await callGemini(prompt, { maxTokens: 3000, temperature: 0.3, model: 'gemini-2.5-pro' });
+                const text = (r && typeof r === 'object') ? (r.text || '') : (r || '');
+                if (!text) throw new Error('Gemini 응답 없음');
+
+                const html = text
+                    .replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]))
+                    .replace(/^## (.+)$/gm, '<h3 style="margin-top:14px;margin-bottom:6px;color:#be185d;">$1</h3>')
+                    .replace(/^# (.+)$/gm, '<h2 style="margin-top:14px;margin-bottom:6px;color:#be185d;">$1</h2>')
+                    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/^- (.+)$/gm, '<li>$1</li>')
+                    .replace(/(<li>.+<\/li>\n?)+/g, m => '<ul style="margin-left:18px;">' + m + '</ul>')
+                    .replace(/\n/g, '<br>');
+                result.innerHTML = html;
+                status.textContent = '✅ 분석 완료';
+            } catch (e) {
+                status.innerHTML = '<span style="color:#dc3545;">❌ 실패: ' + e.message + '</span>';
+            } finally {
+                btn.disabled = false; btn.textContent = '🔄 다시 분석';
+            }
+        }
+
+        // fetchRefCaptions/Comments 완료 후 섹션 자동 표시
+        const _origFetchRefCaptions = window.fetchRefCaptions;
+        // 자막 로드 후 요약 섹션 자동 보이게 (DOM 변화 감지)
+        (function () {
+            const obs = new MutationObserver(() => {
+                const captionsEl = document.getElementById('refCaptions');
+                if (captionsEl && captionsEl.textContent && captionsEl.textContent.length > 100 && !captionsEl.textContent.includes('자막을 가져올 수')) {
+                    const s = document.getElementById('refSummarySection');
+                    if (s) s.style.display = '';
+                }
+                const commentsEl = document.getElementById('refComments');
+                if (commentsEl && commentsEl.children.length > 5) {
+                    const c = document.getElementById('refCommentAnalysisSection');
+                    if (c) c.style.display = '';
+                }
+            });
+            const target1 = document.getElementById('refCaptions');
+            const target2 = document.getElementById('refComments');
+            if (target1) obs.observe(target1, { childList: true, characterData: true, subtree: true });
+            if (target2) obs.observe(target2, { childList: true });
+        })();
     </script>
 
     <script>
