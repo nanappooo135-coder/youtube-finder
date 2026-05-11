@@ -3733,6 +3733,8 @@
                     <button onclick="addRefFromModal()">레퍼런스 추가</button>
                     <button onclick="openVideoFromModal()">영상 보기</button>
                     <button onclick="copyThumbUrl()">이미지 URL 복사</button>
+                    <button onclick="copyVideoUrlFromModal()" style="background:#1c7ed6;color:#fff;">🔗 영상 URL 복사</button>
+                    <button onclick="sendToReferenceTab()" style="background:#10b981;color:#fff;">📚 자막·댓글 가져오기</button>
                 </div>
             </div>
         </div>
@@ -17617,6 +17619,38 @@ Example format:
             const btn = event.target;
             btn.textContent = '추가됨!';
             setTimeout(() => { btn.textContent = '레퍼런스 추가'; }, 1500);
+        }
+
+        // 영상 URL 복사
+        function copyVideoUrlFromModal() {
+            const videoId = _thumbModalData.videoId;
+            if (!videoId) return;
+            const url = 'https://www.youtube.com/watch?v=' + videoId;
+            navigator.clipboard.writeText(url).then(() => {
+                const btn = event.target;
+                const orig = btn.textContent;
+                btn.textContent = '✅ 복사됨';
+                setTimeout(() => { btn.textContent = orig; }, 1500);
+            });
+        }
+
+        // 레퍼런스 탭으로 보내서 자막+댓글 자동 가져오기
+        function sendToReferenceTab() {
+            const videoId = _thumbModalData.videoId;
+            if (!videoId) return;
+            closeThumbModal();
+            // 레퍼런스 탭으로 전환
+            if (typeof switchProcess === 'function') switchProcess('ref');
+            // URL 입력 + 자동 가져오기 (DOM이 그려질 시간 주기)
+            setTimeout(() => {
+                const input = document.getElementById('refVideoUrl');
+                if (input) {
+                    input.value = videoId;
+                    if (typeof fetchReference === 'function') {
+                        fetchReference();
+                    }
+                }
+            }, 200);
         }
 
         function openThumbFromCard(el) {
