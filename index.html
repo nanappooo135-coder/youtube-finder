@@ -19597,10 +19597,11 @@ ${titles}`;
 
                 let allItems = [];
                 let queries = [];
+                let query1, query2, query3, query4, query5;
 
                 if (!useRegisteredOnly) {
                     // 등록 채널 없을 때만 키워드 자동 검색
-                    const [query1, query2, query3, query4, query5] = buildSearchQueries(profile, keywords);
+                    [query1, query2, query3, query4, query5] = buildSearchQueries(profile, keywords);
                     progBar.style.width = '15%';
                     loadText.textContent = `5개 쿼리 병렬 검색 중...`;
 
