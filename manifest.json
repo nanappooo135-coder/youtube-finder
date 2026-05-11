@@ -1,0 +1,26 @@
+{
+  "name": "YouTube Finder",
+  "short_name": "YT Finder",
+  "description": "유튜브 영상 제작 보조 도구 — 셀팟·나노바나나·Claude 통합",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#7048e8",
+  "theme_color": "#7048e8",
+  "lang": "ko",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

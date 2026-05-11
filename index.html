@@ -2,8 +2,15 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>뜨는 유튜브 채널 찾기</title>
+    <!-- PWA 설정 -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#7048e8">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="YT Finder">
+    <link rel="apple-touch-icon" href="icon-192.png">
     <style>
         * {
             margin: 0;
@@ -25056,6 +25063,17 @@ ${sceneList}`;
                 .replace(/\s+/g, ' ')
                 .trim();
             window.open('https://www.youtube.com/results?search_query=' + encodeURIComponent(cleaned), '_blank');
+        }
+    </script>
+
+    <!-- PWA Service Worker 등록 -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('[PWA] SW registered:', reg.scope))
+                    .catch(err => console.warn('[PWA] SW registration failed:', err));
+            });
         }
     </script>
 </body>
