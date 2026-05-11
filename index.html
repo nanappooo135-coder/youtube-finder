@@ -17607,6 +17607,7 @@ Example format:
             renderApiKeySlots();
             updateApiStatus();
             alert(`${validKeys.length}개 키 저장 완료! 키 1부터 순서대로 사용해요.`);
+            _collapseSectionByChild('apiStatus');
         }
 
         function updateApiStatus() {
@@ -17632,6 +17633,30 @@ Example format:
             const content = titleEl.nextElementSibling;
             content.classList.toggle('hidden');
         }
+
+        // 저장된 섹션 자동 접기 (API 키 / 키워드 설정용)
+        function _collapseSectionByChild(childId) {
+            const child = document.getElementById(childId);
+            if (!child) return;
+            const section = child.closest('.section');
+            if (!section) return;
+            const title = section.querySelector('.section-title');
+            const content = section.querySelector('.section-content');
+            if (!title || !content) return;
+            title.classList.add('collapsed');
+            content.classList.add('hidden');
+        }
+        function _autoCollapseSavedSections() {
+            try {
+                if (typeof loadApiKeys === 'function' && loadApiKeys().filter(Boolean).length > 0) {
+                    _collapseSectionByChild('apiStatus');
+                }
+                if (typeof ch === 'function' && localStorage.getItem(ch().profileKey)) {
+                    _collapseSectionByChild('profileStatus');
+                }
+            } catch(e) {}
+        }
+        document.addEventListener('DOMContentLoaded', () => setTimeout(_autoCollapseSavedSections, 300));
 
         // 채널 pills 토글 (기본 접힘, 클릭 시 펼침)
         function _togglePills(type) {
@@ -18590,6 +18615,7 @@ Example format:
             localStorage.setItem(ch().profileKey, JSON.stringify({ genre, tone, keywords, desc }));
             updateProfileStatus(true);
             alert(`저장됐어요!`);
+            _collapseSectionByChild('profileStatus');
         }
 
         function loadChannelProfile() {
