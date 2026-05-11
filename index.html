@@ -19288,43 +19288,51 @@ Example format:
                 const publishedAfter = new Date();
                 publishedAfter.setDate(publishedAfter.getDate() - period);
 
-                // 3개 완전히 다른 각도로 병렬 검색 → 최대 150개 후보 확보
-                const [query1, query2, query3, query4, query5] = buildSearchQueries(profile, keywords);
-                progBar.style.width = '15%';
-                loadText.textContent = `5개 쿼리 병렬 검색 중...`;
+                // 등록 채널 우선 — 등록된 채널이 있으면 키워드 자동 검색 스킵 (사용자가 등록한 것만 결과)
+                const krChannels = loadBenchChannels('kr');
+                const useRegisteredOnly = krChannels.length > 0;
 
-                const searchParams = {
-                    part: 'snippet', type: 'video',
-                    publishedAfter: publishedAfter.toISOString(),
-                    regionCode: ch().regionCode,
-                    relevanceLanguage: ch().relevanceLanguage,
-                    // 길이 필터는 contentDetails 기반으로 8분 미만 제외
-                    order: 'relevance', maxResults: 50
-                };
+                let allItems = [];
+                let queries = [];
 
-                // 각 쿼리당 페이지네이션으로 최대 100개 확보 (50+50)
-                async function searchWithPaging(q) {
-                    const r1 = await fetchYouTubeAPI('search', { key: apiKey, q, ...searchParams });
-                    const items = r1.items || [];
-                    if (r1.nextPageToken && period >= 90) {
-                        const r2 = await fetchYouTubeAPI('search', { key: apiKey, q, ...searchParams, pageToken: r1.nextPageToken });
-                        items.push(...(r2.items || []));
+                if (!useRegisteredOnly) {
+                    // 등록 채널 없을 때만 키워드 자동 검색
+                    const [query1, query2, query3, query4, query5] = buildSearchQueries(profile, keywords);
+                    progBar.style.width = '15%';
+                    loadText.textContent = `5개 쿼리 병렬 검색 중...`;
+
+                    const searchParams = {
+                        part: 'snippet', type: 'video',
+                        publishedAfter: publishedAfter.toISOString(),
+                        regionCode: ch().regionCode,
+                        relevanceLanguage: ch().relevanceLanguage,
+                        order: 'relevance', maxResults: 50
+                    };
+
+                    async function searchWithPaging(q) {
+                        const r1 = await fetchYouTubeAPI('search', { key: apiKey, q, ...searchParams });
+                        const items = r1.items || [];
+                        if (r1.nextPageToken && period >= 90) {
+                            const r2 = await fetchYouTubeAPI('search', { key: apiKey, q, ...searchParams, pageToken: r1.nextPageToken });
+                            items.push(...(r2.items || []));
+                        }
+                        return items;
                     }
-                    return items;
-                }
 
-                const queries = [query1, query2, query3, query4, query5].filter(Boolean);
-                const searchResults = await Promise.all(queries.map(q => searchWithPaging(q)));
+                    queries = [query1, query2, query3, query4, query5].filter(Boolean);
+                    const searchResults = await Promise.all(queries.map(q => searchWithPaging(q)));
+                    allItems = searchResults.flat();
 
-                const allItems = searchResults.flat();
-
-                if (allItems.length === 0) {
-                    showError('benchResults', '검색 결과가 없어요. 기간을 늘리거나 키워드를 확인해보세요.');
-                    return;
+                    if (allItems.length === 0) {
+                        showError('benchResults', '등록된 채널이 없고 키워드 검색 결과도 없어요. 채널을 등록하거나 기간을 늘려보세요.');
+                        return;
+                    }
+                } else {
+                    progBar.style.width = '15%';
+                    loadText.textContent = `등록 채널 ${krChannels.length}개만 검색 (키워드 검색 스킵)`;
                 }
 
                 // 등록된 한국 채널 영상도 추가 (playlistItems — 채널당 1 유닛)
-                const krChannels = loadBenchChannels('kr');
                 const registeredItems = [];
                 if (krChannels.length > 0) {
                     progBar.style.width = '40%';
