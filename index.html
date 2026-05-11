@@ -24427,22 +24427,26 @@ ${sceneBlocks}`;
         }
 
         // ---- 자막 ----
-        // CORS 프록시 시도 (여러 fallback)
-        async function _fetchViaProxy(url) {
+        // CORS 프록시 시도 (여러 fallback) — 각 8초 타임아웃
+        async function _fetchViaProxy(url, timeoutMs = 8000) {
             const proxies = [
                 u => 'https://corsproxy.io/?url=' + encodeURIComponent(u),
-                u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
-                u => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u)
+                u => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u),
+                u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u)
             ];
             for (const wrap of proxies) {
+                const ctrl = new AbortController();
+                const timer = setTimeout(() => ctrl.abort(), timeoutMs);
                 try {
-                    const res = await fetch(wrap(url));
+                    const res = await fetch(wrap(url), { signal: ctrl.signal });
+                    clearTimeout(timer);
                     if (res.ok) {
                         const text = await res.text();
-                        if (text && text.length > 0) return text;
+                        if (text && text.length > 10) return text;
                     }
                 } catch(e) {
-                    console.warn('[proxy] 실패:', e.message);
+                    clearTimeout(timer);
+                    console.warn('[proxy] 실패:', e.name, e.message);
                 }
             }
             return null;
@@ -24457,30 +24461,20 @@ ${sceneBlocks}`;
             langsEl.innerHTML = '';
 
             try {
-                // 1) YouTube watch 페이지에서 captionTracks 추출 (가장 안정적)
-                const watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
-                const html = await _fetchViaProxy(watchUrl);
-
                 let tracks = [];
-                if (html) {
-                    // playerResponse 에서 captionTracks 추출
-                    const m = html.match(/"captionTracks":(\[[^\]]+\])/);
-                    if (m) {
-                        try {
-                            const arr = JSON.parse(m[1]);
-                            tracks = arr.map(t => ({
-                                lang: t.languageCode || 'unknown',
-                                name: t.name?.simpleText || '',
-                                kind: t.kind || '',
-                                url: t.baseUrl
-                            }));
-                        } catch(e) { console.warn('captionTracks 파싱 실패', e); }
-                    }
+
+                // 1) 자동 생성 한국어 자막 직접 시도 (가장 빠름)
+                captionsEl.textContent = '⏳ 한국어 자동 자막 확인 중...';
+                const asrUrl = `https://www.youtube.com/api/timedtext?v=${videoId}&lang=ko&fmt=srv3&kind=asr`;
+                const asrXml = await _fetchViaProxy(asrUrl, 6000);
+                if (asrXml && asrXml.includes('<text')) {
+                    tracks.push({ lang: 'ko', name: '자동 생성', kind: 'asr', url: asrUrl });
                 }
 
+                // 2) timedtext list (수동 자막 목록 — 빠름)
                 if (tracks.length === 0) {
-                    // 2) timedtext list API fallback
-                    const listXml = await _fetchViaProxy(`https://www.youtube.com/api/timedtext?type=list&v=${videoId}`);
+                    captionsEl.textContent = '⏳ 자막 목록 확인 중...';
+                    const listXml = await _fetchViaProxy(`https://www.youtube.com/api/timedtext?type=list&v=${videoId}`, 6000);
                     if (listXml) {
                         const parser = new DOMParser();
                         const doc = parser.parseFromString(listXml, 'text/xml');
@@ -24488,24 +24482,20 @@ ${sceneBlocks}`;
                             const lang = t.getAttribute('lang_code');
                             const name = t.getAttribute('name') || '';
                             tracks.push({
-                                lang,
-                                name,
-                                kind: '',
+                                lang, name, kind: '',
                                 url: `https://www.youtube.com/api/timedtext?v=${videoId}&lang=${lang}&name=${encodeURIComponent(name)}&fmt=srv3`
                             });
                         });
                     }
                 }
 
+                // 3) 영어 자동 자막 fallback
                 if (tracks.length === 0) {
-                    // 3) 자동 생성 자막 직접 시도 (한국어/영어)
-                    for (const lang of ['ko', 'en']) {
-                        const asrUrl = `https://www.youtube.com/api/timedtext?v=${videoId}&lang=${lang}&fmt=srv3&kind=asr`;
-                        const asrXml = await _fetchViaProxy(asrUrl);
-                        if (asrXml && asrXml.includes('<text')) {
-                            tracks.push({ lang, name: '자동 생성', kind: 'asr', url: asrUrl });
-                            break;
-                        }
+                    captionsEl.textContent = '⏳ 영어 자동 자막 확인 중...';
+                    const enUrl = `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&fmt=srv3&kind=asr`;
+                    const enXml = await _fetchViaProxy(enUrl, 6000);
+                    if (enXml && enXml.includes('<text')) {
+                        tracks.push({ lang: 'en', name: '자동 생성', kind: 'asr', url: enUrl });
                     }
                 }
 
