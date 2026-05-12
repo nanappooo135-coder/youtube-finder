@@ -2892,7 +2892,6 @@
                             <button class="sp-result-tab" data-tab="freepik" onclick="_spSwitchResultTab('freepik')" style="padding:10px 16px;background:#f1f3f5;color:#495057;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">🖼️ 프리픽 이미지</button>
                             <button class="sp-result-tab" data-tab="kieai" onclick="_spSwitchResultTab('kieai')" style="padding:10px 16px;background:#f1f3f5;color:#495057;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">🎨 Kie AI</button>
                             <button class="sp-result-tab" data-tab="thumbtext" onclick="_spSwitchResultTab('thumbtext')" style="padding:10px 16px;background:#f1f3f5;color:#495057;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">🏷️ 썸네일 텍스트</button>
-                            <button class="sp-result-tab" data-tab="map" onclick="_spSwitchResultTab('map')" style="padding:10px 16px;background:#f1f3f5;color:#495057;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">🗺️ 지도</button>
                             <button class="sp-result-tab" data-tab="overlay" onclick="_spSwitchResultTab('overlay')" style="padding:10px 16px;background:#f1f3f5;color:#495057;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">✨ 오버레이</button>
                         </div>
 
@@ -3253,18 +3252,6 @@
                             <div id="spThumbTextResults"></div>
                         </div>
 
-                        <!-- 🗺️ 지도 탭 (AI 이미지 생성용 한글 라벨 지도 프롬프트) -->
-                        <div id="spTab_map" class="sp-result-pane" style="display:none;">
-                            <div style="margin-bottom:12px;padding:12px 14px;background:linear-gradient(135deg,#e3f2fd 0%,#e8f5e9 100%);border:2px solid #1976d2;border-radius:10px;">
-                                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:8px;">
-                                    <div style="font-weight:700;color:#0d47a1;font-size:0.95rem;">🗺️ 지도 장면 분석 <span style="font-size:0.78rem;font-weight:400;color:#888;">(AI가 지도 어울리는 장면 감지 · 한글 라벨 강조 프롬프트 생성)</span></div>
-                                    <button id="spMapBtn" class="search-btn" onclick="spAnalyzeMaps()" style="padding:8px 18px;font-size:0.88rem;background:#1976d2;border-color:#1976d2;">🗺️ 지도 장면 분석</button>
-                                </div>
-                                <div id="spMapStatus" style="font-size:0.8rem;color:#888;margin-bottom:4px;">변환된 장면이 없으면 먼저 셀팟 변환 또는 JSON Import를 실행하세요.</div>
-                            </div>
-                            <div id="spMapResults"></div>
-                        </div>
-
                         <!-- ✨ 오버레이 추천 탭 -->
                         <div id="spTab_overlay" class="sp-result-pane" style="display:none;">
                             <div style="margin-bottom:12px;padding:12px 14px;background:linear-gradient(135deg,#fff9e6 0%,#fff3cd 100%);border:2px solid #f59e0b;border-radius:10px;">
@@ -3272,7 +3259,7 @@
                                     <div style="font-weight:700;color:#b45309;font-size:0.95rem;">✨ 오버레이 추천 <span style="font-size:0.78rem;font-weight:400;color:#888;">(셀팟 26종 중 나레이션에 어울리는 것만 골라 추천)</span></div>
                                     <button id="spOverlayBtn" class="search-btn" onclick="spAnalyzeOverlays()" style="padding:8px 18px;font-size:0.88rem;background:#f59e0b;border-color:#f59e0b;">✨ 오버레이 추천 실행</button>
                                 </div>
-                                <div id="spOverlayStatus" style="font-size:0.8rem;color:#888;margin-bottom:4px;">변환된 장면이 없으면 먼저 셀팟 변환 또는 JSON Import를 실행하세요. 빈 추천은 헤드라인이 자동 적용된 상태입니다.</div>
+                                <div id="spOverlayStatus" style="font-size:0.8rem;color:#888;margin-bottom:4px;">변환된 장면이 없으면 먼저 셀팟 변환 또는 JSON Import를 실행하세요. 헤드라인 포함 모든 추천은 셀팟 UI에서 수동 선택해야 적용됩니다.</div>
                             </div>
                             <div id="spOverlayResults"></div>
                         </div>
@@ -22865,6 +22852,7 @@ ${stylePrompt}
    - **교육적 다이어그램**: "출산-사망 균형 도식", 4단계 호흡법, 의사결정 트리
    - **명확한 디버전스**: 총 GDP↑ vs 1인당 GDP→ 같이 두 곡선이 갈라지는 경우
    - **구성 비율 도식**: 파이/도넛 차트가 필요한 3개 이상 비율 분해
+   - **🗺️ 지도가 필수인 지리/지정학 장면**: 해협·항로·국경·전쟁 전선·자원 분포·영토 변화·세력 범위 등 위치 자체가 정보의 핵심인 장면 → claude_design (한글 라벨 박힌 지도 도식). 단순 국가명 한 번 언급은 ai. **지도 형태가 시청자 이해에 결정적일 때만**. claude_kind="지도"로 표기하고, claude_prompt에 표시할 지역·한글 라벨 3~6개·핀/화살표·간단 색조를 명시 (예: "동아시아 지도, 한국·일본·대만·필리핀 라벨 강조, 분쟁 해역 빨간 화살표")
    **🚨 절대 금지 — 도입부(isIntro:true) 장면**: 도입부는 시청자 후킹 단계. 감정·드라마·궁금증이 목적이라 인포그래픽이 들어가면 즉시 이탈. **도입부 장면은 어떤 경우에도 claude_design 금지** (도식·통계가 도입부 텍스트에 있어도 ai로 분류). 도입부는 오직 'ai' 또는 'real'만 허용.
    **📊 장면 분류 후 자체 검증 필수 (3-pass)**:
    분류 완료 후 모든 claude_design 후보에 대해 다음 3가지 질문을 던지고, 하나라도 NO면 ai로 변경:
@@ -24712,6 +24700,11 @@ ${sceneList}
                 recs.push({ type: 'text_typewriter', why: '짧은 강한 키워드 (15자 이내) → 타자기' });
             }
 
+            // 14. 위 추천이 하나도 없으면 헤드라인 — 짧은 핵심 키워드 추출용
+            if (!recs.length) {
+                recs.push({ type: 'text_headline', why: '특별 매칭 없음 → 기본 헤드라인 (짧은 키워드 5자 이내 추출)' });
+            }
+
             return recs;
         }
 
@@ -24777,8 +24770,8 @@ ${sceneList}
                 });
 
                 const summary = `<div style="padding:10px 12px;background:#fff7e6;border:2px solid #f59e0b;border-radius:8px;margin-bottom:10px;font-size:0.85rem;color:#b45309;">
-                    ✅ 총 ${scenes.length}장면 분석 · 추천 있음 ${withRec}개 (${Math.round(withRec/scenes.length*100)}%) · 추천 합계 ${totalRecs}개
-                    <div style="font-size:0.75rem;color:#888;margin-top:4px;">⚠️ 헤드라인(text_headline)은 모든 장면에 자동 적용되므로 별도 표시 안 함. 위 추천은 그 외에 "이 장면엔 이거도 어울린다"는 추가 제안.</div>
+                    ✅ 총 ${scenes.length}장면 분석 · 추천 합계 ${totalRecs}개 · 평균 ${(totalRecs/scenes.length).toFixed(1)}개/장면
+                    <div style="font-size:0.75rem;color:#888;margin-top:4px;">⚠️ 셀팟은 오버레이를 자동 적용하지 않습니다. 모든 추천은 셀팟 UI에서 수동 선택 + "대본 기반 자동 생성" 클릭 필요. 매칭되는 게 없으면 기본 헤드라인 추천.</div>
                 </div>`;
                 results.innerHTML = summary + cards.join('');
                 status.textContent = `✅ ${scenes.length}장면 분석 완료`;
@@ -24791,121 +24784,7 @@ ${sceneList}
             }
         }
 
-        // ===== 🗺️ 지도 탭 (AI 이미지용 한글 라벨 지도 프롬프트) =====
-        async function spAnalyzeMaps() {
-            const status = document.getElementById('spMapStatus');
-            const results = document.getElementById('spMapResults');
-            const btn = document.getElementById('spMapBtn');
-
-            const scenes = window._spLastScenes || [];
-            if (!scenes.length) {
-                alert('변환된 장면이 없습니다. 먼저 셀팟 변환 또는 JSON Import를 실행하세요.');
-                return;
-            }
-
-            btn.disabled = true;
-            const oldLabel = btn.textContent;
-            btn.textContent = '⏳ 분석 중...';
-            status.innerHTML = `<span style="color:#1976d2;">🤖 Gemini Pro가 ${scenes.length}장면 중 지도 어울리는 장면 감지 중...</span>`;
-            results.innerHTML = '';
-
-            const sceneList = scenes.map(s => `장면 ${s.sceneNo || '?'}: ${(s.narration || s.text || '').slice(0, 200)}`).join('\n');
-
-            const prompt = `당신은 유튜브 경제·시사 영상의 지도 시각화 전문가입니다. 아래 장면들 중 **지도(MAP)가 들어가면 시청자 이해도가 높아질 장면**만 골라 한국어 라벨이 명확한 AI 이미지 생성 프롬프트를 만드세요.
-
-## 지도가 어울리는 장면 기준
-- 지명·국가·지역·해협·항로·국경 등 지리적 위치가 핵심인 장면
-- 영토 변화·이동 경로·전쟁 전선·자원 분포·지정학적 관계 설명 장면
-- 단순히 국가명만 언급되는 장면은 제외 (지도 안 만들면 시청자가 혼란할 정도로 위치가 핵심일 때만)
-
-## 한글이 잘 나오는 AI 이미지 프롬프트 작성 원칙
-한글 텍스트는 AI 이미지 모델(나노바나나2/Magnific/Imagen 등)이 가장 어려워하는 부분입니다. 다음 규칙을 반드시 지키세요:
-1. 라벨은 **굵고 큰 한글 폰트(bold large Korean)** 명시
-2. 라벨 개수는 **3~6개로 제한** (너무 많으면 깨짐)
-3. **고딕 산세리프(sans-serif clean)** 명시
-4. 배경은 **단순한 색조** (지도가 잘 보이게)
-5. 한글 라벨 옆에 **영문 병기** ("호르무즈 해협 / Hormuz Strait")
-6. 영문 프롬프트 안에 **한글 라벨을 그대로** 박을 것 (\`Korean labels: "호르무즈 해협", "이란", "오만"\`)
-7. 마지막에 항상: \`high quality, clean typography, Korean text rendered correctly, bold sans-serif font\`
-
-## 지도 종류별 키워드
-- 위치 표시: pin map / point map
-- 영토: territorial map
-- 항로/해협: shipping route map / strait map
-- 지정학: geopolitical map
-- 역사 변화: historical territory change map
-- 자원: resource distribution map
-
-## 출력 (JSON 배열만, 다른 텍스트 금지)
-\`\`\`json
-[
-  {
-    "sceneNo": 5,
-    "narration_excerpt": "원본 장면 일부 (50자 이내)",
-    "map_type": "지도 종류 한글 (예: 호르무즈 해협 항로 지도)",
-    "korean_labels": ["호르무즈 해협", "이란", "오만"],
-    "ai_prompt": "Detailed top-down map of [지역] in clean editorial style. Korean labels rendered correctly: \\"호르무즈 해협\\" / \\"이란\\" / \\"오만\\". Bold sans-serif Korean font, large readable size. Soft pastel colors. Minimal background. high quality, clean typography, Korean text rendered correctly, bold sans-serif font."
-  },
-  ...
-]
-\`\`\`
-
-지도 어울리는 장면이 없으면 빈 배열 \`[]\`을 출력하세요.
-
-## 장면 목록
-${sceneList}`;
-
-            try {
-                const r = await callGemini(prompt, { maxTokens: 6000, temperature: 0.4, model: 'gemini-2.5-pro' });
-                const raw = (r && typeof r === 'object') ? (r.text || '') : (r || '');
-                console.log('[spAnalyzeMaps] raw:', raw);
-                if (!raw || !raw.trim()) throw new Error('Gemini 응답 비어있음');
-
-                let txt = raw.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '');
-                const fb = txt.indexOf('['); const lb = txt.lastIndexOf(']');
-                if (fb >= 0 && lb > fb) txt = txt.substring(fb, lb + 1);
-
-                let arr;
-                try { arr = JSON.parse(txt); } catch (e) {
-                    throw new Error('JSON 파싱 실패. 응답 일부: ' + txt.slice(0, 300));
-                }
-                if (!Array.isArray(arr)) throw new Error('배열 아님');
-
-                if (arr.length === 0) {
-                    status.innerHTML = `<span style="color:#888;">📭 지도가 어울리는 장면이 발견되지 않았습니다.</span>`;
-                    results.innerHTML = '';
-                    return;
-                }
-
-                results.innerHTML = arr.map((item, i) => {
-                    const sceneNo = item.sceneNo || '?';
-                    const excerpt = (item.narration_excerpt || '').replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
-                    const mapType = (item.map_type || '').replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
-                    const labels = (item.korean_labels || []).join(' · ');
-                    const aiPrompt = item.ai_prompt || '';
-                    const escapedPrompt = aiPrompt.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$/g, '\\$').replace(/"/g, '&quot;');
-                    return `
-                        <div style="margin-bottom:10px;padding:12px 14px;background:#fff;border:1px solid #90caf9;border-radius:8px;">
-                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:8px;">
-                                <span style="font-weight:700;color:#0d47a1;font-size:0.9rem;">🗺️ 장면 ${sceneNo} — ${mapType}</span>
-                                <button onclick="navigator.clipboard.writeText(\`${escapedPrompt}\`).then(()=>{this.textContent='✅ 복사됨';setTimeout(()=>this.textContent='📋 AI 프롬프트 복사',1500);})" style="padding:4px 10px;font-size:0.78rem;background:#1976d2;color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:600;">📋 AI 프롬프트 복사</button>
-                            </div>
-                            <div style="font-size:0.82rem;color:#666;margin-bottom:6px;">"${excerpt}"</div>
-                            <div style="font-size:0.78rem;color:#0d47a1;margin-bottom:6px;"><strong>한글 라벨:</strong> ${labels}</div>
-                            <textarea readonly style="width:100%;min-height:90px;padding:8px;font-size:0.78rem;font-family:'Courier New',monospace;background:#f5f9ff;border:1px solid #bbdefb;border-radius:4px;line-height:1.5;resize:vertical;">${aiPrompt.replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]))}</textarea>
-                        </div>
-                    `;
-                }).join('');
-
-                status.innerHTML = `<span style="color:#28a745;">✅ ${arr.length}개 지도 장면 추천 — 각 카드 [📋 AI 프롬프트 복사]로 나노바나나2/Magnific에 붙여넣기</span>`;
-            } catch (e) {
-                status.innerHTML = `<span style="color:#dc3545;">❌ 실패: ${e.message}</span>`;
-                console.error('[spAnalyzeMaps]', e);
-            } finally {
-                btn.disabled = false;
-                btn.textContent = oldLabel;
-            }
-        }
+        // (구) 지도 탭 제거됨 (2026-05-12) — 지도 어울리는 장면은 JSON 변환에서 claude_design으로 분류됨
 
         // ============================================================
         // 결과 렌더링 — 5탭
