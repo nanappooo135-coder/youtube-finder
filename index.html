@@ -3725,7 +3725,7 @@
                         <div style="color:#888;">박스 클릭 → 미리보기/메모 · ✓ 표시는 완료</div>
                     </div>
 
-                    <div id="gsGrid" style="display:grid;grid-template-columns:repeat(10, minmax(0, 1fr));gap:6px;margin-bottom:14px;">
+                    <div id="gsGrid" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(40px, 44px));gap:5px;margin-bottom:14px;justify-content:start;">
                         <div style="grid-column:1/-1;text-align:center;color:#aaa;font-size:0.85rem;padding:20px;">이미지 프롬프트를 입력하면 표시됩니다</div>
                     </div>
 
@@ -17947,7 +17947,7 @@ Example format:
                 const clickAttr = clickable ? `onclick="_gsBoxClick(${i}, '${type}')"` : '';
                 const cursorCss = clickable ? 'pointer' : 'default';
                 const memoBadge = memoMark ? `<div style="position:absolute;bottom:1px;right:3px;font-size:9px;line-height:1;">${memoMark}</div>` : '';
-                boxes.push(`<div ${clickAttr} ${hover} title="${title}" style="position:relative;aspect-ratio:1;background:${bg};color:${fg};display:flex;align-items:center;justify-content:center;border-radius:6px;font-weight:700;font-size:0.85rem;cursor:${cursorCss};transition:transform 0.1s, box-shadow 0.1s;">${i}${memoBadge}${checkMark}</div>`);
+                boxes.push(`<div ${clickAttr} ${hover} title="${title}" style="position:relative;width:42px;height:42px;background:${bg};color:${fg};display:flex;align-items:center;justify-content:center;border-radius:5px;font-weight:700;font-size:0.82rem;cursor:${cursorCss};transition:transform 0.1s, box-shadow 0.1s;">${i}${memoBadge}${checkMark}</div>`);
             }
             grid.innerHTML = boxes.join('');
 
