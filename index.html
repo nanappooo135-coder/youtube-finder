@@ -3160,7 +3160,7 @@
                                     <div style="font-weight:700;color:#b45309;font-size:0.95rem;">✨ 오버레이 추천 <span style="font-size:0.78rem;font-weight:400;color:#888;">(셀팟 26종 중 나레이션에 어울리는 것만 골라 추천)</span></div>
                                     <button id="spOverlayBtn" class="search-btn" onclick="spAnalyzeOverlays()" style="padding:8px 18px;font-size:0.88rem;background:#f59e0b;border-color:#f59e0b;">✨ 오버레이 추천 실행</button>
                                 </div>
-                                <div id="spOverlayStatus" style="font-size:0.8rem;color:#888;margin-bottom:4px;">⚠️ 오버레이는 "많이 = 좋음"이 아닙니다. 시청자 정보 과부하 방지를 위해 <strong>꼭 필요한 장면만</strong> (전체의 15~25%) 추천합니다.</div>
+                                <div id="spOverlayStatus" style="font-size:0.8rem;color:#888;margin-bottom:4px;">⚠️ 오버레이는 데이터 시각화 13종(수치·차트·시간·비교)만. 전체의 <strong>10~20%</strong> 캡. ⭐ 표시는 <strong>꼭 필요한 추천</strong>.</div>
                             </div>
                             <div id="spOverlayResults"></div>
                         </div>
@@ -24580,171 +24580,105 @@ ${sceneList}
         }
 
         // ===== ✨ 오버레이 추천 탭 =====
-        // 핵심 원칙: 거의 안 넣음. 정말 임팩트가 필요한 장면에만 추천.
-        // 많이 넣으면 역효과 — 시청자 정보 과부하. 장면당 최대 1개, 강한 매칭만.
-        // 목표: 전체 장면의 15~25% 정도만 추천 (나머지는 추천 없음 = 자막/내레이션으로 충분)
-        // 채널별 분기: 경제학(시사·지정학·수치 중심) vs 심리학(교육·인용·정의 중심)
+        // 데이터 시각화 13종으로 한정 (사용자 핵심 사용 오버레이)
+        // 수치카드 / 막대차트 / 도넛 / 대비수치 / 가로수치 / 증감수치 / 랭킹 / VS / 프로그레스 / 타임라인
+        // 헤드라인 / 불릿리스트 / 좌우분할
+        // 제거: 말풍선 4종·네임택·카운트다운·타이틀카드·타자기·챕터구분·강조텍스트·전체숫자
+        // 원칙: 거의 안 넣음. 장면당 최대 1개. 수치·비교·시간 패턴이 명확할 때만.
         function _spRecommendOverlay(scene) {
             const text = String(scene.narration || scene.text || '').trim();
             if (!text) return [];
 
             const isPsych = (typeof _isPsychologyMode === 'function') ? _isPsychologyMode() : false;
 
-            // ===== 공통 패턴 추출 =====
+            // ===== 패턴 추출 =====
             const percentMatches = text.match(/(\d+(?:\.\d+)?)\s*(?:퍼센트|%)/g) || [];
             const moneyKR        = text.match(/\d+(?:[\.,]\d+)*\s*(?:조|억|만)\s*원/g) || [];
             const moneyUSD       = text.match(/\$\s*\d+(?:[\.,]\d+)*\s*(?:억|만)?\s*달러?/g) || [];
-            // 의석/대/척/국 등 정치·군사 단위 추가
-            const bigCounts      = text.match(/\d{2,}(?:[\.,]\d+)*\s*(?:만\s*명|억\s*명|만\s*개|석|척|국|대|건|기|문)/g) || [];
+            const bigCounts      = text.match(/\d{2,}(?:[\.,]\d+)*\s*(?:만\s*명|억\s*명|만\s*개|석|척|국|대|건|기|문|주|시간|개월|일)/g) || [];
             const years          = text.match(/((?:19|20|21)\d{2})\s*년?/g) || [];
-            // 상대 시간 표현 (N년 지난/걸렸/끌어온/장기)
             const elapsedYears   = /(\d+년\s*(?:지난|걸렸|만에|끌어온|넘게|째|간|동안)|장기\s*\d+년)/.test(text);
-            // 엄격: 따옴표 + 발화 동사 (속담·관용구·이름·강조구 오인 방지)
-            // 매칭 시 인용 텍스트 길이 + 명명 화자 여부까지 반환 (오버레이 다양화에 사용)
-            const quoteInfo = (function() {
-                const qMatch = text.match(/[""""""].{8,}?[""""""]/);
-                if (!qMatch) return null;
-                const verbs = /(말했|말한|말씀|밝혔|선언|일갈|일축|답한|답했|외쳤|소리쳤|적었|적힌|썼다|썼습니다|적혀|박았|쏟아냈|짚었|평가했|평가한|덧붙였|꺼냈|던졌)/;
-                const idx = qMatch.index;
-                const before = text.slice(Math.max(0, idx - 35), idx);
-                const after = text.slice(idx + qMatch[0].length, idx + qMatch[0].length + 15);
-                if (/속담|관용구|격언|옛말|말이\s*있죠|말이\s*있어요|는\s*말이|이라는\s*말/.test(text)) return null;
-                if (!(verbs.test(before) || verbs.test(after))) return null;
-                // 화자 명명 확인: 인용 앞 30자 안에 인명/직책 단서
-                const speakerNamed = /([가-힣]{2,4}\s*(?:총리|대통령|장관|의장|국장|총장|시장|소장|회장|위원장|박사|교수|기자))|([A-Z][a-z]+\s+[A-Z][a-z]+)|(트럼프|네타냐후|푸틴|시진핑|바이든|오바마|이재명|윤석열|문재인)/;
-                const hasSpeaker = speakerNamed.test(before);
-                const innerLen = qMatch[0].length - 2; // 따옴표 제외 길이
-                return { len: innerLen, hasSpeaker };
-            })();
-            const directQuote = !!quoteInfo;
             const isIntroScene   = !!scene.isIntro;
-            const chapterMark    = /(파트\s*\d|챕터\s*\d|^[1-9](?:부|장)\b|첫\s*번째\s*이야기|두\s*번째\s*이야기)/.test(text);
-            // 큰 챕터 전환 표현 ("이제 X 얘기를 해야 합니다", "그러면 X를 봐야 합니다")
-            const sectionPivot   = /(이제\s+\S+\s*(?:얘기|이야기)를?\s*(?:해야|해보|하겠))|((?:그러면|그럼)\s+(?:이|그|그\s*사람|이\s*사람|이걸|그걸).*(?:봐야|보겠))|^자\s*[,，]\s*이제/.test(text);
-            // 인물 첫 등장 (직책 + 이름 명시 + 짧은 식별 문장)
-            const personIntroFull = /(베냐민\s*네타냐후|도널드\s*트럼프|존\s*래트클리프|댄\s*케인|JD?\s*\.?\s*밴스|블라디미르\s*푸틴|시진핑)|([가-힣]{2,4}\s*(?:총리|대통령|장관|의장|국장|총장)\.?\s*이\s*사람은)/.test(text);
-            // 카운트다운: N달 남았/N일 남았
-            const countdownExp   = /(\d+\s*(?:달|개월|일|주|년)\s*(?:남았|남은|뒤|후))/.test(text);
-            // 명시적 N가지 나열 ("이 세 가지가" / "다음 세 가지" / "두 가지가 동시에")
-            const explicitNlist  = /(이|다음|아래)\s*(?:두|세|네)\s*가지(?:가|는|를)\s*(?:동시에|모두|함께|작동|있)|(?:두|세|네)\s*가지(?:가|는)\s*동시에/.test(text);
-            // 거대 충격 숫자 (조 원, 100억 이상) — 본문에서도 발동
+            // 명시적 N가지 나열
+            const explicitNlist  = /(이|다음|아래)\s*(?:두|세|네)\s*가지(?:가|는|를)\s*(?:동시에|모두|함께|작동|있)|(?:두|세|네)\s*가지(?:가|는)\s*동시에|첫째.{0,40}둘째|첫\s*번째.{0,60}두\s*번째/.test(text);
+            // 두 항목 짝지어진 정보 (전/후, A/B, 이전·이후)
+            const pairedTwo      = /(이전\s*\d|이후\s*\d|전\s*\d.{0,15}후\s*\d|A\s*\d.{0,15}B\s*\d|왼쪽\s*\d.{0,15}오른쪽\s*\d)/.test(text);
+            // 짧은 강한 키워드 (도입부 등에서 단어 하나만 강하게)
+            const shortKeyword   = text.length <= 18 && /^\S{2,10}\S?\s*[.!?]?\s*$/.test(text);
+            // 진행률 (시간 진행/공정 진행)
+            const progressExp    = /(진행\s*\d{1,3}\s*%|완료\s*\d{1,3}\s*%|\d{1,3}\s*%\s*(?:진행|완료|달성))/.test(text);
+            // 극적 변화
+            const dramaticChange = /(반토막|두\s*배|세\s*배|네\s*배|급등|폭등|폭락|급락|치솟|꺾였|뛰어올랐|곤두박질)/.test(text);
+            const versus         = /(\bvs\b|\bVS\b|맞붙|정면\s*충돌|양\s*진영|이쪽\s*저쪽|한쪽은[\s\S]+다른\s*한쪽)/.test(text);
+            const seatComparison = /\d+\s*석[^가-힣]*(?:vs|VS|대|,|와|과)[^가-힣]*\d+\s*석/.test(text);
+            const rankingExplicit= /(1위|2위|3위|1등|2등|3등|꼴찌|최상위|최하위|톱\s*[3-9]|상위\s*\d+개)/.test(text);
             const hugeShockNum   = /\d{2,}(?:[\.,]\d+)*\s*조\s*원|\d{3,}(?:[\.,]\d+)*\s*억\s*원/.test(text);
 
-            // ===== 심리학 채널 추천 (교육·인용·정의 톤) =====
+            // ===== 심리학 채널 (수치 적음. 단계·키워드 중심으로) =====
             if (isPsych) {
-                // 1. 학자·이론가 인용 발언 → 말풍선
-                if (directQuote && text.length < 200) {
-                    return [{ type: 'speech_bubble_sketch', why: '학자·이론가 인용 → 손글씨 말풍선으로 교육적 톤' }];
+                const stagesList = /(첫째|둘째|셋째|넷째|1단계|2단계|3단계|첫\s*번째|두\s*번째|세\s*번째).{0,60}(둘째|셋째|2단계|3단계|두\s*번째|세\s*번째)/.test(text);
+                if (stagesList) return [{ type: 'text_bullet_reveal', why: '단계·이론 나열 → 불릿리스트' }];
+                if (explicitNlist) return [{ type: 'text_bullet_reveal', why: 'N가지 나열 → 불릿리스트' }];
+                // 핵심 정의·법칙 + 짧은 키워드 → 헤드라인
+                if (text.length <= 20 && /(법칙|효과|이론|증후군|편향|현상)/.test(text)) {
+                    return [{ type: 'text_headline', why: '핵심 용어 짧게 → 헤드라인' }];
                 }
-                // 2. 새 인물 첫 등장 (학자명 명시) → 네임택
-                const scholarMention = /([A-Z][a-z]+\s+[A-Z][a-z]+|박사|교수|심리학자|연구자)\s*(?:는|이|가|의)/.test(text);
-                if (scholarMention && text.length < 150) {
-                    return [{ type: 'name_tag', why: '학자·연구자 등장 → 네임택으로 출처 명시' }];
-                }
-                // 3. 단계·이론 나열 (첫째/둘째/셋째) → 불릿리스트
-                const stagesList = /(첫째|둘째|셋째|넷째|1단계|2단계|3단계|첫\s*번째|두\s*번째|세\s*번째).*(둘째|셋째|2단계|3단계|두\s*번째|세\s*번째)/.test(text);
-                if (stagesList) {
-                    return [{ type: 'text_bullet_reveal', why: '단계·이론 나열 → 불릿리스트로 학습 정리' }];
-                }
-                // 4. 핵심 정의·법칙 강조 (긴 문장 + 키워드) → 강조텍스트
-                const keyDefinition = /(법칙|효과|이론|증후군|편향|현상)(?:은|이라는|이라고|을)\s*[가-힣]/.test(text);
-                if (keyDefinition && text.length >= 40 && text.length <= 180) {
-                    return [{ type: 'info_text_highlight', why: '핵심 정의·법칙 설명 → 강조텍스트로 키워드 부각' }];
-                }
-                // 5. 챕터/단계 구분
-                if (chapterMark) {
-                    return [{ type: 'chapter_divider', why: '단원 구분 → 시청자 학습 흐름 정리' }];
-                }
-                // 6. 도입부 짧은 충격 질문 → 타이틀
-                if (isIntroScene && text.length < 60 && /[?]/.test(text)) {
-                    return [{ type: 'title_card', why: '도입 핵심 질문 → 타이틀카드로 화두 제시' }];
-                }
-                // 심리 채널은 차트·VS·랭킹 거의 X
+                if (pairedTwo) return [{ type: 'text_split_screen', why: '2가지 정보 비교 → 좌우분할' }];
+                if (percentMatches.length >= 2) return [{ type: 'bar_chart_comparison', why: '복수 % 비교 → 막대차트' }];
                 return [];
             }
 
-            // ===== 경제학 채널 추천 (시사·지정학·수치 중심) =====
-            const dramaticChange  = /(반토막|두\s*배|세\s*배|네\s*배|급등|폭등|폭락|급락|치솟|꺾였|뛰어올랐|곤두박질)/.test(text);
-            const versus          = /(\bvs\b|\bVS\b|맞붙|정면\s*충돌|양\s*진영|이쪽\s*저쪽|한쪽은[\s\S]+다른\s*한쪽)/.test(text);
-            const rankingExplicit = /(1위|2위|3위|1등|2등|3등|꼴찌|최상위|최하위|톱\s*[3-9]|상위\s*\d+개)/.test(text);
+            // ===== 경제학 채널 (수치·비교·시간 중심) =====
 
-            // 1. 도입부 + 단일 충격 숫자 → 전체숫자 (가장 임팩트)
-            if (isIntroScene && text.length < 80) {
-                const allNums = [...percentMatches, ...moneyKR, ...moneyUSD, ...bigCounts];
-                if (allNums.length === 1) {
-                    return [{ type: 'fullscreen_number', why: '도입부 단일 충격 숫자 → 화면 가득 큰 숫자로 시청자 멈춤' }];
-                }
+            // priority: 1=essential(⭐), 2=good, 3=optional
+            // 강한 데이터 시각화 패턴부터 평가
+            if (!isIntroScene && hugeShockNum && moneyKR.length + bigCounts.length === 1) {
+                return [{ type: 'single_stat_card', why: '단일 거대 충격 숫자(조 원·100억+) → 수치카드', priority: 1 }];
             }
-            // 2. 본문 거대 충격 숫자 (조 원·100억+ 원) → 전체숫자
-            //    예: "687조 원 증발", "217조 원 녹았다"
-            if (!isIntroScene && hugeShockNum) {
-                return [{ type: 'fullscreen_number', why: '본문 거대 충격 숫자(조 원·100억+) → 전체숫자로 임팩트' }];
-            }
-            // 3. 명시적 순위 → 랭킹
             if (rankingExplicit && bigCounts.length + percentMatches.length >= 2) {
-                return [{ type: 'ranking_list', why: '명시적 순위 + 수치 → 랭킹 시각화가 결정적' }];
+                return [{ type: 'ranking_list', why: '명시적 순위 + 수치 → 랭킹', priority: 1 }];
             }
-            // 4. VS 대결 (또는 의석·득표 비교)
-            //    예: "야권 60석 vs 우파 50석"
-            if (versus) {
-                return [{ type: 'versus_stat', why: '명확한 양측 대립 구도 → VS 시각화로 임팩트' }];
+            if (versus || seatComparison) {
+                return [{ type: 'versus_stat', why: '양측 대립 / 의석 비교 → VS대결', priority: 1 }];
             }
-            const seatComparison = /\d+\s*석[^가-힣]*(?:vs|VS|대|,|와|과)[^가-힣]*\d+\s*석/.test(text);
-            if (seatComparison) {
-                return [{ type: 'versus_stat', why: '의석·득표 양 진영 비교 → VS대결로 정치 구도 강조' }];
-            }
-            // 5. 연속 추세 → 타임라인 (조건 완화: 연도 2개 + 경과 표현)
-            //    예: "2019 기소 → 2020 재판 → 6년 지난 지금"
             if (years.length >= 3) {
-                return [{ type: 'timeline_horizontal', why: '3개+ 시점 → 타임라인이 필수' }];
+                return [{ type: 'timeline_horizontal', why: '3개+ 시점 → 타임라인', priority: 1 }];
             }
             if (years.length >= 2 && elapsedYears) {
-                return [{ type: 'timeline_horizontal', why: '2시점 + 경과 시간(N년 지난/걸렸) → 타임라인으로 흐름 시각화' }];
+                return [{ type: 'timeline_horizontal', why: '2시점 + 경과 시간 → 타임라인', priority: 1 }];
             }
-            // 6. 명시적 N가지 나열 → 불릿리스트
-            //    예: "이 세 가지가 동시에 작동해요"
             if (explicitNlist) {
-                return [{ type: 'text_bullet_reveal', why: '명시적 N가지 나열 (두/세/네 가지 동시에) → 불릿리스트로 정리' }];
+                return [{ type: 'text_bullet_reveal', why: 'N가지 나열 → 불릿리스트', priority: 2 }];
             }
-            // 7. 큰 비율 단일 → 도넛
+            if (pairedTwo) {
+                return [{ type: 'text_split_screen', why: '이전/이후, A/B 짝지어진 2개 → 좌우분할', priority: 2 }];
+            }
             if (!isIntroScene && percentMatches.length === 1) {
                 const v = parseFloat(percentMatches[0]);
                 if (v >= 50 && v <= 100) {
-                    return [{ type: 'pie_donut', why: '50%+ 단일 비율 → 도넛차트로 점유율 강조' }];
+                    return [{ type: 'pie_donut', why: '50%+ 단일 비율 → 도넛차트', priority: 1 }];
                 }
             }
-            // 8. 극적 변화 + 수치 → 증감수치
+            if (percentMatches.length >= 2 || bigCounts.length >= 3) {
+                return [{ type: 'bar_chart_comparison', why: percentMatches.length >= 2 ? '복수 % 비교 → 막대차트' : '3개+ 수치 → 막대차트', priority: 1 }];
+            }
+            if (bigCounts.length === 2) {
+                return [{ type: 'stat_counter_row', why: '2개 동종 수치 → 가로수치', priority: 2 }];
+            }
             if (dramaticChange && (percentMatches.length + moneyKR.length + bigCounts.length >= 1)) {
-                return [{ type: 'stat_change', why: '극적 변화 + 수치 → 증감 화살표(▲▼)로 강조' }];
+                return [{ type: 'stat_change', why: '극적 변화 + 수치 → 증감수치 (▲▼)', priority: 1 }];
             }
-            // 9. 큰 챕터 전환 ("이제 한국 얘기를 해야 합니다", "그러면 X 봐야 합니다") → 타이틀카드
-            if (sectionPivot) {
-                return [{ type: 'title_card', why: '서사 전환 ("이제 X 얘기" / "그러면 X 봐야") → 타이틀카드로 흐름 분리' }];
+            if (progressExp) {
+                return [{ type: 'progress_bar', why: '진행률 표현 → 프로그레스', priority: 2 }];
             }
-            // 10. 인물 풀네임 첫 등장 (직책 명시) → 네임택
-            if (personIntroFull && text.length < 200) {
-                return [{ type: 'name_tag', why: '인물 풀네임 + 직책 등장 → 네임택으로 신원 표시' }];
-            }
-            // 11. 카운트다운 ("다섯 달 남았어요" 같은 표현)
-            if (countdownExp) {
-                return [{ type: 'countdown', why: '남은 기간 카운트다운 (N달/일 남았) → 카운트다운 시각화' }];
-            }
-            // 12. 직접 인용 (말풍선 → 타자기·강조텍스트로 분산. 진짜 말풍선은 명명 화자일 때만)
-            if (directQuote && text.length < 220) {
-                // 짧은 강한 발언 (~24자) → 타자기 (극적 등장)
-                if (quoteInfo.len <= 24) {
-                    return [{ type: 'text_typewriter', why: '짧은 강한 발언 인용 → 타자기 효과로 극적 등장' }];
+            if (isIntroScene && text.length < 80) {
+                const allNums = [...percentMatches, ...moneyKR, ...moneyUSD, ...bigCounts];
+                if (allNums.length === 1) {
+                    return [{ type: 'single_stat_card', why: '도입부 단일 충격 숫자 → 수치카드', priority: 2 }];
                 }
-                // 명명된 화자가 명확하면 → 말풍선 (드물게)
-                if (quoteInfo.hasSpeaker) {
-                    return [{ type: 'speech_bubble', why: '명명된 화자 + 발언 → 말풍선으로 화자 강조' }];
-                }
-                // 그 외 긴 인용 → 강조텍스트 (키워드 부각)
-                return [{ type: 'info_text_highlight', why: '긴 발언 인용 → 강조텍스트로 핵심 키워드 부각' }];
             }
-            // 13. 챕터 구분
-            if (chapterMark) {
-                return [{ type: 'chapter_divider', why: '파트/챕터 구분 → 시청자 흐름 정리' }];
+            if (shortKeyword) {
+                return [{ type: 'text_headline', why: '짧은 핵심 키워드 → 헤드라인', priority: 3 }];
             }
 
             return [];
@@ -24765,8 +24699,13 @@ ${sceneList}
 
         function _spOverlayBadge(rec) {
             const label = _SP_OVERLAY_LABEL[rec.type] || rec.type;
-            return `<div style="display:inline-flex;flex-direction:column;gap:2px;padding:8px 12px;background:#fff7e6;border:1.5px solid #f59e0b;border-radius:8px;margin:4px 6px 4px 0;min-width:160px;">
-                <span style="font-weight:700;color:#b45309;font-size:0.85rem;">✨ ${label}</span>
+            const isEssential = rec.priority === 1;
+            const bg = isEssential ? '#fef3c7' : '#fff7e6';
+            const border = isEssential ? '#d97706' : '#f59e0b';
+            const titleColor = isEssential ? '#92400e' : '#b45309';
+            const star = isEssential ? '⭐ ' : '';
+            return `<div style="display:inline-flex;flex-direction:column;gap:2px;padding:8px 12px;background:${bg};border:${isEssential?'2px':'1.5px'} solid ${border};border-radius:8px;margin:4px 6px 4px 0;min-width:160px;">
+                <span style="font-weight:700;color:${titleColor};font-size:0.85rem;">${star}✨ ${label}${isEssential?' <span style="font-size:0.68rem;background:#d97706;color:white;padding:1px 6px;border-radius:3px;margin-left:4px;">추천</span>':''}</span>
                 <span style="font-size:0.75rem;color:#666;">${rec.why}</span>
                 <code style="font-size:0.7rem;color:#888;">${rec.type}</code>
             </div>`;
@@ -24787,40 +24726,62 @@ ${sceneList}
             btn.disabled = true;
             btn.textContent = '🔍 분석 중...';
             try {
-                const recommendedCards = [];
-                let withRec = 0;
+                // 1단계: 모든 장면의 매칭 추천 수집
+                const allMatches = []; // [{scene, rec}]
                 scenes.forEach(scene => {
                     const recs = _spRecommendOverlay(scene);
-                    if (!recs.length) return; // 추천 없는 장면은 표시 안 함
-                    withRec++;
+                    if (recs.length) allMatches.push({ scene, rec: recs[0] });
+                });
+
+                // 2단계: 10~20% 캡 적용 — 상한 초과 시 priority 약한 것부터 제거
+                const totalScenes = scenes.length;
+                const maxCount = Math.max(1, Math.ceil(totalScenes * 0.20));
+                const minTargetCount = Math.floor(totalScenes * 0.10);
+                let finalMatches = allMatches.slice();
+                if (finalMatches.length > maxCount) {
+                    // priority 큰 것(약함)부터 잘라냄. 같은 priority면 뒷 장면부터.
+                    finalMatches.sort((a, b) => {
+                        const pa = a.rec.priority || 3;
+                        const pb = b.rec.priority || 3;
+                        if (pa !== pb) return pa - pb; // 우선순위 1(강) 먼저
+                        return a.scene.sceneNo - b.scene.sceneNo;
+                    });
+                    finalMatches = finalMatches.slice(0, maxCount);
+                    // 다시 장면 순서대로 정렬
+                    finalMatches.sort((a, b) => a.scene.sceneNo - b.scene.sceneNo);
+                }
+                const droppedCount = allMatches.length - finalMatches.length;
+                const essentialCount = finalMatches.filter(m => m.rec.priority === 1).length;
+
+                // 3단계: 카드 렌더
+                const recommendedCards = finalMatches.map(({ scene, rec }) => {
                     const sceneTypeIcon = scene.type === 'ai' ? '🎨' : scene.type === 'real' ? '📷' : scene.type === 'claude_design' ? '📊' : '';
                     const narr = (scene.narration || scene.text || '').slice(0, 200);
                     const isIntro = scene.isIntro ? '<span style="font-size:0.7rem;color:#dc3545;font-weight:700;">[도입부]</span> ' : '';
-                    const badges = recs.map(_spOverlayBadge).join('');
-                    recommendedCards.push(`
-                        <div style="padding:12px 14px;margin-bottom:8px;background:#fff;border:1.5px solid #f59e0b;border-radius:8px;">
+                    const cardBorder = rec.priority === 1 ? '2px solid #d97706' : '1.5px solid #f59e0b';
+                    const cardBg = rec.priority === 1 ? '#fffbeb' : '#fff';
+                    return `
+                        <div style="padding:12px 14px;margin-bottom:8px;background:${cardBg};border:${cardBorder};border-radius:8px;">
                             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:6px;">
                                 <div style="font-weight:700;color:#212529;font-size:0.88rem;">${sceneTypeIcon} 장면 ${scene.sceneNo} <span style="color:#888;font-weight:400;font-size:0.78rem;">· ${scene.duration || '?'}초</span></div>
                             </div>
                             <div style="font-size:0.82rem;color:#495057;line-height:1.5;margin-bottom:8px;">${isIntro}${_escapeHtml(narr)}${narr.length >= 200 ? '...' : ''}</div>
-                            <div style="display:flex;flex-wrap:wrap;">${badges}</div>
+                            <div style="display:flex;flex-wrap:wrap;">${_spOverlayBadge(rec)}</div>
                         </div>
-                    `);
+                    `;
                 });
 
-                const pct = Math.round(withRec / scenes.length * 100);
-                const noRecCount = scenes.length - withRec;
+                const pct = Math.round(finalMatches.length / totalScenes * 100);
                 const isPsychChannel = (typeof _isPsychologyMode === 'function') && _isPsychologyMode();
                 const channelLabel = isPsychChannel ? '🧠 심리학 (교육·인용·정의)' : '💰 경제학 (시사·지정학·수치)';
-                const matchKeywords = isPsychChannel
-                    ? '학자 인용, 새 인물 등장, 단계 나열, 핵심 정의·법칙, 챕터 구분, 도입 화두 질문'
-                    : '충격 숫자, 명시적 순위, VS 대립, 시계열 추세, 큰 비율, 극적 변화, 직접 인용, 챕터 구분';
                 const summary = `<div style="padding:12px 14px;background:#fff7e6;border:2px solid #f59e0b;border-radius:8px;margin-bottom:12px;font-size:0.88rem;color:#b45309;">
-                    ✅ 총 ${scenes.length}장면 중 <strong>${withRec}개(${pct}%)</strong>에만 오버레이 추천 — 나머지 ${noRecCount}개는 자막/내레이션만으로 충분
-                    <div style="font-size:0.78rem;color:#666;margin-top:6px;line-height:1.5;">채널 모드: <strong>${channelLabel}</strong><br>💡 오버레이 많이 = 시청자 정보 과부하 → 역효과. 위 채널 톤에 맞는 임팩트 장면(${matchKeywords})에만 추천.<br>⚠️ 셀팟은 오버레이를 자동 적용하지 않습니다. 위 추천은 셀팟 UI에서 수동 선택해야 합니다.</div>
+                    ✅ 총 ${totalScenes}장면 중 <strong>${finalMatches.length}개(${pct}%)</strong>에만 오버레이 추천 (상한 20% · 목표 10~20%)
+                    ${essentialCount > 0 ? `<br>⭐ 그 중 <strong>${essentialCount}개</strong>는 <strong>꼭 필요한 추천</strong> (별표 + 진한 테두리)` : ''}
+                    ${droppedCount > 0 ? `<br>📉 상한 초과로 약한 추천 ${droppedCount}개 제외됨` : ''}
+                    <div style="font-size:0.78rem;color:#666;margin-top:6px;line-height:1.5;">채널 모드: <strong>${channelLabel}</strong><br>💡 ⭐ 추천만이라도 꼭 적용. 별표 없는 건 선택사항.<br>⚠️ 셀팟은 오버레이를 자동 적용하지 않습니다. UI에서 수동 선택해야 합니다.</div>
                 </div>`;
                 results.innerHTML = summary + (recommendedCards.length ? recommendedCards.join('') : '<div style="padding:20px;text-align:center;color:#888;background:#fff;border:1px dashed #ccc;border-radius:8px;">강한 매칭 장면이 발견되지 않았습니다. 오버레이 없이 진행해도 무방합니다.</div>');
-                status.textContent = `✅ ${scenes.length}장면 중 ${withRec}개 추천`;
+                status.textContent = `✅ ${totalScenes}장면 중 ${finalMatches.length}개 추천 (⭐ ${essentialCount}개 핵심)`;
             } catch(e) {
                 status.textContent = '❌ 분석 실패: ' + e.message;
                 console.error(e);
