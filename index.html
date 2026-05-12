@@ -2893,6 +2893,7 @@
                             <button class="sp-result-tab" data-tab="kieai" onclick="_spSwitchResultTab('kieai')" style="padding:10px 16px;background:#f1f3f5;color:#495057;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">🎨 Kie AI</button>
                             <button class="sp-result-tab" data-tab="thumbtext" onclick="_spSwitchResultTab('thumbtext')" style="padding:10px 16px;background:#f1f3f5;color:#495057;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">🏷️ 썸네일 텍스트</button>
                             <button class="sp-result-tab" data-tab="map" onclick="_spSwitchResultTab('map')" style="padding:10px 16px;background:#f1f3f5;color:#495057;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">🗺️ 지도</button>
+                            <button class="sp-result-tab" data-tab="overlay" onclick="_spSwitchResultTab('overlay')" style="padding:10px 16px;background:#f1f3f5;color:#495057;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">✨ 오버레이</button>
                         </div>
 
                         <!-- 셀팟 붙여넣기 탭 -->
@@ -3262,6 +3263,18 @@
                                 <div id="spMapStatus" style="font-size:0.8rem;color:#888;margin-bottom:4px;">변환된 장면이 없으면 먼저 셀팟 변환 또는 JSON Import를 실행하세요.</div>
                             </div>
                             <div id="spMapResults"></div>
+                        </div>
+
+                        <!-- ✨ 오버레이 추천 탭 -->
+                        <div id="spTab_overlay" class="sp-result-pane" style="display:none;">
+                            <div style="margin-bottom:12px;padding:12px 14px;background:linear-gradient(135deg,#fff9e6 0%,#fff3cd 100%);border:2px solid #f59e0b;border-radius:10px;">
+                                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:8px;">
+                                    <div style="font-weight:700;color:#b45309;font-size:0.95rem;">✨ 오버레이 추천 <span style="font-size:0.78rem;font-weight:400;color:#888;">(셀팟 26종 중 나레이션에 어울리는 것만 골라 추천)</span></div>
+                                    <button id="spOverlayBtn" class="search-btn" onclick="spAnalyzeOverlays()" style="padding:8px 18px;font-size:0.88rem;background:#f59e0b;border-color:#f59e0b;">✨ 오버레이 추천 실행</button>
+                                </div>
+                                <div id="spOverlayStatus" style="font-size:0.8rem;color:#888;margin-bottom:4px;">변환된 장면이 없으면 먼저 셀팟 변환 또는 JSON Import를 실행하세요. 빈 추천은 헤드라인이 자동 적용된 상태입니다.</div>
+                            </div>
+                            <div id="spOverlayResults"></div>
                         </div>
 
                     </div>
@@ -24603,6 +24616,179 @@ ${sceneList}
                 btn.textContent = '✅ 복사됨';
                 setTimeout(() => btn.textContent = '📋 Claude 프롬프트 자동 복사 (이 묶음 기반)', 2000);
             });
+        }
+
+        // ===== ✨ 오버레이 추천 탭 =====
+        // 셀팟 26종 오버레이 중 나레이션 패턴에 맞는 것만 룰베이스로 추천
+        function _spRecommendOverlay(scene) {
+            const text = String(scene.narration || scene.text || '').trim();
+            if (!text) return [];
+            const recs = [];
+
+            // ===== 패턴 추출 =====
+            const percent      = text.match(/(\d+(?:\.\d+)?)\s*(?:퍼센트|%)/g) || [];
+            const moneyKR      = text.match(/(\d+(?:[\.,]\d+)*)\s*(?:조|억|만)\s*원/g) || [];
+            const moneyUSD     = text.match(/\$\s*\d+(?:[\.,]\d+)*\s*(?:억|만)?\s*달러?/g) || [];
+            const counts       = text.match(/(\d+(?:[\.,]\d+)*)\s*(?:명|개|척|대|건|국|일|시간|분|회|배|위|점|호)/g) || [];
+            const years        = text.match(/((?:19|20|21)\d{2})\s*년?/g) || [];
+            const changeUp     = /증가|상승|급등|폭등|두배|세배|네배|올랐|치솟|뛰[어어].*올라|배\s*나|배\s*늘/.test(text);
+            const changeDown   = /감소|하락|급락|폭락|반토막|줄어|떨어졌|내려갔|꺾였/.test(text);
+            const versus       = /(\bvs\b|\bVS\b|대\s*[가-힣]+\s*대결|맞붙|충돌|대립|반대편)/.test(text);
+            const ranking      = /(1위|2위|3위|순위|랭킹|톱\s*\d|1등|꼴찌)/.test(text);
+            const bulletList   = /(첫째|둘째|셋째|넷째|첫\s*번째|두\s*번째|세\s*번째|이유는?\s*[세네다]\s*가지|세\s*가지|네\s*가지)/.test(text);
+            const quote        = /[""].+?[""]|["「].+?["」]|발언|말했|말씀|이라고\s*했|라고\s*했|밝혔|선언|성명/.test(text);
+            const intro        = scene.isIntro || /처음|시작|먼저|일단|오늘은|자\s/.test(text.slice(0, 30));
+            const chapterMark  = /(파트\s*\d|챕터\s*\d|첫\s*번째\s*이야기|두\s*번째\s*이야기|^\d+부|^[1-9][.)]\s)/.test(text);
+            const personIntro  = /(누구냐|누군지|이\s*사람은|이\s*인물은|그의\s*이름은|이름은\s*[가-힣A-Z])/.test(text);
+            const veryShort    = text.length <= 12;
+            const wordCount    = text.split(/\s+/).length;
+
+            // ===== 추천 우선순위 =====
+
+            // 1. 도입부 충격 숫자 (전체숫자)
+            if (intro && (percent.length === 1 || moneyKR.length === 1 || counts.length === 1)) {
+                recs.push({ type: 'fullscreen_number', why: '도입부 + 단일 충격 수치 → 전체화면 큰 숫자' });
+            }
+
+            // 2. 단일 퍼센트
+            if (percent.length === 1 && !recs.length) {
+                const v = parseFloat(percent[0]);
+                if (v >= 50) recs.push({ type: 'pie_donut', why: '50% 이상 단일 비율 → 도넛차트' });
+                else recs.push({ type: 'single_stat_card', why: '단일 퍼센트 → 수치카드' });
+            }
+
+            // 3. 복수 퍼센트 또는 복수 비교 가능한 숫자
+            if (percent.length >= 2 || counts.length >= 3) {
+                recs.push({ type: 'bar_chart_comparison', why: percent.length >= 2 ? '복수 퍼센트 비교 → 막대차트' : '3개+ 수치 → 막대차트' });
+            }
+
+            // 4. 증감 변화
+            if ((changeUp || changeDown) && (percent.length >= 1 || counts.length >= 1)) {
+                recs.push({ type: 'stat_change', why: '증감 표현 + 수치 → 증감수치 (▲/▼)' });
+            }
+
+            // 5. VS 대결
+            if (versus) {
+                recs.push({ type: 'versus_stat', why: 'A 대 B 대립 → VS대결' });
+            }
+
+            // 6. 순위
+            if (ranking) {
+                recs.push({ type: 'ranking_list', why: '순위 언급 → 랭킹' });
+            }
+
+            // 7. 첫째/둘째/셋째 나열
+            if (bulletList) {
+                recs.push({ type: 'text_bullet_reveal', why: '나열형 (첫째/둘째/셋째) → 불릿리스트' });
+            }
+
+            // 8. 인용·발언
+            if (quote && !recs.length) {
+                recs.push({ type: 'speech_bubble', why: '발언·인용 → 말풍선' });
+            }
+
+            // 9. 인물 첫 소개
+            if (personIntro) {
+                recs.push({ type: 'name_tag', why: '인물 소개 → 네임택' });
+            }
+
+            // 10. 챕터/파트 구분
+            if (chapterMark) {
+                recs.push({ type: 'chapter_divider', why: '챕터/파트 구분 표현 → 챕터구분' });
+            }
+
+            // 11. 연도 3개 이상 (타임라인)
+            if (years.length >= 3) {
+                recs.push({ type: 'timeline_horizontal', why: '3개+ 시점 → 타임라인' });
+            }
+
+            // 12. 큰 금액 / 큰 인원 단독
+            if (!recs.length && (moneyKR.length === 1 || moneyUSD.length === 1)) {
+                recs.push({ type: 'single_stat_card', why: '단일 금액 → 수치카드' });
+            }
+
+            // 13. 짧은 키워드 (도입 임팩트)
+            if (!recs.length && veryShort && wordCount <= 3) {
+                recs.push({ type: 'text_typewriter', why: '짧은 강한 키워드 (15자 이내) → 타자기' });
+            }
+
+            return recs;
+        }
+
+        const _SP_OVERLAY_LABEL = {
+            text_headline: '헤드라인', info_text_highlight: '강조텍스트', text_typewriter: '타자기',
+            text_bullet_reveal: '불릿리스트', text_split_screen: '좌우분할',
+            single_stat_card: '수치카드', dual_stat_vertical: '대비수치', stat_counter_row: '가로수치',
+            stat_change: '증감수치', pie_donut: '도넛차트', bar_chart_comparison: '막대차트',
+            timeline_horizontal: '타임라인', ranking_list: '랭킹',
+            versus_stat: 'VS대결', progress_bar: '프로그레스', fullscreen_number: '전체숫자',
+            title_card: '타이틀', chapter_divider: '챕터구분', countdown: '카운트다운',
+            speech_bubble: '말풍선', speech_bubble_neon: '말풍선(네온)',
+            speech_bubble_sketch: '말풍선(손글씨)', speech_bubble_gradient: '말풍선(그라데이션)',
+            name_tag: '네임택', map_label: '지도라벨', split_image_text: '이미지+텍스트',
+        };
+
+        function _spOverlayBadge(rec) {
+            const label = _SP_OVERLAY_LABEL[rec.type] || rec.type;
+            return `<div style="display:inline-flex;flex-direction:column;gap:2px;padding:8px 12px;background:#fff7e6;border:1.5px solid #f59e0b;border-radius:8px;margin:4px 6px 4px 0;min-width:160px;">
+                <span style="font-weight:700;color:#b45309;font-size:0.85rem;">✨ ${label}</span>
+                <span style="font-size:0.75rem;color:#666;">${rec.why}</span>
+                <code style="font-size:0.7rem;color:#888;">${rec.type}</code>
+            </div>`;
+        }
+
+        function spAnalyzeOverlays() {
+            const status = document.getElementById('spOverlayStatus');
+            const results = document.getElementById('spOverlayResults');
+            const btn = document.getElementById('spOverlayBtn');
+            const scenes = window._spLastScenes || [];
+
+            if (!scenes.length) {
+                status.textContent = '⚠️ 변환된 장면이 없습니다. 셀팟 변환 또는 JSON Import를 먼저 실행하세요.';
+                results.innerHTML = '';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = '🔍 분석 중...';
+            try {
+                const cards = [];
+                let totalRecs = 0, withRec = 0;
+                scenes.forEach(scene => {
+                    const recs = _spRecommendOverlay(scene);
+                    totalRecs += recs.length;
+                    if (recs.length) withRec++;
+                    const sceneTypeIcon = scene.type === 'ai' ? '🎨' : scene.type === 'real' ? '📷' : scene.type === 'claude_design' ? '📊' : '';
+                    const narr = (scene.narration || scene.text || '').slice(0, 200);
+                    const isIntro = scene.isIntro ? '<span style="font-size:0.7rem;color:#dc3545;font-weight:700;">[도입부]</span> ' : '';
+                    const badges = recs.length
+                        ? recs.map(_spOverlayBadge).join('')
+                        : '<span style="font-size:0.78rem;color:#aaa;">자동 헤드라인만 (특별 추천 없음)</span>';
+                    cards.push(`
+                        <div style="padding:12px 14px;margin-bottom:8px;background:#fff;border:1px solid #e0e0e0;border-radius:8px;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:6px;">
+                                <div style="font-weight:700;color:#212529;font-size:0.88rem;">${sceneTypeIcon} 장면 ${scene.sceneNo} <span style="color:#888;font-weight:400;font-size:0.78rem;">· ${scene.duration || '?'}초</span></div>
+                                <div style="font-size:0.78rem;color:${recs.length ? '#b45309' : '#aaa'};">${recs.length ? recs.length + '개 추천' : ''}</div>
+                            </div>
+                            <div style="font-size:0.82rem;color:#495057;line-height:1.5;margin-bottom:8px;">${isIntro}${_escapeHtml(narr)}${narr.length >= 200 ? '...' : ''}</div>
+                            <div style="display:flex;flex-wrap:wrap;">${badges}</div>
+                        </div>
+                    `);
+                });
+
+                const summary = `<div style="padding:10px 12px;background:#fff7e6;border:2px solid #f59e0b;border-radius:8px;margin-bottom:10px;font-size:0.85rem;color:#b45309;">
+                    ✅ 총 ${scenes.length}장면 분석 · 추천 있음 ${withRec}개 (${Math.round(withRec/scenes.length*100)}%) · 추천 합계 ${totalRecs}개
+                    <div style="font-size:0.75rem;color:#888;margin-top:4px;">⚠️ 헤드라인(text_headline)은 모든 장면에 자동 적용되므로 별도 표시 안 함. 위 추천은 그 외에 "이 장면엔 이거도 어울린다"는 추가 제안.</div>
+                </div>`;
+                results.innerHTML = summary + cards.join('');
+                status.textContent = `✅ ${scenes.length}장면 분석 완료`;
+            } catch(e) {
+                status.textContent = '❌ 분석 실패: ' + e.message;
+                console.error(e);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '✨ 오버레이 추천 실행';
+            }
         }
 
         // ===== 🗺️ 지도 탭 (AI 이미지용 한글 라벨 지도 프롬프트) =====
