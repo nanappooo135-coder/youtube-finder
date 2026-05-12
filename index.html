@@ -24613,7 +24613,14 @@ ${sceneList}
             // 진행률 (시간 진행/공정 진행)
             const progressExp    = /(진행\s*\d{1,3}\s*%|완료\s*\d{1,3}\s*%|\d{1,3}\s*%\s*(?:진행|완료|달성))/.test(text);
             // 극적 변화
-            const dramaticChange = /(반토막|두\s*배|세\s*배|네\s*배|급등|폭등|폭락|급락|치솟|꺾였|뛰어올랐|곤두박질)/.test(text);
+            // "몇 배", "X배 뛰었", "수배"도 극적 변화로 인정
+            const dramaticChange = /(반토막|두\s*배|세\s*배|네\s*배|몇\s*배|수\s*배|\d+\s*배\s*(?:로|나|넘|뛰|올랐|불었|증가|치솟)|급등|폭등|폭락|급락|치솟|꺾였|뛰어올랐|곤두박질)/.test(text);
+            // 직책 4명+ 나열 → 불릿 (인물 다수)
+            const manyPositions  = ((text.match(/(?:대통령|총리|장관|의장|국장|총장|소장|회장|위원장|사령관|합참의장)/g) || []).length >= 4);
+            // 사건번호/작전번호 3개+ 나열 → 불릿
+            const caseNumbers    = ((text.match(/사건\s*\d{3,}|작전\s*[가-힣A-Z]+/g) || []).length >= 3);
+            // 같은 어미 반복 (이유로 × 3 / 때문에 × 3 / 거든요 등)
+            const repeatedSuffix = /이유로[\s\S]{5,80}이유로[\s\S]{5,80}이유로|때문에[\s\S]{5,80}때문에[\s\S]{5,80}때문에/.test(text);
             const versus         = /(\bvs\b|\bVS\b|맞붙|정면\s*충돌|양\s*진영|이쪽\s*저쪽|한쪽은[\s\S]+다른\s*한쪽)/.test(text);
             // 정치 의석 비교: 2+ "N석" + 진영 단어 (야권/우파/여당 등)
             const seatComparison = ((text.match(/\d+\s*석/g) || []).length >= 2) && /(야권|우파|좌파|여당|보수|진보|진영|연합)/.test(text);
@@ -24655,6 +24662,15 @@ ${sceneList}
             }
             if (explicitNlist) {
                 return [{ type: 'text_bullet_reveal', why: 'N가지 나열 → 불릿리스트', priority: 2 }];
+            }
+            if (manyPositions) {
+                return [{ type: 'text_bullet_reveal', why: '직책·인물 4명+ 나열 → 불릿리스트', priority: 2 }];
+            }
+            if (caseNumbers) {
+                return [{ type: 'text_bullet_reveal', why: '사건·작전 3개+ 나열 → 불릿리스트', priority: 2 }];
+            }
+            if (repeatedSuffix) {
+                return [{ type: 'text_bullet_reveal', why: '같은 어미 반복 (이유로·때문에 × 3) → 불릿리스트', priority: 2 }];
             }
             if (pairedTwo) {
                 return [{ type: 'text_split_screen', why: '이전/이후, A/B 짝지어진 2개 → 좌우분할', priority: 2 }];
