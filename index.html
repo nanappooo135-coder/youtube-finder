@@ -2880,7 +2880,7 @@
                         <div id="spSummary" style="margin-bottom:12px;padding:12px;background:#f5f5f5;border-radius:8px;font-size:0.9rem;"></div>
 
                         <!-- 분할 토글 박스 (나레이션 ~15초 초과 장면 자동 감지) -->
-                        <div id="spSplitToggleBox" style="display:none;margin-bottom:12px;padding:10px 14px;background:#fff8e1;border:2px solid #ffc107;border-radius:8px;font-size:0.85rem;"></div>
+<!-- spSplitToggleBox 제거됨 (2026-05-12) — 분할 기능 폐기 -->
 
                         <!-- 결과 탭 헤더 -->
                         <div style="display:flex;gap:4px;margin-bottom:12px;border-bottom:2px solid #dee2e6;flex-wrap:wrap;">
@@ -2889,7 +2889,6 @@
                             <button class="sp-result-tab" data-tab="grok" onclick="_spSwitchResultTab('grok')" style="padding:10px 16px;background:#f1f3f5;color:#495057;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">🎬 그록 영상</button>
                             <button class="sp-result-tab" data-tab="real" onclick="_spSwitchResultTab('real')" style="padding:10px 16px;background:#f1f3f5;color:#495057;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">📷 실사 검색</button>
                             <button class="sp-result-tab" data-tab="claude" onclick="_spSwitchResultTab('claude')" style="padding:10px 16px;background:#f1f3f5;color:#495057;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">📊 Claude Design</button>
-                            <button class="sp-result-tab" data-tab="freepik" onclick="_spSwitchResultTab('freepik')" style="padding:10px 16px;background:#f1f3f5;color:#495057;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">🖼️ 프리픽 이미지</button>
                             <button class="sp-result-tab" data-tab="kieai" onclick="_spSwitchResultTab('kieai')" style="padding:10px 16px;background:#f1f3f5;color:#495057;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">🎨 Kie AI</button>
                             <button class="sp-result-tab" data-tab="thumbtext" onclick="_spSwitchResultTab('thumbtext')" style="padding:10px 16px;background:#f1f3f5;color:#495057;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">🏷️ 썸네일 텍스트</button>
                             <button class="sp-result-tab" data-tab="overlay" onclick="_spSwitchResultTab('overlay')" style="padding:10px 16px;background:#f1f3f5;color:#495057;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">✨ 오버레이</button>
@@ -3046,117 +3045,7 @@
 
                         </div><!-- /spTab_claude -->
 
-                        <!-- 프리픽/매그니픽 이미지 생성 탭 -->
-                        <div id="spTab_freepik" class="sp-result-pane" style="display:none;">
-                            <p style="font-size:0.78rem;color:#666;margin-bottom:10px;">
-                                Magnific(프리픽) API로 AI 이미지를 직접 생성합니다. 젠스파크 리밋 이후 나머지 이미지를 여기서 만드세요.
-                            </p>
-
-                            <!-- API Key + CORS 프록시 -->
-                            <div style="margin-bottom:10px;padding:10px;background:#f8f4ff;border:2px solid #7048e8;border-radius:8px;">
-                                <label style="font-size:0.8rem;font-weight:600;color:#6b21a8;">🔑 Magnific API Key</label>
-                                <div style="display:flex;gap:6px;margin-top:4px;">
-                                    <input type="password" id="fpApiKey" placeholder="API key 입력 (magnific.ai/api에서 발급)" style="flex:1;padding:8px 10px;border:2px solid #d4bfff;border-radius:6px;font-size:0.82rem;">
-                                    <button onclick="_fpToggleKey()" class="search-btn" style="background:#868e96;border-color:#868e96;padding:6px 10px;font-size:0.75rem;">👁</button>
-                                    <button onclick="_fpSaveApiKey()" class="search-btn" style="background:#7048e8;border-color:#7048e8;white-space:nowrap;font-size:0.82rem;">💾 저장</button>
-                                </div>
-                                <details style="margin-top:8px;">
-                                    <summary style="font-size:0.72rem;color:#888;cursor:pointer;">⚙️ CORS 프록시 설정 (Failed to fetch 에러 시)</summary>
-                                    <div style="margin-top:4px;">
-                                        <input type="text" id="fpCorsProxy" placeholder="https://corsproxy.io/?" style="width:100%;padding:6px 8px;border:1px solid #d4bfff;border-radius:4px;font-size:0.75rem;font-family:monospace;">
-                                        <p style="font-size:0.68rem;color:#999;margin-top:4px;">브라우저 CORS 차단 우회용. 프록시 URL 뒤에 API URL이 붙습니다. 비워두면 직접 호출.</p>
-                                    </div>
-                                </details>
-                            </div>
-
-
-                            <!-- 대본 컨텍스트 (자동 로드) -->
-                            <details style="margin-bottom:10px;">
-                                <summary style="font-size:0.8rem;font-weight:600;color:#333;cursor:pointer;">📝 대본 컨텍스트 (변환 결과에서 자동 로드됨)</summary>
-                                <textarea id="fpScriptContext" rows="4" readonly style="width:100%;margin-top:6px;padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:0.78rem;resize:vertical;line-height:1.5;background:#f8f9fa;color:#555;"></textarea>
-                            </details>
-
-                            <!-- 아트 스타일 -->
-                            <div style="margin-bottom:10px;">
-                                <div style="display:flex;justify-content:space-between;align-items:center;">
-                                    <label style="font-size:0.8rem;font-weight:600;color:#333;">🎨 그림체 프롬프트</label>
-                                    <button onclick="document.getElementById('fpStylePrompt').value=document.getElementById('spStylePrompt').value" class="search-btn" style="background:#fd7e14;border-color:#fd7e14;font-size:0.72rem;padding:4px 8px;">← 채널 스타일 가져오기</button>
-                                </div>
-                                <textarea id="fpStylePrompt" rows="3" placeholder="예: editorial illustration, muted earth tones, soft lighting..." style="width:100%;margin-top:4px;padding:10px;border:2px solid #ffd8a8;border-radius:8px;font-size:0.78rem;resize:vertical;line-height:1.4;font-family:'Courier New',monospace;"></textarea>
-                            </div>
-
-                            <!-- 해상도 / 비율 설정 -->
-                            <div style="display:flex;gap:12px;margin-bottom:10px;flex-wrap:wrap;align-items:center;">
-                                <div>
-                                    <label style="font-size:0.75rem;font-weight:600;color:#555;">해상도</label>
-                                    <select id="fpResolution" style="padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:0.8rem;">
-                                        <option value="1k">1K (빠름)</option>
-                                        <option value="2k" selected>2K (기본)</option>
-                                        <option value="4k">4K (고품질)</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label style="font-size:0.75rem;font-weight:600;color:#555;">비율</label>
-                                    <select id="fpAspectRatio" style="padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:0.8rem;">
-                                        <option value="landscape_16_9" selected>16:9 (가로)</option>
-                                        <option value="square_1_1">1:1 (정사각)</option>
-                                        <option value="portrait_9_16">9:16 (세로)</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label style="font-size:0.75rem;font-weight:600;color:#555;">모델</label>
-                                    <select id="fpModel" style="padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:0.8rem;" onchange="_fpOnModelChange()">
-                                        <optgroup label="── Mystic (일러스트/실사) ──">
-                                            <option value="mystic_realism">Mystic Realism (초실사)</option>
-                                            <option value="mystic_zen">Mystic Zen (깔끔 일러스트)</option>
-                                            <option value="mystic_flexible">Mystic Flexible (만능)</option>
-                                            <option value="mystic_fluid">Mystic Fluid</option>
-                                        </optgroup>
-                                        <optgroup label="── 나노바나나 ──">
-                                            <option value="nano_pro" selected>🍌 나노바나나2 (기본)</option>
-                                            <option value="nano_flash">⚡ 나노바나나2 Flash (초고속)</option>
-                                        </optgroup>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <!-- Google Search Grounding 안내 -->
-                            <div style="margin-bottom:10px;padding:6px 10px;background:#e8f5e9;border-radius:6px;font-size:0.75rem;color:#2e7d32;">
-                                🔍 Google Search Grounding 활성화됨 — 실제 사물/장소 참조로 이미지 품질 향상
-                            </div>
-
-                            <!-- 컨트롤 버튼 -->
-                            <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;">
-                                <button onclick="_fpSelectAll()" class="search-btn" style="background:#495057;border-color:#495057;font-size:0.78rem;">☑️ 전체선택</button>
-                                <button onclick="_fpDeselectAll()" class="search-btn" style="background:#868e96;border-color:#868e96;font-size:0.78rem;">⬜ 전체해제</button>
-                                <button onclick="_fpGenerateSelected()" class="search-btn" style="background:#37b24d;border-color:#37b24d;font-size:0.82rem;font-weight:700;">🚀 선택 생성</button>
-                                <button onclick="_fpGenerateAll()" class="search-btn" style="background:#e03131;border-color:#e03131;font-size:0.82rem;font-weight:700;">⚡ 전체 생성</button>
-                                <button onclick="_fpStopGeneration()" class="search-btn" style="background:#868e96;border-color:#868e96;font-size:0.78rem;">⏹ 중지</button>
-                                <button onclick="_fpDownloadSelected()" class="search-btn" style="background:#1c7ed6;border-color:#1c7ed6;font-size:0.78rem;">📦 선택 다운로드 (ZIP)</button>
-                            </div>
-
-                            <!-- 커스텀 프롬프트 테스트 -->
-                            <details style="margin-bottom:12px;border:2px solid #e9ecef;border-radius:8px;padding:0;">
-                                <summary style="cursor:pointer;padding:10px 14px;font-weight:700;font-size:0.82rem;color:#7048e8;background:#f8f0ff;border-radius:6px;">🧪 커스텀 프롬프트 테스트 (직접 입력)</summary>
-                                <div style="padding:12px;">
-                                    <textarea id="fpTestPrompt" rows="3" placeholder="테스트할 프롬프트를 입력하세요... (예: Donald Trump giving a speech at a podium)" style="width:100%;padding:10px;border:2px solid #d0bfff;border-radius:8px;font-size:0.82rem;resize:vertical;line-height:1.4;font-family:'Courier New',monospace;box-sizing:border-box;"></textarea>
-                                    <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
-                                        <button onclick="_fpTestGenerate()" class="search-btn" style="background:#7048e8;border-color:#7048e8;font-size:0.82rem;font-weight:700;">🚀 테스트 생성</button>
-                                        <span id="fpTestStatus" style="font-size:0.78rem;color:#666;"></span>
-                                    </div>
-                                    <div id="fpTestResult" style="margin-top:10px;"></div>
-                                </div>
-                            </details>
-
-                            <!-- 진행 상태 -->
-                            <div id="fpProgress" style="font-size:0.82rem;color:#7048e8;margin-bottom:8px;font-weight:600;"></div>
-                            <div id="fpProgressBar" style="display:none;margin-bottom:10px;background:#e9ecef;border-radius:6px;overflow:hidden;height:8px;">
-                                <div id="fpProgressFill" style="height:100%;background:#7048e8;transition:width 0.3s;width:0%;"></div>
-                            </div>
-
-                            <!-- 장면 리스트 -->
-                            <div id="fpSceneList" style="display:flex;flex-direction:column;gap:8px;"></div>
-                        </div>
+                        <!-- 프리픽 탭 제거됨 (2026-05-12) -->
 
                         <!-- Kie AI 나노바나나2 자동 생성 탭 -->
                         <div id="spTab_kieai" class="sp-result-pane" style="display:none;">
@@ -24805,147 +24694,14 @@ ${sceneList}
             el.textContent = text;
         }
 
-        // ═══ 분할 토글: 헬퍼/상태 ═══
-        // narrSec > 17초 → 그록 10초 × 슬로우 1.7배 한계 초과 → 분할 가능 대상
-        function _spNarrSec(s) {
-            return Math.round(((s.text || '').length / 8.0) * 10) / 10;
-        }
-        function _spSceneNeedsSplit(s) {
-            return s && s.type === 'ai' && s.grok_prompt && _spNarrSec(s) > 17;
-        }
-        // 한 조각이 ≤17초가 되도록 분할 수 결정 (슬로우 1.7배까지 허용)
-        function _spSplitPartsCount(narrSec) {
-            return Math.max(2, Math.ceil(narrSec / 17));
-        }
-        // 분할 선택 + 캐시 결과 적용한 expanded scenes 반환 (sceneNo 1..N로 재번호)
+        // ═══ 분할 기능 제거됨 (2026-05-12) ═══
+        // 17초+ 장면 자동 분할은 폐기. 아래는 호환용 stub (다른 코드에서 호출돼도 무해).
         function _spExpandSplitScenes(originalScenes) {
-            const expanded = [];
-            let newNo = 1;
-            originalScenes.forEach(s => {
-                const isSplit = window._spSplitChoices?.[s.sceneNo] === true;
-                const cached = window._spSplitCache?.[s.sceneNo];
-                if (isSplit && Array.isArray(cached) && cached.length > 0) {
-                    cached.forEach((child, idx) => {
-                        expanded.push({
-                            ...s,
-                            ...child,
-                            sceneNo: newNo++,
-                            _origSceneNo: s.sceneNo,
-                            _splitIdx: idx + 1,
-                            _splitTotal: cached.length
-                        });
-                    });
-                } else {
-                    expanded.push({ ...s, sceneNo: newNo++ });
-                }
-            });
-            return expanded;
+            // 분할 안 함 — 원본 그대로 (sceneNo는 이미 1..N로 매겨져 있으므로 그대로 패스)
+            return originalScenes;
         }
-        // 토글 박스 렌더링
-        function _spRenderSplitToggleBox(originalScenes) {
-            const box = document.getElementById('spSplitToggleBox');
-            if (!box) return;
-            const eligible = originalScenes.filter(_spSceneNeedsSplit);
-            if (eligible.length === 0) {
-                box.style.display = 'none';
-                box.innerHTML = '';
-                return;
-            }
-            box.style.display = '';
-            const choices = window._spSplitChoices || {};
-            const loading = window._spSplitLoading || {};
-            const splitOnCount = eligible.filter(s => choices[s.sceneNo] === true).length;
-            let html = '<div style="margin-bottom:8px;font-weight:700;color:#856404;">⚠️ 분할 가능 장면 ' + eligible.length + '개';
-            if (splitOnCount > 0) html += ' <span style="color:#28a745;font-size:0.78rem;font-weight:600;">(분할 ON: ' + splitOnCount + '개)</span>';
-            html += '</div>';
-            html += '<div style="font-size:0.75rem;color:#856404;margin-bottom:8px;">나레이션 17초 초과 장면입니다. 분할하면 같은 자리에 여러 장면이 들어가고, 뒤 장면 번호는 자동으로 밀립니다.</div>';
-            html += '<div style="display:flex;flex-direction:column;gap:6px;">';
-            eligible.forEach(s => {
-                const narrSec = _spNarrSec(s);
-                const parts = _spSplitPartsCount(narrSec);
-                const isSplit = choices[s.sceneNo] === true;
-                const isLoading = loading[s.sceneNo] === true;
-                html += '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#fff;border:1px solid #ffc107;border-radius:6px;flex-wrap:wrap;">';
-                html += '<span style="font-weight:700;color:#856404;min-width:80px;">장면 ' + s.sceneNo + '</span>';
-                html += '<span style="color:#6c757d;font-size:0.78rem;">~' + narrSec + '초</span>';
-                html += '<span style="color:#856404;font-size:0.78rem;">→ ' + parts + '분할</span>';
-                if (isLoading) {
-                    html += '<span style="margin-left:auto;color:#1971c2;font-weight:600;font-size:0.8rem;">⏳ Gemini 호출 중...</span>';
-                } else {
-                    const splitOn = isSplit;
-                    const splitStyle = splitOn
-                        ? 'background:#28a745;color:#fff;border-color:#28a745;'
-                        : 'background:#fff;color:#28a745;border-color:#28a745;';
-                    const keepStyle = !splitOn
-                        ? 'background:#6c757d;color:#fff;border-color:#6c757d;'
-                        : 'background:#fff;color:#6c757d;border-color:#6c757d;';
-                    html += '<div style="margin-left:auto;display:flex;gap:4px;">';
-                    html += '<button onclick="_spToggleSplit(' + s.sceneNo + ', true)" style="padding:4px 12px;border:1px solid;border-radius:4px;cursor:pointer;font-weight:600;font-size:0.78rem;' + splitStyle + '">분할</button>';
-                    html += '<button onclick="_spToggleSplit(' + s.sceneNo + ', false)" style="padding:4px 12px;border:1px solid;border-radius:4px;cursor:pointer;font-weight:600;font-size:0.78rem;' + keepStyle + '">그대로</button>';
-                    html += '</div>';
-                }
-                html += '</div>';
-            });
-            html += '</div>';
-            box.innerHTML = html;
-        }
-        // Gemini 호출해서 자식 장면 N개 생성
-        async function _spGenerateSplitChildren(scene, parts) {
-            const text = (scene.text || '').trim();
-            const nano = (scene.nano_prompt || '').trim();
-            const grok = (scene.grok_prompt || '').trim();
-            const prompt = '당신은 영상 장면 분할 전문가입니다. 한 장면이 너무 길어서 ' + parts + '개로 자연스럽게 나눠야 합니다.\n\n'
-                + '【원본 장면】\n나레이션: ' + text + '\n\n'
-                + '【원본 이미지 프롬프트】\n' + nano + '\n\n'
-                + '【원본 영상 프롬프트】\n' + grok + '\n\n'
-                + '【작업】\n위 나레이션을 ' + parts + '개의 비슷한 길이 조각으로 나누고, 각 조각마다 새 이미지/영상 프롬프트를 만드세요.\n'
-                + '- 나레이션은 문장 경계에서 끊기, 의미 단위 보존\n'
-                + '- 각 조각마다 시각적으로 다른 그림 (지루함 방지) — 같은 장면 흐름 안에서 카메라/구도/포인트만 다르게\n'
-                + '- 이미지 프롬프트(nano_prompt): 원본 스타일·분위기 유지, 그 조각 내용에 맞는 시각 포인트로 수정\n'
-                + '- 영상 프롬프트(grok_prompt): 원본 스타일 유지, 짧은 모션 지시 (image-to-video용)\n\n'
-                + '【출력】 정확히 ' + parts + '개 객체를 담은 JSON 배열만 출력 (다른 설명·코드펜스·마크다운 일체 금지):\n'
-                + '[\n  { "text": "...", "nano_prompt": "...", "grok_prompt": "..." }' + (parts > 1 ? ',\n  ... (총 ' + parts + '개)' : '') + '\n]';
-            const result = await callGemini(prompt, { maxTokens: 8192, temperature: 0.4, model: 'gemini-2.5-flash' });
-            let txt = (result.text || '').trim();
-            txt = txt.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '');
-            const arr = JSON.parse(txt);
-            if (!Array.isArray(arr) || arr.length === 0) throw new Error('빈 배열 응답');
-            arr.forEach(c => {
-                const childNarrSec = Math.round(((c.text || '').length / 8.0) * 10) / 10;
-                c.duration = childNarrSec >= 8 ? 10 : 6;
-                c.type = scene.type;
-            });
-            return arr;
-        }
-        // 분할 토글 (분할 ON: 캐시 없으면 Gemini 호출)
-        window._spToggleSplit = async function(sceneNo, doSplit) {
-            window._spSplitChoices = window._spSplitChoices || {};
-            window._spSplitCache = window._spSplitCache || {};
-            window._spSplitLoading = window._spSplitLoading || {};
-            if (doSplit) {
-                if (!window._spSplitCache[sceneNo]) {
-                    const orig = (window._spOriginalScenes || []).find(s => s.sceneNo === sceneNo);
-                    if (!orig) return;
-                    window._spSplitLoading[sceneNo] = true;
-                    _spRenderSplitToggleBox(window._spOriginalScenes);
-                    try {
-                        const parts = _spSplitPartsCount(_spNarrSec(orig));
-                        const children = await _spGenerateSplitChildren(orig, parts);
-                        window._spSplitCache[sceneNo] = children;
-                    } catch(e) {
-                        alert('분할 생성 실패 (장면 ' + sceneNo + '): ' + e.message);
-                        window._spSplitLoading[sceneNo] = false;
-                        _spRenderSplitToggleBox(window._spOriginalScenes);
-                        return;
-                    }
-                    window._spSplitLoading[sceneNo] = false;
-                }
-                window._spSplitChoices[sceneNo] = true;
-            } else {
-                window._spSplitChoices[sceneNo] = false;
-            }
-            _spRenderResults({ scenes: window._spOriginalScenes });
-        };
+        function _spRenderSplitToggleBox() { /* no-op */ }
+        window._spToggleSplit = function() { /* no-op */ };
 
         function _spRenderResults(result) {
             // 분할 토글 상태/캐시는 변환 결과가 새로 들어올 때만 초기화
