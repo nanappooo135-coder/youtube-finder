@@ -24599,9 +24599,32 @@ ${sceneList}
             const years          = text.match(/((?:19|20|21)\d{2})\s*년?/g) || [];
             // 상대 시간 표현 (N년 지난/걸렸/끌어온/장기)
             const elapsedYears   = /(\d+년\s*(?:지난|걸렸|만에|끌어온|넘게|째|간|동안)|장기\s*\d+년)/.test(text);
-            const directQuote    = /["""""].{8,}["""""]|"[^"]{8,}"\s*(?:라고|이라고)?\s*(?:말했|밝혔|선언|일갈|일축)/.test(text);
+            // 엄격: 따옴표 + 발화 동사 (속담·관용구·이름·강조구 오인 방지)
+            // 매칭 시 인용 텍스트 길이 + 명명 화자 여부까지 반환 (오버레이 다양화에 사용)
+            const quoteInfo = (function() {
+                const qMatch = text.match(/[""""""].{8,}?[""""""]/);
+                if (!qMatch) return null;
+                const verbs = /(말했|말한|말씀|밝혔|선언|일갈|일축|답한|답했|외쳤|소리쳤|적었|적힌|썼다|썼습니다|적혀|박았|쏟아냈|짚었|평가했|평가한|덧붙였|꺼냈|던졌)/;
+                const idx = qMatch.index;
+                const before = text.slice(Math.max(0, idx - 35), idx);
+                const after = text.slice(idx + qMatch[0].length, idx + qMatch[0].length + 15);
+                if (/속담|관용구|격언|옛말|말이\s*있죠|말이\s*있어요|는\s*말이|이라는\s*말/.test(text)) return null;
+                if (!(verbs.test(before) || verbs.test(after))) return null;
+                // 화자 명명 확인: 인용 앞 30자 안에 인명/직책 단서
+                const speakerNamed = /([가-힣]{2,4}\s*(?:총리|대통령|장관|의장|국장|총장|시장|소장|회장|위원장|박사|교수|기자))|([A-Z][a-z]+\s+[A-Z][a-z]+)|(트럼프|네타냐후|푸틴|시진핑|바이든|오바마|이재명|윤석열|문재인)/;
+                const hasSpeaker = speakerNamed.test(before);
+                const innerLen = qMatch[0].length - 2; // 따옴표 제외 길이
+                return { len: innerLen, hasSpeaker };
+            })();
+            const directQuote = !!quoteInfo;
             const isIntroScene   = !!scene.isIntro;
             const chapterMark    = /(파트\s*\d|챕터\s*\d|^[1-9](?:부|장)\b|첫\s*번째\s*이야기|두\s*번째\s*이야기)/.test(text);
+            // 큰 챕터 전환 표현 ("이제 X 얘기를 해야 합니다", "그러면 X를 봐야 합니다")
+            const sectionPivot   = /(이제\s+\S+\s*(?:얘기|이야기)를?\s*(?:해야|해보|하겠))|((?:그러면|그럼)\s+(?:이|그|그\s*사람|이\s*사람|이걸|그걸).*(?:봐야|보겠))|^자\s*[,，]\s*이제/.test(text);
+            // 인물 첫 등장 (직책 + 이름 명시 + 짧은 식별 문장)
+            const personIntroFull = /(베냐민\s*네타냐후|도널드\s*트럼프|존\s*래트클리프|댄\s*케인|JD?\s*\.?\s*밴스|블라디미르\s*푸틴|시진핑)|([가-힣]{2,4}\s*(?:총리|대통령|장관|의장|국장|총장)\.?\s*이\s*사람은)/.test(text);
+            // 카운트다운: N달 남았/N일 남았
+            const countdownExp   = /(\d+\s*(?:달|개월|일|주|년)\s*(?:남았|남은|뒤|후))/.test(text);
             // 명시적 N가지 나열 ("이 세 가지가" / "다음 세 가지" / "두 가지가 동시에")
             const explicitNlist  = /(이|다음|아래)\s*(?:두|세|네)\s*가지(?:가|는|를)\s*(?:동시에|모두|함께|작동|있)|(?:두|세|네)\s*가지(?:가|는)\s*동시에/.test(text);
             // 거대 충격 숫자 (조 원, 100억 이상) — 본문에서도 발동
@@ -24694,11 +24717,32 @@ ${sceneList}
             if (dramaticChange && (percentMatches.length + moneyKR.length + bigCounts.length >= 1)) {
                 return [{ type: 'stat_change', why: '극적 변화 + 수치 → 증감 화살표(▲▼)로 강조' }];
             }
-            // 9. 직접 인용 (정상 말풍선)
-            if (directQuote && text.length < 200) {
-                return [{ type: 'speech_bubble', why: '직접 인용 발언 → 말풍선으로 화자 강조' }];
+            // 9. 큰 챕터 전환 ("이제 한국 얘기를 해야 합니다", "그러면 X 봐야 합니다") → 타이틀카드
+            if (sectionPivot) {
+                return [{ type: 'title_card', why: '서사 전환 ("이제 X 얘기" / "그러면 X 봐야") → 타이틀카드로 흐름 분리' }];
             }
-            // 10. 챕터 구분
+            // 10. 인물 풀네임 첫 등장 (직책 명시) → 네임택
+            if (personIntroFull && text.length < 200) {
+                return [{ type: 'name_tag', why: '인물 풀네임 + 직책 등장 → 네임택으로 신원 표시' }];
+            }
+            // 11. 카운트다운 ("다섯 달 남았어요" 같은 표현)
+            if (countdownExp) {
+                return [{ type: 'countdown', why: '남은 기간 카운트다운 (N달/일 남았) → 카운트다운 시각화' }];
+            }
+            // 12. 직접 인용 (말풍선 → 타자기·강조텍스트로 분산. 진짜 말풍선은 명명 화자일 때만)
+            if (directQuote && text.length < 220) {
+                // 짧은 강한 발언 (~24자) → 타자기 (극적 등장)
+                if (quoteInfo.len <= 24) {
+                    return [{ type: 'text_typewriter', why: '짧은 강한 발언 인용 → 타자기 효과로 극적 등장' }];
+                }
+                // 명명된 화자가 명확하면 → 말풍선 (드물게)
+                if (quoteInfo.hasSpeaker) {
+                    return [{ type: 'speech_bubble', why: '명명된 화자 + 발언 → 말풍선으로 화자 강조' }];
+                }
+                // 그 외 긴 인용 → 강조텍스트 (키워드 부각)
+                return [{ type: 'info_text_highlight', why: '긴 발언 인용 → 강조텍스트로 핵심 키워드 부각' }];
+            }
+            // 13. 챕터 구분
             if (chapterMark) {
                 return [{ type: 'chapter_divider', why: '파트/챕터 구분 → 시청자 흐름 정리' }];
             }
