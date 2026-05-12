@@ -25172,10 +25172,87 @@ ${sceneList}
 ## 절대 규칙
 1. **각각 별도 Artifact로 생성** (한 Artifact에 여러 디자인 합치지 말 것)
 2. **Artifact 제목·파일명을 \`scene_N.html\` 형식으로** (예: scene_3.html, scene_7.html). N은 아래 장면번호 그대로.
-3. 각 디자인은 **CSS 애니메이션 포함** (지정된 duration 동안 자연스럽게 움직임)
-4. **9:16 (쇼츠) 비율 기준**: viewport 1080x1920 가정, body { width: 1080px; height: 1920px; margin: 0; }
-5. 폰트는 시스템 한글 폰트 (Pretendard, Noto Sans KR, Apple SD Gothic Neo)
+3. **16:9 가로 비율 고정**: viewport 1920×1080, body { width: 1920px; height: 1080px; margin: 0; }
+4. 각 디자인은 **CSS 애니메이션 포함** (아래 타이밍 규칙 그대로)
+5. 폰트: \`font-family: 'Pretendard', 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif;\`
 6. 배경색·텍스트색 명시 (셀팟에 얹을 때 잘 보이게)
+
+## 자동 스케일 스크립트 (필수 — body 닫기 직전에 박을 것)
+
+\`\`\`html
+<script>
+(function () {
+    document.documentElement.style.overflow = "hidden";
+    document.documentElement.style.margin = "0";
+    document.documentElement.style.background = "#000";
+    const body = document.body;
+    body.style.transformOrigin = "top left";
+    body.style.position = "absolute";
+    function fit() {
+        const vw = window.innerWidth, vh = window.innerHeight;
+        const s = Math.min(vw / 1920, vh / 1080);
+        body.style.transform = "scale(" + s + ")";
+        body.style.left = ((vw - 1920 * s) / 2) + "px";
+        body.style.top  = ((vh - 1080 * s) / 2) + "px";
+    }
+    fit();
+    window.addEventListener("resize", fit);
+})();
+<\/script>
+\`\`\`
+
+## 애니메이션 타이밍 (10초 영상 기준)
+
+### Reveal phase (0~6.1초) — 요소 순차 등장
+- 라벨/소제목: ~0.5s
+- 큰 숫자: ~1.2s
+- 보조 텍스트: ~2.0s
+- 메인 시각화 (SVG/차트): ~3.0s
+- 강조 마크 (X·체크·화살표): ~4.4s
+- 보조 박스 (날짜·캡션): ~5.1s
+- 푸터: ~6.1s
+
+각 요소 CSS: \`opacity:0; animation: fadeUp 0.8s ease-out [지연]s forwards;\`
+
+### Idle pulse phase (6.5초~) — 핵심 요소 미세 펄스 무한 반복
+
+\`\`\`css
+@keyframes pulseScale {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.04); }
+}
+/* translate(-50%, -50%) 쓰는 요소용 */
+@keyframes pulseScaleCentered {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); }
+    50% { transform: translate(-50%, -50%) scale(1.08); }
+}
+\`\`\`
+
+큰 숫자·X마크·핵심 라벨에:
+\`\`\`css
+animation: scaleIn 0.9s ease 1.2s forwards, pulseScale 2.4s ease-in-out 6.5s infinite;
+\`\`\`
+
+## 디자인 룰
+
+### 텍스트와 그래픽 절대 겹치지 않게
+- SVG 안에 큰 텍스트 박지 말 것 (X·체크 마크와 겹치면 잘려 보임)
+- 제목·라벨은 SVG **위쪽 또는 아래쪽** 별도 HTML 요소로
+
+### 레이아웃 (16:9 가로)
+- 좌우 2단 그리드 (\`grid-template-columns: 1fr 1fr\`)
+- 왼쪽: 텍스트·숫자 / 오른쪽: 시각화
+- padding 80~120px, gap 60~100px
+
+### 컬러 톤 (경제·시사 채널 기본)
+- 배경: \`#0a1929\` (다크 네이비) 또는 \`#1a1a1a\` (다큐 톤)
+- 텍스트: \`#ffffff\` / 강조 노랑: \`#fbbf24\` / 강조 빨강: \`#ef4444\` / 보조 회색: \`#94a3b8\`
+
+## 흔한 함정 (절대 금지)
+- ❌ 9:16/1:1 만들기 → **16:9만**
+- ❌ fit 스크립트 빼먹기 → 셀팟에서 양끝 잘림
+- ❌ SVG 안 텍스트와 강조 마크 같은 자리
+- ❌ 펄스 시작 시간 8초 이상 (영상 길이 - 1초 안에 시작해야 보임)
 
 ## 출력 흐름
 - 첫 메시지에 ${claudeCount}개 Artifact 모두 생성 시작
@@ -25183,7 +25260,7 @@ ${sceneList}
 - 인라인 스타일·애니메이션 포함 (외부 파일 의존 X)
 
 ## 다운로드 후 작업
-사용자는 각 Artifact의 다운로드 버튼을 눌러 scene_N.html 파일들을 받고, youtube-finder의 "🎨 클로드 디자인 → MP4 변환" 박스에 한꺼번에 드래그하면 자동 매칭+녹화됩니다.
+각 Artifact 다운로드 → youtube-finder의 "🎨 클로드 디자인 → MP4 변환" 박스에 드래그 → 16:9 녹화 → 셀팟 **"롱폼"** 모드 업로드.
 
 ---
 
