@@ -2892,6 +2892,7 @@
                             <button class="sp-result-tab" data-tab="kieai" onclick="_spSwitchResultTab('kieai')" style="padding:10px 16px;background:#f1f3f5;color:#495057;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">🎨 Kie AI</button>
                             <button class="sp-result-tab" data-tab="thumbtext" onclick="_spSwitchResultTab('thumbtext')" style="padding:10px 16px;background:#f1f3f5;color:#495057;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">🏷️ 썸네일 텍스트</button>
                             <button class="sp-result-tab" data-tab="overlay" onclick="_spSwitchResultTab('overlay')" style="padding:10px 16px;background:#f1f3f5;color:#495057;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">✨ 오버레이</button>
+                            <button class="sp-result-tab" data-tab="merge" onclick="_spSwitchResultTab('merge')" style="padding:10px 16px;background:#f1f3f5;color:#495057;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">🧩 합치기</button>
                         </div>
 
                         <!-- 셀팟 붙여넣기 탭 -->
@@ -3151,6 +3152,55 @@
                                 <div id="spOverlayStatus" style="font-size:0.8rem;color:#888;margin-bottom:4px;">⚠️ 오버레이는 "많이 = 좋음"이 아닙니다. 시청자 정보 과부하 방지를 위해 <strong>꼭 필요한 장면만</strong> (전체의 15~25%) 추천합니다.</div>
                             </div>
                             <div id="spOverlayResults"></div>
+                        </div>
+
+                        <!-- 🧩 합치기 탭 -->
+                        <div id="spTab_merge" class="sp-result-pane" style="display:none;">
+                            <div style="margin-bottom:12px;padding:12px 14px;background:linear-gradient(135deg,#e7f5ff 0%,#d0ebff 100%);border:2px solid #1c7ed6;border-radius:10px;">
+                                <div style="font-weight:700;color:#1864ab;font-size:0.95rem;margin-bottom:6px;">🧩 AI 이미지 + 빈 슬롯 합치기</div>
+                                <p style="font-size:0.82rem;color:#495057;line-height:1.6;margin:0;">
+                                    젠스파크에서 받은 AI 이미지(예: <code>장면1.png, 장면2.png, ... 장면48.png, 장면50.png</code>)를 드롭하세요.<br>
+                                    실사·디자인 자리(빠진 번호)는 <strong>흰 빈 이미지로 자동 채워</strong> 1부터 마지막 장면까지 연속된 ZIP을 만듭니다. 셀팟에 드롭하면 순서가 정확히 들어맞습니다.
+                                </p>
+                            </div>
+
+                            <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+                                <div>
+                                    <label style="font-size:0.78rem;font-weight:600;color:#555;display:block;margin-bottom:3px;">파일명 형식</label>
+                                    <select id="mgFilename" style="padding:6px 10px;border:1.5px solid #ccc;border-radius:5px;font-size:0.85rem;">
+                                        <option value="장면">장면01.png</option>
+                                        <option value="scene_">scene_01.png</option>
+                                        <option value="num">01.png</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="font-size:0.78rem;font-weight:600;color:#555;display:block;margin-bottom:3px;">빈 이미지 크기</label>
+                                    <select id="mgSize" style="padding:6px 10px;border:1.5px solid #ccc;border-radius:5px;font-size:0.85rem;">
+                                        <option value="1920x1080" selected>1920×1080 (16:9)</option>
+                                        <option value="1080x1920">1080×1920 (9:16)</option>
+                                        <option value="1080x1080">1080×1080 (1:1)</option>
+                                        <option value="auto">자동 (드롭 이미지와 동일)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="font-size:0.78rem;font-weight:600;color:#555;display:block;margin-bottom:3px;">빈 이미지 라벨</label>
+                                    <select id="mgLabel" style="padding:6px 10px;border:1.5px solid #ccc;border-radius:5px;font-size:0.85rem;">
+                                        <option value="number" selected>장면 번호만</option>
+                                        <option value="type">장면 N (실사) / 장면 N (디자인)</option>
+                                        <option value="none">없음 (완전 흰색)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div id="mgDropZone" style="border:2.5px dashed #1c7ed6;border-radius:10px;padding:30px 20px;text-align:center;background:#fff;cursor:pointer;color:#1864ab;font-weight:600;font-size:0.92rem;transition:background 0.15s;">
+                                📁 AI 이미지 드래그하거나 클릭해서 선택 (장면N.png 또는 scene_N.png)
+                            </div>
+                            <input type="file" id="mgFileInput" accept="image/*" multiple style="display:none;">
+
+                            <div id="mgFileList" style="margin-top:10px;"></div>
+                            <div id="mgStatus" style="margin-top:8px;font-size:0.85rem;color:#495057;"></div>
+
+                            <button id="mgProcessBtn" onclick="_mgProcessAndZip()" style="display:none;width:100%;margin-top:12px;padding:13px;background:#1c7ed6;color:#fff;border:none;border-radius:8px;font-size:0.95rem;font-weight:700;cursor:pointer;">🧩 합치기 → ZIP 다운로드</button>
                         </div>
 
                     </div>
@@ -24703,6 +24753,195 @@ ${sceneList}
         }
 
         // (구) 지도 탭 제거됨 (2026-05-12) — 지도 어울리는 장면은 JSON 변환에서 claude_design으로 분류됨
+
+        // ===== 🧩 합치기 탭 =====
+        // AI 이미지(빠진 번호 있음) → 실사·디자인 자리에 흰 빈 PNG 자동 끼워넣기 → 1~N 연속 ZIP
+        window._mgDroppedFiles = []; // [{file, sceneNo}]
+
+        // 파일명에서 장면 번호 추출 (장면1.png, 장면01.png, scene_1.png, scene01.png, 1.png 등)
+        function _mgParseSceneNo(name) {
+            const m = name.match(/장면\s*0*(\d+)/) || name.match(/scene[_\s-]*0*(\d+)/i) || name.match(/^0*(\d+)\b/);
+            return m ? parseInt(m[1], 10) : null;
+        }
+
+        function _mgPad(n) { return String(n).padStart(2, '0'); }
+        function _mgFormatName(no) {
+            const fmt = document.getElementById('mgFilename')?.value || '장면';
+            if (fmt === '장면') return '장면' + _mgPad(no) + '.png';
+            if (fmt === 'scene_') return 'scene_' + _mgPad(no) + '.png';
+            return _mgPad(no) + '.png';
+        }
+
+        // 흰색 빈 PNG 생성 (canvas → blob)
+        async function _mgMakeBlankPng(width, height, sceneNo, sceneType) {
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, width, height);
+            const labelMode = document.getElementById('mgLabel')?.value || 'number';
+            if (labelMode !== 'none') {
+                ctx.fillStyle = '#cbd5e1';
+                const fontSize = Math.round(Math.min(width, height) * 0.12);
+                ctx.font = `${fontSize}px sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                let label = String(sceneNo);
+                if (labelMode === 'type') {
+                    const typeLabel = sceneType === 'real' ? ' (실사)' : sceneType === 'claude_design' ? ' (디자인)' : '';
+                    label = '장면 ' + sceneNo + typeLabel;
+                }
+                ctx.fillText(label, width / 2, height / 2);
+            }
+            return new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+        }
+
+        async function _mgGetImageSize(file) {
+            return new Promise(resolve => {
+                const img = new Image();
+                const url = URL.createObjectURL(file);
+                img.onload = () => { URL.revokeObjectURL(url); resolve({ w: img.naturalWidth, h: img.naturalHeight }); };
+                img.onerror = () => { URL.revokeObjectURL(url); resolve({ w: 1920, h: 1080 }); };
+                img.src = url;
+            });
+        }
+
+        function _mgRenderFileList() {
+            const list = document.getElementById('mgFileList');
+            const btn = document.getElementById('mgProcessBtn');
+            const status = document.getElementById('mgStatus');
+            if (!list) return;
+            const files = window._mgDroppedFiles;
+            if (!files.length) {
+                list.innerHTML = '';
+                btn.style.display = 'none';
+                status.textContent = '';
+                return;
+            }
+            const scenes = window._spLastScenes || [];
+            const maxScene = scenes.length ? Math.max(...scenes.map(s => s.sceneNo)) : Math.max(...files.map(f => f.sceneNo || 0));
+            const droppedNos = new Set(files.filter(f => f.sceneNo).map(f => f.sceneNo));
+            const expectedAiNos = new Set(scenes.filter(s => s.type === 'ai').map(s => s.sceneNo));
+            const missingNos = [];
+            for (let i = 1; i <= maxScene; i++) {
+                if (!droppedNos.has(i)) missingNos.push(i);
+            }
+            const unparsed = files.filter(f => !f.sceneNo).length;
+
+            list.innerHTML = `
+                <div style="padding:10px 12px;background:#fff;border:1px solid #d0ebff;border-radius:6px;font-size:0.85rem;color:#1864ab;line-height:1.6;">
+                    📥 드롭한 파일: <strong>${files.length}개</strong>
+                    ${unparsed > 0 ? `<br>⚠️ 장면 번호 파싱 실패: <strong style="color:#dc3545;">${unparsed}개</strong> (파일명 확인 필요)` : ''}
+                    ${scenes.length ? `<br>📊 JSON 총 장면: <strong>${scenes.length}개</strong> · 최대 번호: <strong>${maxScene}</strong>` : '<br>⚠️ JSON 변환 결과 없음 — 셀팟/Import 먼저 실행 권장 (지금은 드롭 파일 기준으로 합침)'}
+                    ${missingNos.length ? `<br>🔵 빈 자리 채울 번호: <strong>${missingNos.join(', ')}</strong> (총 ${missingNos.length}개)` : '<br>✅ 빈 자리 없음 (1~' + maxScene + ' 모두 채워짐)'}
+                </div>
+                <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
+                    <button onclick="_mgClearFiles()" style="padding:6px 14px;background:#fff;color:#dc3545;border:1.5px solid #dc3545;border-radius:5px;font-size:0.8rem;font-weight:600;cursor:pointer;">🗑️ 초기화</button>
+                </div>
+            `;
+            btn.style.display = '';
+            btn.textContent = `🧩 ${maxScene}개로 합치기 → ZIP 다운로드 (빈 자리 ${missingNos.length}개 흰 이미지 채움)`;
+        }
+
+        function _mgAddFiles(fileList) {
+            for (const f of fileList) {
+                const no = _mgParseSceneNo(f.name);
+                window._mgDroppedFiles.push({ file: f, sceneNo: no });
+            }
+            // 중복 제거 (같은 sceneNo가 들어오면 마지막 게 우선)
+            const seen = new Map();
+            window._mgDroppedFiles.forEach(f => { if (f.sceneNo) seen.set(f.sceneNo, f); });
+            window._mgDroppedFiles = [...seen.values(), ...window._mgDroppedFiles.filter(f => !f.sceneNo)];
+            _mgRenderFileList();
+        }
+
+        window._mgClearFiles = function() {
+            window._mgDroppedFiles = [];
+            _mgRenderFileList();
+        };
+
+        async function _mgProcessAndZip() {
+            const files = window._mgDroppedFiles;
+            const status = document.getElementById('mgStatus');
+            const btn = document.getElementById('mgProcessBtn');
+            if (!files.length) { alert('드롭한 이미지가 없습니다.'); return; }
+            const validFiles = files.filter(f => f.sceneNo);
+            if (!validFiles.length) { alert('장면 번호를 파싱한 파일이 없습니다. 파일명을 장면1.png 또는 scene_01.png 형식으로 맞춰주세요.'); return; }
+            const scenes = window._spLastScenes || [];
+            const maxScene = scenes.length ? Math.max(...scenes.map(s => s.sceneNo)) : Math.max(...validFiles.map(f => f.sceneNo));
+            const sceneMap = {}; scenes.forEach(s => { sceneMap[s.sceneNo] = s; });
+            const droppedMap = {}; validFiles.forEach(f => { droppedMap[f.sceneNo] = f.file; });
+
+            btn.disabled = true;
+            btn.textContent = '⏳ ZIP 생성 중...';
+            try {
+                // 빈 이미지 크기 결정
+                const sizeOpt = document.getElementById('mgSize')?.value || '1920x1080';
+                let blankW = 1920, blankH = 1080;
+                if (sizeOpt === 'auto' && validFiles.length) {
+                    const sz = await _mgGetImageSize(validFiles[0].file);
+                    blankW = sz.w; blankH = sz.h;
+                } else if (sizeOpt !== 'auto') {
+                    const [w, h] = sizeOpt.split('x').map(n => parseInt(n, 10));
+                    blankW = w; blankH = h;
+                }
+
+                const JSZip = await _loadJSZip();
+                const zip = new JSZip();
+                let added = 0, blanks = 0;
+                for (let no = 1; no <= maxScene; no++) {
+                    const fileName = _mgFormatName(no);
+                    if (droppedMap[no]) {
+                        // 드롭한 파일 사용 (이름은 표준 형식으로 재명명)
+                        const origExt = (droppedMap[no].name.match(/\.([^.]+)$/) || ['', 'png'])[1].toLowerCase();
+                        const fileNameWithExt = fileName.replace(/\.png$/, '.' + origExt);
+                        zip.file(fileNameWithExt, droppedMap[no]);
+                        added++;
+                    } else {
+                        // 빈 흰 이미지 생성
+                        const sceneType = sceneMap[no]?.type || '';
+                        const blob = await _mgMakeBlankPng(blankW, blankH, no, sceneType);
+                        zip.file(fileName, blob);
+                        blanks++;
+                    }
+                    status.textContent = `⏳ ${no}/${maxScene} 처리 중...`;
+                }
+                status.textContent = '⏳ ZIP 압축 중...';
+                const blob = await zip.generateAsync({ type: 'blob' });
+                _downloadBlob(blob, 'merged_scenes_' + maxScene + '.zip');
+                status.textContent = `✅ 완료! ${added}개 원본 + ${blanks}개 흰 이미지 = ${maxScene}개 ZIP 다운로드됨.`;
+            } catch(e) {
+                status.textContent = '❌ 실패: ' + e.message;
+                console.error('[merge]', e);
+            } finally {
+                btn.disabled = false;
+                _mgRenderFileList();
+            }
+        }
+
+        // 드롭존 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            const zone = document.getElementById('mgDropZone');
+            const input = document.getElementById('mgFileInput');
+            if (!zone || !input) return;
+            zone.addEventListener('click', () => input.click());
+            input.addEventListener('change', e => {
+                if (e.target.files && e.target.files.length > 0) _mgAddFiles(e.target.files);
+                input.value = '';
+            });
+            ['dragenter', 'dragover'].forEach(ev => zone.addEventListener(ev, e => {
+                e.preventDefault(); e.stopPropagation();
+                zone.style.background = '#e7f5ff';
+            }));
+            ['dragleave', 'drop'].forEach(ev => zone.addEventListener(ev, e => {
+                e.preventDefault(); e.stopPropagation();
+                zone.style.background = '#fff';
+            }));
+            zone.addEventListener('drop', e => {
+                if (e.dataTransfer && e.dataTransfer.files) _mgAddFiles(e.dataTransfer.files);
+            });
+        });
 
         // ============================================================
         // 결과 렌더링 — 5탭
