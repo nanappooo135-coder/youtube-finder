@@ -2710,6 +2710,14 @@
 
         <!-- ===== 프로세스: 셀팟 기본 (나레이션만 모드) ===== -->
         <div id="process-sellpot" style="display:none;">
+            <!-- 서브탭 nav (입력 vs 결과) -->
+            <div style="display:flex;gap:8px;margin-bottom:14px;padding:6px;background:#f1f3f5;border-radius:10px;">
+                <button id="spSubBtn_input" onclick="_spSwitchSubTab('input')" style="flex:1;padding:12px;background:#7048e8;color:white;border:none;border-radius:8px;font-size:0.95rem;font-weight:700;cursor:pointer;">📝 입력 (대본·JSON)</button>
+                <button id="spSubBtn_result" onclick="_spSwitchSubTab('result')" style="flex:1;padding:12px;background:transparent;color:#666;border:2px solid #ccc;border-radius:8px;font-size:0.95rem;font-weight:700;cursor:pointer;">📊 결과 (변환 후 확인)</button>
+            </div>
+
+            <!-- ===== 입력 영역 ===== -->
+            <div id="spSub_input">
             <div class="section">
                 <div class="section-title">🎬 셀팟 기본 변환 (나레이션만 모드)</div>
                 <div class="section-content">
@@ -2872,7 +2880,10 @@
                     </div>
                 </div>
             </div>
+            </div><!-- /spSub_input -->
 
+            <!-- ===== 결과 영역 ===== -->
+            <div id="spSub_result" style="display:none;">
             <!-- 결과 5탭 -->
             <div id="spResultSection" style="display:none;">
                 <div class="section">
@@ -3207,6 +3218,7 @@
                 </div>
             </div>
             </div>
+            </div><!-- /spSub_result -->
 
             <!-- 🖼️ 그록용 이미지 압축은 🛠️ TOOL 탭으로 이동됨 (2026-05) -->
 
@@ -21497,6 +21509,26 @@ overall mood: bright, psychologically safe illustration, uplifting and reassurin
             if (pane) pane.style.display = '';
         }
 
+        // 셀팟 기본 서브탭 전환 (입력 ↔ 결과)
+        function _spSwitchSubTab(name) {
+            const inp = document.getElementById('spSub_input');
+            const res = document.getElementById('spSub_result');
+            const btnI = document.getElementById('spSubBtn_input');
+            const btnR = document.getElementById('spSubBtn_result');
+            if (!inp || !res || !btnI || !btnR) return;
+            if (name === 'result') {
+                inp.style.display = 'none';
+                res.style.display = '';
+                btnR.style.background = '#7048e8'; btnR.style.color = 'white'; btnR.style.border = 'none';
+                btnI.style.background = 'transparent'; btnI.style.color = '#666'; btnI.style.border = '2px solid #ccc';
+            } else {
+                res.style.display = 'none';
+                inp.style.display = '';
+                btnI.style.background = '#7048e8'; btnI.style.color = 'white'; btnI.style.border = 'none';
+                btnR.style.background = 'transparent'; btnR.style.color = '#666'; btnR.style.border = '2px solid #ccc';
+            }
+        }
+
         function _spCopy(elId, btn) {
             const el = document.getElementById(elId);
             if (!el) return;
@@ -23836,6 +23868,7 @@ JSON만 출력. 코드블록 마커 금지.`;
                     : '';
                 status.innerHTML = `<span style="color:#28a745;">✅ ${merged.length}장면 변환 완료 (모델: ${r.usage?.model || 'gemini-2.5-pro'})</span>${chunkNote}${introFixNote}${cdCapNote}${cdInfoNote}${mergeNote}${splitNote}${longAiNote}${shortNote}${dupNote}${emptyNote}${dupAutoFixNote}${wrongStyleNote}${recoveryNote}${retryNote}${truncatedNote}`;
                 document.getElementById('spResultSection').style.display = '';
+                if (typeof _spSwitchSubTab === 'function') _spSwitchSubTab('result');
                 document.getElementById('spResultSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
             } catch (e) {
@@ -23909,6 +23942,7 @@ JSON만 출력. 코드블록 마커 금지.`;
                 const cdMsg = _cdFixedImport > 0 ? ` ⚠️ claude_design ${_cdScenesImport.length}개 → ${_cdCapImport}개 캡 적용 (${_cdFixedImport}개 ai 변환)` : '';
                 status.innerHTML = `<span style="color:#28a745;">✅ JSON Import 완료: ${scenes.length}장면 로드됨 (수동 import)${cdMsg}</span>`;
                 document.getElementById('spResultSection').style.display = '';
+                if (typeof _spSwitchSubTab === 'function') _spSwitchSubTab('result');
                 document.getElementById('spResultSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
             } catch (e) {
                 status.innerHTML = `<span style="color:#dc3545;">❌ JSON 파싱 실패: ${e.message}</span>`;
