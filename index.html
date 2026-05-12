@@ -3259,7 +3259,7 @@
                                     <div style="font-weight:700;color:#b45309;font-size:0.95rem;">✨ 오버레이 추천 <span style="font-size:0.78rem;font-weight:400;color:#888;">(셀팟 26종 중 나레이션에 어울리는 것만 골라 추천)</span></div>
                                     <button id="spOverlayBtn" class="search-btn" onclick="spAnalyzeOverlays()" style="padding:8px 18px;font-size:0.88rem;background:#f59e0b;border-color:#f59e0b;">✨ 오버레이 추천 실행</button>
                                 </div>
-                                <div id="spOverlayStatus" style="font-size:0.8rem;color:#888;margin-bottom:4px;">변환된 장면이 없으면 먼저 셀팟 변환 또는 JSON Import를 실행하세요. 헤드라인 포함 모든 추천은 셀팟 UI에서 수동 선택해야 적용됩니다.</div>
+                                <div id="spOverlayStatus" style="font-size:0.8rem;color:#888;margin-bottom:4px;">⚠️ 오버레이는 "많이 = 좋음"이 아닙니다. 시청자 정보 과부하 방지를 위해 <strong>꼭 필요한 장면만</strong> (전체의 15~25%) 추천합니다.</div>
                             </div>
                             <div id="spOverlayResults"></div>
                         </div>
@@ -24607,105 +24607,104 @@ ${sceneList}
         }
 
         // ===== ✨ 오버레이 추천 탭 =====
-        // 셀팟 26종 오버레이 중 나레이션 패턴에 맞는 것만 룰베이스로 추천
+        // 핵심 원칙: 거의 안 넣음. 정말 임팩트가 필요한 장면에만 추천.
+        // 많이 넣으면 역효과 — 시청자 정보 과부하. 장면당 최대 1개, 강한 매칭만.
+        // 목표: 전체 장면의 15~25% 정도만 추천 (나머지는 추천 없음 = 자막/내레이션으로 충분)
+        // 채널별 분기: 경제학(시사·지정학·수치 중심) vs 심리학(교육·인용·정의 중심)
         function _spRecommendOverlay(scene) {
             const text = String(scene.narration || scene.text || '').trim();
             if (!text) return [];
-            const recs = [];
 
-            // ===== 패턴 추출 =====
-            const percent      = text.match(/(\d+(?:\.\d+)?)\s*(?:퍼센트|%)/g) || [];
-            const moneyKR      = text.match(/(\d+(?:[\.,]\d+)*)\s*(?:조|억|만)\s*원/g) || [];
-            const moneyUSD     = text.match(/\$\s*\d+(?:[\.,]\d+)*\s*(?:억|만)?\s*달러?/g) || [];
-            const counts       = text.match(/(\d+(?:[\.,]\d+)*)\s*(?:명|개|척|대|건|국|일|시간|분|회|배|위|점|호)/g) || [];
-            const years        = text.match(/((?:19|20|21)\d{2})\s*년?/g) || [];
-            const changeUp     = /증가|상승|급등|폭등|두배|세배|네배|올랐|치솟|뛰[어어].*올라|배\s*나|배\s*늘/.test(text);
-            const changeDown   = /감소|하락|급락|폭락|반토막|줄어|떨어졌|내려갔|꺾였/.test(text);
-            const versus       = /(\bvs\b|\bVS\b|대\s*[가-힣]+\s*대결|맞붙|충돌|대립|반대편)/.test(text);
-            const ranking      = /(1위|2위|3위|순위|랭킹|톱\s*\d|1등|꼴찌)/.test(text);
-            const bulletList   = /(첫째|둘째|셋째|넷째|첫\s*번째|두\s*번째|세\s*번째|이유는?\s*[세네다]\s*가지|세\s*가지|네\s*가지)/.test(text);
-            const quote        = /[""].+?[""]|["「].+?["」]|발언|말했|말씀|이라고\s*했|라고\s*했|밝혔|선언|성명/.test(text);
-            const intro        = scene.isIntro || /처음|시작|먼저|일단|오늘은|자\s/.test(text.slice(0, 30));
-            const chapterMark  = /(파트\s*\d|챕터\s*\d|첫\s*번째\s*이야기|두\s*번째\s*이야기|^\d+부|^[1-9][.)]\s)/.test(text);
-            const personIntro  = /(누구냐|누군지|이\s*사람은|이\s*인물은|그의\s*이름은|이름은\s*[가-힣A-Z])/.test(text);
-            const veryShort    = text.length <= 12;
-            const wordCount    = text.split(/\s+/).length;
+            const isPsych = (typeof _isPsychologyMode === 'function') ? _isPsychologyMode() : false;
 
-            // ===== 추천 우선순위 =====
+            // ===== 공통 패턴 추출 =====
+            const percentMatches = text.match(/(\d+(?:\.\d+)?)\s*(?:퍼센트|%)/g) || [];
+            const moneyKR        = text.match(/\d+(?:[\.,]\d+)*\s*(?:조|억|만)\s*원/g) || [];
+            const moneyUSD       = text.match(/\$\s*\d+(?:[\.,]\d+)*\s*(?:억|만)?\s*달러?/g) || [];
+            const bigCounts      = text.match(/\d{2,}(?:[\.,]\d+)*\s*(?:만\s*명|억\s*명|만\s*개|척|국)/g) || [];
+            const years          = text.match(/((?:19|20|21)\d{2})\s*년?/g) || [];
+            const directQuote    = /["""""].{8,}["""""]|"[^"]{8,}"\s*(?:라고|이라고)?\s*(?:말했|밝혔|선언|일갈|일축)/.test(text);
+            const isIntroScene   = !!scene.isIntro;
+            const chapterMark    = /(파트\s*\d|챕터\s*\d|^[1-9](?:부|장)\b|첫\s*번째\s*이야기|두\s*번째\s*이야기)/.test(text);
 
-            // 1. 도입부 충격 숫자 (전체숫자)
-            if (intro && (percent.length === 1 || moneyKR.length === 1 || counts.length === 1)) {
-                recs.push({ type: 'fullscreen_number', why: '도입부 + 단일 충격 수치 → 전체화면 큰 숫자' });
+            // ===== 심리학 채널 추천 (교육·인용·정의 톤) =====
+            if (isPsych) {
+                // 1. 학자·이론가 인용 발언 → 말풍선
+                if (directQuote && text.length < 200) {
+                    return [{ type: 'speech_bubble_sketch', why: '학자·이론가 인용 → 손글씨 말풍선으로 교육적 톤' }];
+                }
+                // 2. 새 인물 첫 등장 (학자명 명시) → 네임택
+                const scholarMention = /([A-Z][a-z]+\s+[A-Z][a-z]+|박사|교수|심리학자|연구자)\s*(?:는|이|가|의)/.test(text);
+                if (scholarMention && text.length < 150) {
+                    return [{ type: 'name_tag', why: '학자·연구자 등장 → 네임택으로 출처 명시' }];
+                }
+                // 3. 단계·이론 나열 (첫째/둘째/셋째) → 불릿리스트
+                const stagesList = /(첫째|둘째|셋째|넷째|1단계|2단계|3단계|첫\s*번째|두\s*번째|세\s*번째).*(둘째|셋째|2단계|3단계|두\s*번째|세\s*번째)/.test(text);
+                if (stagesList) {
+                    return [{ type: 'text_bullet_reveal', why: '단계·이론 나열 → 불릿리스트로 학습 정리' }];
+                }
+                // 4. 핵심 정의·법칙 강조 (긴 문장 + 키워드) → 강조텍스트
+                const keyDefinition = /(법칙|효과|이론|증후군|편향|현상)(?:은|이라는|이라고|을)\s*[가-힣]/.test(text);
+                if (keyDefinition && text.length >= 40 && text.length <= 180) {
+                    return [{ type: 'info_text_highlight', why: '핵심 정의·법칙 설명 → 강조텍스트로 키워드 부각' }];
+                }
+                // 5. 챕터/단계 구분
+                if (chapterMark) {
+                    return [{ type: 'chapter_divider', why: '단원 구분 → 시청자 학습 흐름 정리' }];
+                }
+                // 6. 도입부 짧은 충격 질문 → 타이틀
+                if (isIntroScene && text.length < 60 && /[?]/.test(text)) {
+                    return [{ type: 'title_card', why: '도입 핵심 질문 → 타이틀카드로 화두 제시' }];
+                }
+                // 심리 채널은 차트·VS·랭킹 거의 X
+                return [];
             }
 
-            // 2. 단일 퍼센트
-            if (percent.length === 1 && !recs.length) {
-                const v = parseFloat(percent[0]);
-                if (v >= 50) recs.push({ type: 'pie_donut', why: '50% 이상 단일 비율 → 도넛차트' });
-                else recs.push({ type: 'single_stat_card', why: '단일 퍼센트 → 수치카드' });
-            }
+            // ===== 경제학 채널 추천 (시사·지정학·수치 중심) =====
+            const dramaticChange  = /(반토막|두\s*배|세\s*배|네\s*배|급등|폭등|폭락|급락|치솟|꺾였|뛰어올랐|곤두박질)/.test(text);
+            const versus          = /(\bvs\b|\bVS\b|맞붙|정면\s*충돌|양\s*진영|이쪽\s*저쪽|한쪽은[\s\S]+다른\s*한쪽)/.test(text);
+            const rankingExplicit = /(1위|2위|3위|1등|2등|3등|꼴찌|최상위|최하위|톱\s*[3-9]|상위\s*\d+개)/.test(text);
 
-            // 3. 복수 퍼센트 또는 복수 비교 가능한 숫자
-            if (percent.length >= 2 || counts.length >= 3) {
-                recs.push({ type: 'bar_chart_comparison', why: percent.length >= 2 ? '복수 퍼센트 비교 → 막대차트' : '3개+ 수치 → 막대차트' });
+            // 1. 도입부 + 단일 충격 숫자 → 전체숫자 (가장 임팩트)
+            if (isIntroScene && text.length < 80) {
+                const allNums = [...percentMatches, ...moneyKR, ...moneyUSD, ...bigCounts];
+                if (allNums.length === 1) {
+                    return [{ type: 'fullscreen_number', why: '도입부 단일 충격 숫자 → 화면 가득 큰 숫자로 시청자 멈춤' }];
+                }
             }
-
-            // 4. 증감 변화
-            if ((changeUp || changeDown) && (percent.length >= 1 || counts.length >= 1)) {
-                recs.push({ type: 'stat_change', why: '증감 표현 + 수치 → 증감수치 (▲/▼)' });
+            // 2. 명시적 순위 → 랭킹
+            if (rankingExplicit && bigCounts.length + percentMatches.length >= 2) {
+                return [{ type: 'ranking_list', why: '명시적 순위 + 수치 → 랭킹 시각화가 결정적' }];
             }
-
-            // 5. VS 대결
+            // 3. VS 대결
             if (versus) {
-                recs.push({ type: 'versus_stat', why: 'A 대 B 대립 → VS대결' });
+                return [{ type: 'versus_stat', why: '명확한 양측 대립 구도 → VS 시각화로 임팩트' }];
             }
-
-            // 6. 순위
-            if (ranking) {
-                recs.push({ type: 'ranking_list', why: '순위 언급 → 랭킹' });
+            // 4. 연속 추세 → 타임라인
+            if (years.length >= 3 && (percentMatches.length + bigCounts.length >= 1)) {
+                return [{ type: 'timeline_horizontal', why: '3개+ 시점 + 수치 변화 → 타임라인이 필수' }];
             }
-
-            // 7. 첫째/둘째/셋째 나열
-            if (bulletList) {
-                recs.push({ type: 'text_bullet_reveal', why: '나열형 (첫째/둘째/셋째) → 불릿리스트' });
+            // 5. 큰 비율 단일 → 도넛
+            if (!isIntroScene && percentMatches.length === 1) {
+                const v = parseFloat(percentMatches[0]);
+                if (v >= 50 && v <= 100) {
+                    return [{ type: 'pie_donut', why: '50%+ 단일 비율 → 도넛차트로 점유율 강조' }];
+                }
             }
-
-            // 8. 인용·발언
-            if (quote && !recs.length) {
-                recs.push({ type: 'speech_bubble', why: '발언·인용 → 말풍선' });
+            // 6. 극적 변화 + 수치 → 증감수치
+            if (dramaticChange && (percentMatches.length + moneyKR.length + bigCounts.length >= 1)) {
+                return [{ type: 'stat_change', why: '극적 변화 + 수치 → 증감 화살표(▲▼)로 강조' }];
             }
-
-            // 9. 인물 첫 소개
-            if (personIntro) {
-                recs.push({ type: 'name_tag', why: '인물 소개 → 네임택' });
+            // 7. 직접 인용 (정상 말풍선)
+            if (directQuote && text.length < 200) {
+                return [{ type: 'speech_bubble', why: '직접 인용 발언 → 말풍선으로 화자 강조' }];
             }
-
-            // 10. 챕터/파트 구분
+            // 8. 챕터 구분
             if (chapterMark) {
-                recs.push({ type: 'chapter_divider', why: '챕터/파트 구분 표현 → 챕터구분' });
+                return [{ type: 'chapter_divider', why: '파트/챕터 구분 → 시청자 흐름 정리' }];
             }
 
-            // 11. 연도 3개 이상 (타임라인)
-            if (years.length >= 3) {
-                recs.push({ type: 'timeline_horizontal', why: '3개+ 시점 → 타임라인' });
-            }
-
-            // 12. 큰 금액 / 큰 인원 단독
-            if (!recs.length && (moneyKR.length === 1 || moneyUSD.length === 1)) {
-                recs.push({ type: 'single_stat_card', why: '단일 금액 → 수치카드' });
-            }
-
-            // 13. 짧은 키워드 (도입 임팩트)
-            if (!recs.length && veryShort && wordCount <= 3) {
-                recs.push({ type: 'text_typewriter', why: '짧은 강한 키워드 (15자 이내) → 타자기' });
-            }
-
-            // 14. 위 추천이 하나도 없으면 헤드라인 — 짧은 핵심 키워드 추출용
-            if (!recs.length) {
-                recs.push({ type: 'text_headline', why: '특별 매칭 없음 → 기본 헤드라인 (짧은 키워드 5자 이내 추출)' });
-            }
-
-            return recs;
+            return [];
         }
 
         const _SP_OVERLAY_LABEL = {
@@ -24745,23 +24744,20 @@ ${sceneList}
             btn.disabled = true;
             btn.textContent = '🔍 분석 중...';
             try {
-                const cards = [];
-                let totalRecs = 0, withRec = 0;
+                const recommendedCards = [];
+                let withRec = 0;
                 scenes.forEach(scene => {
                     const recs = _spRecommendOverlay(scene);
-                    totalRecs += recs.length;
-                    if (recs.length) withRec++;
+                    if (!recs.length) return; // 추천 없는 장면은 표시 안 함
+                    withRec++;
                     const sceneTypeIcon = scene.type === 'ai' ? '🎨' : scene.type === 'real' ? '📷' : scene.type === 'claude_design' ? '📊' : '';
                     const narr = (scene.narration || scene.text || '').slice(0, 200);
                     const isIntro = scene.isIntro ? '<span style="font-size:0.7rem;color:#dc3545;font-weight:700;">[도입부]</span> ' : '';
-                    const badges = recs.length
-                        ? recs.map(_spOverlayBadge).join('')
-                        : '<span style="font-size:0.78rem;color:#aaa;">자동 헤드라인만 (특별 추천 없음)</span>';
-                    cards.push(`
-                        <div style="padding:12px 14px;margin-bottom:8px;background:#fff;border:1px solid #e0e0e0;border-radius:8px;">
+                    const badges = recs.map(_spOverlayBadge).join('');
+                    recommendedCards.push(`
+                        <div style="padding:12px 14px;margin-bottom:8px;background:#fff;border:1.5px solid #f59e0b;border-radius:8px;">
                             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:6px;">
                                 <div style="font-weight:700;color:#212529;font-size:0.88rem;">${sceneTypeIcon} 장면 ${scene.sceneNo} <span style="color:#888;font-weight:400;font-size:0.78rem;">· ${scene.duration || '?'}초</span></div>
-                                <div style="font-size:0.78rem;color:${recs.length ? '#b45309' : '#aaa'};">${recs.length ? recs.length + '개 추천' : ''}</div>
                             </div>
                             <div style="font-size:0.82rem;color:#495057;line-height:1.5;margin-bottom:8px;">${isIntro}${_escapeHtml(narr)}${narr.length >= 200 ? '...' : ''}</div>
                             <div style="display:flex;flex-wrap:wrap;">${badges}</div>
@@ -24769,12 +24765,19 @@ ${sceneList}
                     `);
                 });
 
-                const summary = `<div style="padding:10px 12px;background:#fff7e6;border:2px solid #f59e0b;border-radius:8px;margin-bottom:10px;font-size:0.85rem;color:#b45309;">
-                    ✅ 총 ${scenes.length}장면 분석 · 추천 합계 ${totalRecs}개 · 평균 ${(totalRecs/scenes.length).toFixed(1)}개/장면
-                    <div style="font-size:0.75rem;color:#888;margin-top:4px;">⚠️ 셀팟은 오버레이를 자동 적용하지 않습니다. 모든 추천은 셀팟 UI에서 수동 선택 + "대본 기반 자동 생성" 클릭 필요. 매칭되는 게 없으면 기본 헤드라인 추천.</div>
+                const pct = Math.round(withRec / scenes.length * 100);
+                const noRecCount = scenes.length - withRec;
+                const isPsychChannel = (typeof _isPsychologyMode === 'function') && _isPsychologyMode();
+                const channelLabel = isPsychChannel ? '🧠 심리학 (교육·인용·정의)' : '💰 경제학 (시사·지정학·수치)';
+                const matchKeywords = isPsychChannel
+                    ? '학자 인용, 새 인물 등장, 단계 나열, 핵심 정의·법칙, 챕터 구분, 도입 화두 질문'
+                    : '충격 숫자, 명시적 순위, VS 대립, 시계열 추세, 큰 비율, 극적 변화, 직접 인용, 챕터 구분';
+                const summary = `<div style="padding:12px 14px;background:#fff7e6;border:2px solid #f59e0b;border-radius:8px;margin-bottom:12px;font-size:0.88rem;color:#b45309;">
+                    ✅ 총 ${scenes.length}장면 중 <strong>${withRec}개(${pct}%)</strong>에만 오버레이 추천 — 나머지 ${noRecCount}개는 자막/내레이션만으로 충분
+                    <div style="font-size:0.78rem;color:#666;margin-top:6px;line-height:1.5;">채널 모드: <strong>${channelLabel}</strong><br>💡 오버레이 많이 = 시청자 정보 과부하 → 역효과. 위 채널 톤에 맞는 임팩트 장면(${matchKeywords})에만 추천.<br>⚠️ 셀팟은 오버레이를 자동 적용하지 않습니다. 위 추천은 셀팟 UI에서 수동 선택해야 합니다.</div>
                 </div>`;
-                results.innerHTML = summary + cards.join('');
-                status.textContent = `✅ ${scenes.length}장면 분석 완료`;
+                results.innerHTML = summary + (recommendedCards.length ? recommendedCards.join('') : '<div style="padding:20px;text-align:center;color:#888;background:#fff;border:1px dashed #ccc;border-radius:8px;">강한 매칭 장면이 발견되지 않았습니다. 오버레이 없이 진행해도 무방합니다.</div>');
+                status.textContent = `✅ ${scenes.length}장면 중 ${withRec}개 추천`;
             } catch(e) {
                 status.textContent = '❌ 분석 실패: ' + e.message;
                 console.error(e);
