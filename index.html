@@ -24510,11 +24510,18 @@ ${sceneList}
             const percentMatches = text.match(/(\d+(?:\.\d+)?)\s*(?:퍼센트|%)/g) || [];
             const moneyKR        = text.match(/\d+(?:[\.,]\d+)*\s*(?:조|억|만)\s*원/g) || [];
             const moneyUSD       = text.match(/\$\s*\d+(?:[\.,]\d+)*\s*(?:억|만)?\s*달러?/g) || [];
-            const bigCounts      = text.match(/\d{2,}(?:[\.,]\d+)*\s*(?:만\s*명|억\s*명|만\s*개|척|국)/g) || [];
+            // 의석/대/척/국 등 정치·군사 단위 추가
+            const bigCounts      = text.match(/\d{2,}(?:[\.,]\d+)*\s*(?:만\s*명|억\s*명|만\s*개|석|척|국|대|건|기|문)/g) || [];
             const years          = text.match(/((?:19|20|21)\d{2})\s*년?/g) || [];
+            // 상대 시간 표현 (N년 지난/걸렸/끌어온/장기)
+            const elapsedYears   = /(\d+년\s*(?:지난|걸렸|만에|끌어온|넘게|째|간|동안)|장기\s*\d+년)/.test(text);
             const directQuote    = /["""""].{8,}["""""]|"[^"]{8,}"\s*(?:라고|이라고)?\s*(?:말했|밝혔|선언|일갈|일축)/.test(text);
             const isIntroScene   = !!scene.isIntro;
             const chapterMark    = /(파트\s*\d|챕터\s*\d|^[1-9](?:부|장)\b|첫\s*번째\s*이야기|두\s*번째\s*이야기)/.test(text);
+            // 명시적 N가지 나열 ("이 세 가지가" / "다음 세 가지" / "두 가지가 동시에")
+            const explicitNlist  = /(이|다음|아래)\s*(?:두|세|네)\s*가지(?:가|는|를)\s*(?:동시에|모두|함께|작동|있)|(?:두|세|네)\s*가지(?:가|는)\s*동시에/.test(text);
+            // 거대 충격 숫자 (조 원, 100억 이상) — 본문에서도 발동
+            const hugeShockNum   = /\d{2,}(?:[\.,]\d+)*\s*조\s*원|\d{3,}(?:[\.,]\d+)*\s*억\s*원/.test(text);
 
             // ===== 심리학 채널 추천 (교육·인용·정의 톤) =====
             if (isPsych) {
@@ -24561,34 +24568,53 @@ ${sceneList}
                     return [{ type: 'fullscreen_number', why: '도입부 단일 충격 숫자 → 화면 가득 큰 숫자로 시청자 멈춤' }];
                 }
             }
-            // 2. 명시적 순위 → 랭킹
+            // 2. 본문 거대 충격 숫자 (조 원·100억+ 원) → 전체숫자
+            //    예: "687조 원 증발", "217조 원 녹았다"
+            if (!isIntroScene && hugeShockNum) {
+                return [{ type: 'fullscreen_number', why: '본문 거대 충격 숫자(조 원·100억+) → 전체숫자로 임팩트' }];
+            }
+            // 3. 명시적 순위 → 랭킹
             if (rankingExplicit && bigCounts.length + percentMatches.length >= 2) {
                 return [{ type: 'ranking_list', why: '명시적 순위 + 수치 → 랭킹 시각화가 결정적' }];
             }
-            // 3. VS 대결
+            // 4. VS 대결 (또는 의석·득표 비교)
+            //    예: "야권 60석 vs 우파 50석"
             if (versus) {
                 return [{ type: 'versus_stat', why: '명확한 양측 대립 구도 → VS 시각화로 임팩트' }];
             }
-            // 4. 연속 추세 → 타임라인
-            if (years.length >= 3 && (percentMatches.length + bigCounts.length >= 1)) {
-                return [{ type: 'timeline_horizontal', why: '3개+ 시점 + 수치 변화 → 타임라인이 필수' }];
+            const seatComparison = /\d+\s*석[^가-힣]*(?:vs|VS|대|,|와|과)[^가-힣]*\d+\s*석/.test(text);
+            if (seatComparison) {
+                return [{ type: 'versus_stat', why: '의석·득표 양 진영 비교 → VS대결로 정치 구도 강조' }];
             }
-            // 5. 큰 비율 단일 → 도넛
+            // 5. 연속 추세 → 타임라인 (조건 완화: 연도 2개 + 경과 표현)
+            //    예: "2019 기소 → 2020 재판 → 6년 지난 지금"
+            if (years.length >= 3) {
+                return [{ type: 'timeline_horizontal', why: '3개+ 시점 → 타임라인이 필수' }];
+            }
+            if (years.length >= 2 && elapsedYears) {
+                return [{ type: 'timeline_horizontal', why: '2시점 + 경과 시간(N년 지난/걸렸) → 타임라인으로 흐름 시각화' }];
+            }
+            // 6. 명시적 N가지 나열 → 불릿리스트
+            //    예: "이 세 가지가 동시에 작동해요"
+            if (explicitNlist) {
+                return [{ type: 'text_bullet_reveal', why: '명시적 N가지 나열 (두/세/네 가지 동시에) → 불릿리스트로 정리' }];
+            }
+            // 7. 큰 비율 단일 → 도넛
             if (!isIntroScene && percentMatches.length === 1) {
                 const v = parseFloat(percentMatches[0]);
                 if (v >= 50 && v <= 100) {
                     return [{ type: 'pie_donut', why: '50%+ 단일 비율 → 도넛차트로 점유율 강조' }];
                 }
             }
-            // 6. 극적 변화 + 수치 → 증감수치
+            // 8. 극적 변화 + 수치 → 증감수치
             if (dramaticChange && (percentMatches.length + moneyKR.length + bigCounts.length >= 1)) {
                 return [{ type: 'stat_change', why: '극적 변화 + 수치 → 증감 화살표(▲▼)로 강조' }];
             }
-            // 7. 직접 인용 (정상 말풍선)
+            // 9. 직접 인용 (정상 말풍선)
             if (directQuote && text.length < 200) {
                 return [{ type: 'speech_bubble', why: '직접 인용 발언 → 말풍선으로 화자 강조' }];
             }
-            // 8. 챕터 구분
+            // 10. 챕터 구분
             if (chapterMark) {
                 return [{ type: 'chapter_divider', why: '파트/챕터 구분 → 시청자 흐름 정리' }];
             }
