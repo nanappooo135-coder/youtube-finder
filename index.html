@@ -24589,6 +24589,9 @@ ${sceneList}
             const text = String(scene.narration || scene.text || '').trim();
             if (!text) return [];
 
+            // 도입부는 무조건 오버레이 X (시청자 후킹 단계, 데이터 시각화 부적합)
+            if (scene.isIntro) return [];
+
             const isPsych = (typeof _isPsychologyMode === 'function') ? _isPsychologyMode() : false;
 
             // ===== 패턴 추출 =====
@@ -24670,12 +24673,6 @@ ${sceneList}
             }
             if (progressExp) {
                 return [{ type: 'progress_bar', why: '진행률 표현 → 프로그레스', priority: 2 }];
-            }
-            if (isIntroScene && text.length < 80) {
-                const allNums = [...percentMatches, ...moneyKR, ...moneyUSD, ...bigCounts];
-                if (allNums.length === 1) {
-                    return [{ type: 'single_stat_card', why: '도입부 단일 충격 숫자 → 수치카드', priority: 2 }];
-                }
             }
             if (shortKeyword) {
                 return [{ type: 'text_headline', why: '짧은 핵심 키워드 → 헤드라인', priority: 3 }];
