@@ -1577,6 +1577,7 @@
         <!-- 업무 프로세스 (최상위) -->
         <div class="process-nav">
             <button class="process-btn" id="procBtn_topic" onclick="switchProcess('topic')">주제찾기</button>
+            <button class="process-btn inactive" id="procBtn_script" onclick="switchProcess('script')" style="background:#0ea5e9;border-color:#0ea5e9;">📝 대본 노트</button>
             <button class="process-btn inactive" id="procBtn_genspark" onclick="switchProcess('genspark')" style="background:#7048e8;border-color:#7048e8;">🎨 젠스파크 이미지</button>
             <button class="process-btn inactive" id="procBtn_thumbnail" onclick="switchProcess('thumbnail')">썸네일</button>
             <button class="process-btn inactive" id="procBtn_visual" onclick="switchProcess('visual')">시각화</button>
@@ -4011,6 +4012,42 @@
                 </div>
             </div>
         </div><!-- /process-genspark -->
+
+
+        <!-- ===== 프로세스: 대본 노트 (PC ↔ 폰 자동 동기화) ===== -->
+        <div id="process-script" style="display:none;">
+            <div class="section">
+                <div class="section-title" style="color:#0ea5e9;">📝 대본 노트</div>
+                <div class="section-content">
+                    <p style="font-size:0.85rem;color:#666;margin-bottom:10px;line-height:1.5;">
+                        PC에서 Claude 답변 붙여넣기 → 자동 저장 → 폰에서 그대로 봄. 폰에서 수정해도 PC에 동기화.
+                    </p>
+                    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
+                        <button id="scrModeBtn_read" onclick="_scrSwitchMode('read')" style="padding:8px 14px;background:#0ea5e9;color:white;border:none;border-radius:6px;font-size:0.85rem;font-weight:700;cursor:pointer;">👁️ 읽기</button>
+                        <button id="scrModeBtn_edit" onclick="_scrSwitchMode('edit')" style="padding:8px 14px;background:transparent;color:#666;border:2px solid #ccc;border-radius:6px;font-size:0.85rem;font-weight:700;cursor:pointer;">✏️ 수정</button>
+                        <div id="scrSyncStatus" style="margin-left:auto;font-size:0.78rem;color:#888;">동기화 대기 중</div>
+                    </div>
+
+                    <!-- 읽기 모드 -->
+                    <div id="scrViewMode" style="display:none;background:white;border:2px solid #e0e0e0;border-radius:8px;padding:18px 16px;font-size:16px;line-height:1.85;white-space:pre-wrap;word-break:break-word;color:#222;min-height:240px;">대본을 입력하면 여기 표시됩니다.</div>
+
+                    <!-- 수정 모드 -->
+                    <textarea id="scrEditMode" placeholder="여기에 Claude 답변/대본을 붙여넣으세요. 자동 저장됩니다." style="display:none;width:100%;min-height:60vh;padding:18px 16px;border:2px solid #0ea5e9;border-radius:8px;font-size:16px;line-height:1.85;font-family:inherit;word-break:break-word;resize:vertical;-webkit-text-size-adjust:100%;"></textarea>
+
+                    <!-- 폰용 sticky 저장 바 -->
+                    <div id="scrStickyBar" style="position:sticky;bottom:10px;margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;background:white;padding:8px 0;z-index:10;">
+                        <button onclick="_scrPush(true)" style="flex:1;min-width:120px;padding:12px;background:#0ea5e9;color:white;border:none;border-radius:8px;font-size:0.92rem;font-weight:700;cursor:pointer;">💾 지금 저장</button>
+                        <button onclick="_scrLoad(true)" style="flex:1;min-width:120px;padding:12px;background:transparent;color:#0ea5e9;border:2px solid #0ea5e9;border-radius:8px;font-size:0.92rem;font-weight:700;cursor:pointer;">🔄 최신 가져오기</button>
+                        <button onclick="_scrCopyAll()" style="flex:1;min-width:120px;padding:12px;background:#22c55e;color:white;border:none;border-radius:8px;font-size:0.92rem;font-weight:700;cursor:pointer;">📋 전체 복사</button>
+                    </div>
+
+                    <p style="font-size:0.78rem;color:#999;margin-top:10px;line-height:1.5;">
+                        💡 PC에서 GitHub PAT 등록돼 있으면 자동 푸시. 폰은 자동으로 PC가 올린 최신 버전 받아옴 (10초 디바운스).<br>
+                        파일: <code>current_script.md</code>
+                    </p>
+                </div>
+            </div>
+        </div><!-- /process-script -->
 
 
         </div><!-- /process-topic -->
@@ -7571,8 +7608,11 @@ ${_retryRound > 0 ? `⚠️ 이번은 ${_retryRound}차 추가 요청입니다. 
             if (toolEl) toolEl.style.display = proc === 'tool' ? '' : 'none';
             const gensparkEl = document.getElementById('process-genspark');
             if (gensparkEl) gensparkEl.style.display = proc === 'genspark' ? '' : 'none';
+            const scriptEl = document.getElementById('process-script');
+            if (scriptEl) scriptEl.style.display = proc === 'script' ? '' : 'none';
 
             if (proc === 'genspark' && typeof _gsInit === 'function') _gsInit();
+            if (proc === 'script' && typeof _scrInit === 'function') _scrInit();
             if (proc === 'visual') checkFcServer('vsServerStatus');
             if (proc === 'review') checkFcServer('rvServerStatus');
             if (proc === 'trend') { fetchIssueRadar(); fetchGoogleTrends(); fetchEconYoutube(); }
@@ -20250,6 +20290,162 @@ ${titles}`;
         document.addEventListener('DOMContentLoaded', () => {
             setTimeout(_syncChannelsFromRepo, 800);
         });
+
+        // ===========================
+        // 📝 대본 노트 (PC ↔ 폰 동기화)
+        // ===========================
+        const SCR_FILE_PATH = 'current_script.md';
+        const SCR_LOCAL_KEY = 'scr_draft_v1';
+        const SCR_MODE_KEY = 'scr_mode';
+        let _scrInited = false;
+        let _scrPushTimer = null;
+        let _scrLastPushed = '';
+
+        function _scrSetStatus(msg, color) {
+            const el = document.getElementById('scrSyncStatus');
+            if (el) { el.textContent = msg; el.style.color = color || '#888'; }
+        }
+
+        async function _scrLoad(manual) {
+            try {
+                if (manual) _scrSetStatus('🔄 가져오는 중...', '#0ea5e9');
+                const res = await fetch(SCR_FILE_PATH + '?v=' + Date.now(), { cache: 'no-store' });
+                if (!res.ok) {
+                    if (res.status === 404) {
+                        _scrSetStatus('☁️ 저장된 대본 없음 (새로 작성)', '#888');
+                        return;
+                    }
+                    throw new Error('HTTP ' + res.status);
+                }
+                const text = await res.text();
+                const local = localStorage.getItem(SCR_LOCAL_KEY) || '';
+                const hasPat = !!localStorage.getItem(GH_PAT_KEY);
+                // 폰 (PAT 없음): 항상 repo로 덮어쓰기
+                // PC (PAT 있음): 로컬이 비어있을 때만 채우거나, 사용자가 수동 가져오기 누른 경우
+                if (!hasPat || !local || manual) {
+                    if (text !== local) {
+                        localStorage.setItem(SCR_LOCAL_KEY, text);
+                        _scrLastPushed = text;
+                        _scrRenderContent(text);
+                        _scrSetStatus(`✅ ${new Date().toLocaleTimeString()} 가져옴 (${text.length}자)`, '#22c55e');
+                    } else {
+                        _scrSetStatus(`✅ 최신 상태 (${text.length}자)`, '#22c55e');
+                    }
+                } else {
+                    _scrLastPushed = text;
+                    _scrSetStatus(`☁️ 로컬 대본 있음 (수정한 게 우선됨)`, '#888');
+                }
+            } catch(e) {
+                _scrSetStatus('❌ 가져오기 실패: ' + e.message.slice(0, 60), '#dc3545');
+            }
+        }
+
+        async function _scrPush(manual) {
+            const pat = localStorage.getItem(GH_PAT_KEY);
+            const text = document.getElementById('scrEditMode')?.value || '';
+            if (!pat) {
+                if (manual) alert('GitHub PAT가 등록돼 있지 않습니다. PC(주제찾기 탭)에서 먼저 등록하세요.');
+                _scrSetStatus('📝 로컬 저장됨 (GitHub 동기화 X — PAT 미등록)', '#888');
+                return;
+            }
+            if (text === _scrLastPushed && !manual) return;
+            try {
+                _scrSetStatus('⏳ GitHub에 저장 중...', '#0ea5e9');
+                const b64 = btoa(unescape(encodeURIComponent(text)));
+                let sha = null;
+                const getRes = await fetch(`https://api.github.com/repos/${GH_REPO_OWNER}/${GH_REPO_NAME}/contents/${SCR_FILE_PATH}`, {
+                    headers: { 'Authorization': 'token ' + pat, 'Accept': 'application/vnd.github+json' }
+                });
+                if (getRes.ok) {
+                    const j = await getRes.json();
+                    sha = j.sha;
+                } else if (getRes.status !== 404) {
+                    throw new Error('파일 조회 실패: ' + getRes.status);
+                }
+                const putRes = await fetch(`https://api.github.com/repos/${GH_REPO_OWNER}/${GH_REPO_NAME}/contents/${SCR_FILE_PATH}`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': 'token ' + pat, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: 'script: auto-sync (' + new Date().toISOString() + ')',
+                        content: b64,
+                        sha: sha || undefined
+                    })
+                });
+                if (!putRes.ok) {
+                    const err = await putRes.text();
+                    throw new Error('GitHub commit 실패: ' + putRes.status);
+                }
+                _scrLastPushed = text;
+                _scrSetStatus(`✅ ${new Date().toLocaleTimeString()} 저장됨 (${text.length}자)`, '#22c55e');
+            } catch(e) {
+                _scrSetStatus('❌ 저장 실패: ' + e.message.slice(0, 60), '#dc3545');
+            }
+        }
+
+        function _scrSchedulePush() {
+            if (_scrPushTimer) clearTimeout(_scrPushTimer);
+            _scrSetStatus('⏳ 입력 중... (10초 후 자동 저장)', '#888');
+            _scrPushTimer = setTimeout(() => _scrPush(false), 10000);
+        }
+
+        function _scrRenderContent(text) {
+            const view = document.getElementById('scrViewMode');
+            const edit = document.getElementById('scrEditMode');
+            if (edit) edit.value = text;
+            if (view) view.textContent = text || '대본을 입력하면 여기 표시됩니다.';
+        }
+
+        function _scrSwitchMode(mode) {
+            const view = document.getElementById('scrViewMode');
+            const edit = document.getElementById('scrEditMode');
+            const btnR = document.getElementById('scrModeBtn_read');
+            const btnE = document.getElementById('scrModeBtn_edit');
+            if (!view || !edit) return;
+            if (mode === 'edit') {
+                view.style.display = 'none';
+                edit.style.display = 'block';
+                btnE.style.background = '#0ea5e9'; btnE.style.color = 'white'; btnE.style.border = 'none';
+                btnR.style.background = 'transparent'; btnR.style.color = '#666'; btnR.style.border = '2px solid #ccc';
+            } else {
+                edit.style.display = 'none';
+                view.style.display = 'block';
+                view.textContent = edit.value || '대본을 입력하면 여기 표시됩니다.';
+                btnR.style.background = '#0ea5e9'; btnR.style.color = 'white'; btnR.style.border = 'none';
+                btnE.style.background = 'transparent'; btnE.style.color = '#666'; btnE.style.border = '2px solid #ccc';
+            }
+            localStorage.setItem(SCR_MODE_KEY, mode);
+        }
+
+        async function _scrCopyAll() {
+            const text = document.getElementById('scrEditMode')?.value || '';
+            if (!text) { alert('복사할 내용이 없습니다.'); return; }
+            try {
+                await navigator.clipboard.writeText(text);
+                _scrSetStatus(`📋 ${text.length}자 복사됨`, '#22c55e');
+            } catch(e) { alert('복사 실패: ' + e.message); }
+        }
+
+        function _scrInit() {
+            if (_scrInited) return;
+            _scrInited = true;
+            // 로컬 복원 먼저
+            const local = localStorage.getItem(SCR_LOCAL_KEY) || '';
+            _scrRenderContent(local);
+            // 모드 복원 (기본: 폰=읽기, PC=수정)
+            const savedMode = localStorage.getItem(SCR_MODE_KEY);
+            const isMobile = window.innerWidth < 768;
+            _scrSwitchMode(savedMode || (isMobile ? 'read' : 'edit'));
+            // textarea 입력 → 디바운스 저장
+            const edit = document.getElementById('scrEditMode');
+            if (edit) {
+                edit.addEventListener('input', () => {
+                    localStorage.setItem(SCR_LOCAL_KEY, edit.value);
+                    _scrSchedulePush();
+                });
+            }
+            // GitHub에서 최신 가져오기
+            _scrLoad(false);
+        }
 
         function _exportChannelsAll() {
             const data = {};
