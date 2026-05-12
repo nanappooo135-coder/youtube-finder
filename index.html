@@ -24598,9 +24598,11 @@ ${sceneList}
             const percentMatches = text.match(/(\d+(?:\.\d+)?)\s*(?:퍼센트|%)/g) || [];
             const moneyKR        = text.match(/\d+(?:[\.,]\d+)*\s*(?:조|억|만)\s*원/g) || [];
             const moneyUSD       = text.match(/\$\s*\d+(?:[\.,]\d+)*\s*(?:억|만)?\s*달러?/g) || [];
-            const bigCounts      = text.match(/\d{2,}(?:[\.,]\d+)*\s*(?:만\s*명|억\s*명|만\s*개|석|척|국|대|건|기|문|주|시간|개월|일)/g) || [];
+            // bigCounts: 진짜 수량/통계 단위만 (일·주·시간·개월은 날짜 시퀀스 오인 방지로 제외)
+            const bigCounts      = text.match(/\d{2,}(?:[\.,]\d+)*\s*(?:만\s*명|억\s*명|만\s*개|석|척|국|대|건|기|문|회|점|호)/g) || [];
             const years          = text.match(/((?:19|20|21)\d{2})\s*년?/g) || [];
-            const elapsedYears   = /(\d+년\s*(?:지난|걸렸|만에|끌어온|넘게|째|간|동안)|장기\s*\d+년)/.test(text);
+            // "6년이 지난" / "6년은 지난" 같이 조사 끼어도 매칭
+            const elapsedYears   = /\d+년\s*(?:이|은|만)?\s*(?:지난|걸렸|만에|끌어온|넘게|째|간|동안)|장기\s*\d+년/.test(text);
             const isIntroScene   = !!scene.isIntro;
             // 명시적 N가지 나열
             const explicitNlist  = /(이|다음|아래)\s*(?:두|세|네)\s*가지(?:가|는|를)\s*(?:동시에|모두|함께|작동|있)|(?:두|세|네)\s*가지(?:가|는)\s*동시에|첫째.{0,40}둘째|첫\s*번째.{0,60}두\s*번째/.test(text);
@@ -24613,7 +24615,8 @@ ${sceneList}
             // 극적 변화
             const dramaticChange = /(반토막|두\s*배|세\s*배|네\s*배|급등|폭등|폭락|급락|치솟|꺾였|뛰어올랐|곤두박질)/.test(text);
             const versus         = /(\bvs\b|\bVS\b|맞붙|정면\s*충돌|양\s*진영|이쪽\s*저쪽|한쪽은[\s\S]+다른\s*한쪽)/.test(text);
-            const seatComparison = /\d+\s*석[^가-힣]*(?:vs|VS|대|,|와|과)[^가-힣]*\d+\s*석/.test(text);
+            // 정치 의석 비교: 2+ "N석" + 진영 단어 (야권/우파/여당 등)
+            const seatComparison = ((text.match(/\d+\s*석/g) || []).length >= 2) && /(야권|우파|좌파|여당|보수|진보|진영|연합)/.test(text);
             const rankingExplicit= /(1위|2위|3위|1등|2등|3등|꼴찌|최상위|최하위|톱\s*[3-9]|상위\s*\d+개)/.test(text);
             const hugeShockNum   = /\d{2,}(?:[\.,]\d+)*\s*조\s*원|\d{3,}(?:[\.,]\d+)*\s*억\s*원/.test(text);
 
@@ -24635,8 +24638,8 @@ ${sceneList}
 
             // priority: 1=essential(⭐), 2=good, 3=optional
             // 강한 데이터 시각화 패턴부터 평가
-            if (!isIntroScene && hugeShockNum && moneyKR.length + bigCounts.length === 1) {
-                return [{ type: 'single_stat_card', why: '단일 거대 충격 숫자(조 원·100억+) → 수치카드', priority: 1 }];
+            if (hugeShockNum) {
+                return [{ type: 'single_stat_card', why: '거대 충격 숫자(조 원·100억+) → 수치카드', priority: 1 }];
             }
             if (rankingExplicit && bigCounts.length + percentMatches.length >= 2) {
                 return [{ type: 'ranking_list', why: '명시적 순위 + 수치 → 랭킹', priority: 1 }];
