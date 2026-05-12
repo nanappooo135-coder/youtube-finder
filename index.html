@@ -25167,7 +25167,28 @@ ${sceneList}
             let claudeBulkPrompt = '';
             if (claudeCount > 0) {
                 const sceneBlocks = claudeScenes.map(s => `### scene_${s.sceneNo}.html (⏱ ${s.duration || '?'}초 · ${s.claude_kind || '인포그래픽'})\n${s.claude_prompt || ''}`).join('\n\n---\n\n');
+                // 채널 모드별 톤·컬러 분기
+                const _isPsychTone = (typeof _isPsychologyMode === 'function') && _isPsychologyMode();
+                const channelToneLabel = _isPsychTone ? '🧠 심리학 (교육·차분·따뜻한 파스텔 톤)' : '💰 경제·시사 (다큐·다크 네이비·강한 강조)';
+                const colorPaletteBlock = _isPsychTone ? `### 컬러 톤 (심리학 채널 — 차분한 교육·따뜻한 파스텔)
+- 배경: \`#faf6f0\` (웜 크림) 또는 \`#2d2d3d\` (소프트 다크)
+- 본문 텍스트: \`#2d2d3d\` (다크 배경이면 \`#f5f5f0\`)
+- 강조 따뜻한 오렌지: \`#ec7c4d\`
+- 강조 차분한 청록: \`#4a9d8e\`
+- 보조 라일락: \`#9b87c8\`
+- 보조 회색: \`#9ca3af\`
+
+심리 채널은 **강렬한 빨강·노랑 지양**. 학자·이론·뇌 구조·단계 도식이 주력이라 부드러운 톤이 본문에 어울림.` : `### 컬러 톤 (경제·시사 채널 — 다큐 다크 톤)
+- 배경: \`#0a1929\` (다크 네이비) 또는 \`#1a1a1a\` (다큐 톤)
+- 텍스트: \`#ffffff\`
+- 강조 노랑: \`#fbbf24\`
+- 강조 빨강: \`#ef4444\`
+- 보조 회색: \`#94a3b8\``;
+
                 claudeBulkPrompt = `다음 ${claudeCount}개의 Claude Design 인포그래픽을 **각각 별도 HTML Artifact로** 한 번에 만들어주세요.
+
+📺 **채널 모드: ${channelToneLabel}**
+
 
 ## 절대 규칙
 1. **각각 별도 Artifact로 생성** (한 Artifact에 여러 디자인 합치지 말 것)
@@ -25244,9 +25265,7 @@ animation: scaleIn 0.9s ease 1.2s forwards, pulseScale 2.4s ease-in-out 6.5s inf
 - 왼쪽: 텍스트·숫자 / 오른쪽: 시각화
 - padding 80~120px, gap 60~100px
 
-### 컬러 톤 (경제·시사 채널 기본)
-- 배경: \`#0a1929\` (다크 네이비) 또는 \`#1a1a1a\` (다큐 톤)
-- 텍스트: \`#ffffff\` / 강조 노랑: \`#fbbf24\` / 강조 빨강: \`#ef4444\` / 보조 회색: \`#94a3b8\`
+${colorPaletteBlock}
 
 ## 흔한 함정 (절대 금지)
 - ❌ 9:16/1:1 만들기 → **16:9만**
