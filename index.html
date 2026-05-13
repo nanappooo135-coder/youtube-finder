@@ -15268,21 +15268,26 @@ ${sceneList}
         // 2026-04-23: 한글 수사 감지 헬퍼 — 한글 숫자도 오버레이 트리거
         function _hasKoreanNumerals(narr) {
             // 한글 수사 + 단위 조합 ("천팔백만 원", "삼백건", "예순다섯 군데")
-            return /(한|두|세|네|다섯|여섯|일곱|여덟|아홉|열|스물|서른|마흔|쉰|예순|일흔|여든|아흔|백|천|만|억|조)\s*(?:개|명|건|대|척|번|일|년|%|퍼센트|원|달러|배|가지|군데|곳)/.test(narr)
-                || /(일|이|삼|사|오|육|칠|팔|구|십|백|천|만|억|조)(?:천|백|십|만|억)(?:\S{0,3})\s*(?:명|건|대|척|번|일|년|%|원|달러|배|가지|군데|곳)/.test(narr)
+            // 2026-05-13: "발(미사일·드론)" 단위 추가
+            return /(한|두|세|네|다섯|여섯|일곱|여덟|아홉|열|스물|서른|마흔|쉰|예순|일흔|여든|아흔|백|천|만|억|조)\s*(?:개|명|건|대|척|번|일|년|%|퍼센트|원|달러|배|가지|군데|곳|발)/.test(narr)
+                || /(일|이|삼|사|오|육|칠|팔|구|십|백|천|만|억|조)(?:천|백|십|만|억)(?:\S{0,3})\s*(?:명|건|대|척|번|일|년|%|원|달러|배|가지|군데|곳|발)/.test(narr)
                 || /\d+\s*만\s*\d+\s*(?:천|백|십)?\s*명/.test(narr); // "6만 5천 명" 같은 조합
         }
         function _extractKoreanNumeral(narr) {
             // 2026-04-23: 숫자+단위 조합 우선 (가장 구체적)
             // "6만 5천 명", "16만 명", "3대" 등
-            const digitCombo = narr.match(/(\d+만\s*\d+천\s*\d*\s*(?:명|개|건|대|척|번|일|년|원|달러|배|가지|군데|곳))/)
-                || narr.match(/(\d+(?:\.\d+)?\s*(?:천|백|십|만|억|조)\s*(?:명|개|건|대|척|번|일|년|원|달러|배|가지|군데|곳))/);
+            // 2026-05-13: "발" 단위 추가
+            const digitCombo = narr.match(/(\d+만\s*\d+천\s*\d*\s*(?:명|개|건|대|척|번|일|년|원|달러|배|가지|군데|곳|발))/)
+                || narr.match(/(\d+(?:\.\d+)?\s*(?:천|백|십|만|억|조)\s*(?:명|개|건|대|척|번|일|년|원|달러|배|가지|군데|곳|발))/);
             if (digitCombo) return digitCombo[1].replace(/\s+/g, ' ').trim();
+            // 순수 한글 수사 + 단위 ("이천팔백 발" / "일만 삼천 명")
+            const pureKor = narr.match(/((?:[일이삼사오육칠팔구]?(?:천|백|십)){1,3}(?:[일이삼사오육칠팔구])?)\s*(?:만\s*(?:[일이삼사오육칠팔구]?(?:천|백|십)){0,2}(?:[일이삼사오육칠팔구])?\s*)?(명|개|건|대|척|번|발|회|호|회)/);
+            if (pureKor) return pureKor[0].trim();
             // 복합 한글 수사 (예순다섯, 서른다섯 같은 조합어 우선)
-            const complexKor = narr.match(/((?:스물|서른|마흔|쉰|예순|일흔|여든|아흔)\s*(?:하나|둘|셋|넷|다섯|여섯|일곱|여덟|아홉)?)\s*(?:개|명|건|대|척|번|일|년|가지|군데|곳)/);
+            const complexKor = narr.match(/((?:스물|서른|마흔|쉰|예순|일흔|여든|아흔)\s*(?:하나|둘|셋|넷|다섯|여섯|일곱|여덟|아홉)?)\s*(?:개|명|건|대|척|번|일|년|가지|군데|곳|발)/);
             if (complexKor) return complexKor[0].trim();
             // 단순 한글 수사 (네 군데 / 세 명 / 두 배 등) — 긴 것부터 매칭
-            const simpleKor = narr.match(/(다섯|여섯|일곱|여덟|아홉|[한두세네열]|스물|서른|마흔|쉰|예순|일흔|여든|아흔|백|천|만|억)\s*(?:개|명|건|대|척|번|일|년|가지|군데|곳)/);
+            const simpleKor = narr.match(/(다섯|여섯|일곱|여덟|아홉|[한두세네열]|스물|서른|마흔|쉰|예순|일흔|여든|아흔|백|천|만|억)\s*(?:개|명|건|대|척|번|일|년|가지|군데|곳|발)/);
             if (simpleKor) return simpleKor[0].trim();
             return '';
         }
@@ -24594,11 +24599,18 @@ ${sceneList}
 
             // ===== 패턴 추출 =====
             const percentMatches = text.match(/(\d+(?:\.\d+)?)\s*(?:퍼센트|%)/g) || [];
-            const moneyKR        = text.match(/\d+(?:[\.,]\d+)*\s*(?:조|억|만)\s*원/g) || [];
+            // 2026-05-13: moneyKR 완화 — "2천 원/2천억 원/2백억 원" 같은 혼합 수사도 매칭
+            const moneyKR        = text.match(/\d+(?:[\.,]\d+)*\s*(?:천\s*억|천\s*만|백\s*억|백\s*만|조|억|만|천|백)\s*원/g) || [];
             const moneyUSD       = text.match(/\$\s*\d+(?:[\.,]\d+)*\s*(?:억|만)?\s*달러?/g) || [];
             // bigCounts: 진짜 수량/통계 단위만 (일·주·시간·개월은 날짜 시퀀스 오인 방지로 제외)
-            const bigCounts      = text.match(/\d{2,}(?:[\.,]\d+)*\s*(?:만\s*명|억\s*명|만\s*개|석|척|국|대|건|기|문|회|점|호)/g) || [];
+            // 2026-05-13: "발(미사일·드론)" 단위 추가
+            const bigCounts      = text.match(/\d{2,}(?:[\.,]\d+)*\s*(?:만\s*명|억\s*명|만\s*개|석|척|국|대|건|기|문|회|점|호|발)/g) || [];
             const years          = text.match(/((?:19|20|21)\d{2})\s*년?/g) || [];
+            // 2026-05-13: 한글 수사 통합 — "이천팔백 발/스물여섯 척/일만 삼천 명/백 건/수십조 원"
+            const hasKoreanNum   = (typeof _hasKoreanNumerals === 'function') && _hasKoreanNumerals(text);
+            // "수십/수백/수천 + 단위" — _hasKoreanNumerals이 못 잡는 막연수도 포착
+            const vagueKoreanNum = /수십\s*(?:조|억|만|명|개|건|대|척|발|회)|수백\s*(?:조|억|만|명|개|건|대|척|발|회)|수천\s*(?:명|개|건|발)/.test(text);
+            const koreanNumText  = (hasKoreanNum && typeof _extractKoreanNumeral === 'function') ? _extractKoreanNumeral(text) : '';
             // "6년이 지난" / "6년은 지난" 같이 조사 끼어도 매칭
             const elapsedYears   = /\d+년\s*(?:이|은|만)?\s*(?:지난|걸렸|만에|끌어온|넘게|째|간|동안)|장기\s*\d+년/.test(text);
             const isIntroScene   = !!scene.isIntro;
@@ -24678,6 +24690,8 @@ ${sceneList}
                 if (v >= 50 && v <= 100) {
                     return [{ type: 'pie_donut', why: '50%+ 단일 비율 → 도넛차트', priority: 1 }];
                 }
+                // 2026-05-13: 단일 % (50% 미만) → 수치카드 fallback. "약 20%가 그 좁은 해협"
+                return [{ type: 'single_stat_card', why: '단일 퍼센트 → 수치카드', priority: 2 }];
             }
             if (percentMatches.length >= 2 || bigCounts.length >= 3) {
                 return [{ type: 'bar_chart_comparison', why: percentMatches.length >= 2 ? '복수 % 비교 → 막대차트' : '3개+ 수치 → 막대차트', priority: 1 }];
@@ -24690,6 +24704,24 @@ ${sceneList}
             }
             if (progressExp) {
                 return [{ type: 'progress_bar', why: '진행률 표현 → 프로그레스', priority: 2 }];
+            }
+            // 2026-05-13: 단일 수치/금액 fallback — 한국어 대본의 핵심 누락분
+            if (moneyKR.length >= 1) {
+                return [{ type: 'single_stat_card', why: '금액 단일 → 수치카드', priority: 2 }];
+            }
+            if (bigCounts.length === 1) {
+                return [{ type: 'single_stat_card', why: '단일 수치 → 수치카드', priority: 2 }];
+            }
+            // 2026-05-13: 한글 수사 단독 (이천팔백 발/스물여섯 척/백 건/일만 삼천 명/수십조 원)
+            if (hasKoreanNum && koreanNumText) {
+                // 추상 관용(한 마디·하루 아침·세 명 이내 등) 차단
+                const ABSTRACT = /^(한|두|세|네)\s*(개|명|번|곳|가지|대|마디|사람|장소|집|자리|줄)$/;
+                if (!ABSTRACT.test(koreanNumText.trim())) {
+                    return [{ type: 'single_stat_card', why: '한글 수사 → 수치카드', priority: 2 }];
+                }
+            }
+            if (vagueKoreanNum) {
+                return [{ type: 'single_stat_card', why: '막연 수사(수십·수백·수천) → 수치카드', priority: 3 }];
             }
             if (shortKeyword) {
                 return [{ type: 'text_headline', why: '짧은 핵심 키워드 → 헤드라인', priority: 3 }];
