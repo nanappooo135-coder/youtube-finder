@@ -24600,12 +24600,8 @@ ${sceneList}
             // 도입부는 무조건 오버레이 X (시청자 후킹 단계, 데이터 시각화 부적합)
             if (scene.isIntro) return [];
 
-            // 라디오 버튼 실제 상태를 직접 읽어 싱크 문제 방지
-            const isPsych = (function() {
-                const radio = document.querySelector('input[name="channelMode"][value="psychology"]');
-                if (radio) return radio.checked;
-                return (typeof _isPsychologyMode === 'function') ? _isPsychologyMode() : false;
-            })();
+            // spAnalyzeOverlays에서 이미 라디오→변수 동기화 완료
+            const isPsych = window._channelMode === 'psychology';
 
             // ===== 패턴 추출 =====
             const percentMatches = text.match(/(\d+(?:\.\d+)?)\s*(?:퍼센트|%)/g) || [];
@@ -24790,6 +24786,17 @@ ${sceneList}
                 return;
             }
 
+            // 분석 직전에 라디오 버튼 → window._channelMode 강제 동기화
+            const econRadio = document.querySelector('input[name="channelMode"][value="economics"]');
+            if (econRadio) {
+                const mode = econRadio.checked ? 'economics' : 'psychology';
+                if (window._channelMode !== mode) {
+                    console.log('[오버레이] 채널 모드 싱크 보정:', window._channelMode, '→', mode);
+                    window._channelMode = mode;
+                    try { localStorage.setItem('yt_channel_mode', mode); } catch(e) {}
+                }
+            }
+
             btn.disabled = true;
             btn.textContent = '🔍 분석 중...';
             try {
@@ -24839,12 +24846,7 @@ ${sceneList}
                 });
 
                 const pct = Math.round(finalMatches.length / totalScenes * 100);
-                // 라디오 버튼 실제 상태를 직접 읽어 싱크 문제 방지
-                const isPsychChannel = (function() {
-                    const radio = document.querySelector('input[name="channelMode"][value="psychology"]');
-                    if (radio) return radio.checked;
-                    return (typeof _isPsychologyMode === 'function') && _isPsychologyMode();
-                })();
+                const isPsychChannel = window._channelMode === 'psychology';
                 const channelLabel = isPsychChannel ? '🧠 심리학 (교육·인용·정의)' : '💰 경제학 (시사·지정학·수치)';
                 const summary = `<div style="padding:12px 14px;background:#fff7e6;border:2px solid #f59e0b;border-radius:8px;margin-bottom:12px;font-size:0.88rem;color:#b45309;">
                     ✅ 총 ${totalScenes}장면 중 <strong>${finalMatches.length}개(${pct}%)</strong>에만 오버레이 추천 (상한 20% · 목표 10~20%)
