@@ -1560,6 +1560,237 @@
                 padding: 11px 14px !important;
             }
         }
+
+        /* === Script Review (5-part) === */
+        .sr-intro {
+            background: linear-gradient(135deg, #f3f0ff, #fff5f7);
+            border: 2px solid #e0d7ff;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            font-size: 0.9rem;
+            color: #555;
+            line-height: 1.7;
+        }
+        .sr-intro strong { color: #6f42c1; }
+        .sr-part-card {
+            background: white;
+            border: 2px solid #e0d7ff;
+            border-radius: 14px;
+            margin-bottom: 14px;
+            overflow: hidden;
+            transition: box-shadow 0.2s;
+        }
+        .sr-part-card:hover { box-shadow: 0 2px 12px rgba(111,66,193,0.08); }
+        .sr-part-header {
+            padding: 16px 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(135deg, #faf8ff, #ffffff);
+            user-select: none;
+        }
+        .sr-part-header:hover { background: linear-gradient(135deg, #f3edff, #faf8ff); }
+        .sr-part-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #6f42c1;
+            margin-bottom: 4px;
+        }
+        .sr-part-subtitle {
+            font-size: 0.82rem;
+            color: #888;
+            font-weight: 400;
+        }
+        .sr-part-arrow {
+            font-size: 0.9rem;
+            color: #6f42c1;
+            transition: transform 0.25s;
+        }
+        .sr-part-card.collapsed .sr-part-arrow { transform: rotate(-90deg); }
+        .sr-part-body {
+            padding: 0 20px 20px 20px;
+            display: block;
+        }
+        .sr-part-card.collapsed .sr-part-body { display: none; }
+        .sr-textarea {
+            width: 100%;
+            min-height: 180px;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-family: inherit;
+            line-height: 1.7;
+            resize: vertical;
+            transition: border-color 0.2s;
+        }
+        .sr-textarea:focus { outline: none; border-color: #6f42c1; }
+        .sr-charcount {
+            font-size: 0.8rem;
+            color: #aaa;
+            margin-top: 4px;
+            text-align: right;
+        }
+        .sr-btn-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .sr-btn {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .sr-btn-primary { background: #6f42c1; color: white; }
+        .sr-btn-primary:hover:not(:disabled) { background: #5a32a3; transform: translateY(-1px); }
+        .sr-btn-primary:disabled { background: #b8a8d6; cursor: not-allowed; }
+        .sr-btn-secondary {
+            flex: 0 0 auto;
+            background: white;
+            border: 2px solid #ddd;
+            color: #666;
+        }
+        .sr-btn-secondary:hover { background: #f5f5f5; border-color: #bbb; }
+        .sr-result-area {
+            margin-top: 16px;
+            display: none;
+        }
+        .sr-result-area.show { display: block; }
+        .sr-loading {
+            text-align: center;
+            padding: 30px;
+            color: #6f42c1;
+            font-size: 0.95rem;
+            background: #faf8ff;
+            border-radius: 12px;
+            border: 2px dashed #d4c5f5;
+        }
+        .sr-loading .spinner { display: inline-block; vertical-align: middle; margin-right: 8px; }
+        .sr-model-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        .sr-model-badge.pro { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
+        .sr-model-badge.flash { background: #fff3e0; color: #e65100; border: 1px solid #ffcc80; }
+        .sr-result-item {
+            background: #fafafa;
+            border-left: 4px solid #ddd;
+            border-radius: 8px;
+            padding: 14px 16px;
+            margin-bottom: 10px;
+        }
+        .sr-result-item.pass { border-left-color: #28a745; background: #f0faf3; }
+        .sr-result-item.warn { border-left-color: #ffc107; background: #fffbf0; }
+        .sr-result-item.fail { border-left-color: #dc3545; background: #fdf3f4; }
+        .sr-judge {
+            font-weight: 700;
+            font-size: 0.95rem;
+            margin-bottom: 6px;
+        }
+        .sr-quote {
+            background: #efefef;
+            border-radius: 6px;
+            padding: 8px 12px;
+            margin: 8px 0;
+            font-size: 0.85rem;
+            color: #555;
+            font-style: italic;
+            border-left: 3px solid #bbb;
+        }
+        .sr-suggest {
+            background: #e3f2fd;
+            border-radius: 6px;
+            padding: 8px 12px;
+            margin: 8px 0;
+            font-size: 0.88rem;
+            color: #1565c0;
+            border-left: 3px solid #1976d2;
+        }
+        .sr-summary {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin-top: 14px;
+            font-size: 0.9rem;
+            color: #444;
+            line-height: 1.7;
+        }
+        .sr-summary-title {
+            font-weight: 700;
+            color: #6f42c1;
+            margin-bottom: 8px;
+        }
+        .sr-next-hint {
+            margin-top: 14px;
+            padding: 12px 14px;
+            background: #fffae6;
+            border: 1px solid #ffe58f;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            color: #856404;
+            line-height: 1.6;
+        }
+        .sr-result-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+        .sr-result-actions button {
+            padding: 10px 14px;
+            border-radius: 8px;
+            border: none;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .sr-copy-btn { background: #6f42c1; color: white; }
+        .sr-copy-btn:hover { background: #5a32a3; }
+        .sr-retry-btn { background: #fd7e14; color: white; }
+        .sr-retry-btn:hover { background: #e8590c; }
+        .sr-error {
+            padding: 16px;
+            background: #fdf3f4;
+            border: 2px solid #f5c6cb;
+            border-radius: 10px;
+            color: #721c24;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        .sr-raw {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 12px 14px;
+            font-size: 0.88rem;
+            line-height: 1.7;
+            white-space: pre-wrap;
+            word-break: break-word;
+            color: #333;
+        }
+        @media (max-width: 600px) {
+            .sr-part-header { padding: 14px 14px; }
+            .sr-part-body { padding: 0 14px 16px 14px; }
+            .sr-part-title { font-size: 0.98rem; }
+            .sr-btn-row { flex-direction: column; }
+            .sr-btn-secondary { width: 100%; }
+        }
     </style>
 </head>
 <body>
@@ -1580,6 +1811,7 @@
             <button class="process-btn inactive" id="procBtn_script" onclick="switchProcess('script')" style="background:#0ea5e9;border-color:#0ea5e9;">📝 대본 노트</button>
             <button class="process-btn inactive" id="procBtn_genspark" onclick="switchProcess('genspark')" style="background:#7048e8;border-color:#7048e8;">🎨 젠스파크 이미지</button>
             <button class="process-btn inactive" id="procBtn_thumbnail" onclick="switchProcess('thumbnail')">썸네일</button>
+            <button class="process-btn inactive" id="procBtn_scriptReview" onclick="switchProcess('scriptReview')" style="background:#6f42c1;border-color:#6f42c1;">📋 대본 검수</button>
             <button class="process-btn inactive" id="procBtn_visual" onclick="switchProcess('visual')">시각화</button>
             <button class="process-btn inactive" id="procBtn_json" onclick="switchProcess('json')">JSON</button>
             <button class="process-btn inactive" id="procBtn_sellpot" onclick="switchProcess('sellpot')">셀팟 기본</button>
@@ -3295,11 +3527,11 @@
             </div>
         </div><!-- /process-tts -->
 
-        <!-- ===== 프로세스: 대본 검수 ===== -->
-        <div id="process-review" style="display:none;">
+        <!-- ===== 프로세스: 대본 검수 (구버전 - 제거됨, scriptReview 탭으로 대체) ===== -->
+        <div id="process-review" style="display:none;" hidden>
 
-            <div class="section">
-                <div class="section-title">대본 검수 + 수정</div>
+            <div class="section" hidden>
+                <div class="section-title">대본 검수 + 수정 (구버전)</div>
                 <div class="section-content">
                     <div id="rvServerStatus" class="fc-server-status disconnected">
                         <span>서버 확인 중...</span>
@@ -3394,6 +3626,118 @@
             </div>
 
         </div><!-- /process-review -->
+
+        <!-- ===== 프로세스: 대본 검수 (5파트 진단형) ===== -->
+        <div id="process-scriptReview" style="display:none;">
+
+            <div class="sr-intro">
+                <strong>📋 대본 검수 — 5파트 진단</strong><br>
+                대본을 다시 써주는 게 아니라, <strong>문제점을 짚고 수정 방향을 제안</strong>합니다.
+                각 파트의 결과를 복사 → Claude 앱에서 직접 수정 → 수정된 대본을 다음 파트에 붙여넣어 검수하세요.<br>
+                <span style="font-size:0.82rem;color:#888;">엔진: Gemini 2.5 Pro (실패 시 2.0 Flash 자동 전환)</span>
+            </div>
+
+            <!-- 파트 1 -->
+            <div class="sr-part-card" id="srCard1" data-part="1">
+                <div class="sr-part-header" onclick="srTogglePart(1)">
+                    <div>
+                        <div class="sr-part-title">📋 파트 1: 전체 구조·전개</div>
+                        <div class="sr-part-subtitle">"건물의 골조 - 큰 그림 점검"</div>
+                    </div>
+                    <span class="sr-part-arrow">▼</span>
+                </div>
+                <div class="sr-part-body">
+                    <textarea class="sr-textarea" id="srInput1" placeholder="검수할 대본을 여기에 붙여넣으세요" oninput="srUpdateCharCount(1); srSaveInput(1);"></textarea>
+                    <div class="sr-charcount">글자수: <span id="srCount1">0</span>자</div>
+                    <div class="sr-btn-row">
+                        <button class="sr-btn sr-btn-primary" id="srBtn1" onclick="runScriptReview(1)">🔍 파트1 검수 시작</button>
+                        <button class="sr-btn sr-btn-secondary" onclick="clearScriptReview(1)">초기화</button>
+                    </div>
+                    <div class="sr-result-area" id="srResult1"></div>
+                </div>
+            </div>
+
+            <!-- 파트 2 -->
+            <div class="sr-part-card collapsed" id="srCard2" data-part="2">
+                <div class="sr-part-header" onclick="srTogglePart(2)">
+                    <div>
+                        <div class="sr-part-title">🚪 파트 2: 도입부·시청 진입</div>
+                        <div class="sr-part-subtitle">"입구 - 첫 30초 진입 장벽 점검"</div>
+                    </div>
+                    <span class="sr-part-arrow">▼</span>
+                </div>
+                <div class="sr-part-body">
+                    <textarea class="sr-textarea" id="srInput2" placeholder="검수할 대본을 여기에 붙여넣으세요" oninput="srUpdateCharCount(2); srSaveInput(2);"></textarea>
+                    <div class="sr-charcount">글자수: <span id="srCount2">0</span>자</div>
+                    <div class="sr-btn-row">
+                        <button class="sr-btn sr-btn-primary" id="srBtn2" onclick="runScriptReview(2)">🔍 파트2 검수 시작</button>
+                        <button class="sr-btn sr-btn-secondary" onclick="clearScriptReview(2)">초기화</button>
+                    </div>
+                    <div class="sr-result-area" id="srResult2"></div>
+                </div>
+            </div>
+
+            <!-- 파트 3 -->
+            <div class="sr-part-card collapsed" id="srCard3" data-part="3">
+                <div class="sr-part-header" onclick="srTogglePart(3)">
+                    <div>
+                        <div class="sr-part-title">🎯 파트 3: 몰입·시청 지속</div>
+                        <div class="sr-part-subtitle">"동선 - 중간 이탈 구간 점검"</div>
+                    </div>
+                    <span class="sr-part-arrow">▼</span>
+                </div>
+                <div class="sr-part-body">
+                    <textarea class="sr-textarea" id="srInput3" placeholder="검수할 대본을 여기에 붙여넣으세요" oninput="srUpdateCharCount(3); srSaveInput(3);"></textarea>
+                    <div class="sr-charcount">글자수: <span id="srCount3">0</span>자</div>
+                    <div class="sr-btn-row">
+                        <button class="sr-btn sr-btn-primary" id="srBtn3" onclick="runScriptReview(3)">🔍 파트3 검수 시작</button>
+                        <button class="sr-btn sr-btn-secondary" onclick="clearScriptReview(3)">초기화</button>
+                    </div>
+                    <div class="sr-result-area" id="srResult3"></div>
+                </div>
+            </div>
+
+            <!-- 파트 4 -->
+            <div class="sr-part-card collapsed" id="srCard4" data-part="4">
+                <div class="sr-part-header" onclick="srTogglePart(4)">
+                    <div>
+                        <div class="sr-part-title">💡 파트 4: 이해도·전달력</div>
+                        <div class="sr-part-subtitle">"인테리어 - 비유·풀이·쉬운 전달 점검"</div>
+                    </div>
+                    <span class="sr-part-arrow">▼</span>
+                </div>
+                <div class="sr-part-body">
+                    <textarea class="sr-textarea" id="srInput4" placeholder="검수할 대본을 여기에 붙여넣으세요" oninput="srUpdateCharCount(4); srSaveInput(4);"></textarea>
+                    <div class="sr-charcount">글자수: <span id="srCount4">0</span>자</div>
+                    <div class="sr-btn-row">
+                        <button class="sr-btn sr-btn-primary" id="srBtn4" onclick="runScriptReview(4)">🔍 파트4 검수 시작</button>
+                        <button class="sr-btn sr-btn-secondary" onclick="clearScriptReview(4)">초기화</button>
+                    </div>
+                    <div class="sr-result-area" id="srResult4"></div>
+                </div>
+            </div>
+
+            <!-- 파트 5 -->
+            <div class="sr-part-card collapsed" id="srCard5" data-part="5">
+                <div class="sr-part-header" onclick="srTogglePart(5)">
+                    <div>
+                        <div class="sr-part-title">🔍 파트 5: 신뢰성·디테일</div>
+                        <div class="sr-part-subtitle">"마감 - 팩트·인용·디테일 점검"</div>
+                    </div>
+                    <span class="sr-part-arrow">▼</span>
+                </div>
+                <div class="sr-part-body">
+                    <textarea class="sr-textarea" id="srInput5" placeholder="검수할 대본을 여기에 붙여넣으세요" oninput="srUpdateCharCount(5); srSaveInput(5);"></textarea>
+                    <div class="sr-charcount">글자수: <span id="srCount5">0</span>자</div>
+                    <div class="sr-btn-row">
+                        <button class="sr-btn sr-btn-primary" id="srBtn5" onclick="runScriptReview(5)">🔍 파트5 검수 시작</button>
+                        <button class="sr-btn sr-btn-secondary" onclick="clearScriptReview(5)">초기화</button>
+                    </div>
+                    <div class="sr-result-area" id="srResult5"></div>
+                </div>
+            </div>
+
+        </div><!-- /process-scriptReview -->
 
         <!-- ===== 프로세스: 레퍼런스 (댓글 + 자막) ===== -->
         <div id="process-ref" style="display:none;">
@@ -7550,6 +7894,7 @@ ${_retryRound > 0 ? `⚠️ 이번은 ${_retryRound}차 추가 요청입니다. 
             document.getElementById('process-json').style.display = proc === 'json' ? '' : 'none';
             document.getElementById('process-sellpot').style.display = proc === 'sellpot' ? '' : 'none';
             document.getElementById('process-review').style.display = proc === 'review' ? '' : 'none';
+            document.getElementById('process-scriptReview').style.display = proc === 'scriptReview' ? '' : 'none';
             document.getElementById('process-tts').style.display = proc === 'tts' ? '' : 'none';
             document.getElementById('process-ref').style.display = proc === 'ref' ? '' : 'none';
             document.getElementById('process-trend').style.display = proc === 'trend' ? '' : 'none';
@@ -7564,11 +7909,258 @@ ${_retryRound > 0 ? `⚠️ 이번은 ${_retryRound}차 추가 요청입니다. 
             if (proc === 'script' && typeof _scrInit === 'function') _scrInit();
             if (proc === 'visual') checkFcServer('vsServerStatus');
             if (proc === 'review') checkFcServer('rvServerStatus');
+            if (proc === 'scriptReview') srLoadAll();
             if (proc === 'trend') { fetchIssueRadar(); fetchGoogleTrends(); fetchEconYoutube(); }
             if (proc === 'sellpot') _spInit();
             } catch(err) {
                 console.error('[switchProcess ERROR]', err);
                 alert('탭 전환 오류: ' + err.message + ' (F12 콘솔 확인)');
+            }
+        }
+
+        /* ============================================================
+         * 대본 검수 (5파트 진단형)
+         * - 파트별 독립 검수
+         * - Gemini 2.5 Pro → 실패 시 2.0 Flash 자동 전환
+         * - localStorage 자동 저장/복원
+         * - 결과는 마크다운으로 복사 가능
+         * - 프롬프트는 더미 (추후 단계에서 채움)
+         * ============================================================ */
+        const SR_META = {
+            1: { title: '파트 1: 전체 구조·전개', subtitle: '건물의 골조 - 큰 그림 점검' },
+            2: { title: '파트 2: 도입부·시청 진입', subtitle: '입구 - 첫 30초 진입 장벽 점검' },
+            3: { title: '파트 3: 몰입·시청 지속', subtitle: '동선 - 중간 이탈 구간 점검' },
+            4: { title: '파트 4: 이해도·전달력', subtitle: '인테리어 - 비유·풀이·쉬운 전달 점검' },
+            5: { title: '파트 5: 신뢰성·디테일', subtitle: '마감 - 팩트·인용·디테일 점검' },
+        };
+        const SR_LS_INPUT = n => `sr_input_${n}`;
+        const SR_LS_RESULT = n => `sr_result_${n}`;
+
+        function srTogglePart(num) {
+            const card = document.getElementById(`srCard${num}`);
+            if (card) card.classList.toggle('collapsed');
+        }
+
+        function srUpdateCharCount(num) {
+            const ta = document.getElementById(`srInput${num}`);
+            const el = document.getElementById(`srCount${num}`);
+            if (ta && el) el.textContent = ta.value.length;
+        }
+
+        function srSaveInput(num) {
+            const ta = document.getElementById(`srInput${num}`);
+            if (ta) {
+                try { localStorage.setItem(SR_LS_INPUT(num), ta.value); } catch(e) {}
+            }
+        }
+
+        function srLoadAll() {
+            for (let n = 1; n <= 5; n++) {
+                try {
+                    const saved = localStorage.getItem(SR_LS_INPUT(n));
+                    if (saved !== null) {
+                        const ta = document.getElementById(`srInput${n}`);
+                        if (ta && !ta.value) ta.value = saved;
+                        srUpdateCharCount(n);
+                    }
+                    const savedResult = localStorage.getItem(SR_LS_RESULT(n));
+                    if (savedResult) {
+                        const obj = JSON.parse(savedResult);
+                        renderScriptReviewResult(n, obj);
+                    }
+                } catch(e) { console.warn('[srLoadAll]', n, e); }
+            }
+        }
+
+        function clearScriptReview(num) {
+            if (!confirm(`파트 ${num}의 입력 + 검수 결과를 모두 지울까요?`)) return;
+            const ta = document.getElementById(`srInput${num}`);
+            if (ta) ta.value = '';
+            srUpdateCharCount(num);
+            const resultEl = document.getElementById(`srResult${num}`);
+            if (resultEl) {
+                resultEl.classList.remove('show');
+                resultEl.innerHTML = '';
+            }
+            try {
+                localStorage.removeItem(SR_LS_INPUT(num));
+                localStorage.removeItem(SR_LS_RESULT(num));
+            } catch(e) {}
+        }
+
+        // 더미 프롬프트 — 다음 단계에서 파트별 항목 지침으로 교체
+        function srGetPrompt(num, scriptText) {
+            const meta = SR_META[num];
+            return `[더미 프롬프트 - 다음 단계에서 교체 예정]
+
+너는 유튜브 대본 검수 전문가다.
+지금부터 "${meta.title} (${meta.subtitle})" 관점에서 아래 대본을 검수하라.
+
+[검수 규칙]
+- 대본을 다시 쓰지 마라. 문제점을 짚고 수정 방향만 제안한다.
+- 항목별로 판정(✅ 통과 / ⚠️ 보완 필요 / ❌ 문제)을 명시한다.
+- 문제 부분은 원문 인용 + 수정 제안을 함께 제시한다.
+- 마지막에 종합 코멘트와 추가 개선 제안을 덧붙인다.
+
+[검수 대본]
+${scriptText}
+
+[출력 형식]
+## 검수 결과 — ${meta.title}
+
+### 1. (검수 항목명)
+- 판정: ✅ / ⚠️ / ❌
+- 인용: "원문 그대로"
+- 제안: 수정 방향
+
+(항목별 반복)
+
+## 종합 코멘트
+(전체 평가)
+
+## 추가 개선 제안
+- 개선 1
+- 개선 2`;
+        }
+
+        async function runScriptReview(num) {
+            const scriptText = (document.getElementById(`srInput${num}`)?.value || '').trim();
+            if (!scriptText) {
+                alert('대본을 입력해주세요');
+                return;
+            }
+            if (!GEMINI_API_KEYS || GEMINI_API_KEYS.length === 0 || !GEMINI_API_KEYS[0]) {
+                if (confirm('Gemini API 키가 설정되지 않았습니다.\n설정 페이지(주제찾기 탭)로 이동할까요?')) {
+                    switchProcess('topic');
+                }
+                return;
+            }
+
+            const btn = document.getElementById(`srBtn${num}`);
+            const resultEl = document.getElementById(`srResult${num}`);
+            if (!resultEl) return;
+            resultEl.classList.add('show');
+            resultEl.innerHTML = `<div class="sr-loading"><div class="spinner"></div> Gemini Pro로 검수 중...</div>`;
+            _geminiStatusEl = resultEl.querySelector('.sr-loading');
+            if (btn) { btn.disabled = true; btn.textContent = '검수 진행 중...'; }
+
+            const prompt = srGetPrompt(num, scriptText);
+            let result = null;
+            let usedModel = null; // 'pro' | 'flash'
+            let errorMsg = null;
+
+            // 1차: gemini-2.5-pro
+            try {
+                result = await callGemini(prompt, {
+                    model: 'gemini-2.5-pro',
+                    noFallback: true,
+                    maxTokens: 8192,
+                    temperature: 0.3,
+                });
+                usedModel = 'pro';
+            } catch(e1) {
+                console.warn('[runScriptReview] Pro 실패 → Flash 시도:', e1.message);
+                resultEl.innerHTML = `<div class="sr-loading"><div class="spinner"></div> Pro 한도 초과/오류 → Gemini Flash로 재시도 중...</div>`;
+                _geminiStatusEl = resultEl.querySelector('.sr-loading');
+                // 2차: gemini-2.0-flash
+                try {
+                    result = await callGemini(prompt, {
+                        model: 'gemini-2.0-flash',
+                        noFallback: true,
+                        maxTokens: 8192,
+                        temperature: 0.3,
+                    });
+                    usedModel = 'flash';
+                } catch(e2) {
+                    console.error('[runScriptReview] Flash도 실패:', e2.message);
+                    errorMsg = `Pro 오류: ${e1.message}\nFlash 오류: ${e2.message}`;
+                }
+            }
+
+            if (btn) { btn.disabled = false; btn.textContent = `🔍 파트${num} 검수 시작`; }
+
+            if (!result) {
+                resultEl.innerHTML = `
+                    <div class="sr-error">
+                        <strong>❌ 검수 실패</strong><br>
+                        Pro·Flash 모두 응답하지 못했습니다.<br><br>
+                        <pre style="white-space:pre-wrap;font-size:0.82rem;background:#fff;padding:8px;border-radius:6px;border:1px solid #f5c6cb;">${escapeHtmlSafe(errorMsg || '알 수 없는 오류')}</pre>
+                        <div style="margin-top:10px;">
+                            <button class="sr-retry-btn" onclick="runScriptReview(${num})">🔄 재시도</button>
+                        </div>
+                    </div>`;
+                return;
+            }
+
+            const obj = {
+                num,
+                response: result.text,
+                usedModel,
+                usage: result.usage,
+                ts: Date.now(),
+            };
+            try { localStorage.setItem(SR_LS_RESULT(num), JSON.stringify(obj)); } catch(e) {}
+            renderScriptReviewResult(num, obj);
+        }
+
+        function escapeHtmlSafe(s) {
+            return String(s == null ? '' : s)
+                .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+                .replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+        }
+
+        function renderScriptReviewResult(num, obj) {
+            const resultEl = document.getElementById(`srResult${num}`);
+            if (!resultEl) return;
+
+            const badge = obj.usedModel === 'pro'
+                ? `<span class="sr-model-badge pro">✅ Gemini Pro로 검수 완료</span>`
+                : `<span class="sr-model-badge flash">⚠️ Pro 한도 초과로 Flash 사용</span>`;
+
+            // 응답은 일단 raw markdown으로 표시 (다음 단계에서 구조화 파싱)
+            const rawHtml = escapeHtmlSafe(obj.response || '');
+            const meta = SR_META[num];
+
+            resultEl.classList.add('show');
+            resultEl.innerHTML = `
+                ${badge}
+                <div class="sr-raw">${rawHtml}</div>
+                <div class="sr-next-hint">
+                    💡 이 결과를 복사해서 Claude에서 대본을 수정한 뒤,<br>
+                    &nbsp;&nbsp;&nbsp;수정된 대본을 다음 파트에 붙여넣어 검수하세요.
+                </div>
+                <div class="sr-result-actions">
+                    <button class="sr-copy-btn" onclick="copyScriptReviewResult(${num})">📋 결과 복사하기</button>
+                    <button class="sr-retry-btn" onclick="runScriptReview(${num})">🔄 다시 검수</button>
+                </div>
+            `;
+        }
+
+        function copyScriptReviewResult(num) {
+            const raw = localStorage.getItem(SR_LS_RESULT(num));
+            if (!raw) { alert('복사할 결과가 없습니다'); return; }
+            try {
+                const obj = JSON.parse(raw);
+                const meta = SR_META[num];
+                const modelLabel = obj.usedModel === 'pro' ? 'Gemini 2.5 Pro' : 'Gemini 2.0 Flash';
+                const md = `# 대본 검수 결과 — ${meta.title}\n` +
+                           `> ${meta.subtitle}\n` +
+                           `> 엔진: ${modelLabel}\n\n` +
+                           obj.response + '\n';
+                navigator.clipboard.writeText(md).then(() => {
+                    const btn = event && event.target;
+                    if (btn) {
+                        const orig = btn.textContent;
+                        btn.textContent = '✅ 복사됨';
+                        setTimeout(() => { btn.textContent = orig; }, 1500);
+                    }
+                }).catch(err => {
+                    console.error('clipboard 실패:', err);
+                    alert('복사 실패. 콘솔 확인.');
+                });
+            } catch(e) {
+                console.error(e);
+                alert('복사 중 오류: ' + e.message);
             }
         }
 
