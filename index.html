@@ -26227,7 +26227,10 @@ ${sceneBlocks}`;
             const proxies = [
                 u => 'https://corsproxy.io/?url=' + encodeURIComponent(u),
                 u => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u),
-                u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u)
+                u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
+                u => 'https://r.jina.ai/' + u,
+                u => 'https://api.cors.lol/?url=' + encodeURIComponent(u),
+                u => 'https://proxy.cors.sh/' + u
             ];
             for (const wrap of proxies) {
                 const ctrl = new AbortController();
@@ -26298,18 +26301,24 @@ ${sceneBlocks}`;
                     const ytUrl = `https://www.youtube.com/watch?v=${videoId}`;
                     captionsEl.innerHTML = `
                         <div style="padding:20px;text-align:center;">
-                            <div style="font-size:1rem;color:#dc3545;font-weight:700;margin-bottom:16px;">⚠️ 브라우저로는 자막을 못 가져왔어요</div>
-                            <div style="font-size:0.9rem;color:#666;margin-bottom:20px;">아래 큰 버튼 하나만 누르면 끝:</div>
-                            <a href="https://downsub.com/?url=${encodeURIComponent(ytUrl)}" target="_blank" style="display:inline-block;padding:14px 28px;background:#10b981;color:#fff;text-decoration:none;font-size:1.05rem;font-weight:700;border-radius:10px;box-shadow:0 2px 6px rgba(16,185,129,0.3);">
-                                📥 자막 받기 (DownSub 새 탭)
-                            </a>
-                            <div style="margin-top:14px;font-size:0.82rem;color:#888;line-height:1.7;">
-                                새 탭이 열리면:<br>
-                                ① <strong>SRT</strong> 또는 <strong>TXT</strong> 옆 <strong>[DOWNLOAD]</strong> 클릭<br>
-                                ② 받은 파일 열어서 텍스트 복사
+                            <div style="font-size:1rem;color:#dc3545;font-weight:700;margin-bottom:8px;">⚠️ 자막 자동 수집 실패</div>
+                            <div style="font-size:0.85rem;color:#666;margin-bottom:18px;">📱 폰에서도 쓸 수 있는 텍스트형 사이트 — 들어가면 자막이 바로 화면에 뜨니까 <strong>꾹 눌러서 복사만</strong> 하면 됩니다 (다운로드 X)</div>
+                            <div style="display:flex;flex-direction:column;gap:10px;max-width:340px;margin:0 auto;">
+                                <a href="https://youtubetotranscript.com/transcript?v=${videoId}" target="_blank" rel="noopener" style="display:block;padding:14px 20px;background:#10b981;color:#fff;text-decoration:none;font-size:1rem;font-weight:700;border-radius:10px;box-shadow:0 2px 6px rgba(16,185,129,0.3);">
+                                    1️⃣ YouTube to Transcript <span style="font-size:0.75rem;font-weight:400;opacity:0.9;">(폰 추천)</span>
+                                </a>
+                                <a href="https://tactiq.io/tools/youtube-transcript?yt=${encodeURIComponent(ytUrl)}" target="_blank" rel="noopener" style="display:block;padding:14px 20px;background:#3b82f6;color:#fff;text-decoration:none;font-size:1rem;font-weight:700;border-radius:10px;">
+                                    2️⃣ Tactiq Transcript
+                                </a>
+                                <a href="https://notegpt.io/youtube-transcript-generator?url=${encodeURIComponent(ytUrl)}" target="_blank" rel="noopener" style="display:block;padding:14px 20px;background:#8b5cf6;color:#fff;text-decoration:none;font-size:1rem;font-weight:700;border-radius:10px;">
+                                    3️⃣ NoteGPT Transcript
+                                </a>
+                            </div>
+                            <div style="margin-top:14px;font-size:0.8rem;color:#888;line-height:1.7;">
+                                ① 위에서 아무 사이트나 탭 → ② 자막 텍스트 길게 눌러 전체선택·복사
                             </div>
                             <details style="margin-top:16px;text-align:left;display:inline-block;">
-                                <summary style="font-size:0.8rem;color:#888;cursor:pointer;">또는 PC에서 더 빠르게 (yt-dlp)</summary>
+                                <summary style="font-size:0.8rem;color:#888;cursor:pointer;">PC라면 더 빠르게 (yt-dlp)</summary>
                                 <pre style="margin-top:8px;padding:10px;background:#f8f9fa;border-radius:6px;font-size:0.75rem;line-height:1.5;color:#333;border:1px solid #e0e0e0;text-align:left;user-select:all;">.venv\\Scripts\\yt-dlp --write-auto-sub --sub-lang ko --skip-download "${ytUrl}"</pre>
                             </details>
                         </div>`;
@@ -26338,7 +26347,10 @@ ${sceneBlocks}`;
             } catch (e) {
                 console.error('자막 가져오기 실패:', e);
                 captionsEl.innerHTML = `❌ 자막 가져오기 실패: ${e.message}<br><br>
-                    <strong>대체:</strong> <a href="https://downsub.com/?url=https://www.youtube.com/watch?v=${videoId}" target="_blank" style="color:#dc3545;font-weight:700;">DownSub.com</a>`;
+                    <strong>대체(폰에서 텍스트로 바로 보이는 사이트):</strong><br>
+                    📱 <a href="https://youtubetotranscript.com/transcript?v=${videoId}" target="_blank" rel="noopener" style="color:#10b981;font-weight:700;">YouTube to Transcript</a> ·
+                    <a href="https://tactiq.io/tools/youtube-transcript?yt=${encodeURIComponent('https://www.youtube.com/watch?v=' + videoId)}" target="_blank" rel="noopener" style="color:#3b82f6;font-weight:700;">Tactiq</a> ·
+                    <a href="https://notegpt.io/youtube-transcript-generator?url=${encodeURIComponent('https://www.youtube.com/watch?v=' + videoId)}" target="_blank" rel="noopener" style="color:#8b5cf6;font-weight:700;">NoteGPT</a>`;
             }
         }
 
