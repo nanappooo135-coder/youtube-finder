@@ -1598,6 +1598,15 @@
             color: #6f42c1;
             margin-bottom: 4px;
         }
+        .sr-part-title .pt-sub {
+            font-size: 0.92rem;
+            font-weight: 500;
+            opacity: 0.72;
+            margin-left: 4px;
+        }
+        @media (max-width: 600px) {
+            .sr-part-title .pt-sub { font-size: 0.85rem; }
+        }
         .sr-part-subtitle {
             font-size: 0.82rem;
             color: #888;
@@ -1614,6 +1623,122 @@
             display: block;
         }
         .sr-part-card.collapsed .sr-part-body { display: none; }
+
+        /* === 파트별 색상 (혼동 방지) === */
+        /* 파트1: 보라 (기본) - #6f42c1 */
+        .sr-part-card[data-part="2"] { border-color: #c7e4f2; }
+        .sr-part-card[data-part="2"] .sr-part-header { background: linear-gradient(135deg, #f0f9ff, #ffffff); }
+        .sr-part-card[data-part="2"] .sr-part-header:hover { background: linear-gradient(135deg, #e0f2fe, #f0f9ff); }
+        .sr-part-card[data-part="2"] .sr-part-title,
+        .sr-part-card[data-part="2"] .sr-part-arrow,
+        .sr-part-card[data-part="2"] .sr-guide-toggle,
+        .sr-part-card[data-part="2"] .sr-guide-panel .gp-title { color: #0284c7; }
+        .sr-part-card[data-part="2"] .sr-guide-toggle { background: #f0f9ff; border-color: #c7e4f2; }
+        .sr-part-card[data-part="2"] .sr-guide-toggle:hover { background: #e0f2fe; }
+        .sr-part-card[data-part="2"] .sr-textarea:focus { border-color: #0284c7; }
+        .sr-part-card[data-part="2"] .sr-btn-primary { background: #0284c7; }
+        .sr-part-card[data-part="2"] .sr-btn-primary:hover:not(:disabled) { background: #0369a1; }
+        .sr-part-card[data-part="2"]:hover { box-shadow: 0 2px 12px rgba(2,132,199,0.08); }
+
+        /* 파트3: 초록 - #10b981 */
+        .sr-part-card[data-part="3"] { border-color: #bbf7d0; }
+        .sr-part-card[data-part="3"] .sr-part-header { background: linear-gradient(135deg, #f0fdf4, #ffffff); }
+        .sr-part-card[data-part="3"] .sr-part-header:hover { background: linear-gradient(135deg, #dcfce7, #f0fdf4); }
+        .sr-part-card[data-part="3"] .sr-part-title,
+        .sr-part-card[data-part="3"] .sr-part-arrow,
+        .sr-part-card[data-part="3"] .sr-guide-toggle,
+        .sr-part-card[data-part="3"] .sr-guide-panel .gp-title { color: #059669; }
+        .sr-part-card[data-part="3"] .sr-guide-toggle { background: #f0fdf4; border-color: #bbf7d0; }
+        .sr-part-card[data-part="3"] .sr-guide-toggle:hover { background: #dcfce7; }
+        .sr-part-card[data-part="3"] .sr-textarea:focus { border-color: #059669; }
+        .sr-part-card[data-part="3"] .sr-btn-primary { background: #059669; }
+        .sr-part-card[data-part="3"] .sr-btn-primary:hover:not(:disabled) { background: #047857; }
+        .sr-part-card[data-part="3"]:hover { box-shadow: 0 2px 12px rgba(5,150,105,0.08); }
+
+        /* 파트4: 주황 - #f59e0b */
+        .sr-part-card[data-part="4"] { border-color: #fde68a; }
+        .sr-part-card[data-part="4"] .sr-part-header { background: linear-gradient(135deg, #fffbeb, #ffffff); }
+        .sr-part-card[data-part="4"] .sr-part-header:hover { background: linear-gradient(135deg, #fef3c7, #fffbeb); }
+        .sr-part-card[data-part="4"] .sr-part-title,
+        .sr-part-card[data-part="4"] .sr-part-arrow,
+        .sr-part-card[data-part="4"] .sr-guide-toggle,
+        .sr-part-card[data-part="4"] .sr-guide-panel .gp-title { color: #d97706; }
+        .sr-part-card[data-part="4"] .sr-guide-toggle { background: #fffbeb; border-color: #fde68a; }
+        .sr-part-card[data-part="4"] .sr-guide-toggle:hover { background: #fef3c7; }
+        .sr-part-card[data-part="4"] .sr-textarea:focus { border-color: #d97706; }
+        .sr-part-card[data-part="4"] .sr-btn-primary { background: #d97706; }
+        .sr-part-card[data-part="4"] .sr-btn-primary:hover:not(:disabled) { background: #b45309; }
+        .sr-part-card[data-part="4"]:hover { box-shadow: 0 2px 12px rgba(217,119,6,0.08); }
+
+        /* 파트5: 빨강 - #dc3545 */
+        .sr-part-card[data-part="5"] { border-color: #fecaca; }
+        .sr-part-card[data-part="5"] .sr-part-header { background: linear-gradient(135deg, #fef2f2, #ffffff); }
+        .sr-part-card[data-part="5"] .sr-part-header:hover { background: linear-gradient(135deg, #fee2e2, #fef2f2); }
+        .sr-part-card[data-part="5"] .sr-part-title,
+        .sr-part-card[data-part="5"] .sr-part-arrow,
+        .sr-part-card[data-part="5"] .sr-guide-toggle,
+        .sr-part-card[data-part="5"] .sr-guide-panel .gp-title { color: #dc2626; }
+        .sr-part-card[data-part="5"] .sr-guide-toggle { background: #fef2f2; border-color: #fecaca; }
+        .sr-part-card[data-part="5"] .sr-guide-toggle:hover { background: #fee2e2; }
+        .sr-part-card[data-part="5"] .sr-textarea:focus { border-color: #dc2626; }
+        .sr-part-card[data-part="5"] .sr-btn-primary { background: #dc2626; }
+        .sr-part-card[data-part="5"] .sr-btn-primary:hover:not(:disabled) { background: #b91c1c; }
+        .sr-part-card[data-part="5"]:hover { box-shadow: 0 2px 12px rgba(220,38,38,0.08); }
+
+        .sr-guide-toggle {
+            width: 100%;
+            padding: 10px 14px;
+            background: #faf8ff;
+            border: 1px solid #e0d7ff;
+            border-radius: 8px;
+            color: #6f42c1;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: left;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            transition: background 0.2s;
+            font-family: inherit;
+        }
+        .sr-guide-toggle:hover { background: #f3edff; }
+        .sr-guide-toggle .gt-arrow { transition: transform 0.25s; font-size: 0.75rem; }
+        .sr-guide-toggle.open .gt-arrow { transform: rotate(180deg); }
+        .sr-guide-panel {
+            display: none;
+            background: #fafafa;
+            border: 1px solid #e8e5f0;
+            border-radius: 8px;
+            padding: 14px 16px 14px 16px;
+            margin-bottom: 12px;
+            font-size: 0.85rem;
+            line-height: 1.7;
+            color: #444;
+        }
+        .sr-guide-panel.open { display: block; }
+        .sr-guide-panel .gp-title {
+            font-weight: 700;
+            color: #6f42c1;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+        .sr-guide-panel ol {
+            margin: 0;
+            padding-left: 22px;
+        }
+        .sr-guide-panel li {
+            margin-bottom: 5px;
+        }
+        .sr-guide-panel li strong {
+            color: #333;
+        }
+        @media (max-width: 600px) {
+            .sr-guide-toggle { padding: 9px 12px; font-size: 0.82rem; }
+            .sr-guide-panel { padding: 12px 14px; font-size: 0.82rem; }
+            .sr-guide-panel ol { padding-left: 20px; }
+        }
         .sr-textarea {
             width: 100%;
             min-height: 180px;
@@ -1760,8 +1885,40 @@
             font-weight: 600;
             cursor: pointer;
         }
-        .sr-copy-btn { background: #6f42c1; color: white; }
+        .sr-copy-btn {
+            background: #6f42c1;
+            color: white;
+            transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+            position: relative;
+        }
         .sr-copy-btn:hover { background: #5a32a3; }
+        .sr-copy-btn:active { transform: scale(0.96); }
+        .sr-copy-btn.copied {
+            background: #16a34a !important;
+            box-shadow: 0 0 0 4px rgba(22,163,74,0.25);
+            animation: srCopyPulse 0.45s ease-out;
+        }
+        @keyframes srCopyPulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(22,163,74,0.6); }
+            50% { transform: scale(1.06); box-shadow: 0 0 0 8px rgba(22,163,74,0.25); }
+            100% { transform: scale(1); box-shadow: 0 0 0 4px rgba(22,163,74,0.25); }
+        }
+        .sr-copy-toast {
+            display: inline-block;
+            margin-left: 10px;
+            padding: 6px 12px;
+            background: #16a34a;
+            color: white;
+            border-radius: 16px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            animation: srToastIn 0.3s ease-out;
+            vertical-align: middle;
+        }
+        @keyframes srToastIn {
+            from { opacity: 0; transform: translateY(-4px) scale(0.9); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
         .sr-retry-btn { background: #fd7e14; color: white; }
         .sr-retry-btn:hover { background: #e8590c; }
         .sr-error {
@@ -3641,12 +3798,26 @@
             <div class="sr-part-card" id="srCard1" data-part="1">
                 <div class="sr-part-header" onclick="srTogglePart(1)">
                     <div>
-                        <div class="sr-part-title">📋 파트 1: 전체 구조·전개</div>
+                        <div class="sr-part-title">📋 파트 1<span class="pt-sub">· 전체 구조·전개</span></div>
                         <div class="sr-part-subtitle">"건물의 골조 - 큰 그림 점검"</div>
                     </div>
                     <span class="sr-part-arrow">▼</span>
                 </div>
                 <div class="sr-part-body">
+                    <button class="sr-guide-toggle" id="srGuideBtn1" type="button" onclick="srToggleGuide(1)">
+                        <span>📖 이 파트 검수 항목 보기</span>
+                        <span class="gt-arrow">▼</span>
+                    </button>
+                    <div class="sr-guide-panel" id="srGuidePanel1">
+                        <div class="gp-title">파트 1 · 전체 구조·전개 (건물의 골조)</div>
+                        <ol>
+                            <li><strong>전개 구도</strong> — 미스터리→정보→감정→반전 흐름이 자연스러운가</li>
+                            <li><strong>정보-감정 진자</strong> — 정보 폭격 후 감정 환기가 적절히 배치됐는가</li>
+                            <li><strong>맥락 튀는 부분</strong> — 갑자기 화제가 바뀌거나 설명 없이 도약하는 구간이 있는가</li>
+                            <li><strong>설명 누락</strong> — "왜?"라는 질문에 답하지 않고 넘어간 부분이 있는가</li>
+                            <li><strong>영상 전환</strong> — 영상으로 만들었을 때 어색한 장면 전환이 있는가</li>
+                        </ol>
+                    </div>
                     <textarea class="sr-textarea" id="srInput1" placeholder="검수할 대본을 여기에 붙여넣으세요" oninput="srUpdateCharCount(1); srSaveInput(1);"></textarea>
                     <div class="sr-charcount">글자수: <span id="srCount1">0</span>자</div>
                     <div class="sr-btn-row">
@@ -3661,12 +3832,26 @@
             <div class="sr-part-card collapsed" id="srCard2" data-part="2">
                 <div class="sr-part-header" onclick="srTogglePart(2)">
                     <div>
-                        <div class="sr-part-title">🚪 파트 2: 도입부·시청 진입</div>
+                        <div class="sr-part-title">🚪 파트 2<span class="pt-sub">· 도입부·시청 진입</span></div>
                         <div class="sr-part-subtitle">"입구 - 첫 30초 진입 장벽 점검"</div>
                     </div>
                     <span class="sr-part-arrow">▼</span>
                 </div>
                 <div class="sr-part-body">
+                    <button class="sr-guide-toggle" id="srGuideBtn2" type="button" onclick="srToggleGuide(2)">
+                        <span>📖 이 파트 검수 항목 보기</span>
+                        <span class="gt-arrow">▼</span>
+                    </button>
+                    <div class="sr-guide-panel" id="srGuidePanel2">
+                        <div class="gp-title">파트 2 · 도입부·시청 진입 (건물의 입구)</div>
+                        <ol>
+                            <li><strong>도입부 분량</strong> — 350~400자 하드룰 (실측 글자수 표시)</li>
+                            <li><strong>첫 문장 후킹</strong> — 첫 5초 안에 시청자를 잡아끄는가</li>
+                            <li><strong>후킹 요소 5종</strong> — 시간/장소/숫자/대상/긴장감 중 몇 개 포함됐는가</li>
+                            <li><strong>본문 연결성</strong> — 도입부에서 본문으로 자연스럽게 넘어가는가</li>
+                            <li><strong>정보 과부하</strong> — 도입부에 숫자·통계가 너무 많지 않은가</li>
+                        </ol>
+                    </div>
                     <textarea class="sr-textarea" id="srInput2" placeholder="검수할 대본을 여기에 붙여넣으세요" oninput="srUpdateCharCount(2); srSaveInput(2);"></textarea>
                     <div class="sr-charcount">글자수: <span id="srCount2">0</span>자</div>
                     <div class="sr-btn-row">
@@ -3681,12 +3866,26 @@
             <div class="sr-part-card collapsed" id="srCard3" data-part="3">
                 <div class="sr-part-header" onclick="srTogglePart(3)">
                     <div>
-                        <div class="sr-part-title">🎯 파트 3: 몰입·시청 지속</div>
+                        <div class="sr-part-title">🎯 파트 3<span class="pt-sub">· 몰입·시청 지속</span></div>
                         <div class="sr-part-subtitle">"동선 - 중간 이탈 구간 점검"</div>
                     </div>
                     <span class="sr-part-arrow">▼</span>
                 </div>
                 <div class="sr-part-body">
+                    <button class="sr-guide-toggle" id="srGuideBtn3" type="button" onclick="srToggleGuide(3)">
+                        <span>📖 이 파트 검수 항목 보기</span>
+                        <span class="gt-arrow">▼</span>
+                    </button>
+                    <div class="sr-guide-panel" id="srGuidePanel3">
+                        <div class="gp-title">파트 3 · 몰입·시청 지속 (건물의 동선)</div>
+                        <ol>
+                            <li><strong>감정선 구성</strong> — 최소 3개 이상의 감정 굴곡이 있는가</li>
+                            <li><strong>호흡</strong> — 50자 초과 문장 개수 + 가장 긴 문장 TOP 3</li>
+                            <li><strong>클리프행어</strong> — 화제 전환 지점마다 이탈 방지 미끼가 있는가</li>
+                            <li><strong>흥미도 유지</strong> — 가장 지루한 구간 1곳 지적</li>
+                            <li><strong>일반 시청자 이탈 위험</strong> — 정보 나열·전문 용어 과다 등 이탈 구간</li>
+                        </ol>
+                    </div>
                     <textarea class="sr-textarea" id="srInput3" placeholder="검수할 대본을 여기에 붙여넣으세요" oninput="srUpdateCharCount(3); srSaveInput(3);"></textarea>
                     <div class="sr-charcount">글자수: <span id="srCount3">0</span>자</div>
                     <div class="sr-btn-row">
@@ -3701,12 +3900,26 @@
             <div class="sr-part-card collapsed" id="srCard4" data-part="4">
                 <div class="sr-part-header" onclick="srTogglePart(4)">
                     <div>
-                        <div class="sr-part-title">💡 파트 4: 이해도·전달력</div>
+                        <div class="sr-part-title">💡 파트 4<span class="pt-sub">· 이해도·전달력</span></div>
                         <div class="sr-part-subtitle">"인테리어 - 비유·풀이·쉬운 전달 점검"</div>
                     </div>
                     <span class="sr-part-arrow">▼</span>
                 </div>
                 <div class="sr-part-body">
+                    <button class="sr-guide-toggle" id="srGuideBtn4" type="button" onclick="srToggleGuide(4)">
+                        <span>📖 이 파트 검수 항목 보기</span>
+                        <span class="gt-arrow">▼</span>
+                    </button>
+                    <div class="sr-guide-panel" id="srGuidePanel4">
+                        <div class="gp-title">파트 4 · 이해도·전달력 (건물의 인테리어)</div>
+                        <ol>
+                            <li><strong>비유 3단계</strong> — 어려운 개념을 개념→시각→감정 순으로 풀었는가</li>
+                            <li><strong>귀에 쏙쏙 풀이</strong> — 음성으로 들었을 때 한 번에 이해되는가</li>
+                            <li><strong>숫자·통계 처리</strong> — 모든 숫자에 단위·환산·비유·맥락이 있는가</li>
+                            <li><strong>장면화 vs 정보 나열</strong> — 그림이 그려지는 묘사인가, 보고서 나열인가</li>
+                            <li><strong>한국 연결 자연스러움</strong> — 한국 비유가 억지스럽지 않은가</li>
+                        </ol>
+                    </div>
                     <textarea class="sr-textarea" id="srInput4" placeholder="검수할 대본을 여기에 붙여넣으세요" oninput="srUpdateCharCount(4); srSaveInput(4);"></textarea>
                     <div class="sr-charcount">글자수: <span id="srCount4">0</span>자</div>
                     <div class="sr-btn-row">
@@ -3721,12 +3934,26 @@
             <div class="sr-part-card collapsed" id="srCard5" data-part="5">
                 <div class="sr-part-header" onclick="srTogglePart(5)">
                     <div>
-                        <div class="sr-part-title">🔍 파트 5: 신뢰성·디테일</div>
+                        <div class="sr-part-title">🔍 파트 5<span class="pt-sub">· 신뢰성·디테일</span></div>
                         <div class="sr-part-subtitle">"마감 - 팩트·인용·디테일 점검"</div>
                     </div>
                     <span class="sr-part-arrow">▼</span>
                 </div>
                 <div class="sr-part-body">
+                    <button class="sr-guide-toggle" id="srGuideBtn5" type="button" onclick="srToggleGuide(5)">
+                        <span>📖 이 파트 검수 항목 보기</span>
+                        <span class="gt-arrow">▼</span>
+                    </button>
+                    <div class="sr-guide-panel" id="srGuidePanel5">
+                        <div class="gp-title">파트 5 · 신뢰성·디테일 (건물의 마감)</div>
+                        <ol>
+                            <li><strong>가상 인물</strong> — 출처 불명의 가공 인물·인용이 있는가</li>
+                            <li><strong>출처 없는 통계</strong> — 충격적인 숫자에 근거가 명시됐는가</li>
+                            <li><strong>"~에 따르면" 인용 과다</strong> — 인용 표현이 5개 이하인가</li>
+                            <li><strong>거슬리는 중복</strong> — 의도적 반복이 아닌 불필요한 중복이 있는가</li>
+                            <li><strong>시청자 공감대</strong> — 한국 시청자와 연결되는 공감 포인트가 3개 이상인가</li>
+                        </ol>
+                    </div>
                     <textarea class="sr-textarea" id="srInput5" placeholder="검수할 대본을 여기에 붙여넣으세요" oninput="srUpdateCharCount(5); srSaveInput(5);"></textarea>
                     <div class="sr-charcount">글자수: <span id="srCount5">0</span>자</div>
                     <div class="sr-btn-row">
@@ -7941,6 +8168,14 @@ ${_retryRound > 0 ? `⚠️ 이번은 ${_retryRound}차 추가 요청입니다. 
             if (card) card.classList.toggle('collapsed');
         }
 
+        function srToggleGuide(num) {
+            const btn = document.getElementById(`srGuideBtn${num}`);
+            const panel = document.getElementById(`srGuidePanel${num}`);
+            if (!btn || !panel) return;
+            const open = panel.classList.toggle('open');
+            btn.classList.toggle('open', open);
+        }
+
         function srUpdateCharCount(num) {
             const ta = document.getElementById(`srInput${num}`);
             const el = document.getElementById(`srCount${num}`);
@@ -8852,6 +9087,8 @@ ${scriptText}
         function copyScriptReviewResult(num) {
             const raw = localStorage.getItem(SR_LS_RESULT(num));
             if (!raw) { alert('복사할 결과가 없습니다'); return; }
+            // 결과 영역 안의 복사 버튼을 직접 찾는다 (event.target 의존 X)
+            const btn = document.querySelector(`#srResult${num} .sr-copy-btn`);
             try {
                 const obj = JSON.parse(raw);
                 const meta = SR_META[num];
@@ -8861,12 +9098,28 @@ ${scriptText}
                            `> 엔진: ${modelLabel}\n\n` +
                            obj.response + '\n';
                 navigator.clipboard.writeText(md).then(() => {
-                    const btn = event && event.target;
-                    if (btn) {
-                        const orig = btn.textContent;
-                        btn.textContent = '✅ 복사됨';
-                        setTimeout(() => { btn.textContent = orig; }, 1500);
+                    if (!btn) return;
+                    const orig = btn.innerHTML;
+                    btn.classList.add('copied');
+                    btn.innerHTML = '✅ 복사 완료!';
+                    // 결과 영역에 토스트도 추가
+                    let toast = document.querySelector(`#srResult${num} .sr-copy-toast`);
+                    if (!toast) {
+                        toast = document.createElement('span');
+                        toast.className = 'sr-copy-toast';
+                        toast.textContent = '클립보드에 복사됨 → Claude에 붙여넣으세요';
+                        btn.parentNode.appendChild(toast);
+                    } else {
+                        toast.style.animation = 'none';
+                        // 강제로 reflow시켜 애니메이션 재실행
+                        void toast.offsetWidth;
+                        toast.style.animation = 'srToastIn 0.3s ease-out';
                     }
+                    setTimeout(() => {
+                        btn.classList.remove('copied');
+                        btn.innerHTML = orig;
+                        if (toast && toast.parentNode) toast.parentNode.removeChild(toast);
+                    }, 2500);
                 }).catch(err => {
                     console.error('clipboard 실패:', err);
                     alert('복사 실패. 콘솔 확인.');
