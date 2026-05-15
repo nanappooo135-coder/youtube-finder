@@ -2300,14 +2300,19 @@
                     </label>
                 </div>
 
-                <!-- Gemini API 키 설정 -->
+                <!-- Gemini API 키 설정 (다중) -->
                 <div style="margin-top:16px;padding-top:16px;border-top:1px solid #e0e0e0;">
-                    <label style="font-weight:700;font-size:0.9rem;">🤖 Gemini API 키 <span style="color:#888;font-weight:400;">(검수·제목·텍스트 등에 사용)</span></label>
+                    <label style="font-weight:700;font-size:0.9rem;">🤖 Gemini API 키 <span style="color:#888;font-weight:400;">(검수·제목·텍스트 등에 사용 · 여러 개 등록 시 자동 로테이션)</span></label>
+                    <p style="font-size:0.8rem;color:#666;margin:6px 0 8px;line-height:1.5;">
+                        💡 한 줄에 키 1개씩 입력. 한 키가 429(한도 초과)면 자동으로 다음 키로 전환됩니다.<br>
+                        ⚠️ 같은 Google 계정 키는 한도 공유 — 진짜 효과는 <b>다른 계정 키</b>를 추가해야 함.
+                    </p>
+                    <textarea id="geminiKeyInput" rows="3" placeholder="키1&#10;키2&#10;키3" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:0.85rem;font-family:monospace;resize:vertical;line-height:1.6;"></textarea>
                     <div style="display:flex;gap:8px;margin-top:8px;">
-                        <input type="password" id="geminiKeyInput" placeholder="Gemini API 키 입력" value="" style="flex:1;padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:0.85rem;">
-                        <button onclick="saveGeminiKey()" style="padding:10px 20px;background:#dc3545;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;">저장</button>
+                        <button onclick="saveGeminiKey()" style="flex:1;padding:10px 20px;background:#dc3545;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;">저장</button>
+                        <button onclick="toggleGeminiKeyVisibility()" style="padding:10px 16px;background:#6c757d;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;" id="geminiKeyToggleBtn">👁 보기</button>
                     </div>
-                    <p id="geminiKeyStatus" style="font-size:0.8rem;color:#888;margin-top:4px;"></p>
+                    <p id="geminiKeyStatus" style="font-size:0.8rem;color:#888;margin-top:6px;"></p>
                 </div>
 
                 <!-- Claude API 키 설정 -->
@@ -4976,6 +4981,17 @@
         // Gemini API 직접 호출 (서버 불필요)
         // ===========================
         const GEMINI_API_KEYS = (function() {
+            // 신규: 배열 저장 ('gemini_api_keys')
+            const storedArr = localStorage.getItem('gemini_api_keys');
+            if (storedArr) {
+                try {
+                    const arr = JSON.parse(storedArr);
+                    if (Array.isArray(arr) && arr.length > 0) {
+                        return arr.filter(k => k && k.trim());
+                    }
+                } catch(e) { /* fallthrough */ }
+            }
+            // 구버전 호환: 단일 키 ('gemini_api_key')
             const stored = localStorage.getItem('gemini_api_key');
             return stored ? [stored] : [];
         })();
@@ -23358,23 +23374,77 @@ ${titles}`;
             URL.revokeObjectURL(a.href);
         }
 
-        // Gemini API 키 저장/로드
+        // Gemini API 키 저장/로드 (다중 키 지원)
         function saveGeminiKey() {
-            const key = document.getElementById('geminiKeyInput').value.trim();
-            if (!key) { alert('키를 입력해주세요'); return; }
-            localStorage.setItem('gemini_api_key', key);
+            const raw = document.getElementById('geminiKeyInput').value;
+            const keys = raw.split('\n').map(k => k.trim()).filter(k => k.length > 0);
+            if (keys.length === 0) { alert('키를 입력해주세요 (한 줄에 1개씩)'); return; }
+            localStorage.setItem('gemini_api_keys', JSON.stringify(keys));
+            // 구 단일 키 항목은 제거 (충돌 방지)
+            localStorage.removeItem('gemini_api_key');
             // 런타임에도 반영
             GEMINI_API_KEYS.length = 0;
-            GEMINI_API_KEYS.push(key);
-            document.getElementById('geminiKeyStatus').textContent = '✅ 저장됨';
-            document.getElementById('geminiKeyStatus').style.color = '#28a745';
+            keys.forEach(k => GEMINI_API_KEYS.push(k));
+            // 쿨다운 초기화 (새 키 추가했으니까)
+            if (typeof _geminiKeyCooldown !== 'undefined') {
+                _geminiKeyCooldown.clear();
+            }
+            const statusEl = document.getElementById('geminiKeyStatus');
+            statusEl.textContent = `✅ ${keys.length}개 키 저장됨 (자동 로테이션)`;
+            statusEl.style.color = '#28a745';
+            console.log(`[saveGeminiKey] ${keys.length}개 키 등록 완료`);
         }
+
+        function toggleGeminiKeyVisibility() {
+            const ta = document.getElementById('geminiKeyInput');
+            const btn = document.getElementById('geminiKeyToggleBtn');
+            if (ta.dataset.hidden === '1') {
+                // 보이기
+                ta.value = ta.dataset.realValue || '';
+                ta.dataset.hidden = '0';
+                btn.textContent = '🙈 숨기기';
+            } else {
+                // 숨기기 (마스킹)
+                ta.dataset.realValue = ta.value;
+                ta.value = ta.value
+                    .split('\n')
+                    .map(k => k.trim() ? k.slice(0, 6) + '••••••••' + k.slice(-4) : '')
+                    .join('\n');
+                ta.dataset.hidden = '1';
+                btn.textContent = '👁 보기';
+            }
+        }
+
         (function initGeminiKeyUI() {
+            const ta = document.getElementById('geminiKeyInput');
+            const statusEl = document.getElementById('geminiKeyStatus');
+            // 1순위: 다중 키 배열
+            const storedArr = localStorage.getItem('gemini_api_keys');
+            if (storedArr) {
+                try {
+                    const arr = JSON.parse(storedArr);
+                    if (Array.isArray(arr) && arr.length > 0) {
+                        const filtered = arr.filter(k => k && k.trim());
+                        // 마스킹된 상태로 초기 표시
+                        ta.dataset.realValue = filtered.join('\n');
+                        ta.value = filtered
+                            .map(k => k.slice(0, 6) + '••••••••' + k.slice(-4))
+                            .join('\n');
+                        ta.dataset.hidden = '1';
+                        statusEl.textContent = `✅ ${filtered.length}개 키 등록됨 (자동 로테이션) — 보려면 👁 클릭`;
+                        statusEl.style.color = '#28a745';
+                        return;
+                    }
+                } catch(e) {}
+            }
+            // 2순위: 구버전 단일 키 (자동 마이그레이션)
             const saved = localStorage.getItem('gemini_api_key');
             if (saved) {
-                document.getElementById('geminiKeyInput').value = saved;
-                document.getElementById('geminiKeyStatus').textContent = '✅ 키 등록됨';
-                document.getElementById('geminiKeyStatus').style.color = '#28a745';
+                ta.dataset.realValue = saved;
+                ta.value = saved.slice(0, 6) + '••••••••' + saved.slice(-4);
+                ta.dataset.hidden = '1';
+                statusEl.textContent = '✅ 1개 키 등록됨 (구버전 — 저장 다시 누르면 다중 키 형식으로 마이그레이션)';
+                statusEl.style.color = '#28a745';
             }
         })();
 
