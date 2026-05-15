@@ -3878,6 +3878,53 @@
                     </div>
                 </div>
             </div>
+            <!-- VoiceBox 장면별 TTS 생성 -->
+            <div class="section">
+                <div class="section-title">🎙️ VoiceBox 장면별 TTS 생성</div>
+                <div class="section-content">
+                    <p style="font-size:0.85rem;color:#888;margin-bottom:12px;">
+                        JSON 생성 후, VoiceBox 앱이 실행 중이면 장면별 나레이션을 자동으로 TTS 음성 파일로 만듭니다.
+                    </p>
+
+                    <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
+                        <div id="vbStatus" style="padding:6px 14px;border-radius:8px;font-size:0.85rem;font-weight:600;background:#f8d7da;color:#842029;">⏳ 연결 확인 중...</div>
+                        <button onclick="vbCheckConnection()" style="padding:6px 12px;border:1.5px solid #e0e0e0;border-radius:8px;background:white;font-size:0.82rem;cursor:pointer;">🔄 재연결</button>
+                    </div>
+
+                    <div class="input-group">
+                        <label>음성 프로필</label>
+                        <select id="vbProfileSelect" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;">
+                            <option value="">VoiceBox 연결 후 선택</option>
+                        </select>
+                    </div>
+
+                    <div class="input-group">
+                        <label>TTS 엔진</label>
+                        <select id="vbEngineSelect" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;">
+                            <option value="qwen" selected>Qwen3-TTS 1.7B (한국어 추천)</option>
+                            <option value="qwen-small">Qwen3-TTS 0.6B (빠름)</option>
+                            <option value="chatterbox-multilingual">Chatterbox Multilingual (23개 언어)</option>
+                        </select>
+                    </div>
+
+                    <button id="vbGenerateBtn" onclick="vbGenerateAllScenes()" disabled style="width:100%;padding:14px;background:#f59e0b;color:white;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;margin-top:8px;opacity:0.5;">
+                        🎙️ 장면별 TTS 일괄 생성
+                    </button>
+
+                    <div id="vbProgress" style="display:none;margin-top:16px;">
+                        <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+                            <span id="vbProgressLabel" style="font-size:0.85rem;font-weight:600;">생성 중...</span>
+                            <span id="vbProgressCount" style="font-size:0.85rem;color:#666;">0/0</span>
+                        </div>
+                        <div style="width:100%;height:8px;background:#e9ecef;border-radius:4px;overflow:hidden;">
+                            <div id="vbProgressBar" style="width:0%;height:100%;background:#f59e0b;border-radius:4px;transition:width 0.3s;"></div>
+                        </div>
+                    </div>
+
+                    <div id="vbResultList" style="display:none;margin-top:16px;max-height:400px;overflow-y:auto;"></div>
+                </div>
+            </div>
+
         </div><!-- /process-tts -->
 
         <!-- ===== 프로세스: 대본 검수 (구버전 - 제거됨, scriptReview 탭으로 대체) ===== -->
@@ -30609,6 +30656,125 @@ ${commentText.slice(0, 12000)}`;
                     .catch(err => console.warn('[PWA] SW registration failed:', err));
             });
         }
+    </script>
+    <script>
+        // ===== VoiceBox TTS 연동 =====
+        const VB_URL = 'http://127.0.0.1:17493';
+        window._vbProfiles = [];
+        window._vbGenerating = false;
+
+        async function vbCheckConnection() {
+            const statusEl = document.getElementById('vbStatus');
+            const selectEl = document.getElementById('vbProfileSelect');
+            const btn = document.getElementById('vbGenerateBtn');
+            try {
+                const res = await fetch(VB_URL + '/profiles');
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const profiles = await res.json();
+                window._vbProfiles = profiles;
+                selectEl.innerHTML = '';
+                if (profiles.length === 0) {
+                    selectEl.innerHTML = '<option value="">프로필 없음 — VoiceBox에서 먼저 생성하세요</option>';
+                    statusEl.style.background = '#fff3cd'; statusEl.style.color = '#664d03';
+                    statusEl.textContent = '⚠️ 연결됨 (프로필 없음)';
+                    btn.disabled = true; btn.style.opacity = '0.5';
+                    return;
+                }
+                profiles.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.id;
+                    opt.textContent = p.name + ' (' + (p.language || '?') + ')';
+                    selectEl.appendChild(opt);
+                });
+                statusEl.style.background = '#d1e7dd'; statusEl.style.color = '#0f5132';
+                statusEl.textContent = '✅ 연결됨 (' + profiles.length + '개 프로필)';
+                btn.disabled = false; btn.style.opacity = '1';
+            } catch (e) {
+                statusEl.style.background = '#f8d7da'; statusEl.style.color = '#842029';
+                statusEl.textContent = '❌ VoiceBox 앱을 실행하세요';
+                selectEl.innerHTML = '<option value="">VoiceBox 연결 후 선택</option>';
+                btn.disabled = true; btn.style.opacity = '0.5';
+            }
+        }
+
+        async function vbGenerateAllScenes() {
+            if (window._vbGenerating) { alert('이미 생성 중입니다.'); return; }
+            let scenes = window._sceneGuideData || [];
+            if (!scenes.length) {
+                const jsonData = window._sellpotJsonData;
+                if (jsonData) {
+                    try {
+                        const parsed = JSON.parse(jsonData);
+                        if (parsed.scenes) scenes = parsed.scenes;
+                    } catch(e) {}
+                }
+            }
+            if (!scenes.length) { alert('먼저 JSON을 생성하세요.'); return; }
+
+            const profileId = document.getElementById('vbProfileSelect').value;
+            if (!profileId) { alert('음성 프로필을 선택하세요.'); return; }
+            const profile = window._vbProfiles.find(p => p.id === profileId);
+
+            const narrations = scenes.filter(s => s.narration && s.narration.trim());
+            if (!narrations.length) { alert('나레이션이 있는 장면이 없습니다.'); return; }
+
+            window._vbGenerating = true;
+            const btn = document.getElementById('vbGenerateBtn');
+            btn.disabled = true; btn.textContent = '⏳ 생성 중...'; btn.style.opacity = '0.5';
+
+            const progressEl = document.getElementById('vbProgress');
+            const progressBar = document.getElementById('vbProgressBar');
+            const progressLabel = document.getElementById('vbProgressLabel');
+            const progressCount = document.getElementById('vbProgressCount');
+            const resultList = document.getElementById('vbResultList');
+            progressEl.style.display = ''; resultList.style.display = '';
+            resultList.innerHTML = '';
+
+            const total = narrations.length;
+            let done = 0; let failed = 0;
+            const results = [];
+
+            for (const scene of narrations) {
+                const sceneId = scene.id || (narrations.indexOf(scene) + 1);
+                progressLabel.textContent = '장면 ' + sceneId + ' 생성 중...';
+                progressCount.textContent = done + '/' + total;
+                progressBar.style.width = (done / total * 100) + '%';
+
+                try {
+                    const res = await fetch(VB_URL + '/generate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            text: scene.narration,
+                            profile_id: profileId,
+                            language: profile.language || 'ko'
+                        })
+                    });
+                    const data = await res.json();
+                    results.push({ sceneId, status: 'ok', data, text: scene.narration });
+                    resultList.innerHTML += '<div style="padding:8px 12px;margin-bottom:4px;background:#d1e7dd;border-radius:8px;font-size:0.82rem;">'
+                        + '✅ 장면 ' + sceneId + ': ' + (scene.narration.length > 40 ? scene.narration.substring(0,40)+'...' : scene.narration)
+                        + ' <span style="color:#666;">(' + (data.status || 'queued') + ')</span></div>';
+                } catch (e) {
+                    failed++;
+                    results.push({ sceneId, status: 'fail', error: e.message });
+                    resultList.innerHTML += '<div style="padding:8px 12px;margin-bottom:4px;background:#f8d7da;border-radius:8px;font-size:0.82rem;">'
+                        + '❌ 장면 ' + sceneId + ': 실패 — ' + e.message + '</div>';
+                }
+                done++;
+                progressCount.textContent = done + '/' + total;
+                progressBar.style.width = (done / total * 100) + '%';
+            }
+
+            progressLabel.textContent = '완료! (' + (total - failed) + '개 성공, ' + failed + '개 실패)';
+            progressBar.style.background = failed > 0 ? '#ffc107' : '#198754';
+            btn.textContent = '🎙️ 장면별 TTS 일괄 생성';
+            btn.disabled = false; btn.style.opacity = '1';
+            window._vbGenerating = false;
+            window._vbResults = results;
+        }
+
+        setTimeout(vbCheckConnection, 1000);
     </script>
 </body>
 </html>
