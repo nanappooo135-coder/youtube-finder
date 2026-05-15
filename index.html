@@ -5043,6 +5043,13 @@
                 return false;
             }
 
+            // 영구 키 에러 — retry해도 안 됨, 즉시 다음 키로 폴백
+            function isKeyDead(status, msg) {
+                if ([401, 403].includes(status)) return true;
+                if (msg && /denied access|permission denied|not authorized|API_KEY_INVALID|API key not valid|API.*not.*enabled/i.test(msg)) return true;
+                return false;
+            }
+
             const shortName = m => m.includes('pro') ? 'Pro' : 'Flash';
 
             let lastError = null;
@@ -5095,6 +5102,13 @@
                                     await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
                                     continue;
                                 }
+                                // 영구 키 에러 (denied access, API not enabled 등) → 다음 키로
+                                if (isKeyDead(data.error.code, data.error.message)) {
+                                    lastError = new Error(data.error.message || `Error ${data.error.code}`);
+                                    console.warn(`[callGemini] ${shortName(model)} 키${ki+1} 영구 거부 (${data.error.code}) → 다음 키 시도`);
+                                    _showGeminiStatus(`${shortName(model)} 키${ki+1} 거부됨 → 다음 키 시도 중...`);
+                                    break;  // attempt 루프 빠져서 다음 키로
+                                }
                                 throw new Error(data.error.message || JSON.stringify(data.error));
                             }
 
@@ -5136,6 +5150,13 @@
                                 _showGeminiStatus(`오류 발생... ${Math.pow(2,attempt)}초 후 재시도`);
                                 await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
                                 continue;
+                            }
+                            // 영구 키 에러 → 다음 키로
+                            if (isKeyDead(0, e.message)) {
+                                lastError = e;
+                                console.warn(`[callGemini] ${shortName(model)} 키${ki+1} 영구 거부 → 다음 키 시도`);
+                                _showGeminiStatus(`${shortName(model)} 키${ki+1} 거부됨 → 다음 키 시도 중...`);
+                                break;
                             }
                             throw e;
                         }
