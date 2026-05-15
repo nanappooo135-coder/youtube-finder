@@ -4087,17 +4087,26 @@
 
             <!-- Claude 외부 검수 import -->
             <div style="background:#fff8e1;border:2px solid #ffc107;border-radius:10px;padding:14px;margin:12px 0;">
-                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
-                    <div>
-                        <strong style="color:#e65100;">🤖 Claude로 검수하기 (Gemini 결제 없이)</strong>
-                        <div style="font-size:0.85rem;color:#666;margin-top:4px;">
-                            Claude Max 쓰는 중이면 → Claude에서 검수받고 JSON으로 가져오기 (비용 0원)
-                        </div>
+                <div style="margin-bottom:10px;">
+                    <strong style="color:#e65100;">🤖 Claude로 검수하기 (Gemini 결제 없이)</strong>
+                    <div style="font-size:0.85rem;color:#666;margin-top:4px;line-height:1.5;">
+                        Claude Max 쓰는 중이면 → Claude에서 검수받고 JSON으로 가져오기 (비용 0원).<br>
+                        <b>추천</b>: 파트별로 따로따로 검수해야 디테일 깊음. 한 번에 5파트 다 = 빠르지만 얕음.
                     </div>
-                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                        <button onclick="copyClaudePrompt()" style="padding:8px 14px;background:#ff9800;color:white;border:none;border-radius:6px;font-weight:700;cursor:pointer;font-size:0.85rem;">📋 Claude 프롬프트 복사</button>
-                        <button onclick="openClaudeImportModal()" style="padding:8px 14px;background:#e65100;color:white;border:none;border-radius:6px;font-weight:700;cursor:pointer;font-size:0.85rem;">📥 JSON 결과 가져오기</button>
-                    </div>
+                </div>
+
+                <div style="font-size:0.82rem;color:#666;font-weight:700;margin-bottom:6px;">📋 파트별 Claude 프롬프트 (각 파트당 풀 깊이 ⭐ 추천)</div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
+                    <button onclick="copyClaudePartPrompt(1)" style="padding:7px 12px;background:#ff9800;color:white;border:none;border-radius:6px;font-weight:600;cursor:pointer;font-size:0.82rem;">파트1 (구조)</button>
+                    <button onclick="copyClaudePartPrompt(2)" style="padding:7px 12px;background:#ff9800;color:white;border:none;border-radius:6px;font-weight:600;cursor:pointer;font-size:0.82rem;">파트2 (흥미)</button>
+                    <button onclick="copyClaudePartPrompt(3)" style="padding:7px 12px;background:#ff9800;color:white;border:none;border-radius:6px;font-weight:600;cursor:pointer;font-size:0.82rem;">파트3 (문체)</button>
+                    <button onclick="copyClaudePartPrompt(4)" style="padding:7px 12px;background:#ff9800;color:white;border:none;border-radius:6px;font-weight:600;cursor:pointer;font-size:0.82rem;">파트4 (이해)</button>
+                    <button onclick="copyClaudePartPrompt(5)" style="padding:7px 12px;background:#ff9800;color:white;border:none;border-radius:6px;font-weight:600;cursor:pointer;font-size:0.82rem;">파트5 (신뢰)</button>
+                </div>
+
+                <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between;border-top:1px solid #ffe082;padding-top:10px;">
+                    <button onclick="copyClaudePrompt()" style="padding:8px 14px;background:#bf360c;color:white;border:none;border-radius:6px;font-weight:700;cursor:pointer;font-size:0.85rem;">⚡ 한 번에 5파트 다 (빠른 모드)</button>
+                    <button onclick="openClaudeImportModal()" style="padding:8px 14px;background:#e65100;color:white;border:none;border-radius:6px;font-weight:700;cursor:pointer;font-size:0.85rem;">📥 JSON 결과 가져오기</button>
                 </div>
             </div>
 
@@ -9817,6 +9826,31 @@ ${scriptText}
                 console.error(e);
                 alert('복사 중 오류: ' + e.message);
             }
+        }
+
+        // ===== Claude 파트별 프롬프트 (각 파트 풀 깊이) =====
+        function copyClaudePartPrompt(num) {
+            // 원본 Gemini용 srGetPrompt 그대로 재사용 → Claude도 이걸로 검수 가능
+            const promptBase = srGetPrompt(num, '{여기에 검수할 대본 붙여넣기}');
+            const meta = SR_META[num];
+            const prompt = promptBase
+                + '\n\n[Claude용 추가 지침 — 매우 중요]\n'
+                + `결과는 반드시 다음 JSON 형식으로만 출력. 그 외 설명 일절 금지:\n`
+                + '```json\n'
+                + `{"scriptReview": {"${num}": "...위 [출력 형식]대로 검수 결과 마크다운 전체 (개행 \\n으로 이스케이프)..."}}\n`
+                + '```\n\n'
+                + `[중요]\n`
+                + `- 이건 ${meta.title}만 검수하는 거임. 다른 파트는 다른 메시지에서 따로 시킴.\n`
+                + `- 항목 빠짐없이 전부 검토. 5개 항목 다 ✅/⚠️/❌ 판정.\n`
+                + `- 인용은 대본 원문 그대로. 줄임표(...) 금지.\n`
+                + `- JSON 내부 마크다운에서 큰따옴표는 \\"로, 개행은 \\n으로 이스케이프.`;
+
+            navigator.clipboard.writeText(prompt).then(() => {
+                alert(`✅ 파트${num} (${meta.title.split(':')[1]?.trim() || meta.title}) Claude 프롬프트 복사됨\n\n1. Claude에 붙여넣기\n2. "{여기에 검수할 대본 붙여넣기}" 부분에 대본 넣기\n3. Claude 결과를 JSON 또는 마크다운으로 받기\n4. "📥 JSON 결과 가져오기" 버튼으로 import (이 파트만 채워짐)`);
+            }).catch(err => {
+                console.error('복사 실패:', err);
+                alert('복사 실패. 콘솔 확인.');
+            });
         }
 
         // ===== Claude 외부 검수 import =====
