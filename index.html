@@ -15197,6 +15197,7 @@ Muted warm palette with one accent: warm lamp orange (#F4A460) for serene moods,
             window._globalTopic = _extractGlobalTopic(scenes);
             _renderSceneGuideFromState();
             document.getElementById('jsonSceneGuideSection').style.display = '';
+            if (typeof vbRenderSceneList === 'function') vbRenderSceneList();
         }
 
         // 전체 대본에서 핵심 주제·국가·시대·인물 추출 → 개별 장면 추천에 맥락 제공
@@ -24362,6 +24363,7 @@ overall mood: bright, psychologically safe illustration, uplifting and reassurin
             document.querySelectorAll('.sp-result-pane').forEach(p => p.style.display = 'none');
             const pane = document.getElementById('spTab_' + tab);
             if (pane) pane.style.display = '';
+            if (tab === 'tts' && typeof vbRenderSceneList === 'function') vbRenderSceneList();
         }
 
         // 셀팟 기본 서브탭 전환 (입력 ↔ 결과)
