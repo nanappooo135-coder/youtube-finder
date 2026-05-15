@@ -4090,18 +4090,27 @@
                 <div style="margin-bottom:10px;">
                     <strong style="color:#e65100;">🤖 Claude로 검수하기 (Gemini 결제 없이)</strong>
                     <div style="font-size:0.85rem;color:#666;margin-top:4px;line-height:1.5;">
-                        ① 아래 파트 입력칸에 <b>대본 붙여넣기</b> → ② 해당 파트 버튼 클릭 → <b>프롬프트+대본이 한 번에</b> 복사됨 → ③ Claude에 붙여넣기 → ④ JSON 결과 import.<br>
-                        <b>추천</b>: 파트별로 따로따로 검수 (디테일 깊음). 한 번에 5파트 다 = 빠르지만 얕음.
+                        ① 아래 칸에 <b>대본 붙여넣기</b> → ② 파트 버튼 클릭 → <b>프롬프트+대본 한 번에</b> 복사 → ③ Claude에 붙여넣기 → ④ JSON 결과 import → ⑤ 결과 받고 수정된 대본 다시 칸에 넣고 다음 파트 버튼
                     </div>
                 </div>
 
-                <div style="font-size:0.82rem;color:#666;font-weight:700;margin-bottom:6px;">📋 파트별 (대본 자동 삽입) — 각 파트 입력칸에 대본 넣고 누르세요 ⭐ 추천</div>
+                <!-- 통합 대본 입력칸 -->
+                <div style="margin-bottom:10px;">
+                    <label style="font-size:0.85rem;font-weight:700;color:#e65100;display:block;margin-bottom:4px;">📄 검수할 대본 (한 번만 붙여넣으면 5파트 다 사용)</label>
+                    <textarea id="claudeUnifiedScript" placeholder="대본을 여기에 붙여넣으세요. 파트 버튼 누르면 자동으로 프롬프트와 합쳐서 복사됩니다." oninput="claudeUnifiedSync()" style="width:100%;min-height:140px;padding:10px;border:2px solid #ffc107;border-radius:8px;font-size:0.88rem;font-family:inherit;resize:vertical;line-height:1.5;background:white;"></textarea>
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;font-size:0.78rem;color:#888;">
+                        <span>글자수: <span id="claudeUnifiedCount">0</span>자</span>
+                        <button onclick="document.getElementById('claudeUnifiedScript').value=''; claudeUnifiedSync();" style="background:none;border:none;color:#888;text-decoration:underline;cursor:pointer;font-size:0.78rem;">대본 비우기</button>
+                    </div>
+                </div>
+
+                <div style="font-size:0.82rem;color:#666;font-weight:700;margin-bottom:6px;">📋 파트별 (대본 자동 합쳐서 복사) ⭐ 추천</div>
                 <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
-                    <button onclick="copyClaudePartPrompt(1)" style="padding:7px 12px;background:#ff9800;color:white;border:none;border-radius:6px;font-weight:600;cursor:pointer;font-size:0.82rem;">파트1 (구조)</button>
-                    <button onclick="copyClaudePartPrompt(2)" style="padding:7px 12px;background:#ff9800;color:white;border:none;border-radius:6px;font-weight:600;cursor:pointer;font-size:0.82rem;">파트2 (흥미)</button>
-                    <button onclick="copyClaudePartPrompt(3)" style="padding:7px 12px;background:#ff9800;color:white;border:none;border-radius:6px;font-weight:600;cursor:pointer;font-size:0.82rem;">파트3 (문체)</button>
-                    <button onclick="copyClaudePartPrompt(4)" style="padding:7px 12px;background:#ff9800;color:white;border:none;border-radius:6px;font-weight:600;cursor:pointer;font-size:0.82rem;">파트4 (이해)</button>
-                    <button onclick="copyClaudePartPrompt(5)" style="padding:7px 12px;background:#ff9800;color:white;border:none;border-radius:6px;font-weight:600;cursor:pointer;font-size:0.82rem;">파트5 (신뢰)</button>
+                    <button onclick="copyClaudePartPrompt(1)" style="padding:8px 14px;background:#ff9800;color:white;border:none;border-radius:6px;font-weight:600;cursor:pointer;font-size:0.85rem;">📋 파트1 (구조)</button>
+                    <button onclick="copyClaudePartPrompt(2)" style="padding:8px 14px;background:#ff9800;color:white;border:none;border-radius:6px;font-weight:600;cursor:pointer;font-size:0.85rem;">📋 파트2 (흥미)</button>
+                    <button onclick="copyClaudePartPrompt(3)" style="padding:8px 14px;background:#ff9800;color:white;border:none;border-radius:6px;font-weight:600;cursor:pointer;font-size:0.85rem;">📋 파트3 (문체)</button>
+                    <button onclick="copyClaudePartPrompt(4)" style="padding:8px 14px;background:#ff9800;color:white;border:none;border-radius:6px;font-weight:600;cursor:pointer;font-size:0.85rem;">📋 파트4 (이해)</button>
+                    <button onclick="copyClaudePartPrompt(5)" style="padding:8px 14px;background:#ff9800;color:white;border:none;border-radius:6px;font-weight:600;cursor:pointer;font-size:0.85rem;">📋 파트5 (신뢰)</button>
                 </div>
 
                 <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between;border-top:1px solid #ffe082;padding-top:10px;">
@@ -8564,7 +8573,7 @@ ${_retryRound > 0 ? `⚠️ 이번은 ${_retryRound}차 추가 요청입니다. 
             if (proc === 'genspark' && typeof _gsInit === 'function') _gsInit();
             if (proc === 'script' && typeof _scrInit === 'function') _scrInit();
             if (proc === 'review') checkFcServer('rvServerStatus');
-            if (proc === 'scriptReview') srLoadAll();
+            if (proc === 'scriptReview') { srLoadAll(); claudeUnifiedLoad(); }
             if (proc === 'plan') pnLoadAll();
             if (proc === 'trend') { fetchIssueRadar(); fetchGoogleTrends(); fetchEconYoutube(); }
             if (proc === 'sellpot') _spInit();
@@ -9828,13 +9837,36 @@ ${scriptText}
             }
         }
 
+        // ===== Claude 통합 대본 입력칸 관리 =====
+        const CLAUDE_UNIFIED_SCRIPT_LS = 'claude_unified_script';
+
+        function claudeUnifiedSync() {
+            const ta = document.getElementById('claudeUnifiedScript');
+            const counter = document.getElementById('claudeUnifiedCount');
+            if (!ta) return;
+            const val = ta.value;
+            if (counter) counter.textContent = val.length;
+            try { localStorage.setItem(CLAUDE_UNIFIED_SCRIPT_LS, val); } catch(e) {}
+        }
+
+        function claudeUnifiedLoad() {
+            try {
+                const saved = localStorage.getItem(CLAUDE_UNIFIED_SCRIPT_LS);
+                if (saved) {
+                    const ta = document.getElementById('claudeUnifiedScript');
+                    if (ta) ta.value = saved;
+                    claudeUnifiedSync();
+                }
+            } catch(e) {}
+        }
+
         // ===== Claude 파트별 프롬프트 (각 파트 풀 깊이) =====
         function copyClaudePartPrompt(num) {
-            // 해당 파트 textarea에서 대본 가져오기 (있으면 자동 삽입, 없으면 placeholder 유지)
-            const scriptText = (document.getElementById(`srInput${num}`)?.value || '').trim();
+            // 통합 대본 입력칸에서 대본 가져오기 (단일 슬롯)
+            const scriptText = (document.getElementById('claudeUnifiedScript')?.value || '').trim();
             const meta = SR_META[num];
             if (!scriptText) {
-                if (!confirm(`파트${num} 대본 입력칸이 비어있습니다.\n프롬프트만 복사할까요? (대본은 Claude에서 직접 붙여넣기)\n\n취소 누르고 먼저 파트${num} 칸에 대본 넣으면 자동으로 합쳐서 복사됨.`)) {
+                if (!confirm(`📄 대본 입력칸이 비어있습니다.\n프롬프트만 복사할까요? (대본은 Claude에서 직접 붙여넣기)\n\n취소 누르고 노란 박스 안 대본칸에 먼저 붙여넣으면 한 번에 복사됨.`)) {
                     return;
                 }
             }
@@ -9867,8 +9899,8 @@ ${scriptText}
 
         // ===== Claude 외부 검수 import =====
         function copyClaudePrompt() {
-            // 파트1 textarea의 대본을 자동 삽입 (빈 칸이면 placeholder 유지)
-            const scriptText = (document.getElementById('srInput1')?.value || '').trim();
+            // 통합 대본 입력칸에서 자동 삽입
+            const scriptText = (document.getElementById('claudeUnifiedScript')?.value || '').trim();
             const scriptBlock = scriptText || '{여기에 대본 붙여넣기}';
             // 5파트 검수 항목 + JSON 출력 형식을 명시한 통합 프롬프트
             const prompt = `너는 유튜브 대본 검수 전문가다. 아래 대본을 5개 파트 관점에서 검수하라.
@@ -9940,7 +9972,7 @@ ${scriptBlock}`;
             navigator.clipboard.writeText(prompt).then(() => {
                 const hasScript = scriptText.length > 0;
                 const msg = hasScript
-                    ? `✅ 프롬프트+대본 한 방에 복사됨 (${scriptText.length}자, 파트1 입력칸 기준)\n\n1. Claude에 그대로 붙여넣기 → 끝\n2. Claude가 JSON 출력하면 복사\n3. "📥 JSON 결과 가져오기"로 import (5파트 자동 채워짐)`
+                    ? `✅ 프롬프트+대본 한 방에 복사됨 (${scriptText.length}자)\n\n1. Claude에 그대로 붙여넣기 → 끝\n2. Claude가 JSON 출력하면 복사\n3. "📥 JSON 결과 가져오기"로 import (5파트 자동 채워짐)`
                     : '✅ Claude 검수 프롬프트만 복사됨 (대본 비어있음)\n\n1. Claude에 붙여넣기\n2. "{여기에 대본 붙여넣기}" 부분에 대본 직접 넣기\n3. Claude가 출력한 JSON을 복사\n4. "📥 JSON 결과 가져오기" 버튼으로 import';
                 alert(msg);
             }).catch(err => {
