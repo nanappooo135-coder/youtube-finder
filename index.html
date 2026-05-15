@@ -4998,6 +4998,39 @@
             if (_geminiStatusEl) _geminiStatusEl.innerHTML = `<div class="spinner"></div> ${msg}`;
         }
 
+        // 키 쿨다운 — 429 받은 (model, key) 조합은 1시간 동안 스킵
+        // Map<"model::keyIdx", expireTimestamp>
+        const _geminiKeyCooldown = new Map();
+        const KEY_COOLDOWN_MS = 60 * 60 * 1000; // 1시간
+
+        function _isKeyOnCooldown(model, keyIdx) {
+            const k = `${model}::${keyIdx}`;
+            const until = _geminiKeyCooldown.get(k);
+            if (!until) return false;
+            if (Date.now() > until) {
+                _geminiKeyCooldown.delete(k);
+                return false;
+            }
+            return true;
+        }
+        function _markKeyDead(model, keyIdx, reason) {
+            const k = `${model}::${keyIdx}`;
+            _geminiKeyCooldown.set(k, Date.now() + KEY_COOLDOWN_MS);
+            const minutes = Math.ceil(KEY_COOLDOWN_MS / 60000);
+            console.warn(`[callGemini] 키${keyIdx + 1} (${model}) ${minutes}분 쿨다운 시작 — ${reason}`);
+        }
+        function _getCooldownStatus() {
+            const now = Date.now();
+            const active = [];
+            for (const [k, until] of _geminiKeyCooldown.entries()) {
+                if (until > now) {
+                    const remainMin = Math.ceil((until - now) / 60000);
+                    active.push(`${k} (${remainMin}분 남음)`);
+                }
+            }
+            return active;
+        }
+
         async function callGemini(prompt, opts = {}) {
             const maxTokens = opts.maxTokens || 8192;
             const temperature = opts.temperature || 0.3;
@@ -5027,11 +5060,19 @@
             const shortName = m => m.includes('pro') ? 'Pro' : 'Flash';
 
             let lastError = null;
+            let skippedDueToCooldown = 0;
             for (let mi = 0; mi < models.length; mi++) {
                 const model = models[mi];
                 for (let ki = 0; ki < GEMINI_API_KEYS.length; ki++) {
+                    // 쿨다운 중인 (모델·키) 조합은 스킵
+                    if (_isKeyOnCooldown(model, ki)) {
+                        skippedDueToCooldown++;
+                        console.log(`[callGemini] 키${ki + 1} (${model}) 쿨다운 중 — 스킵`);
+                        continue;
+                    }
                     const key = GEMINI_API_KEYS[ki];
                     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+                    console.log(`[callGemini] 키${ki + 1} (${model}) 호출 시도`);
 
                     for (let attempt = 0; attempt < maxRetries; attempt++) {
                         try {
@@ -5063,6 +5104,12 @@
 
                             if (isRetryable(res.status, '')) {
                                 lastError = new Error(`HTTP ${res.status}`);
+                                // 429(한도 초과)는 즉시 키 쿨다운 + 다음 키로
+                                if (res.status === 429) {
+                                    _markKeyDead(model, ki, `HTTP 429 (한도 초과)`);
+                                    _showGeminiStatus(`${shortName(model)} 키${ki+1} 한도 초과 → 다음 키 시도`);
+                                    break;  // attempt 루프 빠져서 다음 키로
+                                }
                                 _showGeminiStatus(`${shortName(model)} 과부하 (${res.status})... ${Math.pow(2,attempt)}초 후 재시도`);
                                 await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
                                 continue;
@@ -5072,6 +5119,12 @@
                             if (data.error) {
                                 if (isRetryable(data.error.code, data.error.message)) {
                                     lastError = new Error(data.error.message || `Error ${data.error.code}`);
+                                    // 429 또는 quota 메시지 → 키 쿨다운
+                                    if (data.error.code === 429 || /quota|rate limit/i.test(data.error.message || '')) {
+                                        _markKeyDead(model, ki, data.error.message || `Error 429`);
+                                        _showGeminiStatus(`${shortName(model)} 키${ki+1} 한도 초과 → 다음 키 시도`);
+                                        break;
+                                    }
                                     _showGeminiStatus(`${shortName(model)} 과부하... ${Math.pow(2,attempt)}초 후 재시도`);
                                     await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
                                     continue;
@@ -5142,7 +5195,15 @@
                     _showGeminiStatus(`${shortName(model)} 실패 → ${shortName(models[mi+1])}로 전환 중...`);
                 }
             }
-            throw new Error(lastError?.message || '모든 API 키의 할당량이 소진되었습니다. 잠시 후 다시 시도해주세요.');
+            // 모든 키가 쿨다운/실패 → 쿨다운 정보 포함해서 에러
+            const cooldownInfo = _getCooldownStatus();
+            const cooldownMsg = cooldownInfo.length
+                ? ` (쿨다운 중: ${cooldownInfo.join(', ')})`
+                : '';
+            const skipMsg = skippedDueToCooldown > 0
+                ? ` [쿨다운으로 ${skippedDueToCooldown}개 키 스킵됨]`
+                : '';
+            throw new Error((lastError?.message || '모든 API 키의 할당량이 소진되었습니다. 잠시 후 다시 시도해주세요.') + skipMsg + cooldownMsg);
         }
 
         // 스트리밍 헬퍼 — 스트리밍 시도 → 실패 시 일반 API 폴백
@@ -9537,35 +9598,21 @@ ${scriptText}
 
             const prompt = srGetPrompt(num, scriptText);
             let result = null;
-            let usedModel = null; // 'pro' | 'flash'
+            let usedModel = null; // 'pro' 만 (검수 탭은 Flash 폴백 안 함 — 출력이 짧게 잘림)
             let errorMsg = null;
 
-            // 1차: gemini-2.5-pro
+            // 검수 탭은 Pro 전용 — 키 로테이션만 (Flash 폴백 없음)
             try {
                 result = await callGemini(prompt, {
                     model: 'gemini-2.5-pro',
-                    noFallback: true,
+                    noFallback: true,  // Flash 자동 전환 차단
                     maxTokens: 8192,
                     temperature: 0.3,
                 });
                 usedModel = 'pro';
             } catch(e1) {
-                console.warn('[runScriptReview] Pro 실패 → Flash 시도:', e1.message);
-                resultEl.innerHTML = `<div class="sr-loading"><div class="spinner"></div> Pro 한도 초과/오류 → Gemini Flash로 재시도 중...</div>`;
-                _geminiStatusEl = resultEl.querySelector('.sr-loading');
-                // 2차: gemini-2.5-flash (2.0은 단종됨 2026-05)
-                try {
-                    result = await callGemini(prompt, {
-                        model: 'gemini-2.5-flash',
-                        noFallback: true,
-                        maxTokens: 8192,
-                        temperature: 0.3,
-                    });
-                    usedModel = 'flash';
-                } catch(e2) {
-                    console.error('[runScriptReview] Flash도 실패:', e2.message);
-                    errorMsg = `Pro 오류: ${e1.message}\nFlash 오류: ${e2.message}`;
-                }
+                console.error('[runScriptReview] Pro 모든 키 실패:', e1.message);
+                errorMsg = e1.message;
             }
 
             if (btn) { btn.disabled = false; btn.textContent = `🔍 파트${num} 검수 시작`; }
@@ -9573,8 +9620,17 @@ ${scriptText}
             if (!result) {
                 resultEl.innerHTML = `
                     <div class="sr-error">
-                        <strong>❌ 검수 실패</strong><br>
-                        Pro·Flash 모두 응답하지 못했습니다.<br><br>
+                        <strong>❌ 검수 실패 — 모든 키 한도 도달</strong><br>
+                        검수 탭은 Gemini Pro 전용 (Flash는 출력이 짧게 잘려서 사용 안 함).<br>
+                        등록된 API 키가 모두 한도 도달 또는 실패했습니다.<br><br>
+                        <div style="background:#fff;padding:10px;border-radius:6px;border:1px solid #f5c6cb;margin-bottom:8px;">
+                            <strong>해결 방법:</strong>
+                            <ul style="margin:6px 0 0 18px;padding:0;font-size:0.9rem;">
+                                <li>분당 한도(RPM)면 <b>1분 후 재시도</b></li>
+                                <li>일일 한도(RPD)면 <b>다음 날 PT 자정 (한국 오후 5시)</b> 까지 대기</li>
+                                <li>또는 새 Google 계정으로 <b>API 키 추가 등록</b> (다른 계정 = 한도 독립)</li>
+                            </ul>
+                        </div>
                         <pre style="white-space:pre-wrap;font-size:0.82rem;background:#fff;padding:8px;border-radius:6px;border:1px solid #f5c6cb;">${escapeHtmlSafe(errorMsg || '알 수 없는 오류')}</pre>
                         <div style="margin-top:10px;">
                             <button class="sr-retry-btn" onclick="runScriptReview(${num})">🔄 재시도</button>
