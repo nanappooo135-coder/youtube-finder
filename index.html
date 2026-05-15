@@ -3805,6 +3805,60 @@
 
             <!-- 🖼️ 그록용 이미지 압축은 🛠️ TOOL 탭으로 이동됨 (2026-05) -->
 
+            <!-- VoiceBox 장면별 TTS 생성 -->
+            <div class="section">
+                <div class="section-title">🎙️ VoiceBox 장면별 TTS 생성</div>
+                <div class="section-content">
+                    <p style="font-size:0.85rem;color:#888;margin-bottom:12px;">
+                        대본 합치기 후, VoiceBox 앱이 실행 중이면 장면별 나레이션을 자동으로 TTS 음성 파일로 만듭니다.
+                    </p>
+
+                    <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
+                        <div id="vbStatus" style="padding:6px 14px;border-radius:8px;font-size:0.85rem;font-weight:600;background:#f8d7da;color:#842029;">⏳ 연결 확인 중...</div>
+                        <button onclick="vbCheckConnection()" style="padding:6px 12px;border:1.5px solid #e0e0e0;border-radius:8px;background:white;font-size:0.82rem;cursor:pointer;">🔄 재연결</button>
+                    </div>
+
+                    <div class="input-group">
+                        <label>음성 프로필</label>
+                        <select id="vbProfileSelect" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;">
+                            <option value="">VoiceBox 연결 후 선택</option>
+                        </select>
+                    </div>
+
+                    <div class="input-group">
+                        <label>TTS 엔진</label>
+                        <select id="vbEngineSelect" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;">
+                            <option value="qwen" selected>Qwen3-TTS 1.7B (한국어 추천)</option>
+                            <option value="qwen-small">Qwen3-TTS 0.6B (빠름)</option>
+                            <option value="chatterbox-multilingual">Chatterbox Multilingual (23개 언어)</option>
+                        </select>
+                    </div>
+
+                    <div class="input-group">
+                        <label>이펙트</label>
+                        <select id="vbEffectSelect" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;">
+                            <option value="">없음 (원본)</option>
+                        </select>
+                    </div>
+
+                    <button id="vbGenerateBtn" onclick="vbGenerateAllScenes()" disabled style="width:100%;padding:14px;background:#f59e0b;color:white;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;margin-top:8px;opacity:0.5;">
+                        🎙️ 장면별 TTS 일괄 생성
+                    </button>
+
+                    <div id="vbProgress" style="display:none;margin-top:16px;">
+                        <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+                            <span id="vbProgressLabel" style="font-size:0.85rem;font-weight:600;">생성 중...</span>
+                            <span id="vbProgressCount" style="font-size:0.85rem;color:#666;">0/0</span>
+                        </div>
+                        <div style="width:100%;height:8px;background:#e9ecef;border-radius:4px;overflow:hidden;">
+                            <div id="vbProgressBar" style="width:0%;height:100%;background:#f59e0b;border-radius:4px;transition:width 0.3s;"></div>
+                        </div>
+                    </div>
+
+                    <div id="vbResultList" style="display:none;margin-top:16px;max-height:400px;overflow-y:auto;"></div>
+                </div>
+            </div>
+
         </div><!-- /process-sellpot -->
 
         <!-- 🎬 디자인 녹화용 풀스크린 오버레이 (변환 중에만 표시) -->
@@ -3878,60 +3932,6 @@
                     </div>
                 </div>
             </div>
-            <!-- VoiceBox 장면별 TTS 생성 -->
-            <div class="section">
-                <div class="section-title">🎙️ VoiceBox 장면별 TTS 생성</div>
-                <div class="section-content">
-                    <p style="font-size:0.85rem;color:#888;margin-bottom:12px;">
-                        JSON 생성 후, VoiceBox 앱이 실행 중이면 장면별 나레이션을 자동으로 TTS 음성 파일로 만듭니다.
-                    </p>
-
-                    <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
-                        <div id="vbStatus" style="padding:6px 14px;border-radius:8px;font-size:0.85rem;font-weight:600;background:#f8d7da;color:#842029;">⏳ 연결 확인 중...</div>
-                        <button onclick="vbCheckConnection()" style="padding:6px 12px;border:1.5px solid #e0e0e0;border-radius:8px;background:white;font-size:0.82rem;cursor:pointer;">🔄 재연결</button>
-                    </div>
-
-                    <div class="input-group">
-                        <label>음성 프로필</label>
-                        <select id="vbProfileSelect" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;">
-                            <option value="">VoiceBox 연결 후 선택</option>
-                        </select>
-                    </div>
-
-                    <div class="input-group">
-                        <label>TTS 엔진</label>
-                        <select id="vbEngineSelect" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;">
-                            <option value="qwen" selected>Qwen3-TTS 1.7B (한국어 추천)</option>
-                            <option value="qwen-small">Qwen3-TTS 0.6B (빠름)</option>
-                            <option value="chatterbox-multilingual">Chatterbox Multilingual (23개 언어)</option>
-                        </select>
-                    </div>
-
-                    <div class="input-group">
-                        <label>이펙트</label>
-                        <select id="vbEffectSelect" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;">
-                            <option value="">없음 (원본)</option>
-                        </select>
-                    </div>
-
-                    <button id="vbGenerateBtn" onclick="vbGenerateAllScenes()" disabled style="width:100%;padding:14px;background:#f59e0b;color:white;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;margin-top:8px;opacity:0.5;">
-                        🎙️ 장면별 TTS 일괄 생성
-                    </button>
-
-                    <div id="vbProgress" style="display:none;margin-top:16px;">
-                        <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
-                            <span id="vbProgressLabel" style="font-size:0.85rem;font-weight:600;">생성 중...</span>
-                            <span id="vbProgressCount" style="font-size:0.85rem;color:#666;">0/0</span>
-                        </div>
-                        <div style="width:100%;height:8px;background:#e9ecef;border-radius:4px;overflow:hidden;">
-                            <div id="vbProgressBar" style="width:0%;height:100%;background:#f59e0b;border-radius:4px;transition:width 0.3s;"></div>
-                        </div>
-                    </div>
-
-                    <div id="vbResultList" style="display:none;margin-top:16px;max-height:400px;overflow-y:auto;"></div>
-                </div>
-            </div>
-
         </div><!-- /process-tts -->
 
         <!-- ===== 프로세스: 대본 검수 (구버전 - 제거됨, scriptReview 탭으로 대체) ===== -->
