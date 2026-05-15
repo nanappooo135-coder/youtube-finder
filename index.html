@@ -3489,6 +3489,7 @@
                             <button class="sp-result-tab" data-tab="thumbtext" onclick="_spSwitchResultTab('thumbtext')" style="padding:10px 16px;background:#f1f3f5;color:#495057;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">🏷️ 썸네일 텍스트</button>
                             <button class="sp-result-tab" data-tab="overlay" onclick="_spSwitchResultTab('overlay')" style="padding:10px 16px;background:#f1f3f5;color:#495057;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">✨ 오버레이</button>
                             <button class="sp-result-tab" data-tab="merge" onclick="_spSwitchResultTab('merge')" style="padding:10px 16px;background:#f1f3f5;color:#495057;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">🧩 합치기</button>
+                            <button class="sp-result-tab" data-tab="tts" onclick="_spSwitchResultTab('tts')" style="padding:10px 16px;background:#f1f3f5;color:#495057;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:0.88rem;font-weight:600;">🎙️ TTS 생성</button>
                         </div>
 
                         <!-- 셀팟 붙여넣기 탭 -->
@@ -3797,6 +3798,72 @@
                             <button id="mgProcessBtn" onclick="_mgProcessAndZip()" style="display:none;width:100%;margin-top:12px;padding:13px;background:#1c7ed6;color:#fff;border:none;border-radius:8px;font-size:0.95rem;font-weight:700;cursor:pointer;">🧩 합치기 → ZIP 다운로드</button>
                         </div>
 
+                        <!-- 🎙️ TTS 생성 탭 -->
+                        <div id="spTab_tts" class="sp-result-pane" style="display:none;">
+                            <div style="margin-bottom:12px;padding:12px 14px;background:linear-gradient(135deg,#fff9db 0%,#fff3bf 100%);border:2px solid #f59e0b;border-radius:10px;">
+                                <div style="font-weight:700;color:#92400e;font-size:0.95rem;margin-bottom:4px;">🎙️ VoiceBox 장면별 TTS 생성</div>
+                                <p style="font-size:0.82rem;color:#495057;line-height:1.6;margin:0;">
+                                    VoiceBox 앱 실행 후, 장면별 나레이션을 TTS 음성 파일로 변환합니다. 전체 일괄 / 개별 장면 생성 모두 가능.
+                                </p>
+                            </div>
+
+                            <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
+                                <div id="vbStatus" style="padding:6px 14px;border-radius:8px;font-size:0.85rem;font-weight:600;background:#f8d7da;color:#842029;">⏳ 연결 확인 중...</div>
+                                <button onclick="vbCheckConnection()" style="padding:6px 12px;border:1.5px solid #e0e0e0;border-radius:8px;background:white;font-size:0.82rem;cursor:pointer;">🔄 재연결</button>
+                            </div>
+
+                            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+                                <div style="flex:1;min-width:180px;">
+                                    <label style="font-size:0.78rem;font-weight:600;color:#555;display:block;margin-bottom:3px;">음성 프로필</label>
+                                    <select id="vbProfileSelect" style="width:100%;padding:8px 10px;border:1.5px solid #ccc;border-radius:6px;font-size:0.85rem;">
+                                        <option value="">VoiceBox 연결 후 선택</option>
+                                    </select>
+                                </div>
+                                <div style="flex:1;min-width:180px;">
+                                    <label style="font-size:0.78rem;font-weight:600;color:#555;display:block;margin-bottom:3px;">TTS 엔진</label>
+                                    <select id="vbEngineSelect" style="width:100%;padding:8px 10px;border:1.5px solid #ccc;border-radius:6px;font-size:0.85rem;">
+                                        <optgroup label="🇰🇷 한국어 지원">
+                                            <option value="qwen" selected>Qwen3-TTS 1.7B — 고품질, 한국어 추천</option>
+                                            <option value="qwen-small">Qwen3-TTS 0.6B — 빠름, 한국어 지원</option>
+                                            <option value="qwen_custom_voice-1.7B">Qwen3 커스텀보이스 1.7B — 감정 지시 가능</option>
+                                            <option value="qwen_custom_voice-0.6B">Qwen3 커스텀보이스 0.6B — 감정 지시 (빠름)</option>
+                                            <option value="chatterbox">Chatterbox 다국어 — 23개 언어, 한국어 포함</option>
+                                            <option value="tada-3b-ml">TADA 3B 다국어 — 감정 표현 풍부</option>
+                                        </optgroup>
+                                        <optgroup label="🌐 영어 전용">
+                                            <option value="luxtts">LuxTTS — 초경량, CPU 친화</option>
+                                            <option value="chatterbox_turbo">Chatterbox 터보 — 영어, 태그 지원</option>
+                                            <option value="tada-1b">TADA 1B — 영어, 감정 표현</option>
+                                            <option value="kokoro">Kokoro 82M — 초경량 다국어 (한국어X)</option>
+                                        </optgroup>
+                                    </select>
+                                </div>
+                                <div style="flex:1;min-width:140px;">
+                                    <label style="font-size:0.78rem;font-weight:600;color:#555;display:block;margin-bottom:3px;">이펙트</label>
+                                    <select id="vbEffectSelect" style="width:100%;padding:8px 10px;border:1.5px solid #ccc;border-radius:6px;font-size:0.85rem;">
+                                        <option value="">없음 (원본)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div style="display:flex;gap:8px;margin-bottom:14px;">
+                                <button id="vbGenerateAllBtn" onclick="vbGenerateAll()" disabled style="flex:1;padding:12px;background:#f59e0b;color:white;border:none;border-radius:8px;font-size:0.92rem;font-weight:700;cursor:pointer;opacity:0.5;">🎙️ 전체 생성</button>
+                                <button id="vbDownloadAllBtn" onclick="vbDownloadAll()" disabled style="padding:12px 20px;background:#198754;color:white;border:none;border-radius:8px;font-size:0.92rem;font-weight:700;cursor:pointer;opacity:0.5;">💾 전체 다운</button>
+                            </div>
+
+                            <div id="vbProgress" style="display:none;margin-bottom:12px;">
+                                <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                                    <span id="vbProgressLabel" style="font-size:0.82rem;font-weight:600;">생성 중...</span>
+                                    <span id="vbProgressCount" style="font-size:0.82rem;color:#666;">0/0</span>
+                                </div>
+                                <div style="width:100%;height:6px;background:#e9ecef;border-radius:3px;overflow:hidden;">
+                                    <div id="vbProgressBar" style="width:0%;height:100%;background:#f59e0b;border-radius:3px;transition:width 0.3s;"></div>
+                                </div>
+                            </div>
+
+                            <div id="vbSceneList" style="max-height:500px;overflow-y:auto;"></div>
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -3804,60 +3871,6 @@
             </div><!-- /spSub_result -->
 
             <!-- 🖼️ 그록용 이미지 압축은 🛠️ TOOL 탭으로 이동됨 (2026-05) -->
-
-            <!-- VoiceBox 장면별 TTS 생성 -->
-            <div class="section">
-                <div class="section-title">🎙️ VoiceBox 장면별 TTS 생성</div>
-                <div class="section-content">
-                    <p style="font-size:0.85rem;color:#888;margin-bottom:12px;">
-                        대본 합치기 후, VoiceBox 앱이 실행 중이면 장면별 나레이션을 자동으로 TTS 음성 파일로 만듭니다.
-                    </p>
-
-                    <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
-                        <div id="vbStatus" style="padding:6px 14px;border-radius:8px;font-size:0.85rem;font-weight:600;background:#f8d7da;color:#842029;">⏳ 연결 확인 중...</div>
-                        <button onclick="vbCheckConnection()" style="padding:6px 12px;border:1.5px solid #e0e0e0;border-radius:8px;background:white;font-size:0.82rem;cursor:pointer;">🔄 재연결</button>
-                    </div>
-
-                    <div class="input-group">
-                        <label>음성 프로필</label>
-                        <select id="vbProfileSelect" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;">
-                            <option value="">VoiceBox 연결 후 선택</option>
-                        </select>
-                    </div>
-
-                    <div class="input-group">
-                        <label>TTS 엔진</label>
-                        <select id="vbEngineSelect" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;">
-                            <option value="qwen" selected>Qwen3-TTS 1.7B (한국어 추천)</option>
-                            <option value="qwen-small">Qwen3-TTS 0.6B (빠름)</option>
-                            <option value="chatterbox-multilingual">Chatterbox Multilingual (23개 언어)</option>
-                        </select>
-                    </div>
-
-                    <div class="input-group">
-                        <label>이펙트</label>
-                        <select id="vbEffectSelect" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;">
-                            <option value="">없음 (원본)</option>
-                        </select>
-                    </div>
-
-                    <button id="vbGenerateBtn" onclick="vbGenerateAllScenes()" disabled style="width:100%;padding:14px;background:#f59e0b;color:white;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;margin-top:8px;opacity:0.5;">
-                        🎙️ 장면별 TTS 일괄 생성
-                    </button>
-
-                    <div id="vbProgress" style="display:none;margin-top:16px;">
-                        <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
-                            <span id="vbProgressLabel" style="font-size:0.85rem;font-weight:600;">생성 중...</span>
-                            <span id="vbProgressCount" style="font-size:0.85rem;color:#666;">0/0</span>
-                        </div>
-                        <div style="width:100%;height:8px;background:#e9ecef;border-radius:4px;overflow:hidden;">
-                            <div id="vbProgressBar" style="width:0%;height:100%;background:#f59e0b;border-radius:4px;transition:width 0.3s;"></div>
-                        </div>
-                    </div>
-
-                    <div id="vbResultList" style="display:none;margin-top:16px;max-height:400px;overflow-y:auto;"></div>
-                </div>
-            </div>
 
         </div><!-- /process-sellpot -->
 
@@ -30669,12 +30682,23 @@ ${commentText.slice(0, 12000)}`;
         const VB_URL = 'http://127.0.0.1:17493';
         window._vbProfiles = [];
         window._vbGenerating = false;
+        window._vbSceneResults = {};
+        const _vbEffectKo = {
+            'Robotic': '🤖 로봇 음성 — 금속성 플랜저 + 고피드백',
+            'Radio': '📻 라디오 — AM 라디오 대역필터 + 경량 압축',
+            'Echo Chamber': '🏛️ 에코 챔버 — 넓은 공간 리버브',
+            'Deep Voice': '🎵 딥 보이스 — 낮은 피치 + 따뜻한 톤',
+            'Telephone': '📞 전화 통화 — 좁은 대역 필터',
+            'Whisper': '🤫 속삭임 — 부드러운 ASMR 톤',
+            'Stadium': '🏟️ 스타디움 — 대형 공간 반향',
+            'Underwater': '🌊 수중 — 물 속 울림 효과',
+        };
 
         async function vbCheckConnection() {
             const statusEl = document.getElementById('vbStatus');
             const selectEl = document.getElementById('vbProfileSelect');
             const effectEl = document.getElementById('vbEffectSelect');
-            const btn = document.getElementById('vbGenerateBtn');
+            const btn = document.getElementById('vbGenerateAllBtn');
             try {
                 const res = await fetch(VB_URL + '/profiles');
                 if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -30682,7 +30706,7 @@ ${commentText.slice(0, 12000)}`;
                 window._vbProfiles = profiles;
                 selectEl.innerHTML = '';
                 if (profiles.length === 0) {
-                    selectEl.innerHTML = '<option value="">프로필 없음 — VoiceBox에서 먼저 생성하세요</option>';
+                    selectEl.innerHTML = '<option value="">프로필 없음 — VoiceBox에서 먼저 생성</option>';
                     statusEl.style.background = '#fff3cd'; statusEl.style.color = '#664d03';
                     statusEl.textContent = '⚠️ 연결됨 (프로필 없음)';
                     btn.disabled = true; btn.style.opacity = '0.5';
@@ -30690,11 +30714,9 @@ ${commentText.slice(0, 12000)}`;
                 }
                 profiles.forEach(p => {
                     const opt = document.createElement('option');
-                    opt.value = p.id;
-                    opt.textContent = p.name + ' (' + (p.language || '?') + ')';
+                    opt.value = p.id; opt.textContent = p.name + ' (' + (p.language || '?') + ')';
                     selectEl.appendChild(opt);
                 });
-                // 이펙트 프리셋 로드
                 try {
                     const eres = await fetch(VB_URL + '/effects/presets');
                     if (eres.ok) {
@@ -30704,7 +30726,7 @@ ${commentText.slice(0, 12000)}`;
                         presets.forEach(p => {
                             const opt = document.createElement('option');
                             opt.value = p.id;
-                            opt.textContent = p.name + (p.description ? ' — ' + p.description : '');
+                            opt.textContent = _vbEffectKo[p.name] || (p.name + (p.description ? ' — ' + p.description : ''));
                             effectEl.appendChild(opt);
                         });
                     }
@@ -30712,6 +30734,7 @@ ${commentText.slice(0, 12000)}`;
                 statusEl.style.background = '#d1e7dd'; statusEl.style.color = '#0f5132';
                 statusEl.textContent = '✅ 연결됨 (' + profiles.length + '개 프로필)';
                 btn.disabled = false; btn.style.opacity = '1';
+                vbRenderSceneList();
             } catch (e) {
                 statusEl.style.background = '#f8d7da'; statusEl.style.color = '#842029';
                 statusEl.textContent = '❌ VoiceBox 앱을 실행하세요';
@@ -30720,88 +30743,220 @@ ${commentText.slice(0, 12000)}`;
             }
         }
 
-        async function vbGenerateAllScenes() {
-            if (window._vbGenerating) { alert('이미 생성 중입니다.'); return; }
+        function vbGetScenes() {
             let scenes = window._sceneGuideData || [];
-            if (!scenes.length) {
-                const jsonData = window._sellpotJsonData;
-                if (jsonData) {
-                    try {
-                        const parsed = JSON.parse(jsonData);
-                        if (parsed.scenes) scenes = parsed.scenes;
-                    } catch(e) {}
-                }
+            if (!scenes.length && window._sellpotJsonData) {
+                try {
+                    const parsed = typeof window._sellpotJsonData === 'string' ? JSON.parse(window._sellpotJsonData) : window._sellpotJsonData;
+                    if (parsed.scenes) scenes = parsed.scenes;
+                } catch(e) {}
             }
-            if (!scenes.length) { alert('먼저 JSON을 생성하세요.'); return; }
+            return scenes.filter(s => s.narration && s.narration.trim());
+        }
 
+        function vbRenderSceneList() {
+            const list = document.getElementById('vbSceneList');
+            const scenes = vbGetScenes();
+            if (!scenes.length) {
+                list.innerHTML = '<div style="padding:20px;text-align:center;color:#888;font-size:0.85rem;">먼저 JSON을 Import하거나 대본을 변환하세요.</div>';
+                return;
+            }
+            let html = '';
+            scenes.forEach((s, i) => {
+                const sid = s.id || (i + 1);
+                const r = window._vbSceneResults[sid];
+                const txt = s.narration.length > 50 ? s.narration.substring(0,50) + '...' : s.narration;
+                const statusBg = r ? (r.status === 'completed' ? '#d1e7dd' : r.status === 'failed' ? '#f8d7da' : '#fff3cd') : '#f8f9fa';
+                const statusIcon = r ? (r.status === 'completed' ? '✅' : r.status === 'failed' ? '❌' : '⏳') : '⬜';
+                const statusText = r ? (r.status === 'completed' ? (r.duration ? r.duration.toFixed(1) + 's' : '완료') : r.status === 'failed' ? '실패' : '생성중') : '대기';
+
+                html += '<div id="vbScene_' + sid + '" style="display:flex;align-items:center;gap:8px;padding:8px 10px;margin-bottom:4px;background:' + statusBg + ';border-radius:8px;font-size:0.82rem;">';
+                html += '<span style="font-weight:700;min-width:32px;color:#555;">' + sid + '</span>';
+                html += '<span style="flex:1;color:#333;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + s.narration.replace(/"/g,'&quot;') + '">' + txt + '</span>';
+                html += '<span style="min-width:44px;text-align:center;font-size:0.78rem;">' + statusIcon + ' ' + statusText + '</span>';
+
+                if (r && r.status === 'completed') {
+                    html += '<button onclick="vbDownloadOne(' + sid + ')" style="padding:4px 8px;background:#198754;color:#fff;border:none;border-radius:5px;font-size:0.75rem;cursor:pointer;" title="다운로드">💾</button>';
+                }
+                html += '<button onclick="vbGenerateOne(' + sid + ')" style="padding:4px 8px;background:' + (r && r.status === 'completed' ? '#6c757d' : '#f59e0b') + ';color:#fff;border:none;border-radius:5px;font-size:0.75rem;cursor:pointer;" title="' + (r && r.status === 'completed' ? '재생성' : '생성') + '">' + (r && r.status === 'completed' ? '🔄' : '▶') + '</button>';
+                html += '</div>';
+            });
+            list.innerHTML = html;
+            vbUpdateDownloadAllBtn();
+        }
+
+        function vbUpdateDownloadAllBtn() {
+            const btn = document.getElementById('vbDownloadAllBtn');
+            const completed = Object.values(window._vbSceneResults).filter(r => r.status === 'completed').length;
+            btn.disabled = completed === 0;
+            btn.style.opacity = completed === 0 ? '0.5' : '1';
+        }
+
+        function _vbGetGenParams() {
             const profileId = document.getElementById('vbProfileSelect').value;
-            if (!profileId) { alert('음성 프로필을 선택하세요.'); return; }
+            if (!profileId) return null;
             const profile = window._vbProfiles.find(p => p.id === profileId);
             const effectId = document.getElementById('vbEffectSelect').value;
             const effectPreset = effectId ? (window._vbPresets || []).find(p => p.id === effectId) : null;
+            return { profileId, profile, effectPreset };
+        }
 
-            const narrations = scenes.filter(s => s.narration && s.narration.trim());
-            if (!narrations.length) { alert('나레이션이 있는 장면이 없습니다.'); return; }
+        async function _vbWaitForCompletion(genId) {
+            return new Promise((resolve, reject) => {
+                const es = new EventSource(VB_URL + '/generate/' + genId + '/status');
+                es.onmessage = (ev) => {
+                    try {
+                        const d = JSON.parse(ev.data);
+                        if (d.status === 'completed') { es.close(); resolve(d); }
+                        else if (d.status === 'failed') { es.close(); reject(new Error(d.error || 'Generation failed')); }
+                    } catch(e) { es.close(); reject(e); }
+                };
+                es.onerror = () => { es.close(); reject(new Error('SSE connection lost')); };
+            });
+        }
+
+        async function vbGenerateOne(sceneId) {
+            const params = _vbGetGenParams();
+            if (!params) { alert('음성 프로필을 선택하세요.'); return; }
+            const scenes = vbGetScenes();
+            const scene = scenes.find(s => (s.id || (scenes.indexOf(s) + 1)) == sceneId);
+            if (!scene) return;
+
+            window._vbSceneResults[sceneId] = { status: 'generating' };
+            vbRenderSceneList();
+
+            try {
+                const body = { text: scene.narration, profile_id: params.profileId, language: params.profile.language || 'ko' };
+                if (params.effectPreset) body.effects_chain = params.effectPreset.effects_chain;
+                const res = await fetch(VB_URL + '/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+                const data = await res.json();
+                if (data.status === 'completed') {
+                    window._vbSceneResults[sceneId] = { status: 'completed', genId: data.id, duration: data.duration };
+                } else {
+                    const result = await _vbWaitForCompletion(data.id);
+                    window._vbSceneResults[sceneId] = { status: 'completed', genId: data.id, duration: result.duration };
+                }
+            } catch (e) {
+                window._vbSceneResults[sceneId] = { status: 'failed', error: e.message };
+            }
+            vbRenderSceneList();
+        }
+
+        async function vbGenerateAll() {
+            if (window._vbGenerating) { alert('이미 생성 중입니다.'); return; }
+            const params = _vbGetGenParams();
+            if (!params) { alert('음성 프로필을 선택하세요.'); return; }
+            const scenes = vbGetScenes();
+            if (!scenes.length) { alert('먼저 JSON을 생성하세요.'); return; }
 
             window._vbGenerating = true;
-            const btn = document.getElementById('vbGenerateBtn');
+            const btn = document.getElementById('vbGenerateAllBtn');
             btn.disabled = true; btn.textContent = '⏳ 생성 중...'; btn.style.opacity = '0.5';
-
             const progressEl = document.getElementById('vbProgress');
             const progressBar = document.getElementById('vbProgressBar');
             const progressLabel = document.getElementById('vbProgressLabel');
             const progressCount = document.getElementById('vbProgressCount');
-            const resultList = document.getElementById('vbResultList');
-            progressEl.style.display = ''; resultList.style.display = '';
-            resultList.innerHTML = '';
+            progressEl.style.display = '';
+            progressBar.style.background = '#f59e0b';
 
-            const total = narrations.length;
-            let done = 0; let failed = 0;
-            const results = [];
+            const total = scenes.length;
+            let done = 0, failed = 0;
 
-            for (const scene of narrations) {
-                const sceneId = scene.id || (narrations.indexOf(scene) + 1);
-                progressLabel.textContent = '장면 ' + sceneId + ' 생성 중...';
+            for (const scene of scenes) {
+                const sid = scene.id || (scenes.indexOf(scene) + 1);
+                progressLabel.textContent = '장면 ' + sid + ' 생성 중...';
                 progressCount.textContent = done + '/' + total;
                 progressBar.style.width = (done / total * 100) + '%';
 
+                window._vbSceneResults[sid] = { status: 'generating' };
+                vbRenderSceneList();
+
                 try {
-                    const body = {
-                        text: scene.narration,
-                        profile_id: profileId,
-                        language: profile.language || 'ko'
-                    };
-                    if (effectPreset) body.effects_chain = effectPreset.effects_chain;
-                    const res = await fetch(VB_URL + '/generate', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(body)
-                    });
+                    const body = { text: scene.narration, profile_id: params.profileId, language: params.profile.language || 'ko' };
+                    if (params.effectPreset) body.effects_chain = params.effectPreset.effects_chain;
+                    const res = await fetch(VB_URL + '/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
                     const data = await res.json();
-                    results.push({ sceneId, status: 'ok', data, text: scene.narration });
-                    resultList.innerHTML += '<div style="padding:8px 12px;margin-bottom:4px;background:#d1e7dd;border-radius:8px;font-size:0.82rem;">'
-                        + '✅ 장면 ' + sceneId + ': ' + (scene.narration.length > 40 ? scene.narration.substring(0,40)+'...' : scene.narration)
-                        + ' <span style="color:#666;">(' + (data.status || 'queued') + ')</span></div>';
+                    if (data.status === 'completed') {
+                        window._vbSceneResults[sid] = { status: 'completed', genId: data.id, duration: data.duration };
+                    } else {
+                        const result = await _vbWaitForCompletion(data.id);
+                        window._vbSceneResults[sid] = { status: 'completed', genId: data.id, duration: result.duration };
+                    }
                 } catch (e) {
                     failed++;
-                    results.push({ sceneId, status: 'fail', error: e.message });
-                    resultList.innerHTML += '<div style="padding:8px 12px;margin-bottom:4px;background:#f8d7da;border-radius:8px;font-size:0.82rem;">'
-                        + '❌ 장면 ' + sceneId + ': 실패 — ' + e.message + '</div>';
+                    window._vbSceneResults[sid] = { status: 'failed', error: e.message };
                 }
                 done++;
                 progressCount.textContent = done + '/' + total;
                 progressBar.style.width = (done / total * 100) + '%';
+                vbRenderSceneList();
             }
 
-            progressLabel.textContent = '완료! (' + (total - failed) + '개 성공, ' + failed + '개 실패)';
+            progressLabel.textContent = '완료! (' + (total - failed) + '/' + total + ' 성공)';
+            progressBar.style.width = '100%';
             progressBar.style.background = failed > 0 ? '#ffc107' : '#198754';
-            btn.textContent = '🎙️ 장면별 TTS 일괄 생성';
-            btn.disabled = false; btn.style.opacity = '1';
+            btn.textContent = '🎙️ 전체 생성'; btn.disabled = false; btn.style.opacity = '1';
             window._vbGenerating = false;
-            window._vbResults = results;
+        }
+
+        async function vbDownloadOne(sceneId) {
+            const r = window._vbSceneResults[sceneId];
+            if (!r || r.status !== 'completed' || !r.genId) return;
+            try {
+                const res = await fetch(VB_URL + '/audio/' + r.genId);
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                const pad = String(sceneId).padStart(3, '0');
+                a.download = '장면' + pad + '_tts.wav';
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } catch(e) { alert('다운로드 실패: ' + e.message); }
+        }
+
+        async function vbDownloadAll() {
+            const completed = Object.entries(window._vbSceneResults).filter(([k,v]) => v.status === 'completed' && v.genId);
+            if (!completed.length) { alert('생성된 음성이 없습니다.'); return; }
+            const btn = document.getElementById('vbDownloadAllBtn');
+            btn.disabled = true; btn.textContent = '⏳ 다운로드 중...';
+
+            try {
+                const JSZip = await _loadJSZip();
+                const zip = new JSZip();
+                for (const [sid, r] of completed) {
+                    const res = await fetch(VB_URL + '/audio/' + r.genId);
+                    const blob = await res.blob();
+                    const pad = String(sid).padStart(3, '0');
+                    zip.file('장면' + pad + '_tts.wav', blob);
+                }
+                const content = await zip.generateAsync({ type: 'blob' });
+                const url = URL.createObjectURL(content);
+                const a = document.createElement('a'); a.href = url; a.download = 'tts_all.zip';
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                btn.disabled = false; btn.textContent = '💾 전체 다운'; btn.style.opacity = '1';
+                return;
+            } catch(e) {}
+
+            for (const [sid, r] of completed) {
+                await vbDownloadOne(parseInt(sid));
+                await new Promise(ok => setTimeout(ok, 300));
+            }
+            btn.disabled = false; btn.textContent = '💾 전체 다운'; btn.style.opacity = '1';
         }
 
         setTimeout(vbCheckConnection, 1000);
+
+        const _origSpSwitchResultTab = typeof _spSwitchResultTab === 'function' ? null : null;
+        const _origRenderSceneGuide = window._renderSceneGuide;
+        if (_origRenderSceneGuide) {
+            window._renderSceneGuide = function() {
+                _origRenderSceneGuide.apply(this, arguments);
+                setTimeout(vbRenderSceneList, 100);
+            };
+        }
     </script>
 </body>
 </html>
