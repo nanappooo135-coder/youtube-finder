@@ -1948,6 +1948,222 @@
             .sr-btn-row { flex-direction: column; }
             .sr-btn-secondary { width: 100%; }
         }
+
+        /* === Script Plan (대본 기획, gold) === */
+        .pn-intro {
+            background: linear-gradient(135deg, #fffbeb, #fff7d6);
+            border: 2px solid #fde68a;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            font-size: 0.9rem;
+            color: #555;
+            line-height: 1.7;
+        }
+        .pn-intro strong { color: #b45309; }
+        .pn-card {
+            background: white;
+            border: 2px solid #fde68a;
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 14px;
+            transition: box-shadow 0.2s;
+        }
+        .pn-card:hover { box-shadow: 0 2px 12px rgba(217,119,6,0.08); }
+        .pn-field { margin-bottom: 14px; }
+        .pn-label {
+            display: block;
+            font-size: 0.92rem;
+            font-weight: 700;
+            color: #b45309;
+            margin-bottom: 6px;
+        }
+        .pn-label .opt {
+            font-size: 0.78rem;
+            font-weight: 500;
+            color: #888;
+            margin-left: 4px;
+        }
+        .pn-input,
+        .pn-textarea,
+        .pn-select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 0.92rem;
+            font-family: inherit;
+            transition: border-color 0.2s;
+            box-sizing: border-box;
+        }
+        .pn-input:focus,
+        .pn-textarea:focus,
+        .pn-select:focus { outline: none; border-color: #d97706; }
+        .pn-textarea {
+            min-height: 120px;
+            line-height: 1.7;
+            resize: vertical;
+        }
+        .pn-char-row {
+            display: flex;
+            gap: 8px;
+            align-items: stretch;
+        }
+        .pn-select { flex: 1; }
+        .pn-char-custom {
+            flex: 0 0 130px;
+            display: none;
+        }
+        .pn-char-custom.show { display: block; }
+        .pn-url-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+        .pn-url-row .pn-input { flex: 1; }
+        .pn-url-remove {
+            flex: 0 0 auto;
+            background: white;
+            border: 2px solid #fecaca;
+            color: #dc2626;
+            border-radius: 8px;
+            padding: 0 12px;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+        .pn-url-remove:hover { background: #fef2f2; }
+        .pn-url-add {
+            background: white;
+            border: 2px dashed #fde68a;
+            color: #b45309;
+            border-radius: 8px;
+            padding: 8px 14px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 4px;
+        }
+        .pn-url-add:hover { background: #fffbeb; }
+        .pn-btn-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+        }
+        .pn-btn {
+            flex: 1;
+            padding: 16px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .pn-btn-primary { background: #d97706; color: white; }
+        .pn-btn-primary:hover:not(:disabled) { background: #b45309; transform: translateY(-1px); }
+        .pn-btn-primary:disabled { background: #e8c97e; cursor: not-allowed; }
+        .pn-btn-secondary {
+            flex: 0 0 auto;
+            background: white;
+            border: 2px solid #ddd;
+            color: #666;
+            padding: 14px 20px;
+        }
+        .pn-btn-secondary:hover { background: #f5f5f5; border-color: #bbb; }
+        .pn-result-area {
+            margin-top: 16px;
+            display: none;
+        }
+        .pn-result-area.show { display: block; }
+        .pn-loading {
+            text-align: center;
+            padding: 30px;
+            color: #b45309;
+            font-size: 0.95rem;
+            background: #fffbeb;
+            border-radius: 12px;
+            border: 2px dashed #fde68a;
+        }
+        .pn-loading .spinner { display: inline-block; vertical-align: middle; margin-right: 8px; }
+        .pn-model-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        .pn-model-badge.pro { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
+        .pn-model-badge.flash { background: #fff3e0; color: #e65100; border: 1px solid #ffcc80; }
+        .pn-raw {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 14px 16px;
+            font-size: 0.9rem;
+            line-height: 1.75;
+            white-space: pre-wrap;
+            word-break: break-word;
+            color: #333;
+        }
+        .pn-next-hint {
+            margin-top: 14px;
+            padding: 12px 14px;
+            background: #fffae6;
+            border: 1px solid #ffe58f;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            color: #856404;
+            line-height: 1.6;
+        }
+        .pn-result-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+        .pn-result-actions button {
+            padding: 10px 14px;
+            border-radius: 8px;
+            border: none;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .pn-copy-btn {
+            background: #d97706;
+            color: white;
+            transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+        }
+        .pn-copy-btn:hover { background: #b45309; }
+        .pn-copy-btn:active { transform: scale(0.96); }
+        .pn-copy-btn.copied {
+            background: #16a34a !important;
+            box-shadow: 0 0 0 4px rgba(22,163,74,0.25);
+            animation: srCopyPulse 0.45s ease-out;
+        }
+        .pn-retry-btn { background: #fd7e14; color: white; }
+        .pn-retry-btn:hover { background: #e8590c; }
+        .pn-error {
+            padding: 16px;
+            background: #fdf3f4;
+            border: 2px solid #f5c6cb;
+            border-radius: 10px;
+            color: #721c24;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        @media (max-width: 600px) {
+            .pn-card { padding: 16px; }
+            .pn-btn-row { flex-direction: column; }
+            .pn-btn-secondary { width: 100%; padding: 12px; }
+            .pn-char-row { flex-direction: column; }
+            .pn-char-custom { flex: none; width: 100%; }
+        }
     </style>
 </head>
 <body>
@@ -1968,6 +2184,7 @@
             <button class="process-btn inactive" id="procBtn_script" onclick="switchProcess('script')" style="background:#0ea5e9;border-color:#0ea5e9;">📝 대본 노트</button>
             <button class="process-btn inactive" id="procBtn_genspark" onclick="switchProcess('genspark')" style="background:#7048e8;border-color:#7048e8;">🎨 젠스파크 이미지</button>
             <button class="process-btn inactive" id="procBtn_thumbnail" onclick="switchProcess('thumbnail')">썸네일</button>
+            <button class="process-btn inactive" id="procBtn_plan" onclick="switchProcess('plan')" style="background:#d97706;border-color:#d97706;">🎬 대본 기획</button>
             <button class="process-btn inactive" id="procBtn_scriptReview" onclick="switchProcess('scriptReview')" style="background:#6f42c1;border-color:#6f42c1;">📋 대본 검수</button>
             <button class="process-btn inactive" id="procBtn_visual" onclick="switchProcess('visual')">시각화</button>
             <button class="process-btn inactive" id="procBtn_json" onclick="switchProcess('json')">JSON</button>
@@ -3783,6 +4000,66 @@
             </div>
 
         </div><!-- /process-review -->
+
+        <!-- ===== 프로세스: 대본 기획 ===== -->
+        <div id="process-plan" style="display:none;">
+
+            <div class="pn-intro">
+                <strong>🎬 대본 기획 — 주제만 던지면 뼈대 완성</strong><br>
+                Gemini Pro + Google Search Grounding으로 최신 정보를 모아서, 핵심 사실·비하인드·전개 구도·도입부 초안까지 한 번에 만들어드립니다.<br>
+                결과를 복사해서 Claude 앱에 "이 기획안 기반으로 대본 써줘"라고 던지면 끝.<br>
+                <span style="font-size:0.82rem;color:#888;">엔진: Gemini 2.5 Pro (실패 시 2.0 Flash 자동 전환) + Google Search Grounding</span>
+            </div>
+
+            <div class="pn-card">
+                <div class="pn-field">
+                    <label class="pn-label" for="pnTopic">📌 주제 <span class="opt">(필수)</span></label>
+                    <input type="text" id="pnTopic" class="pn-input" placeholder="예: 나우루 새똥 부자국 몰락" oninput="pnSaveInput()">
+                </div>
+
+                <div class="pn-field">
+                    <label class="pn-label" for="pnMemo">📝 메모 <span class="opt">(선택)</span></label>
+                    <input type="text" id="pnMemo" class="pn-input" placeholder="예: 한국 연결 강조, 충격 폭로형으로" oninput="pnSaveInput()">
+                </div>
+
+                <div class="pn-field">
+                    <label class="pn-label" for="pnChars">📏 목표 글자수 <span class="opt">(필수)</span></label>
+                    <div class="pn-char-row">
+                        <select id="pnChars" class="pn-select" onchange="pnOnCharsChange(); pnSaveInput();">
+                            <option value="5000">5000자 (약 5분 영상)</option>
+                            <option value="7000" selected>7000자 (약 7분 영상)</option>
+                            <option value="10000">10000자 (약 10분 영상)</option>
+                            <option value="15000">15000자 (약 15분 영상)</option>
+                            <option value="custom">직접 입력</option>
+                        </select>
+                        <input type="number" id="pnCharsCustom" class="pn-input pn-char-custom" placeholder="숫자" min="1000" max="50000" step="500" oninput="pnSaveInput()">
+                    </div>
+                </div>
+
+                <div class="pn-field">
+                    <label class="pn-label">🎬 YouTube URL <span class="opt">(선택, 최대 5개)</span></label>
+                    <div id="pnUrlList">
+                        <div class="pn-url-row">
+                            <input type="text" class="pn-input pn-url" placeholder="https://youtube.com/watch?v=..." oninput="pnSaveInput()">
+                        </div>
+                    </div>
+                    <button type="button" class="pn-url-add" onclick="pnAddUrl()">+ URL 추가</button>
+                </div>
+
+                <div class="pn-field">
+                    <label class="pn-label" for="pnRefText">📄 참고 본문 <span class="opt">(선택)</span></label>
+                    <textarea id="pnRefText" class="pn-textarea" placeholder="기사·블로그 본문 등을 붙여넣으세요. 여러 개면 --- 로 구분" oninput="pnSaveInput()"></textarea>
+                </div>
+
+                <div class="pn-btn-row">
+                    <button class="pn-btn pn-btn-primary" id="pnBtn" onclick="runScriptPlan()">🚀 기획안 생성</button>
+                    <button class="pn-btn pn-btn-secondary" onclick="clearScriptPlan()">초기화</button>
+                </div>
+
+                <div class="pn-result-area" id="pnResult"></div>
+            </div>
+
+        </div><!-- /process-plan -->
 
         <!-- ===== 프로세스: 대본 검수 (5파트 진단형) ===== -->
         <div id="process-scriptReview" style="display:none;">
@@ -8122,6 +8399,8 @@ ${_retryRound > 0 ? `⚠️ 이번은 ${_retryRound}차 추가 요청입니다. 
             document.getElementById('process-sellpot').style.display = proc === 'sellpot' ? '' : 'none';
             document.getElementById('process-review').style.display = proc === 'review' ? '' : 'none';
             document.getElementById('process-scriptReview').style.display = proc === 'scriptReview' ? '' : 'none';
+            const planEl = document.getElementById('process-plan');
+            if (planEl) planEl.style.display = proc === 'plan' ? '' : 'none';
             document.getElementById('process-tts').style.display = proc === 'tts' ? '' : 'none';
             document.getElementById('process-ref').style.display = proc === 'ref' ? '' : 'none';
             document.getElementById('process-trend').style.display = proc === 'trend' ? '' : 'none';
@@ -8137,6 +8416,7 @@ ${_retryRound > 0 ? `⚠️ 이번은 ${_retryRound}차 추가 요청입니다. 
             if (proc === 'visual') checkFcServer('vsServerStatus');
             if (proc === 'review') checkFcServer('rvServerStatus');
             if (proc === 'scriptReview') srLoadAll();
+            if (proc === 'plan') pnLoadAll();
             if (proc === 'trend') { fetchIssueRadar(); fetchGoogleTrends(); fetchEconYoutube(); }
             if (proc === 'sellpot') _spInit();
             } catch(err) {
@@ -9118,6 +9398,421 @@ ${scriptText}
                     setTimeout(() => {
                         btn.classList.remove('copied');
                         btn.innerHTML = orig;
+                        if (toast && toast.parentNode) toast.parentNode.removeChild(toast);
+                    }, 2500);
+                }).catch(err => {
+                    console.error('clipboard 실패:', err);
+                    alert('복사 실패. 콘솔 확인.');
+                });
+            } catch(e) {
+                console.error(e);
+                alert('복사 중 오류: ' + e.message);
+            }
+        }
+
+        /* ============================================================
+         * 대본 기획 (Script Plan)
+         * - Gemini 2.5 Pro + Google Search Grounding
+         * - 입력: 주제·메모·목표글자수·YouTube URL·참고본문
+         * - 출력: 기획안 마크다운 (전개 구도·핵심 사실·비하인드·도입부 초안)
+         * - 검수 탭 패턴 재사용 (Pro→Flash 폴백, 복사 토스트, localStorage)
+         * ============================================================ */
+        const PN_LS = {
+            topic: 'pn_topic',
+            memo: 'pn_memo',
+            chars: 'pn_chars',
+            charsCustom: 'pn_chars_custom',
+            urls: 'pn_urls',
+            refText: 'pn_ref_text',
+            result: 'pn_result',
+        };
+
+        function pnOnCharsChange() {
+            const sel = document.getElementById('pnChars');
+            const cust = document.getElementById('pnCharsCustom');
+            if (!sel || !cust) return;
+            cust.classList.toggle('show', sel.value === 'custom');
+        }
+
+        function pnGetCharCount() {
+            const sel = document.getElementById('pnChars');
+            const cust = document.getElementById('pnCharsCustom');
+            if (sel.value === 'custom') {
+                const v = parseInt(cust.value, 10);
+                return isFinite(v) && v > 0 ? v : 0;
+            }
+            return parseInt(sel.value, 10) || 7000;
+        }
+
+        function pnAddUrl() {
+            const list = document.getElementById('pnUrlList');
+            const rows = list.querySelectorAll('.pn-url-row').length;
+            if (rows >= 5) { alert('URL은 최대 5개까지 추가 가능합니다'); return; }
+            const row = document.createElement('div');
+            row.className = 'pn-url-row';
+            row.innerHTML = `
+                <input type="text" class="pn-input pn-url" placeholder="https://youtube.com/watch?v=..." oninput="pnSaveInput()">
+                <button type="button" class="pn-url-remove" onclick="this.parentNode.remove(); pnSaveInput();">삭제</button>
+            `;
+            list.appendChild(row);
+        }
+
+        function pnGetUrls() {
+            const inputs = document.querySelectorAll('#pnUrlList .pn-url');
+            const urls = [];
+            inputs.forEach(i => {
+                const v = (i.value || '').trim();
+                if (v) urls.push(v);
+            });
+            return urls;
+        }
+
+        function pnSaveInput() {
+            try {
+                localStorage.setItem(PN_LS.topic, document.getElementById('pnTopic').value || '');
+                localStorage.setItem(PN_LS.memo, document.getElementById('pnMemo').value || '');
+                localStorage.setItem(PN_LS.chars, document.getElementById('pnChars').value || '7000');
+                localStorage.setItem(PN_LS.charsCustom, document.getElementById('pnCharsCustom').value || '');
+                localStorage.setItem(PN_LS.urls, JSON.stringify(pnGetUrls()));
+                localStorage.setItem(PN_LS.refText, document.getElementById('pnRefText').value || '');
+            } catch(e) {}
+        }
+
+        function pnLoadAll() {
+            try {
+                const topic = localStorage.getItem(PN_LS.topic);
+                const memo = localStorage.getItem(PN_LS.memo);
+                const chars = localStorage.getItem(PN_LS.chars);
+                const charsCustom = localStorage.getItem(PN_LS.charsCustom);
+                const urlsJson = localStorage.getItem(PN_LS.urls);
+                const refText = localStorage.getItem(PN_LS.refText);
+                const result = localStorage.getItem(PN_LS.result);
+
+                if (topic !== null) document.getElementById('pnTopic').value = topic;
+                if (memo !== null) document.getElementById('pnMemo').value = memo;
+                if (chars !== null) document.getElementById('pnChars').value = chars;
+                if (charsCustom !== null) document.getElementById('pnCharsCustom').value = charsCustom;
+                pnOnCharsChange();
+                if (urlsJson) {
+                    const urls = JSON.parse(urlsJson);
+                    const list = document.getElementById('pnUrlList');
+                    list.innerHTML = '';
+                    if (urls.length === 0) urls.push('');
+                    urls.forEach((u, i) => {
+                        const row = document.createElement('div');
+                        row.className = 'pn-url-row';
+                        if (i === 0) {
+                            row.innerHTML = `<input type="text" class="pn-input pn-url" placeholder="https://youtube.com/watch?v=..." oninput="pnSaveInput()">`;
+                        } else {
+                            row.innerHTML = `
+                                <input type="text" class="pn-input pn-url" placeholder="https://youtube.com/watch?v=..." oninput="pnSaveInput()">
+                                <button type="button" class="pn-url-remove" onclick="this.parentNode.remove(); pnSaveInput();">삭제</button>
+                            `;
+                        }
+                        list.appendChild(row);
+                        row.querySelector('.pn-url').value = u;
+                    });
+                }
+                if (refText !== null) document.getElementById('pnRefText').value = refText;
+                if (result) {
+                    try {
+                        const obj = JSON.parse(result);
+                        renderScriptPlanResult(obj);
+                    } catch(e) {}
+                }
+            } catch(e) { console.warn('[pnLoadAll]', e); }
+        }
+
+        function clearScriptPlan() {
+            if (!confirm('입력값과 기획안 결과를 모두 지울까요?')) return;
+            document.getElementById('pnTopic').value = '';
+            document.getElementById('pnMemo').value = '';
+            document.getElementById('pnChars').value = '7000';
+            document.getElementById('pnCharsCustom').value = '';
+            pnOnCharsChange();
+            document.getElementById('pnUrlList').innerHTML = `
+                <div class="pn-url-row">
+                    <input type="text" class="pn-input pn-url" placeholder="https://youtube.com/watch?v=..." oninput="pnSaveInput()">
+                </div>
+            `;
+            document.getElementById('pnRefText').value = '';
+            const resultEl = document.getElementById('pnResult');
+            resultEl.classList.remove('show');
+            resultEl.innerHTML = '';
+            try {
+                Object.values(PN_LS).forEach(k => localStorage.removeItem(k));
+            } catch(e) {}
+        }
+
+        function pnBuildPrompt(topic, memo, chars, urls, refText) {
+            const now = new Date();
+            const yyyy = now.getFullYear();
+            const minutes = Math.max(1, Math.round(chars / 1000));
+            const refSection = (() => {
+                const parts = [];
+                if (urls.length > 0) {
+                    parts.push('[참고 YouTube URL]\n' + urls.map((u, i) => `${i + 1}. ${u}`).join('\n'));
+                }
+                if (refText && refText.trim()) {
+                    parts.push('[참고 본문]\n' + refText.trim());
+                }
+                return parts.length ? parts.join('\n\n') : '(없음)';
+            })();
+
+            return `[필수 컨텍스트 — 절대 무시 금지]
+- 현재 시점: ${yyyy}년 (사용자 작업 시점 기준)
+- 이 기획안은 실제 시사 사건을 다루는 유튜브 영상용임
+- 너의 학습 데이터 이후 발생한 사건도 실제 사실로 간주할 것
+- 학습 데이터에 없는 사건이라고 "가상 시나리오"로 판단하지 말 것
+- 사실관계는 Google Search로 검증할 것 ("가짜다" 단정 금지, 의심되면 "확인 필요")
+
+[채널]
+- 푸짐한 경제학 (경제·국제 정세 중심, 한국 30~50대 시청자)
+- 톤: 충격 폭로 + 스토리텔링, 시각화·비유 중시, 한국 연결 강조
+
+[역할]
+- 너는 30년차 유튜브 대본 기획자다.
+- 대본을 직접 쓰지 마라. Claude가 쓸 수 있도록 "뼈대 자료"를 제공한다.
+
+[입력]
+- 주제: ${topic}
+- 메모: ${memo || '(없음)'}
+- 목표 글자수: ${chars}자 (약 ${minutes}분 영상)
+- 참고 자료:
+${refSection}
+
+[원칙]
+1. Google Search로 최신 정보·팩트 검색 (한국어 + 영어 둘 다)
+2. 출처가 검증된 정보만 사용
+3. 추측·창작 절대 금지
+4. 비하인드 스토리는 최소 5개 이상 발굴 (목표)
+   - 5개 미만이면 결과 맨 아래에 경고 표시
+5. 한국 연결은 진짜 연결고리 있을 때만
+   - 억지로 연결 금지, 없으면 "직접 연결고리 없음" 표시
+6. 글자수에 맞춰 디테일 깊이 조절
+   - 5000자: 핵심만 압축
+   - 15000자: 풀 디테일
+
+[출력 형식 — 반드시 이 형식으로 마크다운]
+
+# 🎬 대본 기획 — ${topic}
+> 목표 글자수: ${chars}자 (약 ${minutes}분)
+> 엔진: Gemini 2.5 Pro + Google Search Grounding
+
+## 1. 주제 한 줄 정리
+(영상 핵심 메시지를 1~2문장으로)
+
+## 2. 추천 전개 구도 (3가지)
+
+### 옵션 A: [구도명] + [톤명]
+[설명 2~3줄]
+
+### 옵션 B: [구도명] + [톤명] ⭐ 추천
+[설명 2~3줄]
+[추천 이유]
+
+### 옵션 C: [구도명] + [톤명]
+[설명 2~3줄]
+
+## 3. 핵심 사실
+- [사실 1] (출처: ...)
+- [사실 2] (출처: ...)
+- ...
+
+## 4. 비하인드 스토리
+※ 검증된 비하인드 N개
+
+1. [비하인드 1]
+   - 내용: ...
+   - 출처: ...
+
+2. [비하인드 2]
+   ...
+
+(5개 미만이면 맨 아래에 경고:
+⚠️ 비하인드가 부족합니다 (N개)
+보강 권장 방법:
+- 주제를 좀 더 좁히기
+- 다른 각도로 접근
+- 참고 자료(URL/본문) 추가)
+
+## 5. 한국 연결 포인트
+[있을 때]
+- [연결 1]: 설명
+- [연결 2]: 설명
+
+[없을 때]
+직접 연결고리 없음. 글로벌 관점으로 풀 것 권장.
+
+## 6. 주의할 팩트 함정
+[헷갈리기 쉬운 것]
+- ...
+
+[출처 필수 통계]
+- ...
+
+[단정 짓지 말 것]
+- ...
+
+## 7. 도입부 초안 (350~400자, 2개)
+
+### 초안 1: [톤명]
+(380자 내외, 후킹 강함)
+실측 글자수: XXX자
+
+### 초안 2: [톤명]
+(380자 내외, 다른 각도)
+실측 글자수: XXX자
+
+## 다음 단계 안내
+이 결과를 복사해서 Claude에 던지고
+"이 기획안 기반으로 ${chars}자 대본 써줘"라고 요청하세요.`;
+        }
+
+        async function runScriptPlan() {
+            const topic = (document.getElementById('pnTopic').value || '').trim();
+            if (!topic) { alert('주제를 입력하세요'); return; }
+            if (!GEMINI_API_KEYS || GEMINI_API_KEYS.length === 0 || !GEMINI_API_KEYS[0]) {
+                if (confirm('Gemini API 키가 설정되지 않았습니다.\n설정 페이지(주제찾기 탭)로 이동할까요?')) {
+                    switchProcess('topic');
+                }
+                return;
+            }
+            const memo = (document.getElementById('pnMemo').value || '').trim();
+            const chars = pnGetCharCount();
+            if (chars <= 0) { alert('목표 글자수를 입력하세요'); return; }
+            const urls = pnGetUrls();
+            const refText = (document.getElementById('pnRefText').value || '').trim();
+
+            const btn = document.getElementById('pnBtn');
+            const resultEl = document.getElementById('pnResult');
+            resultEl.classList.add('show');
+            resultEl.innerHTML = `<div class="pn-loading"><div class="spinner"></div> Gemini Pro + Google Search로 기획안 생성 중... (30~60초 소요)</div>`;
+            _geminiStatusEl = resultEl.querySelector('.pn-loading');
+            if (btn) { btn.disabled = true; btn.textContent = '생성 중...'; }
+
+            const prompt = pnBuildPrompt(topic, memo, chars, urls, refText);
+
+            let result = null;
+            let usedModel = null;
+            let errorMsg = null;
+
+            try {
+                result = await callGemini(prompt, {
+                    model: 'gemini-2.5-pro',
+                    noFallback: true,
+                    maxTokens: 16384,
+                    temperature: 0.4,
+                    useSearch: true,
+                });
+                usedModel = 'pro';
+            } catch(e1) {
+                console.warn('[runScriptPlan] Pro 실패 → Flash 시도:', e1.message);
+                resultEl.innerHTML = `<div class="pn-loading"><div class="spinner"></div> Pro 한도 초과/오류 → Gemini Flash로 재시도 중...</div>`;
+                _geminiStatusEl = resultEl.querySelector('.pn-loading');
+                try {
+                    result = await callGemini(prompt, {
+                        model: 'gemini-2.0-flash',
+                        noFallback: true,
+                        maxTokens: 16384,
+                        temperature: 0.4,
+                        useSearch: true,
+                    });
+                    usedModel = 'flash';
+                } catch(e2) {
+                    console.error('[runScriptPlan] Flash도 실패:', e2.message);
+                    errorMsg = `Pro 오류: ${e1.message}\nFlash 오류: ${e2.message}`;
+                }
+            }
+
+            if (btn) { btn.disabled = false; btn.textContent = '🚀 기획안 생성'; }
+
+            if (!result) {
+                resultEl.innerHTML = `
+                    <div class="pn-error">
+                        <strong>❌ 기획안 생성 실패</strong><br>
+                        Pro·Flash 모두 응답하지 못했습니다.<br><br>
+                        <pre style="white-space:pre-wrap;font-size:0.82rem;background:#fff;padding:8px;border-radius:6px;border:1px solid #f5c6cb;">${escapeHtmlSafe(errorMsg || '알 수 없는 오류')}</pre>
+                        <div style="margin-top:10px;">
+                            <button class="pn-retry-btn" onclick="runScriptPlan()">🔄 재시도</button>
+                        </div>
+                    </div>`;
+                return;
+            }
+
+            const obj = {
+                topic,
+                response: result.text,
+                usedModel,
+                usage: result.usage,
+                ts: Date.now(),
+            };
+            try { localStorage.setItem(PN_LS.result, JSON.stringify(obj)); } catch(e) {}
+            renderScriptPlanResult(obj);
+        }
+
+        function renderScriptPlanResult(obj) {
+            const resultEl = document.getElementById('pnResult');
+            if (!resultEl) return;
+            const badge = obj.usedModel === 'pro'
+                ? `<span class="pn-model-badge pro">✅ Gemini Pro + Search로 기획 완료</span>`
+                : `<span class="pn-model-badge flash">⚠️ Pro 한도 초과로 Flash 사용</span>`;
+            const rawHtml = escapeHtmlSafe(obj.response || '');
+
+            resultEl.classList.add('show');
+            resultEl.innerHTML = `
+                ${badge}
+                <div class="pn-result-actions" style="margin-bottom:10px;">
+                    <button class="pn-copy-btn" onclick="copyScriptPlanResult()">📋 전체 복사하기 (Claude용)</button>
+                </div>
+                <div class="pn-raw">${rawHtml}</div>
+                <div class="pn-next-hint">
+                    💡 이 결과를 복사해서 Claude 앱에 던지고<br>
+                    &nbsp;&nbsp;&nbsp;"이 기획안 기반으로 ${pnGetCharCount()}자 대본 써줘"라고 요청하세요.
+                </div>
+                <div class="pn-result-actions">
+                    <button class="pn-copy-btn" onclick="copyScriptPlanResult()">📋 전체 복사하기 (Claude용)</button>
+                    <button class="pn-retry-btn" onclick="runScriptPlan()">🔄 다시 생성</button>
+                </div>
+            `;
+        }
+
+        function copyScriptPlanResult() {
+            const raw = localStorage.getItem(PN_LS.result);
+            if (!raw) { alert('복사할 결과가 없습니다'); return; }
+            const btn = (typeof event !== 'undefined' && event && event.target && event.target.classList && event.target.classList.contains('pn-copy-btn'))
+                ? event.target
+                : document.querySelector('#pnResult .pn-copy-btn');
+            try {
+                const obj = JSON.parse(raw);
+                const modelLabel = obj.usedModel === 'pro' ? 'Gemini 2.5 Pro' : 'Gemini 2.0 Flash';
+                const md = `> 엔진: ${modelLabel} + Google Search Grounding\n\n` + obj.response + '\n';
+                navigator.clipboard.writeText(md).then(() => {
+                    if (!btn) return;
+                    // 결과 영역 안 모든 복사 버튼에 동시 적용 (상단+하단)
+                    const allBtns = document.querySelectorAll('#pnResult .pn-copy-btn');
+                    allBtns.forEach(b => {
+                        const orig = b.innerHTML;
+                        b.dataset.orig = orig;
+                        b.classList.add('copied');
+                        b.innerHTML = '✅ 복사 완료!';
+                    });
+                    let toast = document.querySelector('#pnResult .sr-copy-toast');
+                    if (!toast) {
+                        toast = document.createElement('span');
+                        toast.className = 'sr-copy-toast';
+                        toast.textContent = '클립보드에 복사됨 → Claude에 붙여넣으세요';
+                        btn.parentNode.appendChild(toast);
+                    } else {
+                        toast.style.animation = 'none';
+                        void toast.offsetWidth;
+                        toast.style.animation = 'srToastIn 0.3s ease-out';
+                    }
+                    setTimeout(() => {
+                        allBtns.forEach(b => {
+                            b.classList.remove('copied');
+                            if (b.dataset.orig) b.innerHTML = b.dataset.orig;
+                        });
                         if (toast && toast.parentNode) toast.parentNode.removeChild(toast);
                     }, 2500);
                 }).catch(err => {
