@@ -4090,12 +4090,12 @@
                 <div style="margin-bottom:10px;">
                     <strong style="color:#e65100;">🤖 Claude로 검수하기 (Gemini 결제 없이)</strong>
                     <div style="font-size:0.85rem;color:#666;margin-top:4px;line-height:1.5;">
-                        Claude Max 쓰는 중이면 → Claude에서 검수받고 JSON으로 가져오기 (비용 0원).<br>
-                        <b>추천</b>: 파트별로 따로따로 검수해야 디테일 깊음. 한 번에 5파트 다 = 빠르지만 얕음.
+                        ① 아래 파트 입력칸에 <b>대본 붙여넣기</b> → ② 해당 파트 버튼 클릭 → <b>프롬프트+대본이 한 번에</b> 복사됨 → ③ Claude에 붙여넣기 → ④ JSON 결과 import.<br>
+                        <b>추천</b>: 파트별로 따로따로 검수 (디테일 깊음). 한 번에 5파트 다 = 빠르지만 얕음.
                     </div>
                 </div>
 
-                <div style="font-size:0.82rem;color:#666;font-weight:700;margin-bottom:6px;">📋 파트별 Claude 프롬프트 (각 파트당 풀 깊이 ⭐ 추천)</div>
+                <div style="font-size:0.82rem;color:#666;font-weight:700;margin-bottom:6px;">📋 파트별 (대본 자동 삽입) — 각 파트 입력칸에 대본 넣고 누르세요 ⭐ 추천</div>
                 <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
                     <button onclick="copyClaudePartPrompt(1)" style="padding:7px 12px;background:#ff9800;color:white;border:none;border-radius:6px;font-weight:600;cursor:pointer;font-size:0.82rem;">파트1 (구조)</button>
                     <button onclick="copyClaudePartPrompt(2)" style="padding:7px 12px;background:#ff9800;color:white;border:none;border-radius:6px;font-weight:600;cursor:pointer;font-size:0.82rem;">파트2 (흥미)</button>
@@ -9830,9 +9830,16 @@ ${scriptText}
 
         // ===== Claude 파트별 프롬프트 (각 파트 풀 깊이) =====
         function copyClaudePartPrompt(num) {
-            // 원본 Gemini용 srGetPrompt 그대로 재사용 → Claude도 이걸로 검수 가능
-            const promptBase = srGetPrompt(num, '{여기에 검수할 대본 붙여넣기}');
+            // 해당 파트 textarea에서 대본 가져오기 (있으면 자동 삽입, 없으면 placeholder 유지)
+            const scriptText = (document.getElementById(`srInput${num}`)?.value || '').trim();
             const meta = SR_META[num];
+            if (!scriptText) {
+                if (!confirm(`파트${num} 대본 입력칸이 비어있습니다.\n프롬프트만 복사할까요? (대본은 Claude에서 직접 붙여넣기)\n\n취소 누르고 먼저 파트${num} 칸에 대본 넣으면 자동으로 합쳐서 복사됨.`)) {
+                    return;
+                }
+            }
+            // srGetPrompt 그대로 재사용 → Gemini 검수와 100% 동일 품질·기준
+            const promptBase = srGetPrompt(num, scriptText || '{여기에 검수할 대본 붙여넣기}');
             const prompt = promptBase
                 + '\n\n[Claude용 추가 지침 — 매우 중요]\n'
                 + `결과는 반드시 다음 JSON 형식으로만 출력. 그 외 설명 일절 금지:\n`
@@ -9846,7 +9853,12 @@ ${scriptText}
                 + `- JSON 내부 마크다운에서 큰따옴표는 \\"로, 개행은 \\n으로 이스케이프.`;
 
             navigator.clipboard.writeText(prompt).then(() => {
-                alert(`✅ 파트${num} (${meta.title.split(':')[1]?.trim() || meta.title}) Claude 프롬프트 복사됨\n\n1. Claude에 붙여넣기\n2. "{여기에 검수할 대본 붙여넣기}" 부분에 대본 넣기\n3. Claude 결과를 JSON 또는 마크다운으로 받기\n4. "📥 JSON 결과 가져오기" 버튼으로 import (이 파트만 채워짐)`);
+                const hasScript = scriptText.length > 0;
+                const partLabel = meta.title.split(':')[1]?.trim() || meta.title;
+                const msg = hasScript
+                    ? `✅ 파트${num} (${partLabel}) 프롬프트+대본 한 방에 복사됨 (${scriptText.length}자)\n\n1. Claude에 그대로 붙여넣기 → 끝\n2. Claude가 JSON 출력하면 복사\n3. "📥 JSON 결과 가져오기"로 import`
+                    : `✅ 파트${num} (${partLabel}) Claude 프롬프트만 복사됨 (대본 비어있음)\n\n1. Claude에 붙여넣기\n2. "{여기에 검수할 대본 붙여넣기}" 부분에 대본 직접 넣기\n3. Claude 결과를 JSON으로 받기\n4. "📥 JSON 결과 가져오기"로 import`;
+                alert(msg);
             }).catch(err => {
                 console.error('복사 실패:', err);
                 alert('복사 실패. 콘솔 확인.');
@@ -9855,6 +9867,9 @@ ${scriptText}
 
         // ===== Claude 외부 검수 import =====
         function copyClaudePrompt() {
+            // 파트1 textarea의 대본을 자동 삽입 (빈 칸이면 placeholder 유지)
+            const scriptText = (document.getElementById('srInput1')?.value || '').trim();
+            const scriptBlock = scriptText || '{여기에 대본 붙여넣기}';
             // 5파트 검수 항목 + JSON 출력 형식을 명시한 통합 프롬프트
             const prompt = `너는 유튜브 대본 검수 전문가다. 아래 대본을 5개 파트 관점에서 검수하라.
 
@@ -9920,10 +9935,14 @@ ${scriptText}
 \`\`\`
 
 [검수 대본]
-{여기에 대본 붙여넣기}`;
+${scriptBlock}`;
 
             navigator.clipboard.writeText(prompt).then(() => {
-                alert('✅ Claude 검수 프롬프트 복사됨\\n\\n1. Claude 앱/웹에 붙여넣기\\n2. "{여기에 대본 붙여넣기}" 부분에 대본 넣기\\n3. Claude가 출력한 JSON을 복사\\n4. "📥 JSON 결과 가져오기" 버튼으로 import');
+                const hasScript = scriptText.length > 0;
+                const msg = hasScript
+                    ? `✅ 프롬프트+대본 한 방에 복사됨 (${scriptText.length}자, 파트1 입력칸 기준)\n\n1. Claude에 그대로 붙여넣기 → 끝\n2. Claude가 JSON 출력하면 복사\n3. "📥 JSON 결과 가져오기"로 import (5파트 자동 채워짐)`
+                    : '✅ Claude 검수 프롬프트만 복사됨 (대본 비어있음)\n\n1. Claude에 붙여넣기\n2. "{여기에 대본 붙여넣기}" 부분에 대본 직접 넣기\n3. Claude가 출력한 JSON을 복사\n4. "📥 JSON 결과 가져오기" 버튼으로 import';
+                alert(msg);
             }).catch(err => {
                 console.error('복사 실패:', err);
                 alert('복사 실패. 콘솔 확인.');
