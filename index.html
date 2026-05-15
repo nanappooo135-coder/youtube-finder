@@ -4050,6 +4050,41 @@
                 <span style="font-size:0.82rem;color:#888;">엔진: Gemini 2.5 Pro (실패 시 2.5 Flash 자동 전환)</span>
             </div>
 
+            <!-- Claude 외부 검수 import -->
+            <div style="background:#fff8e1;border:2px solid #ffc107;border-radius:10px;padding:14px;margin:12px 0;">
+                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+                    <div>
+                        <strong style="color:#e65100;">🤖 Claude로 검수하기 (Gemini 결제 없이)</strong>
+                        <div style="font-size:0.85rem;color:#666;margin-top:4px;">
+                            Claude Max 쓰는 중이면 → Claude에서 검수받고 JSON으로 가져오기 (비용 0원)
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                        <button onclick="copyClaudePrompt()" style="padding:8px 14px;background:#ff9800;color:white;border:none;border-radius:6px;font-weight:700;cursor:pointer;font-size:0.85rem;">📋 Claude 프롬프트 복사</button>
+                        <button onclick="openClaudeImportModal()" style="padding:8px 14px;background:#e65100;color:white;border:none;border-radius:6px;font-weight:700;cursor:pointer;font-size:0.85rem;">📥 JSON 결과 가져오기</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Claude import 모달 -->
+            <div id="claudeImportModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+                <div style="background:white;border-radius:12px;padding:24px;max-width:800px;width:100%;max-height:90vh;overflow:auto;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                        <h3 style="margin:0;color:#e65100;">📥 Claude 검수 결과 JSON 가져오기</h3>
+                        <button onclick="closeClaudeImportModal()" style="background:transparent;border:none;font-size:24px;cursor:pointer;color:#666;">✕</button>
+                    </div>
+                    <p style="margin:0 0 12px;font-size:0.9rem;color:#555;line-height:1.6;">
+                        Claude한테 받은 JSON 결과를 통째로 붙여넣으세요. 파트 1~5 중 일부만 있어도 OK.
+                    </p>
+                    <textarea id="claudeImportInput" placeholder='{"scriptReview": {"1": "...", "2": "...", ...}}' style="width:100%;height:300px;padding:12px;border:2px solid #e0e0e0;border-radius:8px;font-family:monospace;font-size:0.85rem;resize:vertical;"></textarea>
+                    <div id="claudeImportError" style="color:#dc3545;font-size:0.85rem;margin-top:8px;display:none;"></div>
+                    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px;">
+                        <button onclick="closeClaudeImportModal()" style="padding:10px 20px;background:#6c757d;color:white;border:none;border-radius:6px;cursor:pointer;">취소</button>
+                        <button onclick="importClaudeReview()" style="padding:10px 20px;background:#28a745;color:white;border:none;border-radius:6px;font-weight:700;cursor:pointer;">가져오기</button>
+                    </div>
+                </div>
+            </div>
+
             <!-- 파트 1 -->
             <div class="sr-part-card" id="srCard1" data-part="1">
                 <div class="sr-part-header" onclick="srTogglePart(1)">
@@ -9676,7 +9711,9 @@ ${scriptText}
             const resultEl = document.getElementById(`srResult${num}`);
             if (!resultEl) return;
 
-            const badge = obj.usedModel === 'pro'
+            const badge = obj.usedModel === 'claude'
+                ? `<span class="sr-model-badge" style="background:#ff9800;color:white;">🤖 Claude로 검수 완료</span>`
+                : obj.usedModel === 'pro'
                 ? `<span class="sr-model-badge pro">✅ Gemini Pro로 검수 완료</span>`
                 : `<span class="sr-model-badge flash">⚠️ Pro 한도 초과로 Flash 사용</span>`;
 
@@ -9707,7 +9744,9 @@ ${scriptText}
             try {
                 const obj = JSON.parse(raw);
                 const meta = SR_META[num];
-                const modelLabel = obj.usedModel === 'pro' ? 'Gemini 2.5 Pro' : 'Gemini 2.5 Flash';
+                const modelLabel = obj.usedModel === 'claude' ? 'Claude'
+                    : obj.usedModel === 'pro' ? 'Gemini 2.5 Pro'
+                    : 'Gemini 2.5 Flash';
                 const md = `# 대본 검수 결과 — ${meta.title}\n` +
                            `> ${meta.subtitle}\n` +
                            `> 엔진: ${modelLabel}\n\n` +
@@ -9743,6 +9782,151 @@ ${scriptText}
                 console.error(e);
                 alert('복사 중 오류: ' + e.message);
             }
+        }
+
+        // ===== Claude 외부 검수 import =====
+        function copyClaudePrompt() {
+            // 5파트 검수 항목 + JSON 출력 형식을 명시한 통합 프롬프트
+            const prompt = `너는 유튜브 대본 검수 전문가다. 아래 대본을 5개 파트 관점에서 검수하라.
+
+[필수 컨텍스트]
+- 이 대본은 실제 시사·역사 사건을 다루는 유튜브 영상 대본
+- 학습 데이터 이후 사건도 실제로 간주
+- "가상 시나리오", "미래 가정으로 표시" 같은 지적·제안 금지
+
+[5파트 검수 항목]
+
+## 파트 1 — 전체 구조·전개 (건물의 골조)
+1. 전개 구도 — 미스터리→정보→감정→반전 흐름이 자연스러운가
+2. 정보-감정 진자 — 정보 폭격 후 감정 환기가 적절히 배치됐는가
+3. 맥락 튀는 부분 — 갑자기 화제가 바뀌거나 설명 없이 도약하는 구간
+4. 설명 누락 — "왜?"라는 질문에 답하지 않고 넘어간 부분
+5. 영상 전환 — 영상으로 만들었을 때 어색한 장면 전환
+
+## 파트 2 — 흥미도·후킹 (외장)
+1. 도입부(첫 30초) 후킹 — 미스터리/충격 팩트로 시작했는가, 350~400자, ?로 마무리
+2. 본문 초입 충격팩트 — 도입부 직후 밋밋하면 탈주
+3. 호기심 갭(Curiosity Gap) — 시청자가 끝까지 보게 하는 미해결 질문
+4. 자극 강도 — 충격적 사실, 의외성, 갈등 요소
+5. 결말 후킹 — 다음 영상으로 이어지는 떡밥, 강한 마무리
+
+## 파트 3 — 문체·어미·리듬 (내부 마감)
+1. ~요/~죠 과다 — 비율이 한쪽으로 쏠리진 않았는가
+2. 짧은 문장 연타 — AI 특유의 스타카토식 문장 나열 금지
+3. 연결어 부족 — 그런데/그랬더니/그러자 등 자연스러운 흐름 연결어
+4. 의문 종결 — ~까/~까요/~을까는 무조건 ?로 닫기
+5. 메타 발언 — "여러분", "이 영상을 만든 이유", "아까 말했듯이" 같은 표현 금지
+
+## 파트 4 — 이해도·전달력 (인테리어)
+1. 어려운 용어 풀이 — 영문 약어·전문 용어 첫 등장 시 한국어 풀이
+2. 비유 적절성 — 비유가 본 주제 이해를 돕는가, 레퍼런스 비유 복사 X
+3. 숫자 체감 — 큰 숫자는 비교/체감 표현으로
+4. 인물 시점·감각 디테일 — 뉴스 톤 X, 장면 묘사 1~2문장 상한
+5. 시간 점프 — 시간순 직진, 점프 금지
+
+## 파트 5 — 신뢰성·디테일 (마감)
+1. 팩트 정확성 — 의심되는 수치·날짜·인용 (확인 필요로 분류)
+2. 출처 인용 — "~보고서/뉴스에 따르면" 3회 이상 시 의심
+3. 회복 서사 금지 — "망해서 이렇다" 진행형/완료형만
+4. 신조어/고유표현 — 레퍼런스가 만든 표현 사용 금지 (표절 위험)
+5. 메타 클리셰 — "진짜 무서운 건요", "이게 다가 아닙니다" 등 금지
+
+[검수 규칙]
+- 대본을 다시 쓰지 마라. 문제점을 짚고 수정 방향만 제안한다.
+- 항목별로 판정(✅ 통과 / ⚠️ 보완 필요 / ❌ 문제)을 명시한다.
+- 문제 부분은 원문 인용 + 수정 제안을 함께 제시한다.
+- 각 파트 끝에 종합 코멘트 추가.
+
+[출력 형식 — 반드시 이 JSON 형식으로만 출력]
+\`\`\`json
+{
+  "scriptReview": {
+    "1": "## 검수 결과 — 파트 1\\n\\n### 1. 전개 구도\\n- 판정: ✅\\n- 인용: \\"...\\"\\n- 제안: ...\\n\\n(이하 항목별 반복)\\n\\n## 종합 코멘트\\n...",
+    "2": "## 검수 결과 — 파트 2\\n\\n...",
+    "3": "## 검수 결과 — 파트 3\\n\\n...",
+    "4": "## 검수 결과 — 파트 4\\n\\n...",
+    "5": "## 검수 결과 — 파트 5\\n\\n..."
+  }
+}
+\`\`\`
+
+[검수 대본]
+{여기에 대본 붙여넣기}`;
+
+            navigator.clipboard.writeText(prompt).then(() => {
+                alert('✅ Claude 검수 프롬프트 복사됨\\n\\n1. Claude 앱/웹에 붙여넣기\\n2. "{여기에 대본 붙여넣기}" 부분에 대본 넣기\\n3. Claude가 출력한 JSON을 복사\\n4. "📥 JSON 결과 가져오기" 버튼으로 import');
+            }).catch(err => {
+                console.error('복사 실패:', err);
+                alert('복사 실패. 콘솔 확인.');
+            });
+        }
+
+        function openClaudeImportModal() {
+            const modal = document.getElementById('claudeImportModal');
+            if (modal) {
+                modal.style.display = 'flex';
+                const input = document.getElementById('claudeImportInput');
+                if (input) input.focus();
+                const err = document.getElementById('claudeImportError');
+                if (err) err.style.display = 'none';
+            }
+        }
+
+        function closeClaudeImportModal() {
+            const modal = document.getElementById('claudeImportModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function importClaudeReview() {
+            const input = document.getElementById('claudeImportInput');
+            const errEl = document.getElementById('claudeImportError');
+            const raw = (input?.value || '').trim();
+            if (!raw) {
+                errEl.textContent = 'JSON을 붙여넣으세요.';
+                errEl.style.display = 'block';
+                return;
+            }
+
+            // ```json ... ``` 코드블럭 자동 제거
+            let cleaned = raw;
+            const codeBlockMatch = cleaned.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
+            if (codeBlockMatch) cleaned = codeBlockMatch[1].trim();
+
+            let parsed;
+            try {
+                parsed = JSON.parse(cleaned);
+            } catch(e) {
+                errEl.textContent = 'JSON 파싱 실패: ' + e.message;
+                errEl.style.display = 'block';
+                return;
+            }
+
+            // {scriptReview: {...}} 또는 직접 {"1":..., "2":...} 둘 다 허용
+            const reviews = parsed.scriptReview || parsed;
+            const validNums = ['1', '2', '3', '4', '5'].filter(n => reviews[n] && typeof reviews[n] === 'string' && reviews[n].trim());
+
+            if (validNums.length === 0) {
+                errEl.textContent = '파트 1~5 결과를 찾을 수 없습니다. 형식: {"scriptReview": {"1": "...", "2": "..."}}';
+                errEl.style.display = 'block';
+                return;
+            }
+
+            // 각 파트 localStorage 저장 + 렌더
+            const ts = Date.now();
+            for (const num of validNums) {
+                const obj = {
+                    num: Number(num),
+                    response: reviews[num],
+                    usedModel: 'claude',
+                    usage: null,
+                    ts,
+                };
+                try { localStorage.setItem(SR_LS_RESULT(Number(num)), JSON.stringify(obj)); } catch(e) {}
+                renderScriptReviewResult(Number(num), obj);
+            }
+
+            closeClaudeImportModal();
+            alert(`✅ ${validNums.length}개 파트 검수 결과 가져옴 (파트 ${validNums.join(', ')})`);
         }
 
         /* ============================================================
