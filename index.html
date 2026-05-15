@@ -80,21 +80,53 @@
         /* === Process Nav (최상위) === */
         .process-nav {
             display: flex;
-            gap: 8px;
-            margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 14px;
+            margin-bottom: 16px;
+            padding: 14px 16px;
+            background: linear-gradient(180deg, #fafafa 0%, #f3f4f6 100%);
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            align-items: stretch;
+        }
+        .proc-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            padding: 8px 12px 8px 14px;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            position: relative;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+        }
+        .proc-group::before {
+            content: attr(data-label);
+            position: absolute;
+            top: -9px;
+            left: 12px;
+            background: #ffffff;
+            padding: 0 8px;
+            font-size: 0.68rem;
+            font-weight: 700;
+            color: #6b7280;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+            border-radius: 4px;
         }
         .process-btn {
-            padding: 9px 18px;
+            padding: 9px 16px;
             border: 1.5px solid var(--danger);
             background: var(--danger);
             color: white;
             border-radius: 999px;
-            font-size: 0.92rem;
+            font-size: 0.9rem;
             font-weight: 700;
             cursor: pointer;
             transition: all 0.15s ease;
             box-shadow: var(--shadow-sm);
             letter-spacing: -0.01em;
+            white-space: nowrap;
         }
         .process-btn:hover {
             transform: translateY(-1px);
@@ -107,6 +139,19 @@
         }
         .process-btn.inactive:hover {
             background: #fef2f2;
+        }
+        @media (max-width: 768px) {
+            .process-nav {
+                gap: 8px;
+                padding: 10px;
+            }
+            .proc-group {
+                padding: 8px 10px;
+                gap: 4px;
+            }
+            .proc-group::before {
+                font-size: 0.6rem;
+            }
         }
 
         /* === Thumbnail Builder === */
@@ -2175,24 +2220,32 @@
     <div class="container">
         <header>
             <h1>유튜브 채널 작업실</h1>
-            <p>주제 찾기 → 대본 → 썸네일 → 검수 → 시각화</p>
+            <p>주제 찾기 → 대본 → 썸네일 → 검수</p>
         </header>
 
-        <!-- 업무 프로세스 (최상위) -->
+        <!-- 업무 프로세스 (최상위) — 그룹별 정리 -->
         <div class="process-nav">
-            <button class="process-btn" id="procBtn_topic" onclick="switchProcess('topic')">주제찾기</button>
-            <button class="process-btn inactive" id="procBtn_script" onclick="switchProcess('script')" style="background:#0ea5e9;border-color:#0ea5e9;">📝 대본 노트</button>
-            <button class="process-btn inactive" id="procBtn_genspark" onclick="switchProcess('genspark')" style="background:#7048e8;border-color:#7048e8;">🎨 젠스파크 이미지</button>
-            <button class="process-btn inactive" id="procBtn_thumbnail" onclick="switchProcess('thumbnail')">썸네일</button>
-            <button class="process-btn inactive" id="procBtn_plan" onclick="switchProcess('plan')" style="background:#d97706;border-color:#d97706;">🎬 대본 기획</button>
-            <button class="process-btn inactive" id="procBtn_scriptReview" onclick="switchProcess('scriptReview')" style="background:#6f42c1;border-color:#6f42c1;">📋 대본 검수</button>
-            <button class="process-btn inactive" id="procBtn_visual" onclick="switchProcess('visual')">시각화</button>
-            <button class="process-btn inactive" id="procBtn_json" onclick="switchProcess('json')">JSON</button>
-            <button class="process-btn inactive" id="procBtn_sellpot" onclick="switchProcess('sellpot')">셀팟 기본</button>
-            <button class="process-btn inactive" id="procBtn_tts" onclick="switchProcess('tts')">TTS변환</button>
-            <button class="process-btn inactive" id="procBtn_ref" onclick="switchProcess('ref')">레퍼런스</button>
-            <button class="process-btn inactive" id="procBtn_trend" onclick="switchProcess('trend')">🔥트렌드</button>
-            <button class="process-btn inactive" id="procBtn_tool" onclick="switchProcess('tool')" style="background:#43a047;border-color:#43a047;">🛠️ TOOL</button>
+            <!-- 그룹 1: 제작 흐름 -->
+            <div class="proc-group" data-label="제작 흐름">
+                <button class="process-btn" id="procBtn_topic" onclick="switchProcess('topic')">주제찾기</button>
+                <button class="process-btn inactive" id="procBtn_script" onclick="switchProcess('script')" style="background:#0ea5e9;border-color:#0ea5e9;">📝 대본 노트</button>
+                <button class="process-btn inactive" id="procBtn_thumbnail" onclick="switchProcess('thumbnail')">썸네일</button>
+                <button class="process-btn inactive" id="procBtn_plan" onclick="switchProcess('plan')" style="background:#d97706;border-color:#d97706;">🎬 대본 기획</button>
+                <button class="process-btn inactive" id="procBtn_scriptReview" onclick="switchProcess('scriptReview')" style="background:#6f42c1;border-color:#6f42c1;">📋 대본 검수</button>
+            </div>
+            <!-- 그룹 2: 이미지·후처리 -->
+            <div class="proc-group" data-label="이미지·후처리">
+                <button class="process-btn inactive" id="procBtn_genspark" onclick="switchProcess('genspark')" style="background:#7048e8;border-color:#7048e8;">🎨 젠스파크</button>
+                <button class="process-btn inactive" id="procBtn_json" onclick="switchProcess('json')">JSON</button>
+                <button class="process-btn inactive" id="procBtn_sellpot" onclick="switchProcess('sellpot')">셀팟 기본</button>
+                <button class="process-btn inactive" id="procBtn_tts" onclick="switchProcess('tts')">TTS변환</button>
+            </div>
+            <!-- 그룹 3: 도구·리서치 -->
+            <div class="proc-group" data-label="도구·리서치">
+                <button class="process-btn inactive" id="procBtn_ref" onclick="switchProcess('ref')">레퍼런스</button>
+                <button class="process-btn inactive" id="procBtn_trend" onclick="switchProcess('trend')">🔥트렌드</button>
+                <button class="process-btn inactive" id="procBtn_tool" onclick="switchProcess('tool')" style="background:#43a047;border-color:#43a047;">🛠️ TOOL</button>
+            </div>
         </div>
 
         <!-- ===== 프로세스 1: 주제찾기 ===== -->
@@ -3047,85 +3100,6 @@
             </div>
 
         </div><!-- /process-thumbnail -->
-
-        <!-- ===== 프로세스: 시각화 프롬프트 ===== -->
-        <div id="process-visual" style="display:none;">
-
-            <div class="section">
-                <div class="section-title">시각화 프롬프트 생성</div>
-                <div class="section-content">
-                    <div id="vsServerStatus" class="fc-server-status disconnected">
-                        <span>서버 확인 중...</span>
-                    </div>
-                    <p style="font-size:0.85rem;color:#888;margin-bottom:12px;">
-                        대본 전체를 먼저 넣어 컨텍스트를 잡고, 파트별로 이미지 프롬프트를 생성해요.
-                    </p>
-
-                    <div class="input-group">
-                        <label>1단계: 대본 전체 <span style="color:#888;font-weight:400;">(컨텍스트 파악용 — 처음 한 번만)</span></label>
-                        <textarea id="vsFullScript" rows="6" placeholder="대본 전체를 붙여넣으세요. AI가 배경/인물/시대/분위기를 파악합니다." style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;resize:vertical;font-family:inherit;line-height:1.6;"></textarea>
-                    </div>
-
-                    <div class="input-group">
-                        <label>2단계: 프롬프트 생성할 파트 <span style="color:#888;font-weight:400;">(이 부분의 이미지 프롬프트를 만듭니다)</span></label>
-                        <textarea id="vsPart" rows="8" placeholder="프롬프트를 만들 파트를 붙여넣으세요.&#10;여러 문장이면 각 문장별로 프롬프트가 나옵니다." style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;resize:vertical;font-family:inherit;line-height:1.6;"></textarea>
-                    </div>
-
-                    <div class="input-group">
-                        <label>본문 묶음 수 <span style="color:#888;font-weight:400;">(도입부는 자동으로 1줄=1프롬프트, 본문만 이 설정 적용)</span></label>
-                        <div class="tb-options" id="vsGroup">
-                            <button class="tb-opt" data-val="3" onclick="toggleTbOpt(this,'vsGroup',1)">
-                                <div class="opt-title">3문장</div>
-                            </button>
-                            <button class="tb-opt" data-val="4" onclick="toggleTbOpt(this,'vsGroup',1)">
-                                <div class="opt-title">4문장</div>
-                            </button>
-                            <button class="tb-opt selected" data-val="5" onclick="toggleTbOpt(this,'vsGroup',1)">
-                                <div class="opt-title">5문장</div>
-                            </button>
-                            <button class="tb-opt" data-val="6" onclick="toggleTbOpt(this,'vsGroup',1)">
-                                <div class="opt-title">6문장</div>
-                            </button>
-                            <button class="tb-opt" data-val="8" onclick="toggleTbOpt(this,'vsGroup',1)">
-                                <div class="opt-title">8문장</div>
-                            </button>
-                        </div>
-                    </div>
-
-                    <button id="vsBtn" class="search-btn" onclick="generateVisualPrompts()">
-                        시각화 프롬프트 생성
-                    </button>
-                </div>
-            </div>
-
-            <!-- 생성 결과 -->
-            <div id="vsResultSection" style="display:none;">
-                <div class="section">
-                    <div class="section-title">시각화 프롬프트 결과</div>
-                    <div class="section-content">
-                        <div id="vsResults"></div>
-                        <div style="display:flex;gap:8px;margin-top:12px;">
-                            <button class="search-btn" onclick="copyAllVisualPrompts(this)" style="flex:1;">전체 복사</button>
-                            <button class="search-btn" id="vsVideoBtn" onclick="generateVideoPrompts()" style="flex:1;background:#fd7e14;border-color:#fd7e14;">도입부 동영상 프롬프트</button>
-                        </div>
-                        <div id="vsUsage" class="fc-usage"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 동영상 프롬프트 결과 -->
-            <div id="vsVideoSection" style="display:none;">
-                <div class="section">
-                    <div class="section-title">도입부 동영상 프롬프트 (Grok용)</div>
-                    <div class="section-content">
-                        <div id="vsVideoResults" class="fc-result"></div>
-                        <button class="search-btn" onclick="copyVideoPrompts(this)" style="margin-top:12px;">전체 복사</button>
-                        <div id="vsVideoUsage" class="fc-usage"></div>
-                    </div>
-                </div>
-            </div>
-
-        </div><!-- /process-visual -->
 
         <!-- ===== 프로세스: JSON 생성 (셀팟 스튜디오용) ===== -->
         <div id="process-json" style="display:none;">
@@ -4008,7 +3982,7 @@
                 <strong>🎬 대본 기획 — 주제만 던지면 뼈대 완성</strong><br>
                 Gemini Pro + Google Search Grounding으로 최신 정보를 모아서, 핵심 사실·비하인드·전개 구도·도입부 초안까지 한 번에 만들어드립니다.<br>
                 결과를 복사해서 Claude 앱에 "이 기획안 기반으로 대본 써줘"라고 던지면 끝.<br>
-                <span style="font-size:0.82rem;color:#888;">엔진: Gemini 2.5 Pro (실패 시 2.0 Flash 자동 전환) + Google Search Grounding</span>
+                <span style="font-size:0.82rem;color:#888;">엔진: Gemini 2.5 Pro (실패 시 2.5 Flash 자동 전환) + Google Search Grounding</span>
             </div>
 
             <div class="pn-card">
@@ -4068,7 +4042,7 @@
                 <strong>📋 대본 검수 — 5파트 진단</strong><br>
                 대본을 다시 써주는 게 아니라, <strong>문제점을 짚고 수정 방향을 제안</strong>합니다.
                 각 파트의 결과를 복사 → Claude 앱에서 직접 수정 → 수정된 대본을 다음 파트에 붙여넣어 검수하세요.<br>
-                <span style="font-size:0.82rem;color:#888;">엔진: Gemini 2.5 Pro (실패 시 2.0 Flash 자동 전환)</span>
+                <span style="font-size:0.82rem;color:#888;">엔진: Gemini 2.5 Pro (실패 시 2.5 Flash 자동 전환)</span>
             </div>
 
             <!-- 파트 1 -->
@@ -8415,7 +8389,6 @@ ${_retryRound > 0 ? `⚠️ 이번은 ${_retryRound}차 추가 요청입니다. 
             }
             // 각 탭 고유 콘텐츠 (process-topic 밖)
             document.getElementById('process-thumbnail').style.display = proc === 'thumbnail' ? '' : 'none';
-            document.getElementById('process-visual').style.display = proc === 'visual' ? '' : 'none';
             document.getElementById('process-json').style.display = proc === 'json' ? '' : 'none';
             document.getElementById('process-sellpot').style.display = proc === 'sellpot' ? '' : 'none';
             document.getElementById('process-review').style.display = proc === 'review' ? '' : 'none';
@@ -8434,7 +8407,6 @@ ${_retryRound > 0 ? `⚠️ 이번은 ${_retryRound}차 추가 요청입니다. 
 
             if (proc === 'genspark' && typeof _gsInit === 'function') _gsInit();
             if (proc === 'script' && typeof _scrInit === 'function') _scrInit();
-            if (proc === 'visual') checkFcServer('vsServerStatus');
             if (proc === 'review') checkFcServer('rvServerStatus');
             if (proc === 'scriptReview') srLoadAll();
             if (proc === 'plan') pnLoadAll();
@@ -9544,7 +9516,7 @@ ${scriptText}
             try {
                 const obj = JSON.parse(raw);
                 const meta = SR_META[num];
-                const modelLabel = obj.usedModel === 'pro' ? 'Gemini 2.5 Pro' : 'Gemini 2.0 Flash';
+                const modelLabel = obj.usedModel === 'pro' ? 'Gemini 2.5 Pro' : 'Gemini 2.5 Flash';
                 const md = `# 대본 검수 결과 — ${meta.title}\n` +
                            `> ${meta.subtitle}\n` +
                            `> 엔진: ${modelLabel}\n\n` +
@@ -9814,7 +9786,6 @@ YouTube URL로 입력된 레퍼런스는 "잘 터진 대본의 검증된 히트 
 
 # 🎬 대본 기획 — ${topic}
 > 목표 글자수: ${chars}자 (약 ${minutes}분)
-> 엔진: Gemini 2.5 Pro + Google Search Grounding
 
 ## 1. 주제 한 줄 정리
 (영상 핵심 메시지를 1~2문장으로)
@@ -10010,7 +9981,7 @@ YouTube URL로 입력된 레퍼런스는 "잘 터진 대본의 검증된 히트 
                 : document.querySelector('#pnResult .pn-copy-btn');
             try {
                 const obj = JSON.parse(raw);
-                const modelLabel = obj.usedModel === 'pro' ? 'Gemini 2.5 Pro' : 'Gemini 2.0 Flash';
+                const modelLabel = obj.usedModel === 'pro' ? 'Gemini 2.5 Pro' : 'Gemini 2.5 Flash';
                 const md = `> 엔진: ${modelLabel} + Google Search Grounding\n\n` + obj.response + '\n';
                 navigator.clipboard.writeText(md).then(() => {
                     if (!btn) return;
@@ -10087,319 +10058,6 @@ YouTube URL로 입력된 레퍼런스는 "잘 터진 대본의 검증된 히트 
                 document.getElementById('fcCharCount').textContent = `${len.toLocaleString()}자`;
             }
         });
-
-        // ===========================
-        // 시각화 프롬프트
-        // ===========================
-        async function generateVisualPrompts() {
-            const fullScript = document.getElementById('vsFullScript').value.trim();
-            const part = document.getElementById('vsPart').value.trim();
-            const groupSize = parseInt(getSelectedVals('vsGroup')[0] || '1');
-            if (!part) { alert('프롬프트를 생성할 파트를 입력해주세요'); return; }
-
-            const btn = document.getElementById('vsBtn');
-            btn.disabled = true;
-            btn.innerHTML = '<div class="spinner"></div> 실시간 생성 중...';
-            _geminiStatusEl = btn;
-
-            // 결과 영역 먼저 표시 + 스트리밍 출력할 곳
-            document.getElementById('vsResultSection').style.display = '';
-            const resultsEl = document.getElementById('vsResults');
-            resultsEl.innerHTML = '<div class="fc-result" id="vsStreamBox" style="min-height:80px;"></div>';
-            document.getElementById('vsResultSection').scrollIntoView({ behavior: 'smooth' });
-
-            try {
-                const context = fullScript ? `Full script context:\n${fullScript.slice(0, 3000)}` : '(No full script)';
-                const groupRule = groupSize === 1
-                    ? 'Each line (separated by line break) = 1 image prompt. Do NOT merge lines.'
-                    : `Group every ${groupSize} consecutive lines into ONE image prompt. The [한국어 번역] contains all ${groupSize} lines, [영어 이미지 프롬프트] is ONE unified scene.`;
-
-                // 도입부/본문 자동 분리
-                // 도입부: 각 줄이 짧은 개별 문장 (줄바꿈으로 구분)
-                // 본문: 긴 문단 (여러 문장이 이어짐)
-                const rawLines = part.split('\n');
-                const introLines = [];
-                const bodyText = [];
-                let introEnded = false;
-
-                for (const line of rawLines) {
-                    const trimmed = line.trim();
-                    if (!trimmed) {
-                        if (introLines.length > 0) introEnded = true;
-                        continue;
-                    }
-                    // 도입부: 빈줄 나오기 전까지의 짧은 개별 줄들
-                    if (!introEnded) {
-                        introLines.push(trimmed);
-                    } else {
-                        bodyText.push(trimmed);
-                    }
-                }
-
-                // 본문을 문장 단위로 분리 (마침표/물음표/느낌표 기준)
-                const bodySentences = bodyText.join(' ').split(/(?<=[.?!요죠])\s+/).filter(s => s.trim());
-
-                // 본문 묶음
-                const bodyGroups = [];
-                for (let i = 0; i < bodySentences.length; i += groupSize) {
-                    bodyGroups.push(bodySentences.slice(i, i + groupSize).join(' '));
-                }
-
-                const totalPairs = introLines.length + bodyGroups.length;
-
-                let scriptSection = '=== INTRO (each line = 1 prompt) ===\n';
-                introLines.forEach((l, i) => { scriptSection += `INTRO-${i+1}: ${l}\n`; });
-                scriptSection += `\n=== BODY (every ${groupSize} sentences = 1 prompt) ===\n`;
-                bodyGroups.forEach((g, i) => { scriptSection += `BODY-${i+1}: ${g}\n\n`; });
-
-                const prompt = `You are a Script-to-Image Prompt Engineer.
-
-CONTEXT: ${context}
-
-STYLE: Choose from Vintage Analog / Documentary / Modern Cinematic / Digital Realism. Apply consistently.
-
-## CRITICAL STRUCTURE RULE:
-The script has TWO sections:
-
-**INTRO** (${introLines.length} lines): Each INTRO line gets its OWN separate [한국어 번역] + [영어 이미지 프롬프트] pair. Do NOT merge intro lines.
-
-**BODY** (${bodyGroups.length} groups of ~${groupSize} sentences): Each BODY group gets ONE [한국어 번역] + [영어 이미지 프롬프트] pair.
-
-Total: EXACTLY ${totalPairs} pairs.
-
-RULES:
-- Process ALL text, skip NOTHING
-- Do NOT modify/summarize Korean text. Copy EXACTLY as given.
-- Create SCENES not explanatory images
-- NO numbers, NO titles, NO section headers in output
-
-## PROMPT QUALITY STANDARD (match this level EXACTLY):
-Each English prompt must be THIS detailed — not shorter, not simpler:
-
-EXAMPLE 1: "Cinematic wide establishing shot of the Strait of Hormuz at sunset, the narrow waterway choked with dozens of idle oil tankers anchored in long lines unable to transit, dark silhouettes of warships patrolling the passage, thick black smoke columns rising from damaged Iranian coastal facilities in the far background, the critical chokepoint of 20 percent of global seaborne oil trade frozen under military blockade, blood-red sunset light bleeding across the horizon and reflecting off still oily water, deep crimson and dark steel-navy color palette, atmospheric haze hanging heavy over the strait, the economic lifeline of the world held hostage, anamorphic ultra-wide composition, photorealistic cinematic rendering, 8K resolution"
-
-EXAMPLE 2: "Cinematic dramatic final wide shot of the Korean Peninsula seen from high altitude at twilight, the DMZ cutting across the land as a dark scar between the illuminated South and the dark North, beneath the northern mountains a ghostly translucent cross-section reveals hidden underground tunnel networks and buried military facilities glowing faintly deep within the granite, the same vulnerable architecture that was just destroyed in Iran now silently waiting beneath Korean soil, the ominous question of what comes next hanging over the entire peninsula, deep blue twilight sky transitioning to black at the edges, warm city lights of Seoul in the south contrasting with cold dark mountains of the north with faint underground glow, atmospheric haze and tension, anamorphic ultra-wide cinematic composition, photorealistic rendering, 8K resolution"
-
-KEY QUALITIES to match:
-- Minimum 80+ words per prompt
-- STORYTELLING not just description — convey emotion and narrative through the visual
-- Specific color palettes named ("blood-red sunset", "deep crimson and dark steel-navy")
-- Atmospheric details ("haze hanging heavy", "fog clinging to surface")
-- Emotional/narrative weight ("the economic lifeline of the world held hostage")
-
-★★★ MANDATORY ENDING — EVERY prompt must end with EXACTLY these two sentences (copy-paste, do NOT shorten or rephrase):
-SENTENCE 1: "anamorphic ultra-wide composition, photorealistic cinematic rendering, 8K resolution."
-SENTENCE 2: "Absolutely no text, no letters, no words, no numbers, no watermark, no title, no logo, no caption, no subtitle, no speech bubbles, no Korean text, no English text, no characters of any language anywhere in the image."
-
-If ANY prompt is missing either sentence, the ENTIRE output is INVALID. Do NOT use shortcuts like "no text, no graphics". Copy the full sentences exactly.
-
-★ LANGUAGE RULE: ALL prompts must be 100% English. No Korean, no Chinese, no Japanese characters anywhere in the prompt. Korean scene descriptions from the user must be translated to English.
-
-★★★ OUTPUT FORMAT — THIS IS NON-NEGOTIABLE ★★★
-Every single pair MUST start with the EXACT tags shown below. Do NOT omit these tags. Do NOT rephrase them. They are used for automated parsing.
-
-[한국어 번역]
-(paste the exact original Korean text here)
-
-[영어 이미지 프롬프트]
-(detailed cinematic prompt ending with the two mandatory sentences above)
-
-EXAMPLE OF CORRECT OUTPUT:
-
-[한국어 번역]
-부모한테도 안 보여주는 통장을 외국 정부한테 까야 여행을 갈 수 있다면, 가시겠어요?
-
-[영어 이미지 프롬프트]
-Modern cinematic, tense close-up shot focusing on a traveler's hands... (80+ words) ...anamorphic ultra-wide composition, photorealistic cinematic rendering, 8K resolution. Absolutely no text, no letters, no words, no numbers, no watermark, no title, no logo, no caption, no subtitle, no speech bubbles, no Korean text, no English text, no characters of any language anywhere in the image.
-
-[한국어 번역]
-(next Korean text...)
-
-[영어 이미지 프롬프트]
-(next English prompt...)
-
-...repeat EXACTLY ${totalPairs} times. EVERY pair must have both [한국어 번역] and [영어 이미지 프롬프트] tags. Do NOT stop early.
-
-SCRIPT:
-${scriptSection}`;
-
-
-                const streamEl = document.getElementById('vsStreamBox');
-                const fullText = await streamClaude(prompt, streamEl);
-
-                // 생성 실패 시 에러 유지하고 중단
-                if (!fullText || fullText.trim().length === 0) {
-                    resultsEl.innerHTML = `<div style="padding:20px;color:#dc3545;font-weight:700;">생성 실패 — Gemini API가 빈 응답을 반환했습니다. 다시 시도해주세요.</div>`;
-                    return;
-                }
-
-                // 태그가 없으면 자동 삽입 (한국어/영어 판별)
-                let processedText = fullText;
-                if (!fullText.includes('[한국어 번역]')) {
-                    const lines = fullText.split('\n');
-                    const tagged = [];
-                    let prevLang = '';
-                    for (const line of lines) {
-                        const trimmed = line.trim();
-                        if (!trimmed) { tagged.push(''); continue; }
-                        // 영어 프롬프트 판별: 다양한 시작 패턴
-                        const isEnPrompt = /^(Modern|Cinematic|Vintage|Documentary|Digital|A cinematic|An evocative|A stark|A dramatic|A wide|A tense|A haunt|A grim|A low|A high|A sweeping|A close|A medium|A bird|A top|Aerial|Close-up|Wide shot|Establishing|Split|Montage|POV|Tracking|Slow|Fast|Dark|Bright|Warm|Cold|Muted|Desaturated|Sepia|Film|Shot on)/i.test(trimmed);
-                        // 영어 프롬프트 엔딩 줄
-                        const isEnContinue = /^(anamorphic|Absolutely no text|no letters|no words|photorealistic|8K resolution)/i.test(trimmed);
-                        // 한국어 포함 여부
-                        const hasKorean = /[\uAC00-\uD7AF]/.test(trimmed);
-
-                        if (isEnPrompt && prevLang !== 'en') {
-                            tagged.push('\n[영어 이미지 프롬프트]');
-                            prevLang = 'en';
-                        } else if (isEnContinue) {
-                            // 영어 엔딩줄은 그대로 (태그 안 붙임)
-                        } else if (!isEnPrompt && !isEnContinue && hasKorean && prevLang !== 'ko') {
-                            tagged.push('\n[한국어 번역]');
-                            prevLang = 'ko';
-                        }
-                        tagged.push(line);
-                    }
-                    processedText = tagged.join('\n');
-                }
-
-                window._visualRaw = processedText;
-
-                // 카드로 파싱
-                const blocks = [];
-                const segments = processedText.split(/\[한국어 번역\]/);
-                for (const seg of segments) {
-                    if (!seg.trim()) continue;
-                    const enMatch = seg.match(/\[영어 이미지 프롬프트\]\s*([\s\S]*?)$/);
-                    const koText = seg.replace(/\[영어 이미지 프롬프트\][\s\S]*$/, '').trim();
-                    blocks.push({ ko: koText, prompt: (enMatch ? enMatch[1] : '').trim() });
-                }
-
-                // 🎭 인물 자동 감지 — 한국어 텍스트에서 인물명 추출
-                const VS_PERSON_RE = /트럼프|바이든|푸틴|시진핑|네타냐후|하메네이|젤렌스키|마크롱|숄츠|스타머|모디|김정은|김정일|김일성|윤석열|문재인|박근혜|이명박|오바마|부시|클린턴|레이건|카터|닉슨|에르도안|MBS|빈살만|갈리바프|무니르|밴스|머스크|베조스|저커버그|키신저|볼턴|폼페이오|페제시키안|아라그치|카다피|후세인|사담|카스트로|마두로|아사드|모즈타바|라이시|로하니|아마디네자드/g;
-                blocks.forEach(b => {
-                    const matches = b.ko.match(VS_PERSON_RE);
-                    b.persons = matches ? [...new Set(matches)] : [];
-                });
-
-                resultsEl.innerHTML = `<div style="margin-bottom:12px;font-size:0.9rem;font-weight:700;color:#dc3545;">도입부 ${introLines.length}개 + 본문 ${bodyGroups.length}개 = 총 ${totalPairs}개 요청 → ${blocks.length}개 생성됨</div>` +
-                blocks.map(b => {
-                    const personBadges = b.persons.length > 0
-                        ? `<div style="margin-bottom:6px;">${b.persons.map(p => `<span style="display:inline-block;background:#7c3aed;color:#fff;font-size:0.75rem;font-weight:700;padding:2px 8px;border-radius:12px;margin:2px 4px 2px 0;">🎭 ${escapeHtml(p)}</span>`).join('')}</div>`
-                        : '';
-                    return `<div class="vs-card">
-                        ${personBadges}
-                        <div class="vs-ko">${escapeHtml(b.ko)}</div>
-                        <div class="vs-prompt">${escapeHtml(b.prompt)}</div>
-                    </div>`;
-                }).join('') +
-                `<details style="margin-top:16px;" open><summary style="cursor:pointer;font-weight:700;color:#888;">원본 텍스트 (${fullText.length.toLocaleString()}자)</summary>
-                <textarea style="width:100%;min-height:300px;margin-top:8px;padding:12px;border:2px solid #e0e0e0;border-radius:8px;font-size:0.85rem;font-family:inherit;line-height:1.6;" readonly>${escapeHtml(fullText)}</textarea></details>`;
-
-            } catch(e) {
-                alert(`오류: ${e.message}`);
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = '시각화 프롬프트 생성';
-            }
-        }
-
-        function copyVsPrompt(btn, idx) {
-            const text = (window._visualPrompts || [])[idx]?.prompt || '';
-            safeCopy(text).then(() => {
-                btn.textContent = '복사됨!';
-                setTimeout(() => { btn.textContent = '복사'; }, 1500);
-            });
-        }
-
-        async function generateVideoPrompts() {
-            const raw = window._visualRaw;
-            if (!raw) { alert('시각화 프롬프트를 먼저 생성해주세요'); return; }
-
-            // 도입부 이미지 프롬프트만 추출
-            const blocks = [];
-            const segments = raw.split(/\[한국어 번역\]/);
-            for (const seg of segments) {
-                if (!seg.trim()) continue;
-                const enMatch = seg.match(/\[영어 이미지 프롬프트\]\s*([\s\S]*?)$/);
-                const koText = seg.replace(/\[영어 이미지 프롬프트\][\s\S]*$/, '').trim();
-                blocks.push({ ko: koText, prompt: (enMatch ? enMatch[1] : '').trim() });
-            }
-
-            // 도입부 = 짧은 개별 줄 (본문보다 짧은 것들)
-            // 간단히: 입력에서 도입부 줄 수를 가져옴
-            const partText = document.getElementById('vsPart').value.trim();
-            const rawLines = partText.split('\n');
-            let introCount = 0;
-            for (const line of rawLines) {
-                if (!line.trim()) break;
-                introCount++;
-            }
-            if (introCount === 0) introCount = blocks.length;
-
-            const introBlocks = blocks.slice(0, introCount);
-            if (introBlocks.length === 0) { alert('도입부 프롬프트가 없습니다'); return; }
-
-            const btn = document.getElementById('vsVideoBtn');
-            btn.disabled = true;
-            btn.innerHTML = '<div class="spinner"></div> 동영상 프롬프트 생성 중...';
-            _geminiStatusEl = btn;
-
-            document.getElementById('vsVideoSection').style.display = '';
-            const videoEl = document.getElementById('vsVideoResults');
-            videoEl.innerHTML = '<span style="color:#888;">생성 중...</span>';
-
-            try {
-                const introPrompts = introBlocks.map(b =>
-                    `[원본 한국어] ${b.ko}\n[이미지 프롬프트] ${b.prompt}`
-                ).join('\n\n---\n\n');
-
-                const prompt = `You are a video prompt engineer for Grok AI video generation.
-
-Convert these ${introBlocks.length} image prompts into VIDEO prompts. Each image prompt becomes one short video clip (4-6 seconds).
-
-## RULES:
-1. Keep ALL the visual details from the original image prompt (scene, colors, atmosphere, lighting)
-2. ADD motion/camera movement: slow push-in, pull-out, pan left/right, tilt up/down, tracking shot, dolly zoom, crane shot, etc.
-3. ADD time-based changes: explosions growing, smoke rising, lights flickering, people moving, etc.
-4. Specify duration: 4-6 seconds per clip
-5. Output ONLY the video prompts separated by --- (three dashes on a new line)
-6. NO numbers, NO titles, NO Korean text, NO explanations
-7. Each prompt should flow cinematically as if it's part of a continuous sequence
-8. Write in English only
-
-## FORMAT:
-(video prompt 1)
-
----
-
-(video prompt 2)
-
----
-
-...exactly ${introBlocks.length} video prompts separated by ---
-
-## IMAGE PROMPTS TO CONVERT:
-${introPrompts}`;
-
-                const fullText = await streamClaude(prompt, videoEl);
-                window._videoRaw = fullText;
-
-                document.getElementById('vsVideoSection').scrollIntoView({ behavior: 'smooth' });
-
-            } catch(e) {
-                alert(`오류: ${e.message}`);
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = '도입부 동영상 프롬프트';
-            }
-        }
-
-        function copyVideoPrompts(btn) {
-            const text = window._videoRaw || '';
-            if (!text) { alert('복사할 내용이 없습니다.'); return; }
-            _showCopyModal(text);
-        }
 
         // ==================== 셀팟 JSON 생성 ====================
 
@@ -18658,13 +18316,6 @@ ${sceneList}
             ta.focus();
             ta.select();
         }
-
-        function copyAllVisualPrompts(btn) {
-            const text = window._visualRaw || '';
-            if (!text) { alert('복사할 내용이 없습니다. 먼저 프롬프트를 생성해주세요.'); return; }
-            _showCopyModal(text);
-        }
-
         // ===========================
         // TTS 숫자 변환
         // ===========================
