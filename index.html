@@ -3411,7 +3411,7 @@
                         </label>
                         <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.88rem;">
                             <input type="radio" name="gtMode" value="semantic" onchange="_gtToggleMode()">
-                            <span>🧠 AI 의미 응집 <span style="color:#888;font-size:0.75rem;">(Gemini)</span></span>
+                            <span>🧠 AI 의미 응집 <span style="color:#888;font-size:0.75rem;">(Gemini · 4~7문장, 기본 5)</span></span>
                         </label>
                     </div>
 
@@ -26921,7 +26921,10 @@ main1과 caption은 큰따옴표 자체는 빼고 안에 들어갈 텍스트만 
 
         // ===== 📦 단순 묶기 모드 (셀팟 기본, 신규) =====
         let _gtN = 5;
-        const _gtMaxN = 6;
+        const _gtMaxN = 6;       // 고정 N문장 모드 상한
+        const _gtSemMin = 4;     // AI 의미응집 모드 최소
+        const _gtSemMax = 7;     // AI 의미응집 모드 최대
+        const _gtSemTarget = 5;  // AI 의미응집 기본 목표
 
         function _gtSetN(n) {
             _gtN = n;
@@ -26960,40 +26963,53 @@ main1과 caption은 큰따옴표 자체는 빼고 안에 들어갈 텍스트만 
 
         async function _gtGroupSemantic(sentences) {
             const numbered = sentences.map((s, i) => `${i + 1}. ${s}`).join('\n');
-            const prompt = `다음은 ${sentences.length}개 문장으로 구성된 유튜브 대본입니다. 영상 장면 단위로 묶으세요. 1장면 = 1 AI 이미지가 들어갑니다.
+            const expectedScenes = Math.max(1, Math.round(sentences.length / _gtSemTarget));
+            const prompt = `다음은 ${sentences.length}개 문장으로 구성된 유튜브 대본입니다. **비슷한 주제·내용끼리 의미 단위로 묶어** 영상 장면을 만드세요. 1장면 = 1 AI 이미지.
+
+## 🎯 핵심 목표
+- **장면당 ${_gtSemMin}~${_gtSemMax}문장, 기본은 ${_gtSemTarget}문장 안팎**으로 묶기
+- **예상 장면 수: 약 ${expectedScenes}장면** (${sentences.length}문장 ÷ ${_gtSemTarget})
+- 의미·주제 같은 문장은 적극적으로 한 묶음으로 합쳐라
 
 ## 핵심 규칙
-1. **한 장면 최소 2문장, 최대 ${_gtMaxN}문장**
-   - 1문장 단독 장면 금지 (영상에서 6~10초 채우기 어색)
-   - 1문장이 의미상 독립처럼 보여도 직전·직후 장면과 합치기
 
-2. **반전·연결어로 시작하는 문장은 직전 장면의 펀치라인 (절대 새 장면 시작 신호 아님)**
-   - 시작어: "그런데 / 그러던 / 그러나 / 하지만 / 근데 / 그런데도 / 그래서 / 그렇게"
-   - 예: 장면A "60년 동안 못 만들었어요." + 다음 문장 "그러던 회사에서 5년 만에 7만 5천 명이 모인 겁니다." → 둘이 한 장면 (setup→payoff)
-   - 이런 문장을 새 장면으로 떼면 채널 임팩트 죽음
+1. **한 장면 ${_gtSemMin}~${_gtSemMax}문장 (절대 ${_gtSemMin - 1}문장 이하 금지)**
+   - 짧은 문장(<30자) 많으면 망설이지 말고 6~7문장까지 묶기
+   - "이건 별도 장면일까?" 헷갈리면 → **무조건 합치는 쪽 선택**
+   - 1~3문장 장면은 시각적으로 빈약함. 영상 만들면 6~10초 채우기 어색.
 
-3. **setup → payoff 패턴은 한 장면**
-   - X 권력 가졌는데 Y 비참 / 60년 실패 → 5년 폭발 같은 비대칭 대비는 한 장면
-   - 데이터 + 그 의미는 한 장면
+2. **묶기 우선 판단 — 같은 주제·내용이면 한 장면**
+   - 예: "몽골이 작은 나라" 설명 5문장 → 모두 한 장면 (몽골 소개)
+   - 예: "코로나 때 국경 막힘" 사건 6문장 → 모두 한 장면 (위기 묘사)
+   - 같은 인물·같은 사건·같은 데이터 군집 = 한 장면
+   - 같은 비유·같은 예시 = 한 장면
 
-4. **새 장면이 시작되는 진짜 신호**
-   - 시간·장소·인물·주제가 명확히 바뀜
-   - 새 사례·새 데이터가 등장
-   - 본문 전환 명시 ("자, 이제 다른 이야기로", "다음으로 넘어가서")
+3. **반전·연결어로 시작하는 문장은 직전 장면의 펀치라인**
+   - 시작어: "그런데 / 그러던 / 그러나 / 하지만 / 근데 / 그런데도 / 그래서 / 그렇게 / 결국 / 그리고"
+   - 이런 문장은 절대 새 장면 첫 문장으로 두지 마라 → 직전 장면 마지막 문장으로
+
+4. **setup → payoff 패턴은 한 장면**
+   - X 권력 가졌는데 Y 비참 / 데이터 + 그 의미 = 같은 장면
+
+5. **새 장면 시작 신호 (이것 외엔 합치기)**
+   - 시간·장소·인물·주제가 **명확히** 바뀜 (애매하면 합치기)
+   - 새 사례·새 데이터 등장
+   - 본문 전환 명시 ("자, 이제", "다음으로 넘어가서", "여기서 잠깐")
 
 ## 절대 규칙
 - 모든 문장이 정확히 1개 장면에 속해야 함 (누락·중복 금지)
 - 문장 순서 절대 변경 금지
-- 한 장면 최대 ${_gtMaxN}문장 초과 금지
+- 한 장면 ${_gtSemMin}문장 미만 ❌ / ${_gtSemMax}문장 초과 ❌
 
 ## 출력 (JSON만, 다른 텍스트 금지)
 \`\`\`json
-{"scenes": [[1,2,3], [4,5], [6,7,8,9], ...]}
+{"scenes": [[1,2,3,4,5], [6,7,8,9], [10,11,12,13,14], ...]}
 \`\`\`
 숫자는 1-base 문장 번호.
 
-## ✅ 출력 전 자가 검증
-- [ ] 1문장만 들어간 장면이 있나? → 있으면 인접과 합치기
+## ✅ 출력 전 자가 검증 (위반 시 다시 묶기)
+- [ ] **${_gtSemMin}문장 미만 장면 있나?** → 있으면 인접 장면과 합치기 (필수)
+- [ ] **장면 수가 ${expectedScenes}±20% 범위 안인가?** (대략 ${Math.round(expectedScenes * 0.8)}~${Math.round(expectedScenes * 1.2)}) → 너무 많으면 묶기 부족
 - [ ] "그런데/그러던/하지만"으로 시작하는 문장이 새 장면 첫 문장인가? → 직전 장면으로 합치기
 - [ ] setup 문장 직후 payoff 문장이 다른 장면인가? → 합치기
 
@@ -27026,34 +27042,57 @@ ${numbered}`;
             const arr = parsed.scenes || [];
             if (!Array.isArray(arr) || !arr.length) throw new Error('scenes 배열 비어있음. 응답: ' + JSON.stringify(parsed).slice(0, 200));
 
-            // 응집 결과를 _gtMaxN 상한으로 split
+            // 응집 결과를 _gtSemMax 상한으로 split
             let split = [];
             for (const grp of arr) {
                 if (!Array.isArray(grp)) continue;
                 const sents = grp.map(i => sentences[i - 1]).filter(Boolean);
-                for (let i = 0; i < sents.length; i += _gtMaxN) {
-                    split.push(sents.slice(i, i + _gtMaxN));
+                for (let i = 0; i < sents.length; i += _gtSemMax) {
+                    split.push(sents.slice(i, i + _gtSemMax));
                 }
             }
 
-            // 사후 보정: 1문장 장면을 인접과 자동 병합
-            // 우선 직전 장면 합산이 _gtMaxN 이하면 직전과 합침, 아니면 직후와 합침
-            const fixed = [];
+            // 사후 보정 1단계: <_gtSemMin 문장 장면을 인접과 자동 병합
+            // 우선 짧은 쪽(직전 vs 직후 중 작은 쪽)과 합침. 단, _gtSemMax 초과 금지.
+            const merged = [];
             for (let i = 0; i < split.length; i++) {
                 const cur = split[i];
-                if (cur.length === 1) {
-                    if (fixed.length > 0 && fixed[fixed.length - 1].length + 1 <= _gtMaxN) {
-                        fixed[fixed.length - 1].push(cur[0]);
+                if (cur.length < _gtSemMin) {
+                    const prev = merged.length > 0 ? merged[merged.length - 1] : null;
+                    const next = i + 1 < split.length ? split[i + 1] : null;
+                    const canPrev = prev && (prev.length + cur.length <= _gtSemMax);
+                    const canNext = next && (next.length + cur.length <= _gtSemMax);
+                    if (canPrev && canNext) {
+                        // 짧은 쪽으로 합침
+                        if (prev.length <= next.length) {
+                            prev.push(...cur);
+                        } else {
+                            split[i + 1] = [...cur, ...next];
+                        }
                         continue;
                     }
-                    if (i + 1 < split.length && split[i + 1].length + 1 <= _gtMaxN) {
-                        split[i + 1].unshift(cur[0]);
-                        continue;
-                    }
+                    if (canPrev) { prev.push(...cur); continue; }
+                    if (canNext) { split[i + 1] = [...cur, ...next]; continue; }
+                    // 양쪽 모두 cap 초과 → 어쩔 수 없이 단독 유지
                 }
-                fixed.push(cur);
+                merged.push(cur);
             }
-            return fixed;
+
+            // 사후 보정 2단계: 여전히 너무 잘게 묶였으면 연속된 작은 장면끼리 추가 병합
+            // (예: 3문장+3문장이 연속이면 합쳐서 6문장 1장면)
+            const refined = [];
+            for (let i = 0; i < merged.length; i++) {
+                const cur = merged[i];
+                const last = refined.length > 0 ? refined[refined.length - 1] : null;
+                if (last && last.length < _gtSemTarget && cur.length < _gtSemTarget
+                    && last.length + cur.length <= _gtSemMax) {
+                    last.push(...cur);
+                } else {
+                    refined.push([...cur]);
+                }
+            }
+            console.log(`[_gtGroupSemantic] Gemini ${arr.length}묶음 → split ${split.length} → 1단계 ${merged.length} → 최종 ${refined.length} (목표 ~${Math.round(sentences.length/_gtSemTarget)})`);
+            return refined;
         }
 
         // 도입부 split: 줄바꿈 1번 = 1장면 (마침표 무시)
@@ -27113,7 +27152,7 @@ ${numbered}`;
             btn.disabled = true;
             const oldLabel = btn.textContent;
             btn.textContent = '⏳ 묶는 중...';
-            status.innerHTML = `<span style="color:#0f7b5a;">📦 도입부 ${introScenes.length}장면 + 본문 ${bodySentences.length}문장 (${mode === 'fixed' ? `고정 ${_gtN}` : 'AI 응집'} 모드) 묶는 중...</span>`;
+            status.innerHTML = `<span style="color:#0f7b5a;">📦 도입부 ${introScenes.length}장면 + 본문 ${bodySentences.length}문장 (${mode === 'fixed' ? `고정 ${_gtN}` : `AI 응집 ${_gtSemMin}~${_gtSemMax}문장`} 모드) 묶는 중...</span>`;
 
             try {
                 let bodyScenes = [];
