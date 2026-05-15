@@ -30748,8 +30748,11 @@ ${commentText.slice(0, 12000)}`;
 
         function vbGetScenes() {
             let scenes = window._sceneGuideData || [];
-            if (!scenes.length && window._spLastResult && window._spLastResult.scenes) {
-                scenes = window._spLastResult.scenes;
+            if (!scenes.length && window._spLastScenes && window._spLastScenes.length) {
+                scenes = window._spLastScenes;
+            }
+            if (!scenes.length && window._spOriginalScenes && window._spOriginalScenes.length) {
+                scenes = window._spOriginalScenes;
             }
             if (!scenes.length && window._sellpotJsonData) {
                 try {
