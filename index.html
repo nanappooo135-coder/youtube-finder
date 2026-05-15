@@ -3990,6 +3990,41 @@
                 <span style="font-size:0.82rem;color:#888;">엔진: Gemini 2.5 Pro (실패 시 2.5 Flash 자동 전환) + Google Search Grounding</span>
             </div>
 
+            <!-- Claude 외부 기획안 import -->
+            <div style="background:#fff8e1;border:2px solid #ffc107;border-radius:10px;padding:14px;margin:12px 0;">
+                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+                    <div>
+                        <strong style="color:#e65100;">🤖 Claude로 기획안 만들기 (Gemini 결제 없이)</strong>
+                        <div style="font-size:0.85rem;color:#666;margin-top:4px;">
+                            아래에 주제·메모·글자수 먼저 입력 → 프롬프트 복사 → Claude에서 받은 결과 import
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                        <button onclick="copyPlanClaudePrompt()" style="padding:8px 14px;background:#ff9800;color:white;border:none;border-radius:6px;font-weight:700;cursor:pointer;font-size:0.85rem;">📋 Claude 프롬프트 복사</button>
+                        <button onclick="openPlanImportModal()" style="padding:8px 14px;background:#e65100;color:white;border:none;border-radius:6px;font-weight:700;cursor:pointer;font-size:0.85rem;">📥 결과 가져오기</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Plan import 모달 -->
+            <div id="planImportModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+                <div style="background:white;border-radius:12px;padding:24px;max-width:800px;width:100%;max-height:90vh;overflow:auto;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                        <h3 style="margin:0;color:#e65100;">📥 Claude 기획안 결과 가져오기</h3>
+                        <button onclick="closePlanImportModal()" style="background:transparent;border:none;font-size:24px;cursor:pointer;color:#666;">✕</button>
+                    </div>
+                    <p style="margin:0 0 12px;font-size:0.9rem;color:#555;line-height:1.6;">
+                        Claude한테 받은 결과를 통째로 붙여넣으세요. 마크다운 그대로 넣거나 JSON으로 감싸도 OK.
+                    </p>
+                    <textarea id="planImportInput" placeholder="# 🎬 대본 기획 — ...&#10;&#10;(마크다운 그대로 OR &quot;scriptPlan&quot;: &quot;...&quot;)" style="width:100%;height:300px;padding:12px;border:2px solid #e0e0e0;border-radius:8px;font-family:monospace;font-size:0.85rem;resize:vertical;"></textarea>
+                    <div id="planImportError" style="color:#dc3545;font-size:0.85rem;margin-top:8px;display:none;"></div>
+                    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px;">
+                        <button onclick="closePlanImportModal()" style="padding:10px 20px;background:#6c757d;color:white;border:none;border-radius:6px;cursor:pointer;">취소</button>
+                        <button onclick="importPlanFromClaude()" style="padding:10px 20px;background:#28a745;color:white;border:none;border-radius:6px;font-weight:700;cursor:pointer;">가져오기</button>
+                    </div>
+                </div>
+            </div>
+
             <div class="pn-card">
                 <div class="pn-field">
                     <label class="pn-label" for="pnTopic">📌 주제 <span class="opt">(필수)</span></label>
@@ -10325,7 +10360,9 @@ YouTube URL로 입력된 레퍼런스는 "잘 터진 대본의 검증된 히트 
         function renderScriptPlanResult(obj) {
             const resultEl = document.getElementById('pnResult');
             if (!resultEl) return;
-            const badge = obj.usedModel === 'pro'
+            const badge = obj.usedModel === 'claude'
+                ? `<span class="pn-model-badge" style="background:#ff9800;color:white;">🤖 Claude로 기획 완료</span>`
+                : obj.usedModel === 'pro'
                 ? `<span class="pn-model-badge pro">✅ Gemini Pro + Search로 기획 완료</span>`
                 : `<span class="pn-model-badge flash">⚠️ Pro 한도 초과로 Flash 사용</span>`;
             const rawHtml = escapeHtmlSafe(obj.response || '');
@@ -10348,6 +10385,103 @@ YouTube URL로 입력된 레퍼런스는 "잘 터진 대본의 검증된 히트 
             `;
         }
 
+        // ===== Claude 외부 기획안 import =====
+        function copyPlanClaudePrompt() {
+            const topic = (document.getElementById('pnTopic').value || '').trim();
+            const memo = (document.getElementById('pnMemo').value || '').trim();
+            const chars = pnGetCharCount();
+            const urls = pnGetUrls();
+            const refText = (document.getElementById('pnRefText').value || '').trim();
+
+            if (!topic) { alert('주제를 먼저 입력하세요'); return; }
+            if (chars <= 0) { alert('목표 글자수를 입력하세요'); return; }
+
+            // pnBuildPrompt 그대로 재사용 — Gemini용이지만 Claude도 이걸로 작동함
+            const prompt = pnBuildPrompt(topic, memo, chars, urls, refText)
+                + '\n\n[추가 출력 지침 — Claude용]\n'
+                + 'Google Search는 너에게 없으니, 너 학습 데이터 + 일반 상식으로 최선 작성. '
+                + '추측 부분은 명시적으로 "확인 필요" 표시. '
+                + '결과는 위 [출력 형식]대로 마크다운 그대로 출력해도 되고, '
+                + '아니면 다음 JSON으로 감싸도 됨:\n'
+                + '```json\n{"scriptPlan": "...전체 마크다운..."}\n```';
+
+            navigator.clipboard.writeText(prompt).then(() => {
+                alert('✅ Claude 기획안 프롬프트 복사됨\n\n1. Claude 앱/웹에 붙여넣기\n2. Claude가 기획안 마크다운(또는 JSON) 출력\n3. 그 결과를 통째로 복사\n4. "📥 결과 가져오기" 버튼으로 import');
+            }).catch(err => {
+                console.error('복사 실패:', err);
+                alert('복사 실패. 콘솔 확인.');
+            });
+        }
+
+        function openPlanImportModal() {
+            const modal = document.getElementById('planImportModal');
+            if (modal) {
+                modal.style.display = 'flex';
+                const input = document.getElementById('planImportInput');
+                if (input) input.focus();
+                const err = document.getElementById('planImportError');
+                if (err) err.style.display = 'none';
+            }
+        }
+
+        function closePlanImportModal() {
+            const modal = document.getElementById('planImportModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function importPlanFromClaude() {
+            const input = document.getElementById('planImportInput');
+            const errEl = document.getElementById('planImportError');
+            const raw = (input?.value || '').trim();
+            if (!raw) {
+                errEl.textContent = '결과를 붙여넣으세요.';
+                errEl.style.display = 'block';
+                return;
+            }
+
+            // 1. ```json ... ``` 코드블럭 추출 시도
+            let markdown = null;
+            const codeBlockMatch = raw.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
+            if (codeBlockMatch) {
+                const inside = codeBlockMatch[1].trim();
+                try {
+                    const parsed = JSON.parse(inside);
+                    if (parsed.scriptPlan && typeof parsed.scriptPlan === 'string') {
+                        markdown = parsed.scriptPlan;
+                    } else if (parsed.response && typeof parsed.response === 'string') {
+                        markdown = parsed.response;
+                    }
+                } catch(e) { /* JSON 아님 — 아래로 폴백 */ }
+            }
+
+            // 2. raw 전체가 JSON인지 시도
+            if (!markdown) {
+                try {
+                    const parsed = JSON.parse(raw);
+                    if (parsed.scriptPlan && typeof parsed.scriptPlan === 'string') {
+                        markdown = parsed.scriptPlan;
+                    } else if (parsed.response && typeof parsed.response === 'string') {
+                        markdown = parsed.response;
+                    }
+                } catch(e) { /* JSON 아님 */ }
+            }
+
+            // 3. 그냥 마크다운으로 간주
+            if (!markdown) markdown = raw;
+
+            const topic = (document.getElementById('pnTopic').value || '').trim() || '(주제 없음)';
+            const obj = {
+                topic,
+                response: markdown,
+                usedModel: 'claude',
+                usage: null,
+                ts: Date.now(),
+            };
+            try { localStorage.setItem(PN_LS.result, JSON.stringify(obj)); } catch(e) {}
+            renderScriptPlanResult(obj);
+            closePlanImportModal();
+        }
+
         function copyScriptPlanResult() {
             const raw = localStorage.getItem(PN_LS.result);
             if (!raw) { alert('복사할 결과가 없습니다'); return; }
@@ -10356,8 +10490,11 @@ YouTube URL로 입력된 레퍼런스는 "잘 터진 대본의 검증된 히트 
                 : document.querySelector('#pnResult .pn-copy-btn');
             try {
                 const obj = JSON.parse(raw);
-                const modelLabel = obj.usedModel === 'pro' ? 'Gemini 2.5 Pro' : 'Gemini 2.5 Flash';
-                const md = `> 엔진: ${modelLabel} + Google Search Grounding\n\n` + obj.response + '\n';
+                const modelLabel = obj.usedModel === 'claude' ? 'Claude'
+                    : obj.usedModel === 'pro' ? 'Gemini 2.5 Pro'
+                    : 'Gemini 2.5 Flash';
+                const searchSuffix = obj.usedModel === 'claude' ? '' : ' + Google Search Grounding';
+                const md = `> 엔진: ${modelLabel}${searchSuffix}\n\n` + obj.response + '\n';
                 navigator.clipboard.writeText(md).then(() => {
                     if (!btn) return;
                     // 결과 영역 안 모든 복사 버튼에 동시 적용 (상단+하단)
