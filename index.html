@@ -3907,6 +3907,13 @@
                         </select>
                     </div>
 
+                    <div class="input-group">
+                        <label>이펙트</label>
+                        <select id="vbEffectSelect" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;">
+                            <option value="">없음 (원본)</option>
+                        </select>
+                    </div>
+
                     <button id="vbGenerateBtn" onclick="vbGenerateAllScenes()" disabled style="width:100%;padding:14px;background:#f59e0b;color:white;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;margin-top:8px;opacity:0.5;">
                         🎙️ 장면별 TTS 일괄 생성
                     </button>
@@ -30666,6 +30673,7 @@ ${commentText.slice(0, 12000)}`;
         async function vbCheckConnection() {
             const statusEl = document.getElementById('vbStatus');
             const selectEl = document.getElementById('vbProfileSelect');
+            const effectEl = document.getElementById('vbEffectSelect');
             const btn = document.getElementById('vbGenerateBtn');
             try {
                 const res = await fetch(VB_URL + '/profiles');
@@ -30686,6 +30694,21 @@ ${commentText.slice(0, 12000)}`;
                     opt.textContent = p.name + ' (' + (p.language || '?') + ')';
                     selectEl.appendChild(opt);
                 });
+                // 이펙트 프리셋 로드
+                try {
+                    const eres = await fetch(VB_URL + '/effects/presets');
+                    if (eres.ok) {
+                        const presets = await eres.json();
+                        window._vbPresets = presets;
+                        effectEl.innerHTML = '<option value="">없음 (원본)</option>';
+                        presets.forEach(p => {
+                            const opt = document.createElement('option');
+                            opt.value = p.id;
+                            opt.textContent = p.name + (p.description ? ' — ' + p.description : '');
+                            effectEl.appendChild(opt);
+                        });
+                    }
+                } catch(ee) {}
                 statusEl.style.background = '#d1e7dd'; statusEl.style.color = '#0f5132';
                 statusEl.textContent = '✅ 연결됨 (' + profiles.length + '개 프로필)';
                 btn.disabled = false; btn.style.opacity = '1';
@@ -30714,6 +30737,8 @@ ${commentText.slice(0, 12000)}`;
             const profileId = document.getElementById('vbProfileSelect').value;
             if (!profileId) { alert('음성 프로필을 선택하세요.'); return; }
             const profile = window._vbProfiles.find(p => p.id === profileId);
+            const effectId = document.getElementById('vbEffectSelect').value;
+            const effectPreset = effectId ? (window._vbPresets || []).find(p => p.id === effectId) : null;
 
             const narrations = scenes.filter(s => s.narration && s.narration.trim());
             if (!narrations.length) { alert('나레이션이 있는 장면이 없습니다.'); return; }
@@ -30741,14 +30766,16 @@ ${commentText.slice(0, 12000)}`;
                 progressBar.style.width = (done / total * 100) + '%';
 
                 try {
+                    const body = {
+                        text: scene.narration,
+                        profile_id: profileId,
+                        language: profile.language || 'ko'
+                    };
+                    if (effectPreset) body.effects_chain = effectPreset.effects_chain;
                     const res = await fetch(VB_URL + '/generate', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            text: scene.narration,
-                            profile_id: profileId,
-                            language: profile.language || 'ko'
-                        })
+                        body: JSON.stringify(body)
                     });
                     const data = await res.json();
                     results.push({ sceneId, status: 'ok', data, text: scene.narration });
