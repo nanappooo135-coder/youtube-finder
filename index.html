@@ -9441,10 +9441,10 @@ ${scriptText}
                 console.warn('[runScriptReview] Pro 실패 → Flash 시도:', e1.message);
                 resultEl.innerHTML = `<div class="sr-loading"><div class="spinner"></div> Pro 한도 초과/오류 → Gemini Flash로 재시도 중...</div>`;
                 _geminiStatusEl = resultEl.querySelector('.sr-loading');
-                // 2차: gemini-2.0-flash
+                // 2차: gemini-2.5-flash (2.0은 단종됨 2026-05)
                 try {
                     result = await callGemini(prompt, {
-                        model: 'gemini-2.0-flash',
+                        model: 'gemini-2.5-flash',
                         noFallback: true,
                         maxTokens: 8192,
                         temperature: 0.3,
@@ -9863,7 +9863,7 @@ ${refSection}
                 _geminiStatusEl = resultEl.querySelector('.pn-loading');
                 try {
                     result = await callGemini(prompt, {
-                        model: 'gemini-2.0-flash',
+                        model: 'gemini-2.5-flash',
                         noFallback: true,
                         maxTokens: 16384,
                         temperature: 0.4,
