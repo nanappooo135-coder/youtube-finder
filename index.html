@@ -30786,6 +30786,7 @@ ${commentText.slice(0, 12000)}`;
                 html += '<span style="min-width:44px;text-align:center;font-size:0.78rem;">' + statusIcon + ' ' + statusText + '</span>';
 
                 if (r && r.status === 'completed') {
+                    html += '<button onclick="vbPlayOne(' + sid + ')" style="padding:4px 8px;background:#0d6efd;color:#fff;border:none;border-radius:5px;font-size:0.75rem;cursor:pointer;" title="재생">🔊</button>';
                     html += '<button onclick="vbDownloadOne(' + sid + ')" style="padding:4px 8px;background:#198754;color:#fff;border:none;border-radius:5px;font-size:0.75rem;cursor:pointer;" title="다운로드">💾</button>';
                 }
                 html += '<button onclick="vbGenerateOne(' + sid + ')" style="padding:4px 8px;background:' + (r && r.status === 'completed' ? '#6c757d' : '#f59e0b') + ';color:#fff;border:none;border-radius:5px;font-size:0.75rem;cursor:pointer;" title="' + (r && r.status === 'completed' ? '재생성' : '생성') + '">' + (r && r.status === 'completed' ? '🔄' : '▶') + '</button>';
@@ -30908,6 +30909,23 @@ ${commentText.slice(0, 12000)}`;
             progressBar.style.background = failed > 0 ? '#ffc107' : '#198754';
             btn.textContent = '🎙️ 전체 생성'; btn.disabled = false; btn.style.opacity = '1';
             window._vbGenerating = false;
+        }
+
+        window._vbCurrentAudio = null;
+        async function vbPlayOne(sceneId) {
+            const r = window._vbSceneResults[sceneId];
+            if (!r || r.status !== 'completed' || !r.genId) return;
+            if (window._vbCurrentAudio) { window._vbCurrentAudio.pause(); window._vbCurrentAudio = null; }
+            try {
+                const res = await fetch(VB_URL + '/audio/' + r.genId);
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const audio = new Audio(url);
+                audio.onended = () => { URL.revokeObjectURL(url); window._vbCurrentAudio = null; };
+                window._vbCurrentAudio = audio;
+                audio.play();
+            } catch(e) { alert('재생 실패: ' + e.message); }
         }
 
         async function vbDownloadOne(sceneId) {
