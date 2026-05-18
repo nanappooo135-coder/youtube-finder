@@ -609,6 +609,10 @@
             cursor: not-allowed;
             box-shadow: none;
         }
+        .serper-img-card:hover img {
+            border-color: #e67700 !important;
+            box-shadow: 0 2px 8px rgba(230,119,0,0.3);
+        }
 
         .save-btn {
             background: #28a745;
@@ -3523,8 +3527,12 @@
 
                         <!-- 실사 검색 탭 -->
                         <div id="spTab_real" class="sp-result-pane" style="display:none;">
-                            <p style="font-size:0.78rem;color:#666;margin-bottom:8px;">실존 인물·책·기관 등장 장면. 키워드 클릭하면 구글 이미지 검색이 새 탭으로 열림. 장면당 3개 영문 후보 (1개로 결과 부족하면 2,3번 시도).</p>
-                            <button class="search-btn" onclick="_spCopy('spOut_real', this)" style="width:100%;margin-bottom:8px;background:#8b4513;border-color:#8b4513;">📷 실사 키워드 전체 복사 (텍스트)</button>
+                            <p style="font-size:0.78rem;color:#666;margin-bottom:8px;">실존 인물·책·기관 등장 장면. <strong>자동 검색</strong> 버튼으로 Serper API 이미지를 바로 불러오거나, 키워드 클릭으로 구글 이미지 검색을 열 수 있습니다.</p>
+                            <div style="display:flex;gap:8px;margin-bottom:8px;">
+                                <button class="search-btn" onclick="_serperSearchAll()" style="flex:2;background:#e67700;border-color:#e67700;" id="serperSearchBtn">🔍 Serper 자동 검색 (전체)</button>
+                                <button class="search-btn" onclick="_spCopy('spOut_real', this)" style="flex:1;background:#8b4513;border-color:#8b4513;">📷 텍스트 복사</button>
+                            </div>
+                            <div id="serperResultsArea" style="display:none;margin-bottom:12px;"></div>
                             <div id="spOut_realLinks" style="margin-bottom:10px;padding:12px;background:#fffaf0;border:2px solid #d2b48c;border-radius:10px;font-size:0.85rem;line-height:1.6;min-height:60px;"></div>
                             <details style="margin-bottom:6px;"><summary style="font-size:0.78rem;color:#666;cursor:pointer;">📋 텍스트 원문 (복사용)</summary>
                                 <textarea id="spOut_real" readonly style="width:100%;min-height:200px;padding:14px;border:2px solid #d2b48c;border-radius:10px;font-size:0.85rem;line-height:1.6;background:#fafafa;resize:vertical;margin-top:6px;"></textarea>
@@ -27995,6 +28003,122 @@ ${sceneList}
         function _spRenderSplitToggleBox() { /* no-op */ }
         window._spToggleSplit = function() { /* no-op */ };
 
+        // ═══ Serper API 이미지 검색 ═══
+        const _SERPER_API_KEY = '6e48847d53487343eb9ebd072eb108f6091bc5bd';
+
+        async function _serperImageSearch(query, num = 10) {
+            const resp = await fetch('https://google.serper.dev/images', {
+                method: 'POST',
+                headers: { 'X-API-KEY': _SERPER_API_KEY, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ q: query, num })
+            });
+            if (!resp.ok) throw new Error(`Serper API ${resp.status}: ${resp.statusText}`);
+            const data = await resp.json();
+            return (data.images || []).map(img => ({
+                title: img.title || '',
+                url: img.imageUrl || '',
+                thumb: img.thumbnailUrl || img.imageUrl || '',
+                source: img.source || '',
+                link: img.link || ''
+            }));
+        }
+
+        async function _serperSearchAll() {
+            const btn = document.getElementById('serperSearchBtn');
+            const area = document.getElementById('serperResultsArea');
+            if (!area) return;
+            if (!window._spLastScenes) { alert('먼저 JSON을 Import하세요.'); return; }
+
+            const realScenes = window._spLastScenes.filter(s => s.type === 'real');
+            if (realScenes.length === 0) { alert('실사 장면이 없습니다.'); return; }
+
+            btn.disabled = true;
+            btn.textContent = '🔄 검색 중...';
+            area.style.display = 'block';
+            area.innerHTML = '<div style="text-align:center;padding:20px;color:#e67700;font-weight:600;">⏳ Serper API로 이미지 검색 중...</div>';
+
+            try {
+                let html = '';
+                for (const scene of realScenes) {
+                    const kws = Array.isArray(scene.real_keywords) ? scene.real_keywords : [];
+                    if (kws.length === 0) continue;
+                    const subject = (scene.real_subject || '').replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
+
+                    html += `<div style="margin-bottom:16px;padding:14px;background:#fffaf0;border:2px solid #d2b48c;border-radius:10px;">`;
+                    html += `<div style="font-weight:700;color:#8b4513;font-size:0.9rem;margin-bottom:10px;">[장면 ${scene.sceneNo}] ${subject}</div>`;
+
+                    for (let ki = 0; ki < kws.length; ki++) {
+                        const kw = kws[ki];
+                        btn.textContent = `🔄 장면 ${scene.sceneNo} 키워드 ${ki+1}/${kws.length}...`;
+                        let images = [];
+                        try {
+                            images = await _serperImageSearch(kw, 6);
+                        } catch (e) {
+                            html += `<div style="color:#dc3545;font-size:0.78rem;margin-bottom:8px;">⚠️ "${kw}" 검색 실패: ${e.message}</div>`;
+                            continue;
+                        }
+
+                        const safeKw = kw.replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
+                        html += `<div style="margin-bottom:10px;">`;
+                        html += `<div style="font-size:0.8rem;color:#666;margin-bottom:6px;font-weight:600;">🔍 ${ki+1}. ${safeKw}</div>`;
+                        html += `<div style="display:flex;flex-wrap:wrap;gap:8px;">`;
+
+                        if (images.length === 0) {
+                            html += `<div style="color:#999;font-size:0.78rem;">결과 없음</div>`;
+                        } else {
+                            for (const img of images) {
+                                const safeTitle = (img.title || '').replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
+                                html += `<div style="width:140px;cursor:pointer;position:relative;" class="serper-img-card" onclick="_serperPreview('${img.url.replace(/'/g,"\\'")}', '${safeTitle}', ${scene.sceneNo})">
+                                    <img src="${img.thumb}" alt="${safeTitle}" style="width:140px;height:100px;object-fit:cover;border-radius:6px;border:2px solid #e0d5c5;transition:border-color 0.2s;" onerror="this.style.display='none'" loading="lazy">
+                                    <div style="font-size:0.68rem;color:#555;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${safeTitle}</div>
+                                </div>`;
+                            }
+                        }
+                        html += `</div></div>`;
+                    }
+                    html += `</div>`;
+                }
+                area.innerHTML = html || '<div style="text-align:center;padding:20px;color:#888;">검색 결과 없음</div>';
+            } catch (e) {
+                area.innerHTML = `<div style="color:#dc3545;padding:20px;text-align:center;">❌ 검색 오류: ${e.message}</div>`;
+            }
+
+            btn.disabled = false;
+            btn.textContent = '🔍 Serper 자동 검색 (전체)';
+        }
+
+        function _serperPreview(imageUrl, title, sceneNo) {
+            const overlay = document.createElement('div');
+            overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;';
+            overlay.onclick = (e) => { if (e.target === overlay || e.target.tagName !== 'BUTTON') overlay.remove(); };
+
+            overlay.innerHTML = `
+                <div style="color:#fff;font-size:0.9rem;margin-bottom:12px;font-weight:600;">[장면 ${sceneNo}] ${title}</div>
+                <img src="${imageUrl}" style="max-width:85%;max-height:70vh;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.5);" onerror="this.alt='이미지 로드 실패'">
+                <div style="margin-top:16px;display:flex;gap:10px;">
+                    <button onclick="window.open('${imageUrl}','_blank')" style="padding:10px 24px;background:#e67700;color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer;font-size:0.85rem;">🔗 원본 열기</button>
+                    <button onclick="_serperDownload('${imageUrl}', 'scene_${sceneNo}')" style="padding:10px 24px;background:#2b8a3e;color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer;font-size:0.85rem;">💾 다운로드</button>
+                    <button onclick="this.closest('div[style*=fixed]').remove()" style="padding:10px 24px;background:#666;color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer;font-size:0.85rem;">✕ 닫기</button>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+        }
+
+        async function _serperDownload(imageUrl, filename) {
+            try {
+                const resp = await fetch(imageUrl);
+                const blob = await resp.blob();
+                const ext = blob.type.includes('png') ? '.png' : blob.type.includes('webp') ? '.webp' : '.jpg';
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = filename + ext;
+                a.click();
+                URL.revokeObjectURL(a.href);
+            } catch (e) {
+                window.open(imageUrl, '_blank');
+            }
+        }
+
         function _spRenderResults(result) {
             // 분할 토글 상태/캐시는 변환 결과가 새로 들어올 때만 초기화
             // (재렌더 시에는 result가 _spLastResult이거나 같은 원본 — 그대로 유지)
@@ -28134,6 +28258,10 @@ ${sceneList}
                     }).join('');
                 }
             }
+
+            // Serper 검색 결과 영역 초기화
+            const serperArea = document.getElementById('serperResultsArea');
+            if (serperArea) serperArea.style.display = 'none';
 
             // 5) Claude Design — type=claude_design만 (Tip 1~3: 일괄 생성용 헤더 + 파일명 자동 매칭)
             const claudeScenes = scenes.filter(s => s.type === 'claude_design');
