@@ -3392,6 +3392,7 @@
                             <button class="search-btn" onclick="spImportJson()" style="width:100%;margin-top:6px;font-size:0.9rem;padding:10px;background:#d4a437;border-color:#d4a437;">
                                 📥 JSON Import → 결과 표시
                             </button>
+                            <div id="spImportStatus" style="margin-top:6px;font-size:0.85rem;"></div>
                         </div>
                     </details>
                 </div>
@@ -26755,14 +26756,16 @@ JSON만 출력. 코드블록 마커 금지.`;
         function spImportJson() {
             const raw = document.getElementById('spJsonImport').value.trim();
             if (!raw) { alert('JSON을 붙여넣어주세요.'); return; }
+            const visStatus = document.getElementById('spImportStatus');
             const status = document.getElementById('spStatus');
+            if (visStatus) visStatus.innerHTML = '<span style="color:#007bff;">⏳ 처리 중...</span>';
             try {
                 let txt = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '');
                 const fb = txt.indexOf('{'); const lb = txt.lastIndexOf('}');
                 if (fb >= 0 && lb > fb) txt = txt.substring(fb, lb + 1);
                 const parsed = JSON.parse(txt);
                 const scenes = parsed.scenes || [];
-                if (!scenes.length) { alert('scenes 배열이 비어있습니다.'); return; }
+                if (!scenes.length) { alert('scenes 배열이 비어있습니다.'); if (visStatus) visStatus.innerHTML = '<span style="color:#dc3545;">scenes 배열이 비어있습니다.</span>'; return; }
                 scenes.forEach((s, i) => {
                     s.sceneNo = s.sceneNo || (i + 1);
                     s.type = s.type || 'ai';
@@ -26810,16 +26813,29 @@ JSON만 출력. 코드블록 마커 금지.`;
 
                 const stylePrompt = document.getElementById('spStylePrompt').value.trim();
                 _spLastResult = { scenes, channel: _spChannel, stylePrompt };
-                _spRenderResults(_spLastResult);
+                try {
+                    _spRenderResults(_spLastResult);
+                } catch (renderErr) {
+                    console.error('_spRenderResults error:', renderErr);
+                    const msg = '결과 렌더링 오류: ' + renderErr.message;
+                    alert(msg);
+                    if (visStatus) visStatus.innerHTML = '<span style="color:#dc3545;">' + msg + '</span>';
+                    return;
+                }
                 const cdMsg = _cdFixedImport > 0 ? ` ⚠️ claude_design ${_cdScenesImport.length}개 → ${_cdCapImport}개 캡 적용 (${_cdFixedImport}개 ai 변환)` : '';
-                status.innerHTML = `<span style="color:#28a745;">✅ JSON Import 완료: ${scenes.length}장면 로드됨 (수동 import)${cdMsg}</span>`;
+                const okMsg = `✅ JSON Import 완료: ${scenes.length}장면 로드됨${cdMsg}`;
+                status.innerHTML = '<span style="color:#28a745;">' + okMsg + '</span>';
+                if (visStatus) visStatus.innerHTML = '<span style="color:#28a745;">' + okMsg + '</span>';
                 document.getElementById('spResultSection').style.display = '';
                 if (typeof _spSwitchSubTab === 'function') _spSwitchSubTab('result');
                 if (typeof vbRenderSceneList === 'function') vbRenderSceneList();
                 document.getElementById('spResultSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
             } catch (e) {
                 console.error('spImportJson error:', e);
-                status.innerHTML = `<span style="color:#dc3545;">❌ JSON 파싱 실패: ${e.message}</span>`;
+                const msg = 'JSON 파싱 실패: ' + e.message;
+                alert(msg);
+                status.innerHTML = '<span style="color:#dc3545;">' + msg + '</span>';
+                if (visStatus) visStatus.innerHTML = '<span style="color:#dc3545;">' + msg + '</span>';
             }
         }
 
