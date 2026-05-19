@@ -26819,7 +26819,6 @@ JSON만 출력. 코드블록 마커 금지.`;
                 document.getElementById('spResultSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
             } catch (e) {
                 console.error('spImportJson error:', e);
-                alert('❌ JSON Import 실패: ' + e.message);
                 status.innerHTML = `<span style="color:#dc3545;">❌ JSON 파싱 실패: ${e.message}</span>`;
             }
         }
