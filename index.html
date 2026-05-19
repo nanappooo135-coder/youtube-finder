@@ -3796,9 +3796,9 @@
                             </div>
 
                             <div id="mgDropZone" style="border:2.5px dashed #1c7ed6;border-radius:10px;padding:30px 20px;text-align:center;background:#fff;cursor:pointer;color:#1864ab;font-weight:600;font-size:0.92rem;transition:background 0.15s;">
-                                📁 AI 이미지 드래그하거나 클릭해서 선택 (장면N.png 또는 scene_N.png)
+                                📁 AI 이미지 또는 ZIP 파일 드래그 (압축 파일도 바로 OK)
                             </div>
-                            <input type="file" id="mgFileInput" accept="image/*" multiple style="display:none;">
+                            <input type="file" id="mgFileInput" accept="image/*,.zip" multiple style="display:none;">
 
                             <div id="mgFileList" style="margin-top:10px;"></div>
                             <div id="mgStatus" style="margin-top:8px;font-size:0.85rem;color:#495057;"></div>
@@ -25595,7 +25595,7 @@ overall mood: bright, psychologically safe illustration, uplifting and reassurin
                 // 채널 양쪽 동일 캡 (15초 max — 심리학은 정적이라 슬로우가 더 어색하게 보여서 더 짧게 가야 함)
                 // claude_design 캡 15% (안전망 상한). 핵심은 비율이 아니라 "용도 판단"
                 const _isPsych = _spChannel === 'psychology';
-                const _cdCapRatio = _isPsych ? 0.15 : 0.10;
+                const _cdCapRatio = _isPsych ? 0.15 : 0.12;
                 const _aiCharCap = 100; // 양쪽 동일 — MAX 15초 한계
                 const _aiCharRecommend = '권장 65~95자 (10~14.5초) — 본문 sweet spot. 최대 100자(15초) 절대 초과 금지';
                 const _aiDurationRange = '권장 10~15초 (sweet spot, 본문 평균 12~13초가 제일 자연스러움). 최대 15초, 16초 초과 절대 금지';
@@ -25651,7 +25651,6 @@ ${stylePrompt}
      · 명명된 법칙·이론 곡선 (여키스-도드슨, 파레토 80/20 등) — 정확한 형태 필요
      · 뇌 구조도·신경전달물질 회로 — 해부학적 정확성 요구
      · 단계·순서 도식 (박스 호흡 4단계, 의사결정 트리) — 구조가 핵심
-     · 지도 위 데이터 흐름 — 정확한 위치+화살표 필요
      · 명확한 N가지 분류 매트릭스 (2x2 사분면 등)
      · 이런 내용은 디자인이 더 정확하고 임팩트 있게 전달
    - **AI 일러스트가 잘 먹히는 경우** = ai (대부분 여기):
@@ -25661,7 +25660,7 @@ ${stylePrompt}
      · 비유·은유 시각화
      · 숫자 1~2개 언급 정도 (ai에 자막 얹으면 충분)
      · 일반 설명·연결·결론 문장
-   **🔴 비율 제한 (시청자 피로 방지)**: claude_design은 **전체 장면의 ${_isPsych ? '10~15%' : '5~10%'}, 최대 ${_isPsych ? '12' : '8'}개 이내**. 예: 76장면이면 ${_isPsych ? '8~12' : '4~8'}개. 적합한 게 적으면 그보다 적어도 OK. ${_isPsych ? '10~15%' : '5~10%'}는 상한선이지 강제로 채우는 값이 아님. 초과 시 가장 약한 후보(서사 섞인 것, 자막+ai로 처리 가능한 것)부터 ai로 변경.
+   **🔴 비율 제한 (시청자 피로 방지)**: claude_design은 **전체 장면의 ${_isPsych ? '10~15%' : '7~12%'}, 최대 ${_isPsych ? '12' : '10'}개 이내**. 예: 72장면이면 ${_isPsych ? '8~12' : '5~9'}개. **최소 ${_isPsych ? '10%' : '7%'}는 반드시 채울 것** — 적합한 후보가 부족하면 3개 이상 데이터가 있는 장면을 적극 검토. 초과 시 가장 약한 후보(서사 섞인 것, 자막+ai로 처리 가능한 것)부터 ai로 변경.
    **❌ 절대 부적합 (이건 무조건 ai — 위 룰의 부연)**:
    - **모든 인물·풍경·도시 장면**: 응급실 복도 노부부, 공항 입국장, 졸업식, 식탁 앞 부부, 거리 풍경, 사무실 등 — 사람·장소·일상이 등장하면 무조건 ai
    - **서사·드라마 묘사**: "한 사람이 ~했다", "이때 ~했다" 같은 스토리텔링 문장
@@ -27879,12 +27878,42 @@ ${sceneList}
             btn.textContent = `🧩 ${maxScene}개로 합치기 → ZIP 다운로드 (빈 자리 ${missingNos.length}개 흰 이미지 채움)`;
         }
 
-        function _mgAddFiles(fileList) {
+        async function _mgAddFiles(fileList) {
+            const status = document.getElementById('mgStatus');
+            const zipFiles = [];
+            const imageFiles = [];
             for (const f of fileList) {
+                if (f.name.toLowerCase().endsWith('.zip') || f.type === 'application/zip' || f.type === 'application/x-zip-compressed') {
+                    zipFiles.push(f);
+                } else {
+                    imageFiles.push(f);
+                }
+            }
+            for (const f of imageFiles) {
                 const no = _mgParseSceneNo(f.name);
                 window._mgDroppedFiles.push({ file: f, sceneNo: no });
             }
-            // 중복 제거 (같은 sceneNo가 들어오면 마지막 게 우선)
+            for (const zf of zipFiles) {
+                try {
+                    if (status) status.textContent = '⏳ ZIP 압축 해제 중...';
+                    const JSZip = await _loadJSZip();
+                    const zip = await JSZip.loadAsync(zf);
+                    const entries = Object.entries(zip.files).filter(([name, entry]) => !entry.dir && /\.(png|jpe?g|webp|gif|bmp)$/i.test(name));
+                    let extracted = 0;
+                    for (const [name, entry] of entries) {
+                        const blob = await entry.async('blob');
+                        const baseName = name.split('/').pop();
+                        const imgFile = new File([blob], baseName, { type: blob.type || 'image/png' });
+                        const no = _mgParseSceneNo(baseName);
+                        window._mgDroppedFiles.push({ file: imgFile, sceneNo: no });
+                        extracted++;
+                    }
+                    if (status) status.textContent = `✅ ZIP에서 ${extracted}개 이미지 추출 완료`;
+                } catch(e) {
+                    console.error('[merge-zip]', e);
+                    if (status) status.textContent = '❌ ZIP 해제 실패: ' + e.message;
+                }
+            }
             const seen = new Map();
             window._mgDroppedFiles.forEach(f => { if (f.sceneNo) seen.set(f.sceneNo, f); });
             window._mgDroppedFiles = [...seen.values(), ...window._mgDroppedFiles.filter(f => !f.sceneNo)];
@@ -27961,8 +27990,8 @@ ${sceneList}
             const input = document.getElementById('mgFileInput');
             if (!zone || !input) return;
             zone.addEventListener('click', () => input.click());
-            input.addEventListener('change', e => {
-                if (e.target.files && e.target.files.length > 0) _mgAddFiles(e.target.files);
+            input.addEventListener('change', async e => {
+                if (e.target.files && e.target.files.length > 0) await _mgAddFiles(e.target.files);
                 input.value = '';
             });
             ['dragenter', 'dragover'].forEach(ev => zone.addEventListener(ev, e => {
@@ -27973,8 +28002,8 @@ ${sceneList}
                 e.preventDefault(); e.stopPropagation();
                 zone.style.background = '#fff';
             }));
-            zone.addEventListener('drop', e => {
-                if (e.dataTransfer && e.dataTransfer.files) _mgAddFiles(e.dataTransfer.files);
+            zone.addEventListener('drop', async e => {
+                if (e.dataTransfer && e.dataTransfer.files) await _mgAddFiles(e.dataTransfer.files);
             });
         });
 
