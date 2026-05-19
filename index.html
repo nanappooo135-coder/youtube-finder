@@ -26753,6 +26753,7 @@ JSON만 출력. 코드블록 마커 금지.`;
         }
 
         function spImportJson() {
+            alert('spImportJson called');
             const raw = document.getElementById('spJsonImport').value.trim();
             if (!raw) { alert('JSON을 붙여넣어주세요.'); return; }
             const status = document.getElementById('spStatus');
