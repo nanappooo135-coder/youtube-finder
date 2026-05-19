@@ -28102,7 +28102,7 @@ ${sceneList}
                 <img src="${imageUrl}" style="max-width:85%;max-height:70vh;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.5);" onerror="this.alt='이미지 로드 실패'">
                 <div style="margin-top:16px;display:flex;gap:10px;">
                     <button onclick="window.open('${imageUrl}','_blank')" style="padding:10px 24px;background:#e67700;color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer;font-size:0.85rem;">🔗 원본 열기</button>
-                    <button onclick="_serperDownload('${imageUrl}', 'scene_${sceneNo}')" style="padding:10px 24px;background:#2b8a3e;color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer;font-size:0.85rem;">💾 다운로드</button>
+                    <button onclick="_serperDownload('${imageUrl}', 'scene_${sceneNo}', this)" style="padding:10px 24px;background:#2b8a3e;color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer;font-size:0.85rem;">💾 다운로드</button>
                     <button onclick="this.closest('div[style*=fixed]').remove()" style="padding:10px 24px;background:#666;color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer;font-size:0.85rem;">✕ 닫기</button>
                 </div>
             `;
@@ -28147,9 +28147,11 @@ ${sceneList}
             btn.style.display = 'none';
         }
 
-        async function _serperDownload(imageUrl, filename) {
+        async function _serperDownload(imageUrl, filename, btnEl) {
+            if (btnEl) { btnEl.textContent = '⏳ 다운로드 중...'; btnEl.disabled = true; }
             try {
-                const resp = await fetch(imageUrl);
+                const resp = await fetch(imageUrl, { mode: 'cors' });
+                if (!resp.ok) throw new Error('HTTP ' + resp.status);
                 const blob = await resp.blob();
                 const ext = blob.type.includes('png') ? '.png' : blob.type.includes('webp') ? '.webp' : '.jpg';
                 const a = document.createElement('a');
@@ -28157,8 +28159,17 @@ ${sceneList}
                 a.download = filename + ext;
                 a.click();
                 URL.revokeObjectURL(a.href);
+                if (btnEl) { btnEl.textContent = '✅ 완료'; }
             } catch (e) {
-                window.open(imageUrl, '_blank');
+                const a = document.createElement('a');
+                a.href = imageUrl;
+                a.download = filename;
+                a.target = '_blank';
+                a.rel = 'noopener';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                if (btnEl) { btnEl.textContent = '🔗 새 탭에서 열림 → 우클릭 저장'; btnEl.disabled = false; }
             }
         }
 
