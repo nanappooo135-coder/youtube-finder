@@ -3513,6 +3513,11 @@
                         <!-- 그록 영상 탭 -->
                         <div id="spTab_grok" class="sp-result-pane" style="display:none;">
                             <p style="font-size:0.78rem;color:#666;margin-bottom:8px;">이미지 → 그록 → 영상화. 6초/10초 자동 매칭, 애니→실사 드리프트 방지 문구 포함.</p>
+                            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:8px 12px;background:#fff5f5;border:1px solid #ffc9c9;border-radius:6px;">
+                                <label style="font-size:0.82rem;font-weight:700;color:#c92a2a;white-space:nowrap;">장면 범위</label>
+                                <input id="grokSceneRange" type="text" placeholder="예: 1-9 (비우면 전체)" style="width:100px;padding:4px 8px;border:1px solid #ddd;border-radius:4px;font-size:0.82rem;text-align:center;">
+                                <span style="font-size:0.72rem;color:#888;">특정 장면만 프롬프트 출력 (예: 1-9, 5-20)</span>
+                            </div>
                             <div style="display:flex;gap:8px;margin-bottom:8px;">
                                 <button class="search-btn" onclick="_spCopy('spOut_grok', this)" style="flex:1;background:#e03131;border-color:#e03131;">🎬 장면번호 포함 (사람이 보기)</button>
                                 <button class="search-btn" onclick="_spCopy('spOut_grokPaste', this)" style="flex:1;background:#c92a2a;border-color:#c92a2a;">📋 그록 일괄 붙여넣기 (빈줄 구분)</button>
@@ -16771,7 +16776,7 @@ ${sceneList}
 
         // 그록 안티-드리프트 강제 문구 (모든 그록 프롬프트 경로에 무조건 append)
         // 1차 JSON 생성 경로 외 LLM 재작성·fallback 경로에서도 새 얼굴/배경 변경/스타일 드리프트 차단
-        const _GROK_STRICT_RULES = 'STRICT RULES: maintain the EXACT original 2D illustrated style from the input image. NO photorealism, NO live-action drift, NO style change, NO 3D, NO anime conversion. NO scene transitions, NO location change, NO new background, NO cuts to other shots. Stay in the SAME scene from the input image throughout the entire clip. ABSOLUTELY NO NEW HUMAN FACES anywhere in the video — do not invent, generate, or hallucinate any face that is not in the input image. NO new characters appearing, NO portraits emerging, NO people materializing in empty areas, NO characters leaving the frame, NO teleporting. If the input image shows only hands, objects, or partial figures, KEEP IT THAT WAY — do not complete or extend them into full human figures. Empty background regions MUST stay empty — do not fill them with new people, faces, or objects. The total number of human figures MUST stay constant from frame 1 to last frame — count them in the input and never add more. Keep the composition 95% identical to the input image.';
+        const _GROK_STRICT_RULES = 'STRICT RULES: maintain the EXACT original 2D illustrated style from the input image. NO photorealism, NO live-action drift, NO style change, NO 3D, NO anime conversion. NO scene transitions, NO location change, NO new background, NO cuts to other shots. Stay in the SAME scene from the input image throughout the entire clip. ABSOLUTELY NO NEW HUMAN FACES anywhere in the video — do not invent, generate, or hallucinate any face that is not in the input image. NO new characters appearing, NO portraits emerging, NO people materializing in empty areas, NO characters leaving the frame, NO teleporting. If the input image shows only hands, objects, or partial figures, KEEP IT THAT WAY — do not complete or extend them into full human figures. Empty background regions MUST stay empty — do not fill them with new people, faces, or objects. The total number of human figures MUST stay constant from frame 1 to last frame — count them in the input and never add more. HAIR PRESERVATION: each character hair MUST remain EXACTLY as shown in the input image throughout ALL frames. If a character is bald or has a shaved head, they MUST stay bald — do NOT grow or generate hair. If a character has specific hair (length, style, color), it MUST remain identical — no hair appearing, disappearing, changing length, changing color, or changing style at any point. Keep the composition 95% identical to the input image.';
 
         // 중복 append 방지 (1차 경로 출력에 이미 있으면 그대로 둠)
         function _appendGrokStrictRules(prompt) {
@@ -16805,7 +16810,7 @@ ${sceneList}
                 : '5. 카메라는 기본 고정이지만, 동작을 강조할 때는 subtle push-in 또는 slow pan 허용. 배경에는 동작을 보조하는 부수 모션 가능 (예: 무역 흐름선 흐름, 연기 표류, 깃발 펄럭임). 단 dark cinematic / neon / 3D sci-fi / 카메라 흔들기 금지.';
             const paceRule = isPsych
                 ? '7. 동작은 **천천히 deliberate**하게. 잔잔한 톤 유지.'
-                : '7. 동작은 **결정적이고 또렷하게** — 도미노가 쓰러지면 끝까지 쓰러지고, 화살이 진격하면 시원하게 진격. before → after가 영상 길이 안에 완결되어야 함. 단, frantic·chaotic은 금지.';
+                : '7. 동작은 **결정적이고 또렷하며 빠르게** — 도미노가 쓰러지면 끝까지 시원하게 쓰러지고, 화살이 진격하면 속도감 있게 진격. before → after가 영상 길이 안에 완결되어야 함. 전체적으로 기존보다 1.2~1.5배 빠른 속도감을 목표로 하되, frantic·chaotic은 금지.';
 
             const prompt = `당신은 AI 정지 이미지를 짧은 영상으로 변환하는 영상 감독입니다. 아래 각 장면마다, **AI 이미지 위에 덧입힐 영상 모션**을 구체적으로 지시하세요.
 
@@ -27563,9 +27568,32 @@ ${sceneList}
             const seatComparison = ((text.match(/\d+\s*석/g) || []).length >= 2) && /(야권|우파|좌파|여당|보수|진보|진영|연합)/.test(text);
             const rankingExplicit= /(1위|2위|3위|1등|2등|3등|꼴찌|최상위|최하위|톱\s*[3-9]|상위\s*\d+개)/.test(text);
             const hugeShockNum   = /\d{2,}(?:[\.,]\d+)*\s*조\s*원|\d{3,}(?:[\.,]\d+)*\s*억\s*원/.test(text);
+            // 국가 수/다국 비교
+            const countryCount   = /\d+\s*(?:개국|개\s*나라|개\s*국가|countries)/.test(text);
+            // 기간 표현 (N년간, N개월, N일 만에)
+            const durationExp    = /\d+\s*(?:년간|년\s*만에|년\s*동안|개월|개월간|일\s*만에|주\s*만에|시간\s*만에)/.test(text);
+            // 비율/배수 (N분의 1, N대 N, N:N)
+            const ratioExp       = /\d+\s*분의\s*\d+|\d+\s*대\s*\d+|\d+\s*:\s*\d+/.test(text);
+            // 사상 최대/최초/역대 등 극적 수식어 + 수치
+            const superlativeNum = /(사상\s*최[대초]|역대\s*최[대고]|세계\s*최[대초]|최대\s*규모|최초|전무후무|유례없)/.test(text) && (percentMatches.length + moneyKR.length + moneyUSD.length + bigCounts.length >= 1);
+            // 달러 금액 ($ 없이: "10억 달러", "230만 달러")
+            const moneyUSDnoSign = text.match(/\d+(?:[\.,]\d+)*\s*(?:조|억|백만|만|천)?\s*달러/g) || [];
+            // 단순 극적 변화 (수치 없어도 단어만으로)
+            const dramaticWord   = /(반토막|곤두박질|폭발적|사라졌|증발|붕괴|무너졌|침몰|전멸|초토화)/.test(text);
+            // 말풍선: 인물 발언 인용
+            const directQuoteMatch = text.match(/[""]([^""]{5,120})[""]/) || text.match(/"([^"]{5,120})"/);
+            const quoteAttrib    = /(라고\s*(말했|밝혔|강조했|선언했|발표했|경고했|주장했|언급했|덧붙였|전했|했다|합니다)|의\s*말이?|의\s*발언)/.test(text);
+            // 챕터: 구조적 전환 (첫째/둘째/첫 번째)
+            const chapterMarker  = /(?:^|\.\s*)(첫째|둘째|셋째|넷째|다섯째|여섯째|일곱째)[,\s.]/.test(text) || /(?:^|\.\s*)(첫|두|세|네|다섯|여섯)\s*번째/.test(text);
+            // 강조텍스트: 정보 밀도 (수치+키워드 복합)
+            const allNumCount    = moneyKR.length + moneyUSD.length + moneyUSDnoSign.length + bigCounts.length + percentMatches.length + (hasKoreanNum ? 1 : 0);
+            // 대비 표현 (A는 ~인데/~이지만 B는)
+            const contrastExpr   = /(는\s*.{2,30}인데|지만\s*.{2,30}는|반면|반대로|한편|그러나)/.test(text) && allNumCount >= 2;
 
             // ===== 심리학 채널 (단계·키워드 중심 + 데이터 시각화 공통 패턴) =====
             if (isPsych) {
+                if (directQuoteMatch && quoteAttrib) return [{ type: 'speech_bubble', why: '인물 발언 → 말풍선', priority: 1, suggest: directQuoteMatch[1] }];
+                if (chapterMarker) { const _chT = text.slice(0, 80).replace(/[.!?].*$/, '').trim(); return [{ type: 'chapter_divider', why: '첫째/둘째 → 챕터', priority: 1, suggest: _chT }]; }
                 const stagesList = /(첫째|둘째|셋째|넷째|1단계|2단계|3단계|첫\s*번째|두\s*번째|세\s*번째).{0,60}(둘째|셋째|2단계|3단계|두\s*번째|세\s*번째)/.test(text);
                 if (stagesList) return [{ type: 'text_bullet_reveal', why: '단계·이론 나열 → 불릿리스트', priority: 2 }];
                 if (explicitNlist) return [{ type: 'text_bullet_reveal', why: 'N가지 나열 → 불릿리스트', priority: 2 }];
@@ -27589,70 +27617,114 @@ ${sceneList}
                 return [];
             }
 
-            // ===== 경제학 채널 (수치·비교·시간 중심) =====
-
+            // ===== 경제학 채널 (15종 오버레이 · 우선순위 순) =====
             // priority: 1=essential(⭐), 2=good, 3=optional
-            // 강한 데이터 시각화 패턴부터 평가
-            if (hugeShockNum) {
-                return [{ type: 'single_stat_card', why: '거대 충격 숫자(조 원·100억+) → 수치카드', priority: 1 }];
+
+            // ── 1. 말풍선: 인물 발언 직접 인용 ──
+            if (directQuoteMatch && quoteAttrib) {
+                return [{ type: 'speech_bubble', why: '인물 발언 인용 → 말풍선', priority: 1, suggest: directQuoteMatch[1] }];
             }
-            if (rankingExplicit && bigCounts.length + percentMatches.length >= 2) {
-                return [{ type: 'ranking_list', why: '명시적 순위 + 수치 → 랭킹', priority: 1 }];
+
+            // ── 2. 챕터: 첫째/둘째 등 구조적 큰 전환 ──
+            if (chapterMarker) {
+                const _chTxt = text.slice(0, 80).replace(/[.!?].*$/, '').trim();
+                return [{ type: 'chapter_divider', why: '첫째/둘째 구분 → 챕터', priority: 1, suggest: _chTxt }];
             }
+
+            // ── 3. VS대결: 양측 대립, 딱 2개 맞붙을 때 ──
             if (versus || seatComparison) {
-                return [{ type: 'versus_stat', why: '양측 대립 / 의석 비교 → VS대결', priority: 1 }];
+                return [{ type: 'versus_stat', why: '양측 대립/비교 → VS대결', priority: 1 }];
             }
+
+            // ── 4. 도넛차트: 복수 % 합이 ~100% (비율 구성) ──
+            if (percentMatches.length >= 2) {
+                const _pVals = percentMatches.map(p => parseFloat(p));
+                const _pSum = _pVals.reduce((a, b) => a + b, 0);
+                if (_pSum > 70 && _pSum <= 115) {
+                    return [{ type: 'pie_donut', why: '복수 % (합 ~100%) → 도넛차트', priority: 1 }];
+                }
+                // 합이 100%가 아닌 복수 % → 프로그레스 (항목별 비율 비교)
+                return [{ type: 'progress_bar', why: '복수 % 비교 → 프로그레스', priority: 1 }];
+            }
+
+            // ── 5. 타임라인: 시간순 흐름 ──
             if (years.length >= 3) {
                 return [{ type: 'timeline_horizontal', why: '3개+ 시점 → 타임라인', priority: 1 }];
             }
             if (years.length >= 2 && elapsedYears) {
-                return [{ type: 'timeline_horizontal', why: '2시점 + 경과 시간 → 타임라인', priority: 1 }];
+                return [{ type: 'timeline_horizontal', why: '2시점 + 경과 → 타임라인', priority: 1 }];
             }
-            if (explicitNlist) {
-                return [{ type: 'text_bullet_reveal', why: 'N가지 나열 → 불릿리스트', priority: 2 }];
+
+            // ── 6. 랭킹: 순위 + 수치 (가로 막대 + 번호) ──
+            if (rankingExplicit && (bigCounts.length + percentMatches.length >= 2)) {
+                return [{ type: 'ranking_list', why: '명시적 순위 + 수치 → 랭킹', priority: 1 }];
             }
-            if (manyPositions) {
-                return [{ type: 'text_bullet_reveal', why: '직책·인물 4명+ 나열 → 불릿리스트', priority: 2 }];
+
+            // ── 7. 막대차트: 3개+ 동종 수치 크기 비교 (세로 막대) ──
+            if (bigCounts.length >= 3 || moneyKR.length >= 3 || moneyUSDnoSign.length >= 3) {
+                return [{ type: 'bar_chart_comparison', why: '3개+ 동종 수치 → 막대차트', priority: 1 }];
             }
-            if (caseNumbers) {
-                return [{ type: 'text_bullet_reveal', why: '사건·작전 3개+ 나열 → 불릿리스트', priority: 2 }];
+
+            // ── 8. 좌우분할: A vs B, 이전/이후 대비 ──
+            if (pairedTwo || contrastExpr) {
+                return [{ type: 'text_split_screen', why: '이전/이후 또는 A/B 대비 → 좌우분할', priority: 2 }];
             }
-            if (repeatedSuffix) {
-                return [{ type: 'text_bullet_reveal', why: '같은 어미 반복 (이유로·때문에 × 3) → 불릿리스트', priority: 2 }];
+
+            // ── 9. 불릿리스트: 3개+ 항목 나열 ──
+            if (explicitNlist || manyPositions || caseNumbers || repeatedSuffix) {
+                const _blWhy = explicitNlist ? 'N가지 나열' : manyPositions ? '직책/인물 4명+' : caseNumbers ? '사건/작전 3개+' : '같은 어미 반복';
+                return [{ type: 'text_bullet_reveal', why: _blWhy + ' → 불릿리스트', priority: 2 }];
             }
-            if (pairedTwo) {
-                return [{ type: 'text_split_screen', why: '이전/이후, A/B 짝지어진 2개 → 좌우분할', priority: 2 }];
+
+            // ── 10. 증감수치: 극적 변화 + 수치 (▲▼) ──
+            if (dramaticChange && allNumCount >= 1) {
+                return [{ type: 'stat_change', why: '극적 변화 + 수치 → 증감수치', priority: 1 }];
             }
+
+            // ── 11. 가로수치: 2개 관련 수치 나란히 ──
+            if (bigCounts.length === 2 || moneyKR.length === 2 || moneyUSDnoSign.length === 2) {
+                return [{ type: 'stat_counter_row', why: '2개 동종 수치 → 가로수치', priority: 2 }];
+            }
+
+            // ── 12. 프로그레스: 진행률 표현 ──
+            if (progressExp) {
+                return [{ type: 'progress_bar', why: '진행률 → 프로그레스', priority: 2 }];
+            }
+
+            // ── 13. 대비수치: 충격적 큰 숫자 (강렬하게) ──
+            if (hugeShockNum) {
+                return [{ type: 'dual_stat_vertical', why: '거대 충격 숫자 → 대비수치', priority: 1 }];
+            }
+            if (superlativeNum) {
+                return [{ type: 'dual_stat_vertical', why: '사상 최대/최초 + 수치 → 대비수치', priority: 1 }];
+            }
+
+            // ── 14. 도넛차트: 단일 50%+ 비율 ──
             if (!isIntroScene && percentMatches.length === 1) {
                 const v = parseFloat(percentMatches[0]);
                 if (v >= 50 && v <= 100) {
-                    return [{ type: 'pie_donut', why: '50%+ 단일 비율 → 도넛차트', priority: 1 }];
+                    return [{ type: 'pie_donut', why: '50%+ 비율 → 도넛차트', priority: 1 }];
                 }
-                // 2026-05-13: 단일 % (50% 미만) → 수치카드 fallback. "약 20%가 그 좁은 해협"
                 return [{ type: 'single_stat_card', why: '단일 퍼센트 → 수치카드', priority: 2 }];
             }
-            if (percentMatches.length >= 2 || bigCounts.length >= 3) {
-                return [{ type: 'bar_chart_comparison', why: percentMatches.length >= 2 ? '복수 % 비교 → 막대차트' : '3개+ 수치 → 막대차트', priority: 1 }];
+
+            // ── 15. 수치카드: 숫자 하나가 주인공 ──
+            if (countryCount) {
+                return [{ type: 'single_stat_card', why: 'N개국 → 수치카드', priority: 2 }];
             }
-            if (bigCounts.length === 2) {
-                return [{ type: 'stat_counter_row', why: '2개 동종 수치 → 가로수치', priority: 2 }];
+            if (moneyKR.length === 1) {
+                return [{ type: 'single_stat_card', why: '금액 → 수치카드', priority: 2 }];
             }
-            if (dramaticChange && (percentMatches.length + moneyKR.length + bigCounts.length >= 1)) {
-                return [{ type: 'stat_change', why: '극적 변화 + 수치 → 증감수치 (▲▼)', priority: 1 }];
-            }
-            if (progressExp) {
-                return [{ type: 'progress_bar', why: '진행률 표현 → 프로그레스', priority: 2 }];
-            }
-            // 2026-05-13: 단일 수치/금액 fallback — 한국어 대본의 핵심 누락분
-            if (moneyKR.length >= 1) {
-                return [{ type: 'single_stat_card', why: '금액 단일 → 수치카드', priority: 2 }];
+            if (moneyUSDnoSign.length === 1 || moneyUSD.length === 1) {
+                return [{ type: 'single_stat_card', why: '달러 금액 → 수치카드', priority: 2 }];
             }
             if (bigCounts.length === 1) {
                 return [{ type: 'single_stat_card', why: '단일 수치 → 수치카드', priority: 2 }];
             }
-            // 2026-05-13: 한글 수사 단독 (이천팔백 발/스물여섯 척/백 건/일만 삼천 명/수십조 원)
+            if (ratioExp) {
+                return [{ type: 'dual_stat_vertical', why: '비율 N대N → 대비수치', priority: 2 }];
+            }
             if (hasKoreanNum && koreanNumText) {
-                // 추상 관용(한 마디·하루 아침·세 명 이내 등) 차단
                 const ABSTRACT = /^(한|두|세|네)\s*(개|명|번|곳|가지|대|마디|사람|장소|집|자리|줄)$/;
                 if (!ABSTRACT.test(koreanNumText.trim())) {
                     return [{ type: 'single_stat_card', why: '한글 수사 → 수치카드', priority: 2 }];
@@ -27661,24 +27733,52 @@ ${sceneList}
             if (vagueKoreanNum) {
                 return [{ type: 'single_stat_card', why: '막연 수사(수십·수백·수천) → 수치카드', priority: 3 }];
             }
+
+            // ── 16. 증감수치 (기간 + 수치) ──
+            if (durationExp && allNumCount >= 1) {
+                return [{ type: 'stat_change', why: '기간 + 수치 → 증감수치', priority: 2 }];
+            }
+
+            // ── 17. 강조텍스트: 정보 많은 나레이션 요약 (숫자+키워드 복합) ──
+            if (allNumCount >= 2 && text.length >= 40) {
+                return [{ type: 'info_text_highlight', why: '복수 정보(숫자·키워드) 밀집 → 강조텍스트', priority: 2 }];
+            }
+
+            // ── 18. 헤드라인: 임팩트 키워드 하나 크게 ──
+            if (dramaticWord) {
+                return [{ type: 'text_headline', why: '극적 키워드 → 헤드라인', priority: 3 }];
+            }
+            if (dramaticChange && allNumCount === 0) {
+                return [{ type: 'text_headline', why: '극적 변화 표현 → 헤드라인', priority: 3 }];
+            }
             if (shortKeyword) {
                 return [{ type: 'text_headline', why: '짧은 핵심 키워드 → 헤드라인', priority: 3 }];
+            }
+
+            // ── 19. 타임라인 (기간 표현 단독 fallback) ──
+            if (durationExp) {
+                return [{ type: 'timeline_horizontal', why: '기간 표현 → 타임라인', priority: 3 }];
+            }
+
+            // ── 20. 말풍선 (약한: 인용부호만, 화자 불명) ──
+            if (directQuoteMatch) {
+                return [{ type: 'speech_bubble', why: '인용문 → 말풍선', priority: 3, suggest: directQuoteMatch[1] }];
             }
 
             return [];
         }
 
         const _SP_OVERLAY_LABEL = {
-            text_headline: '헤드라인', info_text_highlight: '강조텍스트', text_typewriter: '타자기',
-            text_bullet_reveal: '불릿리스트', text_split_screen: '좌우분할',
-            single_stat_card: '수치카드', dual_stat_vertical: '대비수치', stat_counter_row: '가로수치',
-            stat_change: '증감수치', pie_donut: '도넛차트', bar_chart_comparison: '막대차트',
-            timeline_horizontal: '타임라인', ranking_list: '랭킹',
-            versus_stat: 'VS대결', progress_bar: '프로그레스', fullscreen_number: '전체숫자',
-            title_card: '타이틀', chapter_divider: '챕터구분', countdown: '카운트다운',
-            speech_bubble: '말풍선', speech_bubble_neon: '말풍선(네온)',
-            speech_bubble_sketch: '말풍선(손글씨)', speech_bubble_gradient: '말풍선(그라데이션)',
-            name_tag: '네임택', map_label: '지도라벨', split_image_text: '이미지+텍스트',
+            info_text_highlight: '강조텍스트', single_stat_card: '수치카드', dual_stat_vertical: '대비수치',
+            bar_chart_comparison: '막대차트', text_headline: '헤드라인', text_bullet_reveal: '불릿리스트',
+            text_split_screen: '좌우분할', stat_counter_row: '가로수치', stat_change: '증감수치',
+            pie_donut: '도넛차트', timeline_horizontal: '타임라인', ranking_list: '랭킹',
+            versus_stat: 'VS대결', progress_bar: '프로그레스', title_card: '타이틀',
+            chapter_divider: '챕터', speech_bubble: '말풍선',
+            text_typewriter: '타자기', fullscreen_number: '전체숫자', countdown: '카운트다운',
+            speech_bubble_neon: '말풍선(네온)', speech_bubble_sketch: '말풍선(손글씨)',
+            speech_bubble_gradient: '말풍선(그라데이션)', name_tag: '네임택',
+            map_label: '지도라벨', split_image_text: '이미지+텍스트',
         };
 
         function _spOverlayBadge(rec) {
@@ -27728,10 +27828,10 @@ ${sceneList}
                     if (recs.length) allMatches.push({ scene, rec: recs[0] });
                 });
 
-                // 2단계: 10~20% 캡 적용 — 상한 초과 시 priority 약한 것부터 제거
+                // 2단계: 15~20% 캡 적용 — 상한 초과 시 priority 약한 것부터 제거
                 const totalScenes = scenes.length;
                 const maxCount = Math.max(1, Math.ceil(totalScenes * 0.20));
-                const minTargetCount = Math.floor(totalScenes * 0.10);
+                const minTargetCount = Math.ceil(totalScenes * 0.15);
                 let finalMatches = allMatches.slice();
                 if (finalMatches.length > maxCount) {
                     // priority 큰 것(약함)부터 잘라냄. 같은 priority면 뒷 장면부터.
@@ -27762,6 +27862,7 @@ ${sceneList}
                             </div>
                             <div style="font-size:0.82rem;color:#495057;line-height:1.5;margin-bottom:8px;">${isIntro}${_escapeHtml(narr)}${narr.length >= 200 ? '...' : ''}</div>
                             <div style="display:flex;flex-wrap:wrap;">${_spOverlayBadge(rec)}</div>
+                            ${rec.suggest ? `<div style="margin-top:6px;padding:6px 10px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:5px;font-size:0.78rem;color:#0369a1;">💬 <strong>추천 내용:</strong> ${_escapeHtml(rec.suggest)}</div>` : ''}
                         </div>
                     `;
                 });
@@ -27770,7 +27871,7 @@ ${sceneList}
                 const isPsychChannel = window._channelMode === 'psychology';
                 const channelLabel = isPsychChannel ? '🧠 심리학 (교육·인용·정의)' : '💰 경제학 (시사·지정학·수치)';
                 const summary = `<div style="padding:12px 14px;background:#fff7e6;border:2px solid #f59e0b;border-radius:8px;margin-bottom:12px;font-size:0.88rem;color:#b45309;">
-                    ✅ 총 ${totalScenes}장면 중 <strong>${finalMatches.length}개(${pct}%)</strong>에만 오버레이 추천 (상한 20% · 목표 10~20%)
+                    ✅ 총 ${totalScenes}장면 중 <strong>${finalMatches.length}개(${pct}%)</strong>에만 오버레이 추천 (상한 20% · 목표 15~20%)
                     ${essentialCount > 0 ? `<br>⭐ 그 중 <strong>${essentialCount}개</strong>는 <strong>꼭 필요한 추천</strong> (별표 + 진한 테두리)` : ''}
                     ${droppedCount > 0 ? `<br>📉 상한 초과로 약한 추천 ${droppedCount}개 제외됨` : ''}
                     <div style="font-size:0.78rem;color:#666;margin-top:6px;line-height:1.5;">채널 모드: <strong>${channelLabel}</strong><br>💡 ⭐ 추천만이라도 꼭 적용. 별표 없는 건 선택사항.<br>⚠️ 셀팟은 오버레이를 자동 적용하지 않습니다. UI에서 수동 선택해야 합니다.</div>
@@ -28244,6 +28345,13 @@ ${sceneList}
             }
         }
 
+        (function() {
+            const _grInput = document.getElementById('grokSceneRange');
+            if (_grInput) _grInput.addEventListener('input', function() {
+                if (_spLastResult) _spRenderResults(_spLastResult);
+            });
+        })();
+
         function _spRenderResults(result) {
             // 분할 토글 상태/캐시는 변환 결과가 새로 들어올 때만 초기화
             // (재렌더 시에는 result가 _spLastResult이거나 같은 원본 — 그대로 유지)
@@ -28307,7 +28415,15 @@ ${sceneList}
             _spSetCountLabel('spOut_nano', `🍌 총 ${nanoCount}개 이미지 프롬프트`);
 
             // 3) 그록 영상 — type=ai만, 6초/10초 + 슬로우/분할 표시
-            const grokScenes = scenes.filter(s => s.type === 'ai' && s.grok_prompt);
+            let grokScenes = scenes.filter(s => s.type === 'ai' && s.grok_prompt);
+            const _grokRangeVal = (document.getElementById('grokSceneRange') || {}).value || '';
+            if (_grokRangeVal.trim()) {
+                const _rm = _grokRangeVal.trim().match(/^(\d+)\s*[-~]\s*(\d+)$/);
+                if (_rm) {
+                    const _rMin = parseInt(_rm[1], 10), _rMax = parseInt(_rm[2], 10);
+                    grokScenes = grokScenes.filter(s => s.sceneNo >= _rMin && s.sceneNo <= _rMax);
+                }
+            }
             const grokLines = grokScenes
                 .map(s => {
                     const grokSec = (s.duration === 6 || s.duration === 10) ? s.duration : 10;
