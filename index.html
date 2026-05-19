@@ -27536,7 +27536,16 @@ ${sceneList}
             const moneyUSD       = text.match(/\$\s*\d+(?:[\.,]\d+)*\s*(?:억|만)?\s*달러?/g) || [];
             // bigCounts: 진짜 수량/통계 단위만 (일·주·시간·개월은 날짜 시퀀스 오인 방지로 제외)
             // 2026-05-13: "발(미사일·드론)" 단위 추가
-            const bigCounts      = text.match(/\d{2,}(?:[\.,]\d+)*\s*(?:만\s*명|억\s*명|만\s*개|석|척|국|대|건|기|문|회|점|호|발)/g) || [];
+            const bigCountsRaw   = text.match(/\d{2,}(?:[\.,]\d+)*\s*(?:만\s*명|억\s*명|만\s*개|석|척|국|대|건|기|문|회|점|호|발)/g) || [];
+            // "14억 명" 같은 맥락적 인구 수치가 핵심 정보가 아닌 경우 필터. 나레이션 길이 대비 수치 비중으로 판단.
+            const bigCounts      = bigCountsRaw.filter(bc => {
+                // 숫자가 나레이션의 핵심인지: 짧은 문장(<60자)에서 나오거나, 수치 앞뒤에 강조 표현이 있으면 핵심
+                if (text.length < 80) return true;
+                const idx = text.indexOf(bc);
+                if (idx < 0) return true;
+                const around = text.slice(Math.max(0, idx - 20), idx + bc.length + 20);
+                return /약|무려|불과|최소|최대|넘는|이상|달하|넘어|기록|수준/.test(around);
+            });
             const years          = text.match(/((?:19|20|21)\d{2})\s*년?/g) || [];
             // 2026-05-13: 한글 수사 통합 — "이천팔백 발/스물여섯 척/일만 삼천 명/백 건/수십조 원"
             const hasKoreanNum   = (typeof _hasKoreanNumerals === 'function') && _hasKoreanNumerals(text);
@@ -27585,8 +27594,8 @@ ${sceneList}
             const quoteAttrib    = /(라고\s*(말했|밝혔|강조했|선언했|발표했|경고했|주장했|언급했|덧붙였|전했|했다|합니다)|의\s*말이?|의\s*발언)/.test(text);
             // 챕터: 구조적 전환 (첫째/둘째/첫 번째)
             const chapterMarker  = /(?:^|\.\s*)(첫째|둘째|셋째|넷째|다섯째|여섯째|일곱째)[,\s.]/.test(text) || /(?:^|\.\s*)(첫|두|세|네|다섯|여섯)\s*번째/.test(text);
-            // 강조텍스트: 정보 밀도 (수치+키워드 복합)
-            const allNumCount    = moneyKR.length + moneyUSD.length + moneyUSDnoSign.length + bigCounts.length + percentMatches.length + (hasKoreanNum ? 1 : 0);
+            // 강조텍스트: 정보 밀도 (확실한 수치만 카운트 — 한글 수사·막연 수사 제외)
+            const allNumCount    = moneyKR.length + moneyUSD.length + moneyUSDnoSign.length + bigCounts.length + percentMatches.length;
             // 대비 표현 (A는 ~인데/~이지만 B는)
             const contrastExpr   = /(는\s*.{2,30}인데|지만\s*.{2,30}는|반면|반대로|한편|그러나)/.test(text) && allNumCount >= 2;
 
@@ -27607,8 +27616,6 @@ ${sceneList}
                 if (years.length >= 3) return [{ type: 'timeline_horizontal', why: '3개+ 시점 → 타임라인', priority: 1 }];
                 if (percentMatches.length >= 2) return [{ type: 'bar_chart_comparison', why: '복수 % 비교 → 막대차트', priority: 1 }];
                 if (percentMatches.length === 1) {
-                    const v = parseFloat(percentMatches[0]);
-                    if (v >= 50) return [{ type: 'pie_donut', why: '50%+ 비율 → 도넛차트', priority: 2 }];
                     return [{ type: 'single_stat_card', why: '단일 퍼센트 → 수치카드', priority: 2 }];
                 }
                 if (moneyKR.length >= 1) return [{ type: 'single_stat_card', why: '금액 → 수치카드', priority: 2 }];
@@ -27676,9 +27683,11 @@ ${sceneList}
                 return [{ type: 'text_bullet_reveal', why: _blWhy + ' → 불릿리스트', priority: 2 }];
             }
 
-            // ── 10. 증감수치: 극적 변화 + 수치 (▲▼) ──
-            if (dramaticChange && allNumCount >= 1) {
-                return [{ type: 'stat_change', why: '극적 변화 + 수치 → 증감수치', priority: 1 }];
+            // ── 10. 증감수치: 명시적 증감 방향 + 수치 (▲▼) ──
+            // dramaticChange만으로는 부족. 실제 before→after나 증감 방향이 있어야 함
+            const hasChangeDirection = /(에서\s*\d|로\s*(?:증가|감소|하락|상승|올랐|떨어졌|줄었|늘었|뛰었)|전년\s*대비|대비\s*\d|→|급등|폭등|폭락|급락|치솟|꺾|반토막|\d+\s*배\s*(?:로|나|넘|뛰|올|불|증가|치솟))/.test(text);
+            if (hasChangeDirection && allNumCount >= 1) {
+                return [{ type: 'stat_change', why: '증감 방향 + 수치 → 증감수치', priority: 1 }];
             }
 
             // ── 11. 가로수치: 2개 관련 수치 나란히 ──
@@ -27699,12 +27708,8 @@ ${sceneList}
                 return [{ type: 'dual_stat_vertical', why: '사상 최대/최초 + 수치 → 대비수치', priority: 1 }];
             }
 
-            // ── 14. 도넛차트: 단일 50%+ 비율 ──
+            // ── 14. 단일 퍼센트 → 수치카드 (도넛은 복수 %로 구성비율일 때만) ──
             if (!isIntroScene && percentMatches.length === 1) {
-                const v = parseFloat(percentMatches[0]);
-                if (v >= 50 && v <= 100) {
-                    return [{ type: 'pie_donut', why: '50%+ 비율 → 도넛차트', priority: 1 }];
-                }
                 return [{ type: 'single_stat_card', why: '단일 퍼센트 → 수치카드', priority: 2 }];
             }
 
@@ -27734,9 +27739,9 @@ ${sceneList}
                 return [{ type: 'single_stat_card', why: '막연 수사(수십·수백·수천) → 수치카드', priority: 3 }];
             }
 
-            // ── 16. 증감수치 (기간 + 수치) ──
-            if (durationExp && allNumCount >= 1) {
-                return [{ type: 'stat_change', why: '기간 + 수치 → 증감수치', priority: 2 }];
+            // ── 16. 증감수치 (기간 + 증감 방향) ──
+            if (durationExp && hasChangeDirection) {
+                return [{ type: 'stat_change', why: '기간 + 증감 → 증감수치', priority: 2 }];
             }
 
             // ── 17. 강조텍스트: 정보 많은 나레이션 요약 (숫자+키워드 복합) ──
