@@ -27599,7 +27599,7 @@ ${sceneList}
             // 대비 표현 (A는 ~인데/~이지만 B는)
             const contrastExpr   = /(는\s*.{2,30}인데|지만\s*.{2,30}는|반면|반대로|한편|그러나)/.test(text) && allNumCount >= 2;
 
-            // ===== 심리학 채널 (단계·키워드 중심 + 데이터 시각화 공통 패턴) =====
+            // ===== 심리학 채널 (경제학과 동일한 15종 로직 적용, 심리학 전용 추가 패턴만 앞에) =====
             if (isPsych) {
                 if (directQuoteMatch && quoteAttrib) return [{ type: 'speech_bubble', why: '인물 발언 → 말풍선', priority: 1, suggest: directQuoteMatch[1] }];
                 if (chapterMarker) { const _chT = text.slice(0, 80).replace(/[.!?].*$/, '').trim(); return [{ type: 'chapter_divider', why: '첫째/둘째 → 챕터', priority: 1, suggest: _chT }]; }
@@ -27609,18 +27609,26 @@ ${sceneList}
                 if (text.length <= 20 && /(법칙|효과|이론|증후군|편향|현상)/.test(text)) {
                     return [{ type: 'text_headline', why: '핵심 용어 짧게 → 헤드라인', priority: 1 }];
                 }
-                if (pairedTwo) return [{ type: 'text_split_screen', why: '2가지 정보 비교 → 좌우분할', priority: 2 }];
-                // 데이터 시각화 — 심리학이어도 수치 있으면 오버레이 필요
-                if (hugeShockNum) return [{ type: 'single_stat_card', why: '거대 숫자 → 수치카드', priority: 1 }];
                 if (versus) return [{ type: 'versus_stat', why: '양측 대립 → VS대결', priority: 1 }];
+                if (pairedTwo || contrastExpr) return [{ type: 'text_split_screen', why: '대비/비교 → 좌우분할', priority: 2 }];
                 if (years.length >= 3) return [{ type: 'timeline_horizontal', why: '3개+ 시점 → 타임라인', priority: 1 }];
-                if (percentMatches.length >= 2) return [{ type: 'bar_chart_comparison', why: '복수 % 비교 → 막대차트', priority: 1 }];
-                if (percentMatches.length === 1) {
-                    return [{ type: 'single_stat_card', why: '단일 퍼센트 → 수치카드', priority: 2 }];
+                if (percentMatches.length >= 2) {
+                    const _pVals2 = percentMatches.map(p => parseFloat(p));
+                    const _pSum2 = _pVals2.reduce((a, b) => a + b, 0);
+                    if (_pSum2 > 70 && _pSum2 <= 115) return [{ type: 'pie_donut', why: '복수 % 구성 → 도넛', priority: 1 }];
+                    return [{ type: 'progress_bar', why: '복수 % 비교 → 프로그레스', priority: 1 }];
                 }
+                const hasChangeDir2 = /(에서\s*\d|로\s*(?:증가|감소|하락|상승|올랐|떨어졌|줄었|늘었|뛰었)|전년\s*대비|대비\s*\d|→|급등|폭등|폭락|급락|치솟|꺾|반토막|\d+\s*배\s*(?:로|나|넘|뛰|올|불|증가|치솟))/.test(text);
+                if (hasChangeDir2 && allNumCount >= 1) return [{ type: 'stat_change', why: '증감 방향 + 수치 → 증감수치', priority: 1 }];
+                if (hugeShockNum) return [{ type: 'dual_stat_vertical', why: '거대 충격 숫자 → 대비수치', priority: 1 }];
+                if (percentMatches.length === 1) return [{ type: 'single_stat_card', why: '단일 퍼센트 → 수치카드', priority: 2 }];
                 if (moneyKR.length >= 1) return [{ type: 'single_stat_card', why: '금액 → 수치카드', priority: 2 }];
+                if (moneyUSDnoSign.length >= 1) return [{ type: 'single_stat_card', why: '달러 금액 → 수치카드', priority: 2 }];
                 if (bigCounts.length >= 1) return [{ type: 'single_stat_card', why: '수치 → 수치카드', priority: 2 }];
-                if (dramaticChange) return [{ type: 'stat_change', why: '극적 변화 → 증감수치', priority: 2 }];
+                if (countryCount) return [{ type: 'single_stat_card', why: 'N개국 → 수치카드', priority: 2 }];
+                if (allNumCount >= 2 && text.length >= 40) return [{ type: 'info_text_highlight', why: '복수 정보 → 강조텍스트', priority: 2 }];
+                if (durationExp && hasChangeDir2) return [{ type: 'stat_change', why: '기간 + 증감 → 증감수치', priority: 2 }];
+                if (directQuoteMatch) return [{ type: 'speech_bubble', why: '인용문 → 말풍선', priority: 3, suggest: directQuoteMatch[1] }];
                 return [];
             }
 
