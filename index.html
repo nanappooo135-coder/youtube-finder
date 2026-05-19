@@ -24188,7 +24188,6 @@ ${titles}`;
     </script>
 
     <script>
-        alert('BLOCK2 START');
         // ============================================================
         // 셀팟 기본 변환 (나레이션만 모드) — N문장 묶음 + Gemini 분석
         // ============================================================
@@ -24548,7 +24547,6 @@ overall mood: bright, psychologically safe illustration, uplifting and reassurin
             });
         };
 
-        alert('CHECKPOINT B - line 24551');
         (function initPreviewDropZone() {
             window.addEventListener('DOMContentLoaded', function() {
                 const dz = document.getElementById('previewDropZone');
@@ -24968,7 +24966,6 @@ overall mood: bright, psychologically safe illustration, uplifting and reassurin
         // ═══════════════════════════════════════════════════════════════
         // 🖼️ 그록용 이미지 압축 (5MB 이하 JPG 변환)
         // ═══════════════════════════════════════════════════════════════
-        alert('CHECKPOINT A - line 24970');
         window._compressFiles = [];
         window._compressResults = [];
 
@@ -25178,7 +25175,6 @@ overall mood: bright, psychologically safe illustration, uplifting and reassurin
         // 🎨 클로드 디자인 HTML → MP4 (getDisplayMedia 화면 녹화)
         // ═══════════════════════════════════════════════════════════════
 
-        alert('CHECKPOINT D - line 25182');
         // 출력 비율 (셀팟 호환용 — 9:16 / 16:9 / 1:1)
         window._designAspect = '16:9';
         function _designSetAspect(aspect) {
@@ -25452,7 +25448,6 @@ overall mood: bright, psychologically safe illustration, uplifting and reassurin
             }
         };
 
-        alert('CHECKPOINT C - line 25454');
         (function initSlowAndDesignDropZones() {
             window.addEventListener('DOMContentLoaded', function() {
                 // 슬로우 드롭존
@@ -26758,7 +26753,6 @@ JSON만 출력. 코드블록 마커 금지.`;
         }
 
         function spImportJson() {
-            alert('spImportJson called');
             const raw = document.getElementById('spJsonImport').value.trim();
             if (!raw) { alert('JSON을 붙여넣어주세요.'); return; }
             const status = document.getElementById('spStatus');
