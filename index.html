@@ -28065,9 +28065,13 @@ ${sceneList}
                     if (images.length === 0) {
                         html += `<div style="color:#999;font-size:0.78rem;">결과 없음</div>`;
                     } else {
-                        for (const img of images) {
+                        for (let ii = 0; ii < images.length; ii++) {
+                            const img = images[ii];
+                            const cardId = `serperCard_${scene.sceneNo}_0_${ii}`;
                             const safeTitle = (img.title || '').replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
-                            html += `<div style="width:140px;cursor:pointer;position:relative;" class="serper-img-card" onclick="_serperPreview('${img.url.replace(/'/g,"\\'")}', '${safeTitle}', ${scene.sceneNo})">
+                            if (!window._serperImgData) window._serperImgData = {};
+                            window._serperImgData[cardId] = { url: img.url, thumb: img.thumb, title: img.title || '', sceneNo: scene.sceneNo };
+                            html += `<div style="width:140px;cursor:pointer;position:relative;" class="serper-img-card" onclick="_serperPreviewById('${cardId}')">
                                 <img src="${img.thumb}" alt="${safeTitle}" style="width:140px;height:100px;object-fit:cover;border-radius:6px;border:2px solid #e0d5c5;transition:border-color 0.2s;" onerror="this.style.display='none'" loading="lazy">
                                 <div style="font-size:0.68rem;color:#555;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${safeTitle}</div>
                             </div>`;
@@ -28092,20 +28096,54 @@ ${sceneList}
             btn.textContent = '🔍 Serper 자동 검색 (전체)';
         }
 
-        function _serperPreview(imageUrl, title, sceneNo) {
+        function _serperPreviewById(cardId) {
+            const data = (window._serperImgData || {})[cardId];
+            if (!data) return;
+            _serperPreview(data.url, data.title, data.sceneNo, data.thumb);
+        }
+
+        function _serperPreview(imageUrl, title, sceneNo, thumbUrl) {
+            const safeTitle = (title || '').replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
             const overlay = document.createElement('div');
             overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;';
             overlay.onclick = (e) => { if (e.target === overlay || e.target.tagName !== 'BUTTON') overlay.remove(); };
 
-            overlay.innerHTML = `
-                <div style="color:#fff;font-size:0.9rem;margin-bottom:12px;font-weight:600;">[장면 ${sceneNo}] ${title}</div>
-                <img src="${imageUrl}" style="max-width:95%;max-height:82vh;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.5);object-fit:contain;" onerror="this.alt='이미지 로드 실패'">
-                <div style="margin-top:16px;display:flex;gap:10px;">
-                    <button onclick="window.open('${imageUrl}','_blank')" style="padding:10px 24px;background:#e67700;color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer;font-size:0.85rem;">🔗 원본 열기</button>
-                    <button onclick="_serperDownload('${imageUrl}', 'scene_${sceneNo}', this)" style="padding:10px 24px;background:#2b8a3e;color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer;font-size:0.85rem;">💾 다운로드</button>
-                    <button onclick="this.closest('div[style*=fixed]').remove()" style="padding:10px 24px;background:#666;color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer;font-size:0.85rem;">✕ 닫기</button>
-                </div>
-            `;
+            const imgEl = document.createElement('img');
+            imgEl.src = imageUrl;
+            imgEl.style.cssText = 'max-width:95%;max-height:82vh;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.5);object-fit:contain;';
+            imgEl.onerror = function() {
+                if (thumbUrl && this.src !== thumbUrl) {
+                    this.src = thumbUrl;
+                } else {
+                    this.alt = '이미지 로드 실패';
+                    this.style.cssText += 'color:#fff;font-size:1.2rem;padding:40px;';
+                }
+            };
+
+            const titleEl = document.createElement('div');
+            titleEl.style.cssText = 'color:#fff;font-size:0.9rem;margin-bottom:12px;font-weight:600;';
+            titleEl.textContent = `[장면 ${sceneNo}] ${title}`;
+
+            const btnDiv = document.createElement('div');
+            btnDiv.style.cssText = 'margin-top:16px;display:flex;gap:10px;';
+
+            const btnOpen = document.createElement('button');
+            btnOpen.textContent = '🔗 원본 열기';
+            btnOpen.style.cssText = 'padding:10px 24px;background:#e67700;color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer;font-size:0.85rem;';
+            btnOpen.onclick = () => window.open(imageUrl, '_blank');
+
+            const btnDl = document.createElement('button');
+            btnDl.textContent = '💾 다운로드';
+            btnDl.style.cssText = 'padding:10px 24px;background:#2b8a3e;color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer;font-size:0.85rem;';
+            btnDl.onclick = () => _serperDownload(imageUrl, 'scene_' + sceneNo, btnDl);
+
+            const btnClose = document.createElement('button');
+            btnClose.textContent = '✕ 닫기';
+            btnClose.style.cssText = 'padding:10px 24px;background:#666;color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer;font-size:0.85rem;';
+            btnClose.onclick = () => overlay.remove();
+
+            btnDiv.append(btnOpen, btnDl, btnClose);
+            overlay.append(titleEl, imgEl, btnDiv);
             document.body.appendChild(overlay);
         }
 
@@ -28133,9 +28171,13 @@ ${sceneList}
                 if (images.length === 0) {
                     html += `<div style="color:#999;font-size:0.78rem;">결과 없음</div>`;
                 } else {
-                    for (const img of images) {
+                    for (let j = 0; j < images.length; j++) {
+                        const img = images[j];
+                        const cardId = `serperCard_${sceneNo}_${i+1}_${j}`;
                         const safeTitle = (img.title || '').replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
-                        html += `<div style="width:140px;cursor:pointer;" class="serper-img-card" onclick="_serperPreview('${img.url.replace(/'/g,"\\'")}', '${safeTitle}', ${sceneNo})">
+                        if (!window._serperImgData) window._serperImgData = {};
+                        window._serperImgData[cardId] = { url: img.url, thumb: img.thumb, title: img.title || '', sceneNo };
+                        html += `<div style="width:140px;cursor:pointer;" class="serper-img-card" onclick="_serperPreviewById('${cardId}')">
                             <img src="${img.thumb}" alt="${safeTitle}" style="width:140px;height:100px;object-fit:cover;border-radius:6px;border:2px solid #e0d5c5;transition:border-color 0.2s;" onerror="this.style.display='none'" loading="lazy">
                             <div style="font-size:0.68rem;color:#555;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${safeTitle}</div>
                         </div>`;
