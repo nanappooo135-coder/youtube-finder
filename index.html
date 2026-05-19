@@ -5134,6 +5134,9 @@
             renderBenchChannelList('kr');
             renderBenchChannelList('foreign');
             // 자동 검색 안 함 — 버튼 직접 클릭해야 API 사용
+            // 오버레이 채널 모드 자동 연동
+            const _ovMode = channelName === '심리' ? 'psychology' : 'economics';
+            if (typeof window._setChannelMode === 'function') window._setChannelMode(_ovMode);
         }
 
         function applyChannelUI(channelName) {
