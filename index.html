@@ -3353,6 +3353,7 @@
                         <!-- N문장 선택 -->
                         <div style="margin-bottom:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
                             <span style="font-weight:700;font-size:0.9rem;color:#444;">📦 본문 묶음 <span style="font-weight:400;font-size:0.75rem;color:#888;">(기본 힌트 — Gemini가 응집도 보고 자동 조정)</span></span>
+                            <button class="search-btn sp-n-btn" data-n="3" onclick="_spSetN(3)" style="padding:8px 16px;font-size:0.9rem;background:#e9ecef;border-color:#ced4da;color:#495057;">3문장</button>
                             <button class="search-btn sp-n-btn" data-n="4" onclick="_spSetN(4)" style="padding:8px 16px;font-size:0.9rem;background:#e9ecef;border-color:#ced4da;color:#495057;">4문장</button>
                             <button class="search-btn sp-n-btn active-n" data-n="5" onclick="_spSetN(5)" style="padding:8px 16px;font-size:0.9rem;background:#9333ea;border-color:#9333ea;">5문장</button>
                             <button class="search-btn sp-n-btn" data-n="6" onclick="_spSetN(6)" style="padding:8px 16px;font-size:0.9rem;background:#e9ecef;border-color:#ced4da;color:#495057;">6문장</button>
@@ -3423,6 +3424,7 @@
                     <!-- N문장 (고정 모드만) -->
                     <div id="gtNRow" style="margin-bottom:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
                         <span style="font-weight:700;font-size:0.88rem;color:#0f7b5a;">📦 N문장 묶음 <span style="font-weight:400;font-size:0.75rem;color:#888;">(상한 6문장 — 초과시 자동 split)</span></span>
+                        <button class="search-btn gt-n-btn" data-n="3" onclick="_gtSetN(3)" style="padding:8px 16px;font-size:0.9rem;background:#e9ecef;border-color:#ced4da;color:#495057;">3문장</button>
                         <button class="search-btn gt-n-btn" data-n="4" onclick="_gtSetN(4)" style="padding:8px 16px;font-size:0.9rem;background:#e9ecef;border-color:#ced4da;color:#495057;">4문장</button>
                         <button class="search-btn gt-n-btn active-n" data-n="5" onclick="_gtSetN(5)" style="padding:8px 16px;font-size:0.9rem;background:#20c997;border-color:#20c997;">5문장</button>
                         <button class="search-btn gt-n-btn" data-n="6" onclick="_gtSetN(6)" style="padding:8px 16px;font-size:0.9rem;background:#e9ecef;border-color:#ced4da;color:#495057;">6문장</button>
