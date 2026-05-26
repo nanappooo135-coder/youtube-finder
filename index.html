@@ -21030,10 +21030,39 @@ Example format:
                 '',
                 '1. 시대적 배경 (연도, 시기)',
                 '2. 공간적 배경 (장소, 환경, 국가)',
-                '3. 주요 인물 (외형 특징, 직업, 감정 상태)',
+                '3. 주요 인물 분석',
+                '   - 실존 인물은 얼굴 외 구분 가능한 특징 필수 도출',
+                '     (헤어스타일, 체형, 키, 시그니처 의상, 자세, 소품)',
+                '   - 예: 트럼프 → 금발 옆넘김, 키 큼, 빨간 넥타이, 긴 코트',
+                '   - 이 특징을 이후 모든 장면에서 일관되게 적용할 것',
                 '4. 핵심 주제와 전반적인 분위기 (밝은/어두운, 긴장/평온 등)',
                 '   - ※ 전체 분위기는 참고용. 색감은 3단계에서 장면별 개별 판단.',
                 '5. 시각적으로 표현할 만한 상징, 오브젝트, 디테일',
+                '',
+                bar,
+                '🌍 장면 생성 시 반영할 가이드 (이미지 생성 단계에서 적용)',
+                bar,
+                '',
+                '[나라/문화별 시각 가이드]',
+                '배경 국가에 맞는 건축, 거리, 소품, 분위기를 반영할 것:',
+                '- 한국: 현대 도시 기본. 한옥은 조선/고려 시대일 때만.',
+                '  시대별: 60~70s 슬레이트 골목 / 80s 아파트 단지+컬러 간판 / 90s 강남+IMF / 2000s 디지털 사무실 / 2020s 유리타워+카페',
+                '- 일본: 현대 도쿄 네온거리 기본. 전통은 에도/메이지 시대일 때만.',
+                '  시대별: 전후 폐허 / 60~80s 고도성장기 공장+신칸센 / 90s 버블붕괴 / 2000s 아키하바라+시부야 / 현재 도쿄 스카이라인',
+                '- 미국: 월스트리트, 실리콘밸리, 교외 주택가, 공장지대 등 맥락별 구분',
+                '- 유럽: 석조 아치, 코블스톤, 올드타운 vs 현대 EU 빌딩 구분',
+                '- 중국: 자금성/전통은 명시적 역사일 때만. 현대 상하이/선전 마천루 기본',
+                '- 중동: 아치형 건축, 시장, 사막 도시 vs 두바이 현대 스카이라인',
+                '',
+                '[구도 다양화 규칙]',
+                '이미지 생성 시 같은 구도를 연속 사용하지 말 것. 다음을 순환:',
+                '- CLOSE-UP: 얼굴 70% 또는 손/물건 디테일',
+                '- WIDE: 광활한 풍경, 캐릭터 작게',
+                '- LOW ANGLE: 올려다보기, 권력/위압감',
+                '- BIRD\'S EYE: 위에서 내려다보기',
+                '- OVER-SHOULDER: 한 인물 너머로 장면 보기',
+                '- OBJECT FOCUS: 캐릭터 없이 물건/문서만',
+                '- MEDIUM SHOT: 허리 위, 환경과 균형',
                 '',
                 '분석이 끝나면 마지막에 "분석 완료. 다음 단계 진행 준비됨" 이라고 답해주세요.',
                 '이 분석 내용은 이후 이미지 생성 시 모든 장면의 배경 지식으로 활용됩니다.'
@@ -24298,28 +24327,22 @@ color tone: overall bright and warm palette, light creams, warm beiges, soft woo
 
 overall mood: bright, psychologically safe illustration, uplifting and reassuring, emotionally warm rather than dramatic, feels like a modern Korean psychology illustration where light gently guides the viewer's attention.`;
 
-        const SP_STYLE_STICK = `STYLE BASE (ALWAYS APPLY):
-semi-realistic 2D editorial illustration,
-historical illustration style adaptable to ANY era and culture,
+        const SP_STYLE_STICK = `semi-realistic 2D editorial illustration,
 hand-drawn pen and ink with dry brush texture,
-fully illustrated, NOT rendered, NOT photographic,
-visible hand-drawn linework with slight roughness,
-ink-like outlines combined with soft tonal shading and defined ink edges,
-clean base colors with subtle tonal shifts and hatching variation,
-subtle paper-like grain blended across the entire canvas edge to edge.
-The illustration MUST fill the entire canvas with no borders, margins, or frame edges.
+visible linework with slight roughness,
+soft tonal shading with defined ink edges,
+clean base colors with subtle tonal shifts,
+paper-like grain across the entire canvas edge to edge.
+The illustration MUST fill the entire canvas — no borders, margins, or frames.
 
-NO 3D, NO CGI, NO anime, NO modern cartoon style,
-NO Pixar, NO Unreal Engine,
-NO glossy or plastic surfaces,
-NO photorealism, NO hyper-realism, NO rendering effects.
+NO 3D, NO CGI, NO anime, NO cartoon, NO Pixar, NO Unreal Engine,
+NO glossy or plastic surfaces, NO photorealism, NO rendering effects.
 
 CHARACTERS (non-fixed, variable casting):
 simple white or light-toned round-headed character(s),
 clearly 2D illustrated (not a sphere),
 minimal facial features: small dot or oval eyes, simple mouth line, subtle eyebrows,
-expressions match the scene emotion — serious, surprised, relieved, frustrated,
-hopeful, exhausted, proud, confused, angry, amused — full emotional range allowed,
+expressions match the scene emotion — full emotional range allowed,
 not cute, not chibi, not exaggerated.
 
 BODY & POSE (non-fixed):
@@ -24328,116 +24351,15 @@ arms and legs have gentle curves and rounded ends at joints,
 natural human proportions,
 body language matches the scene mood — restrained or dynamic as needed.
 
-GROUP SCENES (multiple characters — CRITICAL):
-Maximum 6~8 characters per scene for visual clarity.
-When the scene has 2+ characters, each character MUST differ in
-at least 3 of: clothing color, clothing type, height, posture,
-accessories (glasses, hat, tie, scarf, rolled sleeves).
-Even characters in the same profession should show individual style
-(e.g. one suit dark navy, another light gray, another with vest only).
-NO two characters should look identical.
+In group scenes (max 6~8), every character must look visually distinct
+(differ in clothing color, type, height, posture, or accessories).
 
-BACKGROUND & ENVIRONMENT (CONTEXT-DRIVEN — match scene's status):
-- Successful / modern / wealthy (대기업, 최첨단 팹, 보드룸, 성공 스타트업, 신축 빌딩):
-  → clean modern architecture, glass facade with reflected surroundings,
-    well-lit contemporary urban, proud / prestigious feel
-- Declining / historical / humble (몰락한 나라, 옛 공장, 차고 스타트업, 낡은 거리, 폐쇄된 가게):
-  → weathered stone, cracked plaster, uneven brickwork, aged wood, patina,
-    worn surfaces with character
-- Neutral / everyday (일반 사무실, 평범한 거리, 가정, 카페):
-  → contemporary but lived-in — neither pristine nor decayed
-
-The LLM must judge from scene context which palette to apply.
-All still hand-drawn, illustrated, never rendered.
-
-Accurate architectural scale and proportions relative to characters,
-clearly defined structures: arches, pillars, beams, staircases, tall ceilings,
-narrow corridors, streets, plazas, glass towers, concrete buildings,
-wooden interiors — whatever the scene calls for.
-
-KOREAN SCENES (CRITICAL — DEFAULT MODERN, BUT VARIED):
-- Korean scenes default to MODERN urban Korea — NEVER default to
-  hanok / traditional tiled roofs / 한옥 / palace by default.
-- Use traditional Korean architecture ONLY when narration explicitly says
-  조선시대 / 고려시대 / 한옥 / 궁궐 / pre-1900.
-- Era-specific Korean visual pool (pick contextually, do NOT default to
-  monotone gray concrete every time):
-  • 1960s~70s 한국: 단층 슬레이트 지붕 동네, 좁은 골목, 재래시장, 공장 굴뚝
-  • 1980s 한국: 호황기 신축 5층 아파트 단지, 컬러 간판 상가, 조립 공장,
-    88 올림픽 거리, 회사 사옥 (현대·대우 톤)
-  • 1990s 한국: 강남 빌딩가, IMF 외환위기 시기 은행 앞 줄, IMF 뉴스 보는 가정,
-    폐쇄된 회사 셔터, 금모으기 운동 은행 창구
-  • 2000s~2010s: 디지털 사무실, 지하철, 아파트 거실, 학원가, 코엑스
-  • 2020s 현재: 유리 타워, 카페, 편의점, 강남·여의도 거리
-- AVOID monotone gray concrete in every scene — vary materials
-  (벽돌 골목, 컬러 간판, 따뜻한 조명 가정, 햇볕 든 시장) based on scene mood.
-
-CULTURAL CONTEXT (FLEXIBLE — NOT LOCKED TO ONE REGION):
-Adapt architecture, character features, clothing, and visual cues
-to the specific country/era in the narration:
-- European historical → stone arches, cobblestone, Old World materials
-- Asian (Korea/Japan/China) → context-driven modern OR traditional per era
-- American → glass skyscrapers, suburban houses, factory floors
-- Middle Eastern → arched architecture, market scenes
-- African → varied per region and era
-This base is NOT locked to any single culture or era.
-
-COMPOSITION VARIETY (CRITICAL — avoid visual monotony):
-Each scene MUST use a different camera angle and framing.
-Cycle through these and NEVER repeat the same composition consecutively:
-- CLOSE-UP: face filling 70% of frame, or hands/object detail shot
-- WIDE ESTABLISHING: vast landscape or cityscape, character small in frame
-- LOW ANGLE: looking up at character or building, dramatic power feel
-- BIRD'S EYE: top-down overhead view of a scene or crowd
-- OVER-SHOULDER: looking past one character toward another or a scene
-- OBJECT FOCUS: no character visible, only a meaningful object or document
-- MEDIUM SHOT: character waist-up, balanced with environment
-Vary scale: sometimes character fills the frame, sometimes character is tiny
-in a vast environment. Visual surprise keeps viewers engaged.
-
-SPATIAL DEPTH & PERSPECTIVE:
-strong sense of foreground, midground, and background separation,
-accurate linear perspective and clear vanishing points,
-depth created through scale, spacing, overlap, and composition,
-distant elements slightly lighter, less saturated, less detailed,
-NO photographic blur, NO depth-of-field effects.
-
-LIGHTING & ATMOSPHERE:
-strong directional light source based on scene context,
-soft god rays or light beams through windows, doors, or lamps,
-warm indoor light or cool evening/night light,
-clear light–shadow contrast, softly blended,
-illustrated narrative atmosphere without realism rendering.
-
-COLOR TONE (CONTEXT-DRIVEN — must vary per scene mood):
-The color palette MUST change depending on the scene's emotional context.
-Do NOT use the same palette for every scene.
-
-- Successful / modern / wealthy scenes:
-  → bright natural light, cream white + warm gold + light oak,
-    clean and airy, optimistic warmth
-- Declining / crisis / historical hardship scenes:
-  → dark and desaturated, raw umber + charcoal + burnt sienna,
-    heavy shadows, somber weight
-- Neutral / everyday / calm scenes:
-  → soft daylight, warm beige + olive gray + muted sage,
-    natural and lived-in
-- Tension / conflict / protest scenes:
-  → deep saturated red accent + dark earth tones,
-    high contrast, urgent energy
-- Hope / nature / new beginning scenes:
-  → sage green + soft warm pink + golden hour light,
-    gentle and uplifting
-
-- NEVER use neon, electric, or fluorescent colors.
-- NEVER use purple, violet, lavender, mauve, lilac, or indigo tones anywhere.
-- NEVER use teal, cyan, or turquoise as a dominant color.
-- Shadows must be warm gray or raw umber, NOT blue-tinted.
-
-OVERALL MOOD:
-illustrated realism adaptable from historical to modern documentary,
-serious, restrained, story-focused, emotionally grounded,
-feels like a real space drawn carefully by hand.`;
+Color: palette follows scene mood — warm for success, dark for crisis,
+natural for everyday, red accent for tension, green for hope.
+NEVER use purple, violet, lavender, indigo, or mauve.
+NEVER use teal, cyan, or turquoise as dominant color.
+NEVER use neon or fluorescent colors.
+Shadows: warm gray or raw umber, never blue-tinted.`;
 
         // 이전 카툰 스틱 베이스 보존 (롤백용)
         const _SP_STYLE_STICK_OLD_BACKUP = `STYLE BASE (ALWAYS APPLY):
