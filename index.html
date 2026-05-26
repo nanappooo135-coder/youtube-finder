@@ -27699,6 +27699,36 @@ ${fullText}
 # 채널 모드: ${channelLabel}
 ${stylePrompt ? `\n## 그림체 프롬프트\n${stylePrompt}\n` : ''}
 
+# ★★★ 최우선 규칙: nano_prompt 장면 묘사 (이 규칙을 어기면 전체 결과 실패) ★★★
+
+nano_prompt의 장면 묘사는 반드시 **대본 내용에 맞는 실제 현실 장면**으로 작성하라.
+경제 채널이다. 뉴스 삽화/다큐멘터리 장면처럼 현실적으로.
+
+🚫 절대 금지 패턴 (하나라도 쓰면 FAIL):
+- "giant hand from above" / "massive hand reaching down" (하늘에서 손)
+- "glowing treasure" / "golden bullion" / "glowing component" (빛나는 보물)
+- "ornate gate opening" / "ancient door" (판타지 문)
+- "colossal silhouette with magnifying glass" (거인+돋보기)
+- "towering GPU/chip like a skyscraper" (칩이 빌딩처럼)
+- "paper bill transforming mid-air" (공중 변신)
+- "rollercoaster of arrows" (화살표 롤러코스터)
+- "light flooding through crack" / "beam of light" (빛의 통로)
+- "tiny figure dwarfed by giant object" (거대 사물 앞 작은 인물 — 판타지 비례)
+- "golden glow" / "ethereal light" / "mystical atmosphere" (신비한 빛)
+- 기타 판타지, 신화, 동화, SF, 추상 상징 전부 금지
+
+✅ 올바른 장면 묘사 예시:
+- "시가총액 4천조" → 실리콘밸리 본사 빌딩 앞 캐릭터 (현실 건물)
+- "스타트업에 투자" → 작은 사무실에서 노트북 작업하는 캐릭터 (현실 사무실)
+- "창사 이래 처음" → 회의실에서 계약서 놓고 악수 (현실 비즈니스)
+- "35배 급등" → 증권사에서 모니터 보며 흥분하는 캐릭터들 (현실 거래소)
+- "구리선 한계" → 서버랙 사이에서 끊어진 케이블을 들고 보는 엔지니어 (현실 데이터센터)
+- "데이터센터" → 서버랙이 줄지어 있는 넓은 복도, 형광등 조명 (현실 인프라)
+- "벤처캐피털" → 사무실에서 프레젠테이션 보는 투자자들 (현실 미팅)
+
+핵심: "대본이 비유적이어도 현실 장소 + 현실 행동으로 번역". 상징/비유/판타지로 도망가지 말 것.
+★★★ 위 규칙은 모든 nano_prompt에 예외 없이 적용. 아래 다른 규칙보다 우선. ★★★
+
 # 채워야 할 필드 (장면 묶음은 그대로!)
 
 ## 모든 장면 공통 필수
@@ -27842,7 +27872,7 @@ ${stylePrompt ? `\n## 그림체 프롬프트\n${stylePrompt}\n` : ''}
 ## type별 추가 필수 필드 (반드시 채울 것)
 
 ### type="ai" 인 장면
-- **nano_prompt** : 영문 이미지 프롬프트. 그림체 프롬프트 톤 반영. 끝에 \`ABSOLUTE RULE: NO text, NO letters, NO words, NO numbers anywhere in the image.\` 박기
+- **nano_prompt** : 영문 이미지 프롬프트. **반드시 현실 장면만** (사무실, 거래소, 공장, 회의실, 거리, 데이터센터 등). 판타지/추상/신비 절대 금지. 끝에 \`ABSOLUTE RULE: NO text, NO letters, NO words, NO numbers anywhere in the image.\` 박기
 - **grok_prompt** : 영문 영상화 프롬프트. ⚠️ **반드시 다음 STRICT RULES 고정 문구를 그대로 포함** (어떤 변경도 금지):
   \`STRICT RULES: maintain the EXACT original 2D illustrated style from the input image. NO photorealism, NO live-action drift, NO style change, NO 3D, NO anime conversion. NO scene transitions, NO location change, NO new background, NO cuts to other shots. Stay in the SAME scene from the input image throughout the entire clip. ABSOLUTELY NO NEW HUMAN FACES anywhere in the video. NO new characters appearing, NO portraits emerging, NO people materializing in empty areas. NO exaggerated actions, NO dramatic gestures, NO talking, NO lip sync. ONLY subtle micro-movements: gentle breathing, slight head tilt, soft blink, light hair sway, subtle camera push-in or slow pan. Keep the composition 95% identical to the input image. The total number of human figures MUST stay constant from frame 1 to last frame.\`
   + duration 별 모션 강도:
