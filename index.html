@@ -14003,7 +14003,9 @@ ${contextMemo ? '[CONTEXT_MEMO — 1차 패스에서 추출한 영상 전체 맥
                     // AI 프롬프트에서 클리셰 구문 제거 (프롬프트 자체는 유지, 클리셰 표현만 문장 삭제)
                     if (typeof s.aiPrompt === 'string' && SYMBOLIC_CLICHE_BG.test(s.aiPrompt)) {
                         s.aiPrompt = s.aiPrompt.replace(/[^.]*\b(domino(es)?|chess|interlocking gears|scales? of justice|family tree.*red x|red x.*family tree|spider web|cobweb|tangled web|fishing net trap|iron chains? breaking|broken chains?|pendulum swinging|hourglass|shattered glass metaphor|candle flame fading|phoenix rising|cracked mirror|bleeding wallet|house of cards|puppet strings|iceberg hidden|tip of iceberg)[^.]*\./gi, '').trim();
-                        if (!s.aiPrompt) s.aiPrompt = 'Sophisticated editorial illustration in the style of economic journalism (Economist, Bloomberg, WSJ feature) with subtle graphic novel influence. Restrained muted palette with ONE saturated accent. Clean confident ink linework, stylized (NOT anime cute, NOT photorealistic, NOT cartoon) proportions. Hand-crafted editorial feel. Cinematic 16:9.';
+                        if (!s.aiPrompt) s.aiPrompt = (window._channelMode === 'stick')
+                            ? 'Semi-realistic 2D editorial illustration, hand-drawn pen and ink with dry brush texture, simple white round-headed character, soft tonal shading, clean base colors, paper-like grain across the entire canvas. NO 3D, NO anime, NO photorealism. Cinematic 16:9.'
+                            : 'Sophisticated editorial illustration in the style of economic journalism (Economist, Bloomberg, WSJ feature) with subtle graphic novel influence. Restrained muted palette with ONE saturated accent. Clean confident ink linework, stylized (NOT anime cute, NOT photorealistic, NOT cartoon) proportions. Hand-crafted editorial feel. Cinematic 16:9.';
                         s.clicheScrubbed = true;
                     }
                     // 나레이션에 '도미노처럼' 등 직유 있으면 해당 은유를 stock으로 보내되, 다른 장면에서 중복되면 알림
