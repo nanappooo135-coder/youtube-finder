@@ -21448,21 +21448,11 @@ Example format:
             _gsChannel = ch;
             const ta = document.getElementById('gsStyle');
             if (!ta) return;
-            // 사용자가 이미 수정했으면 덮어쓰지 않음 (어느 기본값과도 다르면 유지)
-            const cur = ta.value.trim();
-            const isDefault = cur === ''
-                || cur === SP_STYLE_ECONOMICS.trim()
-                || cur === SP_STYLE_PSYCHOLOGY.trim()
-                || cur === SP_STYLE_STICK.trim()
-                || cur === _SP_STYLE_STICK_OLD_BACKUP.trim()
-                || cur.startsWith('STYLE BASE (ALWAYS APPLY)');
-            if (isDefault) {
-                if (ch === 'psychology') ta.value = SP_STYLE_PSYCHOLOGY;
-                else if (ch === 'stick') ta.value = SP_STYLE_STICK;
-                else ta.value = SP_STYLE_ECONOMICS;
-                _gsSaveDraft();
-                _gsUpdatePreview();
-            }
+            if (ch === 'psychology') ta.value = SP_STYLE_PSYCHOLOGY;
+            else if (ch === 'stick') ta.value = SP_STYLE_STICK;
+            else ta.value = SP_STYLE_ECONOMICS;
+            _gsSaveDraft();
+            _gsUpdatePreview();
         }
 
         // ===== 진행 체크리스트 =====
@@ -24616,19 +24606,9 @@ ABSOLUTE PROHIBITIONS:
             _spChannel = ch;
             const ta = document.getElementById('spStylePrompt');
             if (!ta) return;
-            // 사용자가 이미 수정했으면 덮어쓰지 않음 (어느 기본값과도 다르면 유지)
-            const cur = ta.value.trim();
-            const isDefault = cur === ''
-                || cur === SP_STYLE_ECONOMICS.trim()
-                || cur === SP_STYLE_PSYCHOLOGY.trim()
-                || cur === SP_STYLE_STICK.trim()
-                || cur === _SP_STYLE_STICK_OLD_BACKUP.trim()
-                || cur.startsWith('STYLE BASE (ALWAYS APPLY)');
-            if (isDefault) {
-                if (ch === 'psychology') ta.value = SP_STYLE_PSYCHOLOGY;
-                else if (ch === 'stick') ta.value = SP_STYLE_STICK;
-                else ta.value = SP_STYLE_ECONOMICS;
-            }
+            if (ch === 'psychology') ta.value = SP_STYLE_PSYCHOLOGY;
+            else if (ch === 'stick') ta.value = SP_STYLE_STICK;
+            else ta.value = SP_STYLE_ECONOMICS;
         }
 
         function _spSetN(n) {
