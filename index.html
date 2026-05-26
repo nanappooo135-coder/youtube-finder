@@ -3326,6 +3326,10 @@
                             <input type="radio" name="spChannel" value="psychology" onchange="_spOnChannelChange(this.value)">
                             <span>🧠 심리학</span>
                         </label>
+                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.88rem;">
+                            <input type="radio" name="spChannel" value="stick" onchange="_spOnChannelChange(this.value)">
+                            <span>🎨 스틱경제</span>
+                        </label>
                     </div>
 
                     <!-- 그림체 프롬프트 -->
@@ -4745,9 +4749,26 @@
                         <input type="text" id="gsTitle" placeholder="비워두면 images_YYYY-MM-DD.zip" oninput="_gsSaveDraft()">
                     </div>
 
+                    <!-- 채널 선택 (셀팟과 동일 — 그림체 자동 주입) -->
+                    <div style="margin-top:14px;padding:10px 14px;background:#f8f4ff;border:2px solid #9333ea;border-radius:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                        <span style="font-weight:700;color:#6b21a8;font-size:0.9rem;">📺 채널</span>
+                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.88rem;">
+                            <input type="radio" name="gsChannel" value="economics" checked onchange="_gsOnChannelChange(this.value)">
+                            <span>📊 경제</span>
+                        </label>
+                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.88rem;">
+                            <input type="radio" name="gsChannel" value="psychology" onchange="_gsOnChannelChange(this.value)">
+                            <span>🧠 심리학</span>
+                        </label>
+                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.88rem;">
+                            <input type="radio" name="gsChannel" value="stick" onchange="_gsOnChannelChange(this.value)">
+                            <span>🎨 스틱경제</span>
+                        </label>
+                    </div>
+
                     <div class="input-group" style="margin-top:14px;">
-                        <label for="gsStyle">🎨 그림체 프롬프트</label>
-                        <textarea id="gsStyle" rows="6" placeholder="예: 따뜻한 수채화풍, 부드러운 파스텔톤, 일러스트 스타일, 손그림 질감, 부드러운 윤곽선, 채도 적당히..." oninput="_gsSaveDraft()" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:0.88rem;font-family:inherit;line-height:1.5;resize:vertical;"></textarea>
+                        <label for="gsStyle">🎨 그림체 프롬프트 <span style="color:#888;font-weight:400;">(채널 기본값 자동, 직접 수정 가능)</span></label>
+                        <textarea id="gsStyle" rows="6" placeholder="채널을 선택하면 자동으로 채워집니다. 직접 수정 가능." oninput="_gsSaveDraft()" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:0.88rem;font-family:inherit;line-height:1.5;resize:vertical;"></textarea>
                     </div>
 
                     <div class="input-group" style="margin-top:14px;">
@@ -21375,14 +21396,38 @@ Example format:
         }
 
         let _gsInited = false;
+        let _gsChannel = 'economics';
         function _gsInit() {
             if (_gsInited) { _gsAnalyze(); _gsUpdateProgress(); return; }
             _gsInited = true;
             _gsLoadDraft();
+            // 채널 선택 동기화 + 그림체 기본값 자동 주입 (draft가 비었을 때만)
+            const checked = document.querySelector('input[name="gsChannel"]:checked');
+            if (checked) _gsChannel = checked.value;
+            _gsOnChannelChange(_gsChannel);
             _gsAnalyze();
             _gsUpdatePreview();
             _gsLoadProgress();
             _gsUpdateProgress();
+        }
+
+        function _gsOnChannelChange(ch) {
+            _gsChannel = ch;
+            const ta = document.getElementById('gsStyle');
+            if (!ta) return;
+            // 사용자가 이미 수정했으면 덮어쓰지 않음 (어느 기본값과도 다르면 유지)
+            const cur = ta.value.trim();
+            const isDefault = cur === ''
+                || cur === SP_STYLE_ECONOMICS.trim()
+                || cur === SP_STYLE_PSYCHOLOGY.trim()
+                || cur === SP_STYLE_STICK.trim();
+            if (isDefault) {
+                if (ch === 'psychology') ta.value = SP_STYLE_PSYCHOLOGY;
+                else if (ch === 'stick') ta.value = SP_STYLE_STICK;
+                else ta.value = SP_STYLE_ECONOMICS;
+                _gsSaveDraft();
+                _gsUpdatePreview();
+            }
         }
 
         // ===== 진행 체크리스트 =====
@@ -24261,6 +24306,98 @@ color tone: overall bright and warm palette, light creams, warm beiges, soft woo
 
 overall mood: bright, psychologically safe illustration, uplifting and reassuring, emotionally warm rather than dramatic, feels like a modern Korean psychology illustration where light gently guides the viewer's attention.`;
 
+        const SP_STYLE_STICK = `STYLE BASE (ALWAYS APPLY):
+Hand-drawn 2D cartoon illustration with traditional media feel.
+Stick figure characters combined with hand-painted detailed backgrounds.
+Inspired by Henry Stickmin character design + watercolor/colored pencil
+storybook backgrounds. NOT 3D, NOT CGI, NOT anime, NOT photorealistic,
+NOT Pixar style, NOT vector flat design, NOT digital glossy.
+
+LINEWORK (CRITICAL):
+- Hand-drawn ink pen outlines with slight imperfections
+- Line weight varies naturally (thicker on shadow side, thinner on lit side)
+- Subtle line wobble — NOT perfectly straight or vector-clean
+- Visible pen pressure variation, occasional sketchy double-line
+- Lines feel drawn by hand on paper, not by a stylus on a tablet
+
+CHARACTER DESIGN (APPLY TO ALL HUMAN FIGURES):
+- Large round head, warm off-white / cream color (NOT pure white,
+  slightly aged paper tone)
+- Thick hand-inked outline around head with natural pen variation
+- Big expressive cartoon eyes (round pupils, simple white highlight)
+- Simple mouth line bending for emotion
+- Optional emotion marks: small sweat drop, soft pink cheek blush,
+  curved eyebrow
+- Body: thin hand-drawn black stick limbs with slight wobble
+- Arms and legs: simple ink lines with rounded ends
+- Hands: small soft mittens or rounded dots
+- Head is 1.5–2x larger than torso area
+- Expressions exaggerated and theatrical, but rendered softly
+
+CLOTHING RULE (CRITICAL — CONTEXT-DRIVEN, NOT RANDOM):
+- Clothing is determined by the character's ROLE in the scene, NOT random.
+- If the scene context implies a setting (boardroom → suits,
+  construction site → hard hats and overalls, kitchen → aprons,
+  medieval scene → tunics/armor, casual home → t-shirts/sweaters,
+  battlefield → uniforms), ALL characters in that setting wear
+  matching contextual attire.
+- Do NOT mix bare stick figures with fully clothed characters inside
+  the same role group. Either all wear context-appropriate clothing,
+  or all are bare stick figures — based on the scene.
+- Clothing is painted with watercolor-like flat washes over the stick
+  body. The stick limbs remain visible where not covered (arms
+  sticking out of sleeves, legs out of shorts/skirts).
+- Bare stick figure (no clothing) is the default ONLY when the scene
+  explicitly says "casual" or no role/setting is established.
+
+COLOR & PAINT TREATMENT (CRITICAL — MUTED HAND-PAINTED):
+- Muted, slightly desaturated palette — dusty tones, vintage storybook feel
+- Earth-leaning warm hues: dusty orange, muted terracotta, faded teal,
+  soft mustard, warm beige, dusty rose, muted plum
+- Colors look like watercolor wash or colored pencil layering,
+  NOT digital flat fill, NOT vivid cel-shaded
+- Visible brush texture / pencil grain inside color areas
+- Color edges sometimes bleed slightly past the line (watercolor feel)
+- Light gradients made from soft pencil hatching, not smooth digital
+  gradients
+- Subtle warm paper texture visible across the entire image
+  (slight grain, like aged sketchbook page)
+
+LIGHTING & SHADING:
+- Soft hand-drawn shadows using cross-hatching or layered color pencil
+  strokes
+- Light areas show slight color saturation lift (warm glow)
+- Dramatic but soft — sunsets, candlelight, moonlight, storm light
+- Shadow shapes are simplified but textured, NOT flat cel blocks,
+  NOT smooth airbrush
+
+BACKGROUND & ENVIRONMENT:
+- Fully painted hand-drawn backgrounds with rich detail
+- Detailed interiors (furniture, rugs, books, fireplaces — each
+  rendered with brush/pencil texture)
+- Detailed landscapes (mountains, castles, cities) with soft
+  atmospheric perspective
+- Background detail level is HIGH but color intensity is LOW —
+  the contrast comes from detail density, not saturation
+- Thick hand-inked outlines on foreground objects, softer/thinner
+  lines on distant elements
+
+OVERALL MOOD:
+- Warm, storybook adventure feeling
+- Easy on the eyes — saturation kept restrained even in dramatic scenes
+- Feels like a hand-painted illustrated novel page, not a vivid game
+  cover
+- Theatrical storytelling tone, but visually calm
+
+ABSOLUTE PROHIBITIONS:
+- NO high-saturation neon or electric colors
+- NO smooth digital gradients or airbrush
+- NO clean vector lines
+- NO photorealistic textures or 3D rendering
+- NO anime sparkle eyes
+- NO text, NO letters, NO numbers
+- NO photographic backgrounds`;
+
         let _spN = 5;
         let _spChannel = 'economics';
         let _spModel = 'gemini-pro';
@@ -24319,11 +24456,16 @@ overall mood: bright, psychologically safe illustration, uplifting and reassurin
             _spChannel = ch;
             const ta = document.getElementById('spStylePrompt');
             if (!ta) return;
-            // 사용자가 이미 수정했으면 덮어쓰지 않음 (둘 중 어느 기본값과도 다르면 유지)
+            // 사용자가 이미 수정했으면 덮어쓰지 않음 (어느 기본값과도 다르면 유지)
             const cur = ta.value.trim();
-            const isDefault = cur === '' || cur === SP_STYLE_ECONOMICS.trim() || cur === SP_STYLE_PSYCHOLOGY.trim();
+            const isDefault = cur === ''
+                || cur === SP_STYLE_ECONOMICS.trim()
+                || cur === SP_STYLE_PSYCHOLOGY.trim()
+                || cur === SP_STYLE_STICK.trim();
             if (isDefault) {
-                ta.value = ch === 'psychology' ? SP_STYLE_PSYCHOLOGY : SP_STYLE_ECONOMICS;
+                if (ch === 'psychology') ta.value = SP_STYLE_PSYCHOLOGY;
+                else if (ch === 'stick') ta.value = SP_STYLE_STICK;
+                else ta.value = SP_STYLE_ECONOMICS;
             }
         }
 
