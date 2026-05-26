@@ -24299,6 +24299,123 @@ color tone: overall bright and warm palette, light creams, warm beiges, soft woo
 overall mood: bright, psychologically safe illustration, uplifting and reassuring, emotionally warm rather than dramatic, feels like a modern Korean psychology illustration where light gently guides the viewer's attention.`;
 
         const SP_STYLE_STICK = `STYLE BASE (ALWAYS APPLY):
+semi-realistic 2D editorial illustration,
+historical illustration style adaptable to ANY era and culture,
+hand-drawn ink and wash feeling,
+fully illustrated, NOT rendered, NOT photographic,
+visible hand-drawn linework with slight roughness,
+ink-like outlines combined with soft painterly shading,
+flat base colors with layered watercolor-style tonal variation,
+subtle paper texture visible in background and shadows.
+
+NO 3D, NO CGI, NO anime, NO modern cartoon style,
+NO Pixar, NO Unreal Engine,
+NO glossy or plastic surfaces,
+NO photorealism, NO hyper-realism, NO rendering effects.
+
+CHARACTERS (non-fixed, variable casting):
+simple white or light-toned round-headed character(s),
+clearly 2D illustrated (not a sphere),
+minimal facial features: small dot or oval eyes, simple mouth line, subtle eyebrows,
+expressions restrained and serious (sad, worried, stern, determined, calm),
+not cute, not chibi, not exaggerated.
+
+BODY & POSE (non-fixed):
+simplified limbs, natural human proportions,
+realistic restrained body language,
+poses feel staged like a historical or documentary illustration,
+not dynamic, not heroic.
+
+GROUP SCENES (multiple characters — CRITICAL):
+When the scene has 2+ characters, vary their clothing and posture
+based on their role in the scene's context:
+- Boardroom / investors → uniform suits in muted tones
+- Workshop / engineers → coats or aprons
+- Protest / crowd → casual mixed everyday wear
+- Historical court / royalty → period-appropriate robes
+- Factory workers → work uniforms with helmets
+All characters in the same role group wear matching attire,
+but individuals show small variation (color shade, posture, height,
+small accessories like glasses or hat) so they don't read as identical clones.
+
+BACKGROUND & ENVIRONMENT (CONTEXT-DRIVEN — match scene's status):
+- Successful / modern / wealthy (대기업, 최첨단 팹, 보드룸, 성공 스타트업, 신축 빌딩):
+  → clean modern architecture, polished glass curtain walls, gleaming
+    metallic mullions, well-lit contemporary urban, proud / prestigious feel
+- Declining / historical / humble (몰락한 나라, 옛 공장, 차고 스타트업, 낡은 거리, 폐쇄된 가게):
+  → weathered stone, cracked plaster, uneven brickwork, aged wood, patina,
+    worn surfaces with character
+- Neutral / everyday (일반 사무실, 평범한 거리, 가정, 카페):
+  → contemporary but lived-in — neither pristine nor decayed
+
+The LLM must judge from scene context which palette to apply.
+All still hand-drawn, illustrated, never rendered.
+
+Accurate architectural scale and proportions relative to characters,
+clearly defined structures: arches, pillars, beams, staircases, tall ceilings,
+narrow corridors, streets, plazas, glass towers, concrete buildings,
+wooden interiors — whatever the scene calls for.
+
+KOREAN SCENES (CRITICAL — DEFAULT MODERN, BUT VARIED):
+- Korean scenes default to MODERN urban Korea — NEVER default to
+  hanok / traditional tiled roofs / 한옥 / palace by default.
+- Use traditional Korean architecture ONLY when narration explicitly says
+  조선시대 / 고려시대 / 한옥 / 궁궐 / pre-1900.
+- Era-specific Korean visual pool (pick contextually, do NOT default to
+  monotone gray concrete every time):
+  • 1960s~70s 한국: 단층 슬레이트 지붕 동네, 좁은 골목, 재래시장, 공장 굴뚝
+  • 1980s 한국: 호황기 신축 5층 아파트 단지, 컬러 간판 상가, 조립 공장,
+    88 올림픽 거리, 회사 사옥 (현대·대우 톤)
+  • 1990s 한국: 강남 빌딩가, IMF 외환위기 시기 은행 앞 줄, IMF 뉴스 보는 가정,
+    폐쇄된 회사 셔터, 금모으기 운동 은행 창구
+  • 2000s~2010s: 디지털 사무실, 지하철, 아파트 거실, 학원가, 코엑스
+  • 2020s 현재: 유리 타워, 카페, 편의점, 강남·여의도 거리
+- AVOID monotone gray concrete in every scene — vary materials
+  (벽돌 골목, 컬러 간판, 따뜻한 조명 가정, 햇볕 든 시장) based on scene mood.
+
+CULTURAL CONTEXT (FLEXIBLE — NOT LOCKED TO ONE REGION):
+Adapt architecture, character features, clothing, and visual cues
+to the specific country/era in the narration:
+- European historical → stone arches, cobblestone, Old World materials
+- Asian (Korea/Japan/China) → context-driven modern OR traditional per era
+- American → glass skyscrapers, suburban houses, factory floors
+- Middle Eastern → arched architecture, market scenes
+- African → varied per region and era
+This base is NOT locked to any single culture or era.
+
+SPATIAL DEPTH & PERSPECTIVE:
+strong sense of foreground, midground, and background separation,
+accurate linear perspective and clear vanishing points,
+depth created through scale, spacing, overlap, and composition,
+distant elements slightly lighter, less saturated, less detailed,
+NO photographic blur, NO depth-of-field effects.
+
+LIGHTING & ATMOSPHERE:
+strong directional light source based on scene context,
+soft god rays or light beams through windows, doors, or lamps,
+warm indoor light or cool evening/night light,
+clear light–shadow contrast, softly blended,
+cinematic atmosphere without realism rendering.
+
+COLOR TONE (BASE + CONTEXTUAL ACCENT):
+- Default: natural historical palette — warm browns, ochres,
+  cream whites, muted blues and grays. Slightly desaturated, moderate brightness.
+- Allowed accent (1~2 colors max per scene, used sparingly):
+  · Tension / crisis / protest / blood → deep saturated red
+  · Nature / spring / hope → sage green or soft pink
+  · Success / wealth / celebration → warm gold / mustard
+  · Cold / loneliness / night → deep navy blue
+- NEVER use neon, electric, or fluorescent colors.
+- Default is muted — accent is used like a single brush stroke
+  on a neutral painting, not as overall scheme.
+
+OVERALL MOOD:
+illustrated realism adaptable from historical to modern documentary,
+serious, restrained, story-focused, emotionally grounded,
+feels like a real space drawn carefully by hand.`;
+
+        // 이전 카툰 스틱 베이스 보존 (롤백용)
+        const _SP_STYLE_STICK_OLD_BACKUP = `STYLE BASE (ALWAYS APPLY):
 Hand-drawn 2D cartoon illustration with traditional media feel.
 Stick figure characters combined with hand-painted detailed backgrounds.
 Inspired by Henry Stickmin character design + watercolor/colored pencil
