@@ -27168,6 +27168,60 @@ JSON만 출력. 코드블록 마커 금지.`;
                     console.log(`[JSON Import] claude_design 캡 적용: ${_cdScenesImport.length}개 → ${_cdCapImport}개 (${_cdFixedImport}개 ai로 변환)`);
                 }
 
+                // 🚨 nano_prompt 판타지/반복 자동 검사
+                const _BANNED_PATTERNS = [
+                    /giant hand/i, /massive hand/i, /hand from above/i, /hand reaching down/i,
+                    /glowing treasure/i, /golden bullion/i, /glowing component/i,
+                    /ornate gate/i, /ancient door/i, /ornate door/i,
+                    /colossal silhouette/i, /magnifying glass/i,
+                    /towering (GPU|chip|cpu)/i, /like a skyscraper/i,
+                    /paper bill transforming/i, /transforming mid-air/i,
+                    /rollercoaster of arrows/i,
+                    /light flooding through/i, /beam of light/i, /light through crack/i,
+                    /golden glow/i, /ethereal light/i, /mystical atmosphere/i,
+                    /fantasy/i, /mythical/i, /fairy tale/i, /storybook/i, /magical/i,
+                    /celestial/i, /supernatural/i, /enchanted/i, /wizardry/i
+                ];
+                const _nanoWarnings = [];
+                // 구도 반복 감지
+                let _buildingLookUpCount = 0;
+                let _sittingAloneCount = 0;
+                let _shrugPoseCount = 0;
+                scenes.forEach(s => {
+                    if (!s.nano_prompt) return;
+                    const np = s.nano_prompt;
+                    // 금지 패턴 검사
+                    _BANNED_PATTERNS.forEach(pat => {
+                        if (pat.test(np)) {
+                            _nanoWarnings.push(`⚠️ 장면 ${s.sceneNo}: 금지 패턴 "${pat.source}" 감지`);
+                            s._nanoWarn = true;
+                        }
+                    });
+                    // 구도 반복 검사
+                    if (/looking up at.*(tower|building|headquarter|skyscraper)/i.test(np) ||
+                        /standing.*front.*plaza.*towering/i.test(np) ||
+                        /tiny.*figure.*dwarfed/i.test(np)) {
+                        _buildingLookUpCount++;
+                        if (_buildingLookUpCount > 1) {
+                            _nanoWarnings.push(`⚠️ 장면 ${s.sceneNo}: "빌딩 앞 올려다보기" 구도 반복 (${_buildingLookUpCount}회)`);
+                            s._nanoWarn = true;
+                        }
+                    }
+                    if (/shrug/i.test(np) || /palms (facing )?up.*weighing/i.test(np) || /arms raised.*shoulder/i.test(np)) {
+                        _shrugPoseCount++;
+                        _nanoWarnings.push(`⚠️ 장면 ${s.sceneNo}: 추상적 제스처 (으쓱/저울질 포즈) 감지`);
+                        s._nanoWarn = true;
+                    }
+                });
+                if (_nanoWarnings.length > 0) {
+                    console.warn('[nano_prompt 검사]', _nanoWarnings);
+                    const warnHtml = '<div style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:12px;margin:8px 0;font-size:0.85rem;">'
+                        + '<b>⚠️ nano_prompt 품질 경고 (' + _nanoWarnings.length + '건)</b><br>'
+                        + _nanoWarnings.map(w => '<div style="color:#856404;margin:2px 0;">' + w + '</div>').join('')
+                        + '</div>';
+                    status.innerHTML = warnHtml;
+                }
+
                 const stylePrompt = document.getElementById('spStylePrompt').value.trim();
                 _spLastResult = { scenes, channel: _spChannel, stylePrompt };
                 try {
