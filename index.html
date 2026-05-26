@@ -25909,6 +25909,31 @@ ABSOLUTE PROHIBITIONS:
 
                 const prompt = `당신은 유튜브 ${channelLabel} 채널의 영상 제작 디렉터입니다. 아래 대본 전체를 읽고 맥락을 완전히 이해한 뒤, 본문을 **응집도 있는 장면 단위로 자동 묶기** + **각 장면별 시각화 방법 결정**을 해야 합니다.
 
+★★★ 최우선 규칙: nano_prompt 장면 묘사 (이 규칙을 어기면 전체 결과 실패) ★★★
+nano_prompt의 장면 묘사는 반드시 **대본 내용에 맞는 실제 현실 장면**으로 작성하라.
+경제 채널이다. 뉴스 삽화/다큐멘터리 장면처럼 현실적으로.
+
+🚫 절대 금지 패턴 (하나라도 쓰면 FAIL):
+- "giant hand from above" / "massive hand reaching down" (하늘에서 손)
+- "glowing treasure" / "golden bullion" / "glowing component" (빛나는 보물)
+- "ornate gate opening" / "ancient door" (판타지 문)
+- "colossal silhouette with magnifying glass" (거인+돋보기)
+- "towering GPU/chip like a skyscraper" (칩이 빌딩처럼)
+- "paper bill transforming mid-air" (공중 변신)
+- "rollercoaster of arrows" (화살표 롤러코스터)
+- "light flooding through crack" / "beam of light" (빛의 통로)
+- 기타 판타지, 신화, 동화, SF, 추상 상징
+
+✅ 올바른 장면 묘사 예시:
+- "시가총액 4천조" → 실리콘밸리 본사 빌딩 앞 캐릭터 (현실 건물)
+- "스타트업에 투자" → 작은 사무실에서 노트북 작업하는 캐릭터 (현실 사무실)
+- "창사 이래 처음" → 회의실에서 계약서 놓고 악수 (현실 비즈니스)
+- "35배 급등" → 증권사에서 모니터 보며 흥분하는 캐릭터들 (현실 거래소)
+- "구리선 한계" → 서버랙 사이에서 끊어진 케이블을 들고 보는 엔지니어 (현실 데이터센터)
+
+핵심: "대본이 비유적이어도 현실 장소 + 현실 행동으로 번역". 상징/비유/판타지로 도망가지 말 것.
+★★★ 위 규칙은 모든 nano_prompt에 예외 없이 적용. 아래 다른 규칙보다 우선. ★★★
+
 === 채널 특성 ===
 ${_channelNote}
 
@@ -26331,6 +26356,12 @@ JSON만 출력하세요. 코드블록 마커 금지.`;
                         : startBodyNo;
 
                     const chunk2Prompt = `당신은 유튜브 ${channelLabel} 채널의 영상 제작 디렉터입니다. 본문 후반부를 분석해 장면 단위로 묶고 시각화 방법을 결정하세요.
+
+★★★ 최우선 규칙: nano_prompt 장면 묘사 (어기면 전체 FAIL) ★★★
+nano_prompt는 반드시 **실제 현실 장면**으로. 뉴스 삽화/다큐처럼.
+🚫 절대 금지: 하늘에서 손, 빛나는 보물, 판타지 문, 거인+돋보기, 칩이 빌딩처럼, 공중 변신, 화살표 롤러코스터, 빛의 통로, 판타지/신화/동화/SF/추상 상징 전부.
+✅ 올바른 예: 현실 사무실, 회의실, 거래소, 공장, 데이터센터, 거리 등 실제 장소에서 실제 행동.
+★★★ 모든 nano_prompt에 예외 없이 적용. 다른 규칙보다 우선. ★★★
 
 === 채널 특성 ===
 ${_channelNote}
