@@ -22465,12 +22465,14 @@ Example format:
                         pageCount++;
 
                         const items = playlistData.items || [];
+                        let pageHadInWindow = false;
                         for (const item of items) {
                             const publishedAt = new Date(item.contentDetails.videoPublishedAt || item.snippet.publishedAt);
-                            if (publishedAt < cutoffDate) {
-                                keepFetching = false;
-                                break;
-                            }
+                            // 업로드 재생목록이 완벽한 최신순이 아니므로(프리미어·공개일 변경 등),
+                            // 기간 밖 영상은 건너뛰되 스캔은 계속한다. 그래야 사이에 끼인
+                            // 옛 영상 하나 때문에 뒤의 최신 영상이 통째로 누락되지 않는다.
+                            if (publishedAt < cutoffDate) continue;
+                            pageHadInWindow = true;
                             allVideos.push({
                                 videoId: item.contentDetails.videoId,
                                 title: item.snippet.title,
@@ -22484,6 +22486,9 @@ Example format:
 
                         nextPageToken = playlistData.nextPageToken || '';
                         if (!nextPageToken) keepFetching = false;
+                        // 한 페이지(50개)에 기간 내 영상이 하나도 없으면 충분히 지났다고 보고 종료.
+                        // 옛 영상 몇 개가 끼어 있어도 페이지 전체가 기간 밖이 아니면 계속 스캔한다.
+                        if (!pageHadInWindow) keepFetching = false;
                         if (pageCount >= 5) keepFetching = false; // 채널당 최대 250개
                     }
                 }
