@@ -1,5 +1,5 @@
 // YouTube Finder PWA Service Worker
-const CACHE_NAME = 'yt-finder-v51';
+const CACHE_NAME = 'yt-finder-v52';
 const CORE_ASSETS = [
     './',
     './index.html',
@@ -40,8 +40,8 @@ self.addEventListener('fetch', (event) => {
     // API 호출은 패스 (Gemini, Kie, etc)
     if (url.origin !== self.location.origin) return;
 
-    // 동적 데이터(news.json) 항상 fresh
-    if (url.pathname.endsWith('/news.json')) {
+    // 동적 데이터(news.json, channels.json) 항상 fresh — 기기 간 동기화 위해 캐시 금지
+    if (url.pathname.endsWith('/news.json') || url.pathname.endsWith('/channels.json')) {
         event.respondWith(
             fetch(event.request).catch(() => caches.match(event.request))
         );
