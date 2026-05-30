@@ -3981,7 +3981,8 @@
                     <div class="input-group">
                         <label>📝 콘텐츠 옵션</label>
                         <div style="display:flex;flex-direction:column;gap:6px;margin-top:4px;">
-                            <label style="font-size:0.85rem;cursor:pointer;display:flex;align-items:center;gap:8px;"><input type="checkbox" id="aioKorText" checked style="width:18px;height:18px;flex-shrink:0;"> 한글 텍스트 허용 (가격표, 피켓 등 핵심만)</label>
+                            <label style="font-size:0.85rem;cursor:pointer;display:flex;align-items:center;gap:8px;"><input type="checkbox" id="aioLocalSign" checked style="width:18px;height:18px;flex-shrink:0;"> 현지 언어 간판/배경 텍스트 (한국→한글, 중국→중국어, 일본→일본어)</label>
+                            <label style="font-size:0.85rem;cursor:pointer;display:flex;align-items:center;gap:8px;"><input type="checkbox" id="aioKorText" checked style="width:18px;height:18px;flex-shrink:0;"> 핵심 텍스트 허용 (가격표, 피켓, 자막 등)</label>
                             <label style="font-size:0.85rem;cursor:pointer;display:flex;align-items:center;gap:8px;"><input type="checkbox" id="aioRealPerson" checked style="width:18px;height:18px;flex-shrink:0;"> 실존 인물 닮은 캐릭터 허용</label>
                             <label style="font-size:0.85rem;cursor:pointer;display:flex;align-items:center;gap:8px;"><input type="checkbox" id="aioBrandLogo" style="width:18px;height:18px;flex-shrink:0;"> 특정 브랜드 로고 포함</label>
                             <label style="font-size:0.85rem;cursor:pointer;display:flex;align-items:center;gap:8px;"><input type="checkbox" id="aioSensitive" style="width:18px;height:18px;flex-shrink:0;"> 민감/폭력 장면 허용</label>
@@ -3995,7 +3996,6 @@
                             <label style="font-size:0.85rem;cursor:pointer;display:flex;align-items:center;gap:8px;"><input type="checkbox" id="aioGrokVideo" checked style="width:18px;height:18px;flex-shrink:0;"> 도입부 영상 생성 (Grok image-to-video)</label>
                             <label style="font-size:0.85rem;cursor:pointer;display:flex;align-items:center;gap:8px;"><input type="checkbox" id="aioClaudeDesign" checked style="width:18px;height:18px;flex-shrink:0;"> 클로드디자인 HTML + 녹화</label>
                             <label style="font-size:0.85rem;cursor:pointer;display:flex;align-items:center;gap:8px;"><input type="checkbox" id="aioBlank" checked style="width:18px;height:18px;flex-shrink:0;"> 빈화면 자동 생성 (real + claude_design)</label>
-                            <label style="font-size:0.85rem;cursor:pointer;display:flex;align-items:center;gap:8px;"><input type="checkbox" id="aioThumb" checked style="width:18px;height:18px;flex-shrink:0;"> 썸네일 프롬프트 생성 (3개)</label>
                             <label style="font-size:0.85rem;cursor:pointer;display:flex;align-items:center;gap:8px;"><input type="checkbox" id="aioZip" checked style="width:18px;height:18px;flex-shrink:0;"> ZIP 패키징</label>
                         </div>
                     </div>
@@ -32074,10 +32074,11 @@ ${commentText.slice(0, 12000)}`;
         if (!script) { alert('대본을 입력해주세요.'); return; }
         if (script.indexOf('--- 도입부 ---') === -1) { alert('"--- 도입부 ---" 표시가 없습니다.\n도입부 끝에 넣어주세요.'); return; }
 
-        var korText = _aioChk('aioKorText'), realPerson = _aioChk('aioRealPerson');
+        var localSign = _aioChk('aioLocalSign'), korText = _aioChk('aioKorText');
+        var realPerson = _aioChk('aioRealPerson');
         var brandLogo = _aioChk('aioBrandLogo'), sensitive = _aioChk('aioSensitive');
         var grok = _aioChk('aioGrokVideo'), cd = _aioChk('aioClaudeDesign');
-        var blank = _aioChk('aioBlank'), thumb = _aioChk('aioThumb'), zip = _aioChk('aioZip');
+        var blank = _aioChk('aioBlank'), zip = _aioChk('aioZip');
         var res = _aioGetOpt('aioRes'), parallel = _aioGetOpt('aioParallel');
         var recLen = _aioGetOpt('aioRecLen'), realRatio = _aioGetOpt('aioReal');
         var cdRatio = _aioGetOpt('aioCd'), groupSize = _aioGetOpt('aioGroup') || '4';
@@ -32115,11 +32116,13 @@ ${commentText.slice(0, 12000)}`;
         p += '□ 감정 톤: 자신감/분노/절망/긴장/위협?\n';
         p += '□ 조명: 밝음/어두움/새벽/밤/형광등?\n';
         p += '□ 핵심 키워드: 나레이션에서 반드시 시각화해야 할 단어는?\n';
-        p += '□ 핵심 텍스트: 한글 텍스트가 필요한 장면인가? → ' + (korText ? '허용' : '금지') + '\n';
+        p += '□ 간판/배경 텍스트: 이 장면의 국가에 맞는 언어로 간판 표현 → ' + (localSign ? '허용 (한국→한글, 중국→중국어, 일본→일본어, 미국→영어)' : '금지') + '\n';
+        p += '□ 핵심 텍스트: 가격표/피켓/자막 등 핵심 텍스트가 필요한가? → ' + (korText ? '허용' : '금지') + '\n';
         p += '□ 모르는 것: 차종, 장소, 인물 외모 등 모르면 웹검색. 추측 금지.\n\n';
 
         p += '### 옵션 설정\n';
-        p += '- 한글 텍스트: ' + (korText ? '허용 (핵심 장면만)' : '금지') + '\n';
+        p += '- 현지 언어 간판: ' + (localSign ? '허용 (국가별 자동)' : '금지') + '\n';
+        p += '- 핵심 텍스트: ' + (korText ? '허용 (가격표, 피켓 등)' : '금지') + '\n';
         p += '- 실존 인물: ' + (realPerson ? '허용' : '금지') + '\n';
         p += '- 브랜드 로고: ' + (brandLogo ? '허용' : '금지') + '\n';
         p += '- 민감 장면: ' + (sensitive ? '허용' : '금지') + '\n';
@@ -32164,8 +32167,7 @@ ${commentText.slice(0, 12000)}`;
             p += '5. HTML 녹화: Playwright ' + recLen + '초 WebM\n';
         }
         if (grok) p += '6. 도입부 영상: grok-imagine/image-to-video, isIntro:true만, 720p 6초\n';
-        if (thumb) p += '7. 썸네일 프롬프트 3개: 초현실 포토리얼, 하단 30% 검정 그라데이션, 블렌딩, 핵심 주체 포함\n';
-        if (zip) p += '8. ZIP 패키징: scene_*.png + html/*.html + videos/*.webm → 폴더 열기\n';
+        if (zip) p += '7. ZIP 패키징: scene_*.png + html/*.html + videos/*.webm → 폴더 열기\n';
 
         p += '\n## 안전 규칙\n';
         p += '- scene_None.png 발생 시 즉시 중단\n- 실패 시 URL 로그 저장\n- 다운로드 3회 재시도\n- JSON 완성 시 클립보드 복사 필수\n\n';
