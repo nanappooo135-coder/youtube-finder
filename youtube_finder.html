@@ -2099,22 +2099,11 @@
                         <textarea id="aioStylePrompt" rows="4" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.85rem;resize:vertical;font-family:inherit;line-height:1.5;">semi-realistic 2D editorial illustration style, fully illustrated and hand-drawn, NOT rendered, clean but human linework with slight imperfections, flat color fills with gentle tonal variation, round white stickman-style head, two small dot or oval eyes, minimal nose, simple mouth line, thin simplified limbs, natural human proportions, grounded and believable documentary-like atmosphere.</textarea>
                     </div>
 
-                    <!-- 도입부 장면 입력 -->
+                    <!-- 대본 입력 (하나로 통합) -->
                     <div class="input-group">
-                        <label>🎯 도입부 장면 <span style="color:#888;font-weight:400;">(isIntro:true, type:ai, duration:6)</span></label>
-                        <textarea id="aioIntroScenes" rows="6" placeholder="장면 1: 차를 팔면 팔수록 망해가는 회사가 있습니다.&#10;장면 2: 근데 이 회사, 전 세계에서 전기차를 제일 많이 파는 1위 기업이에요.&#10;..." style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;resize:vertical;font-family:inherit;line-height:1.6;"></textarea>
-                    </div>
-
-                    <!-- 본문 장면 입력 -->
-                    <div class="input-group">
-                        <label>📝 본문 장면 <span style="color:#888;font-weight:400;">(isIntro:false)</span></label>
-                        <textarea id="aioBodyScenes" rows="10" placeholder="장면 10: 문을 닫은 건 첸청 그룹이라는 회사입니다...&#10;장면 11: 그건 딜러가 한 일이지 본사 책임은 아니라고요...&#10;..." style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;resize:vertical;font-family:inherit;line-height:1.6;"></textarea>
-                    </div>
-
-                    <!-- 대본 전문 입력 -->
-                    <div class="input-group">
-                        <label>📄 대본 전문 <span style="color:#888;font-weight:400;">(맥락 분석용 — 이미지 프롬프트 품질에 직접 영향)</span></label>
-                        <textarea id="aioFullScript" rows="8" placeholder="대본 전체를 붙여넣으세요.&#10;Claude가 인종/국가/시대/인물/차종/소품 등을 파악해서 이미지 프롬프트에 반영합니다." style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;resize:vertical;font-family:inherit;line-height:1.6;"></textarea>
+                        <label>📄 대본 전문 <span style="color:#888;font-weight:400;">(도입부 끝에 <code>--- 도입부 ---</code> 표시만 넣으세요)</span></label>
+                        <textarea id="aioFullScript" rows="16" placeholder="새벽 세 시, 아버지가 숨을 거뒀습니다... 도대체 무슨 일이 벌어지고 있는 걸까요?&#10;&#10;--- 도입부 ---&#10;&#10;먼저 이 시장이 수십 년간 어떻게 돌아갔는지를 알아야 하거든요...&#10;&#10;병원들은 이 관성을 정교한 수익 구조로 만들었습니다...&#10;&#10;(줄바꿈 공백 = 장면 구분)" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;resize:vertical;font-family:inherit;line-height:1.6;"></textarea>
+                        <p style="font-size:0.78rem;color:#888;margin-top:4px;">💡 줄바꿈 공백으로 장면 구분 / <code>--- 도입부 ---</code> 위는 도입부, 아래는 본문 / Claude가 자동으로 장면 번호 + intro/body 분류</p>
                     </div>
 
                     <!-- 원스텝 버튼 -->
@@ -6571,8 +6560,6 @@ Example format:
     function aioGenOneStepPrompt() {
         const channel = aioGetOpt('aioChannel');
         const style = document.getElementById('aioStylePrompt').value.trim();
-        const intro = document.getElementById('aioIntroScenes').value.trim();
-        const body = document.getElementById('aioBodyScenes').value.trim();
         const script = document.getElementById('aioFullScript').value.trim();
         const korText = aioGetCheck('aioKorText');
         const realPerson = aioGetCheck('aioRealPerson');
@@ -6589,12 +6576,15 @@ Example format:
         const thumb = aioGetCheck('aioThumb');
         const zip = aioGetCheck('aioZip');
 
-        if (!intro && !body) { alert('장면을 입력해주세요.'); return; }
-        if (!script) { alert('대본 전문을 입력해주세요. 맥락 분석에 필수입니다.'); return; }
+        if (!script) { alert('대본을 입력해주세요.'); return; }
+        if (!script.includes('--- 도입부 ---')) { alert('"--- 도입부 ---" 표시가 없습니다. 도입부 끝에 넣어주세요.'); return; }
 
-        const introCount = intro ? intro.split('\n').filter(l=>l.trim()).length : 0;
-        const bodyCount = body ? body.split('\n').filter(l=>l.trim()).length : 0;
-        const total = introCount + bodyCount;
+        var parts = script.split('--- 도입부 ---');
+        var introText = parts[0].trim();
+        var bodyText = parts[1].trim();
+        var introScenes = introText.split(/\n\s*\n/).filter(function(s){return s.trim();});
+        var bodyScenes = bodyText.split(/\n\s*\n/).filter(function(s){return s.trim();});
+        var total = introScenes.length + bodyScenes.length;
 
         let p = '당신은 유튜브 영상 자산 생성 전문가입니다. 아래 지시를 순서대로 실행하세요.\n\n';
 
@@ -6685,20 +6675,16 @@ Example format:
         p += '- JSON 완성 시 클립보드 복사 필수\n\n';
 
         // === 대본 + 장면 ===
-        p += '# ===== 대본 전문 =====\n\n' + script + '\n\n';
+        p += '# ===== 대본 전문 =====\n\n' + introText + '\n\n' + bodyText + '\n\n';
 
-        p += '# ===== 입력 장면 ' + total + '개 =====\n\n';
-        if (intro) {
-            intro.split('\n').filter(l=>l.trim()).forEach((line, i) => {
-                p += '=== INPUT SCENE ' + (i+1) + ' of ' + total + ' [🎯 INTRO] ===\n' + line.trim().replace(/^장면\s*\d+\s*[:：]\s*/,'') + '\n=== END SCENE ' + (i+1) + ' ===\n\n';
-            });
-        }
-        if (body) {
-            body.split('\n').filter(l=>l.trim()).forEach((line, i) => {
-                const num = introCount + i + 1;
-                p += '=== INPUT SCENE ' + num + ' of ' + total + ' [📝 BODY] ===\n' + line.trim().replace(/^장면\s*\d+\s*[:：]\s*/,'') + '\n=== END SCENE ' + num + ' ===\n\n';
-            });
-        }
+        p += '# ===== 입력 장면 ' + total + '개 (도입부 ' + introScenes.length + '개 + 본문 ' + bodyScenes.length + '개) =====\n\n';
+        introScenes.forEach(function(scene, i) {
+            p += '=== INPUT SCENE ' + (i+1) + ' of ' + total + ' [🎯 INTRO] ===\n' + scene.trim() + '\n=== END SCENE ' + (i+1) + ' ===\n\n';
+        });
+        bodyScenes.forEach(function(scene, i) {
+            var num = introScenes.length + i + 1;
+            p += '=== INPUT SCENE ' + num + ' of ' + total + ' [📝 BODY] ===\n' + scene.trim() + '\n=== END SCENE ' + num + ' ===\n\n';
+        });
 
         navigator.clipboard.writeText(p).then(() => {
             alert('Claude용 올인원 프롬프트가 클립보드에 복사되었습니다!\n\n총 ' + total + '개 장면\n\nClaude에 붙여넣으면:\n1. 맥락 분석 → JSON 생성 → 1장 테스트\n2. 작가 OK 후 → 전체 자산 자동 생성');
