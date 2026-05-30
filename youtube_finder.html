@@ -2032,11 +2032,12 @@
                         </div>
                     </div>
 
+                    <!-- 🖼️ AI 이미지 설정 -->
                     <div class="input-group">
-                        <label>📐 설정값</label>
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px;">
+                        <label>🖼️ AI 이미지 생성 설정</label>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:6px;padding:12px;background:#f9f9f9;border-radius:10px;">
                             <div>
-                                <span style="font-size:0.8rem;color:#888;">해상도</span>
+                                <span style="font-size:0.8rem;color:#555;font-weight:600;">이미지 해상도</span>
                                 <div class="tb-options" id="aioRes">
                                     <button class="tb-opt" data-val="1K" onclick="toggleTbOpt(this,'aioRes',1)"><div class="opt-title">1K</div></button>
                                     <button class="tb-opt selected" data-val="2K" onclick="toggleTbOpt(this,'aioRes',1)"><div class="opt-title">2K</div></button>
@@ -2044,31 +2045,45 @@
                                 </div>
                             </div>
                             <div>
-                                <span style="font-size:0.8rem;color:#888;">동시 생성</span>
+                                <span style="font-size:0.8rem;color:#555;font-weight:600;">동시 생성 수</span>
                                 <div class="tb-options" id="aioParallel">
-                                    <button class="tb-opt" data-val="3" onclick="toggleTbOpt(this,'aioParallel',1)"><div class="opt-title">3</div></button>
-                                    <button class="tb-opt selected" data-val="5" onclick="toggleTbOpt(this,'aioParallel',1)"><div class="opt-title">5</div></button>
-                                    <button class="tb-opt" data-val="8" onclick="toggleTbOpt(this,'aioParallel',1)"><div class="opt-title">8</div></button>
+                                    <button class="tb-opt" data-val="3" onclick="toggleTbOpt(this,'aioParallel',1)"><div class="opt-title">3개</div></button>
+                                    <button class="tb-opt selected" data-val="5" onclick="toggleTbOpt(this,'aioParallel',1)"><div class="opt-title">5개</div></button>
+                                    <button class="tb-opt" data-val="8" onclick="toggleTbOpt(this,'aioParallel',1)"><div class="opt-title">8개</div></button>
                                 </div>
                             </div>
-                            <div>
-                                <span style="font-size:0.8rem;color:#888;">클로드디자인 녹화 길이</span>
-                                <div class="tb-options" id="aioRecLen">
-                                    <button class="tb-opt" data-val="10" onclick="toggleTbOpt(this,'aioRecLen',1)"><div class="opt-title">10초</div></button>
-                                    <button class="tb-opt selected" data-val="15" onclick="toggleTbOpt(this,'aioRecLen',1)"><div class="opt-title">15초</div></button>
-                                    <button class="tb-opt" data-val="20" onclick="toggleTbOpt(this,'aioRecLen',1)"><div class="opt-title">20초</div></button>
-                                </div>
-                            </div>
-                            <div>
-                                <span style="font-size:0.8rem;color:#888;">컬러 톤</span>
+                            <div style="grid-column:span 2;">
+                                <span style="font-size:0.8rem;color:#555;font-weight:600;">이미지 컬러 톤</span>
                                 <div class="tb-options" id="aioTone">
                                     <button class="tb-opt selected" data-val="warm" onclick="toggleTbOpt(this,'aioTone',1)"><div class="opt-title">따뜻한 어스톤</div></button>
                                     <button class="tb-opt" data-val="cool" onclick="toggleTbOpt(this,'aioTone',1)"><div class="opt-title">차가운 블루</div></button>
                                     <button class="tb-opt" data-val="dark" onclick="toggleTbOpt(this,'aioTone',1)"><div class="opt-title">어두운 무디</div></button>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- 🎨 클로드디자인 설정 -->
+                    <div class="input-group">
+                        <label>🎨 클로드디자인 설정 <span style="color:#888;font-weight:400;">(인포그래픽/차트 HTML)</span></label>
+                        <div style="display:grid;grid-template-columns:1fr;gap:12px;margin-top:6px;padding:12px;background:#f5f0ff;border-radius:10px;">
                             <div>
-                                <span style="font-size:0.8rem;color:#888;">실사(real) 비율</span>
+                                <span style="font-size:0.8rem;color:#555;font-weight:600;">녹화 길이 (HTML → WebM 영상)</span>
+                                <div class="tb-options" id="aioRecLen">
+                                    <button class="tb-opt" data-val="10" onclick="toggleTbOpt(this,'aioRecLen',1)"><div class="opt-title">10초</div></button>
+                                    <button class="tb-opt selected" data-val="15" onclick="toggleTbOpt(this,'aioRecLen',1)"><div class="opt-title">15초</div></button>
+                                    <button class="tb-opt" data-val="20" onclick="toggleTbOpt(this,'aioRecLen',1)"><div class="opt-title">20초</div></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 📊 장면 비율 설정 -->
+                    <div class="input-group">
+                        <label>📊 장면 타입 비율 <span style="color:#888;font-weight:400;">(전체 장면 중 각 타입이 차지하는 비율)</span></label>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:6px;padding:12px;background:#f0f7f0;border-radius:10px;">
+                            <div>
+                                <span style="font-size:0.8rem;color:#555;font-weight:600;">실사(real) 비율 <span style="color:#aaa;font-weight:400;">— 실제 사진/영상 자리</span></span>
                                 <div class="tb-options" id="aioReal">
                                     <button class="tb-opt selected" data-val="7-12" onclick="toggleTbOpt(this,'aioReal',1)"><div class="opt-title">7~12%</div></button>
                                     <button class="tb-opt" data-val="10-15" onclick="toggleTbOpt(this,'aioReal',1)"><div class="opt-title">10~15%</div></button>
@@ -2076,7 +2091,7 @@
                                 </div>
                             </div>
                             <div>
-                                <span style="font-size:0.8rem;color:#888;">클로드디자인 비율</span>
+                                <span style="font-size:0.8rem;color:#555;font-weight:600;">클로드디자인 비율 <span style="color:#aaa;font-weight:400;">— 인포그래픽/차트</span></span>
                                 <div class="tb-options" id="aioCd">
                                     <button class="tb-opt selected" data-val="7-10" onclick="toggleTbOpt(this,'aioCd',1)"><div class="opt-title">7~10%</div></button>
                                     <button class="tb-opt" data-val="10-15" onclick="toggleTbOpt(this,'aioCd',1)"><div class="opt-title">10~15%</div></button>
