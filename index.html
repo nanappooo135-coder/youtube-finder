@@ -32233,7 +32233,7 @@ ${commentText.slice(0, 12000)}`;
         p += '2. AI 이미지 전체 생성 (기존 이미지 자동 스킵)\n';
         if (blank) p += '3. 빈화면: real + claude_design = 검정 1920x1080 scene_XX.png (blank 접두사 금지)\n';
         if (cd) {
-            p += '4. 클로드디자인 HTML (1920x1080, #F5EDE0, Pretendard, 스케일링JS, 애니메이션, pulse+glow, 글자 크게, 빈공간 최소)\n';
+            p += '4. 클로드디자인 HTML (1920x1080, #F5EDE0, Pretendard, 스케일링JS, 애니메이션 느리게: duration 0.8~1.2s delay 간격 0.8~1.5s, pulse+glow, 글자 크게, 빈공간 최소)\n';
             p += '5. HTML 녹화: Playwright ' + recLen + '초 WebM\n';
         }
         if (grok) p += '6. 도입부 영상: grok-imagine/image-to-video, isIntro:true만, 720p 6초\n';
