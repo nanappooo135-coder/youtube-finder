@@ -32085,8 +32085,24 @@ ${commentText.slice(0, 12000)}`;
 
         var parts = script.split('--- 도입부 ---');
         var introText = parts[0].trim(), bodyText = parts[1].trim();
+        // 도입부: 문단 단위 (1문단=1장면)
         var introScenes = introText.split(/\n\s*\n/).filter(function(s){return s.trim();});
-        var bodyScenes = bodyText.split(/\n\s*\n/).filter(function(s){return s.trim();});
+        // 본문: 문단을 먼저 나누고, 각 문단을 N문장씩 묶어서 장면 분리
+        var bodyParagraphs = bodyText.split(/\n\s*\n/).filter(function(s){return s.trim();});
+        var bodyScenes = [];
+        var gs = parseInt(groupSize) || 4;
+        bodyParagraphs.forEach(function(para) {
+            // 마침표(.) 기준으로 문장 분리 (단, 소수점/약어 등은 유지)
+            var sentences = para.split(/(?<=[.?!])\s+/).filter(function(s){return s.trim();});
+            if (sentences.length <= gs) {
+                bodyScenes.push(para.trim());
+            } else {
+                for (var i = 0; i < sentences.length; i += gs) {
+                    var chunk = sentences.slice(i, i + gs).join(' ');
+                    if (chunk.trim()) bodyScenes.push(chunk.trim());
+                }
+            }
+        });
         var total = introScenes.length + bodyScenes.length;
 
         var p = '';
