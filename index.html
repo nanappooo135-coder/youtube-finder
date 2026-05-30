@@ -4078,11 +4078,24 @@
                         <textarea id="aioStylePrompt" rows="3" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:0.82rem;resize:vertical;font-family:inherit;line-height:1.5;">semi-realistic 2D editorial illustration style, fully illustrated and hand-drawn, NOT rendered, clean but human linework, flat color fills with gentle tonal variation, round white stickman-style head, two small dot eyes, minimal nose, simple mouth line, thin simplified limbs, natural human proportions, grounded documentary-like atmosphere.</textarea>
                     </div>
 
-                    <!-- 대본 입력 -->
+                    <!-- 도입부 입력 -->
                     <div class="input-group">
-                        <label>📄 대본 전문 <span style="color:#888;font-weight:400;">(<code style="background:#fff3cd;padding:2px 6px;border-radius:4px;">--- 도입부 ---</code> 표시로 도입부/본문 구분)</span></label>
-                        <textarea id="aioFullScript" rows="14" placeholder="새벽 세 시, 아버지가 숨을 거뒀습니다... 도대체 무슨 일이 벌어지고 있는 걸까요?&#10;&#10;--- 도입부 ---&#10;&#10;먼저 이 시장이 수십 년간 어떻게 돌아갔는지를 알아야 하거든요...&#10;&#10;병원들은 이 관성을 정교한 수익 구조로 만들었습니다..." style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;resize:vertical;font-family:inherit;line-height:1.6;"></textarea>
-                        <p style="font-size:0.75rem;color:#888;margin-top:4px;">💡 줄바꿈 공백 = 장면 구분 | <code>--- 도입부 ---</code> 위 = 도입부, 아래 = 본문 | Claude가 자동 장면번호 + 분류</p>
+                        <label>🎯 도입부 <span style="color:#888;font-weight:400;">(1문장 = 1장면, isIntro:true, duration:6)</span></label>
+                        <textarea id="aioIntro" rows="6" placeholder="차를 팔면 팔수록 망해가는 회사가 있습니다.&#10;근데 이 회사, 전 세계에서 전기차를 제일 많이 파는 1위 기업이에요.&#10;작년에 전기차를 427만 대나 팔아서...&#10;&#10;(한 줄에 한 문장씩)" style="width:100%;padding:12px;border:2px solid #dc3545;border-radius:10px;font-size:0.9rem;resize:vertical;font-family:inherit;line-height:1.6;"></textarea>
+                        <p style="font-size:0.75rem;color:#888;margin-top:4px;">💡 한 줄 = 1장면. 빈 줄은 무시됨.</p>
+                    </div>
+
+                    <!-- 본문 입력 -->
+                    <div class="input-group">
+                        <label>📝 본문 <span style="color:#888;font-weight:400;">(위 묶음 수 설정에 따라 N문장씩 1장면)</span></label>
+                        <textarea id="aioBody" rows="12" placeholder="먼저 이 시장이 수십 년간 어떻게 돌아갔는지를 알아야 하거든요. 대한민국에서 사람은 대부분 병원에서 숨을 거둡니다. 통계청 기준으로 전체 사망의 75% 이상이 의료기관에서 발생해요.&#10;&#10;병원들은 이 관성을 정교한 수익 구조로 만들었습니다. 빈소 대여비, 관, 수의, 꽃 장식...&#10;&#10;(마침표 기준으로 문장 분리 → N문장씩 묶어서 장면)" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;resize:vertical;font-family:inherit;line-height:1.6;"></textarea>
+                        <p style="font-size:0.75rem;color:#888;margin-top:4px;">💡 마침표 기준 문장 분리 → 묶음 수(N문장)씩 1장면으로 합침</p>
+                    </div>
+
+                    <!-- 대본 전문 (맥락 분석용) -->
+                    <div class="input-group">
+                        <label>📄 대본 전문 <span style="color:#888;font-weight:400;">(맥락 분석용 — 이미지 품질에 직접 영향)</span></label>
+                        <textarea id="aioFullScript" rows="6" placeholder="대본 전체를 붙여넣으세요. Claude가 인종/국가/시대/인물/차종/소품을 파악해서 이미지 프롬프트에 반영합니다." style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;resize:vertical;font-family:inherit;line-height:1.6;"></textarea>
                     </div>
 
                     <!-- 올인원 버튼 -->
@@ -32070,9 +32083,11 @@ ${commentText.slice(0, 12000)}`;
 
     function _aioGenPrompt() {
         var style = document.getElementById('aioStylePrompt').value.trim();
+        var introRaw = document.getElementById('aioIntro').value.trim();
+        var bodyRaw = document.getElementById('aioBody').value.trim();
         var script = document.getElementById('aioFullScript').value.trim();
-        if (!script) { alert('대본을 입력해주세요.'); return; }
-        if (script.indexOf('--- 도입부 ---') === -1) { alert('"--- 도입부 ---" 표시가 없습니다.\n도입부 끝에 넣어주세요.'); return; }
+        if (!introRaw && !bodyRaw) { alert('도입부 또는 본문을 입력해주세요.'); return; }
+        if (!script) { alert('대본 전문을 입력해주세요. 맥락 분석에 필수입니다.'); return; }
 
         var localSign = _aioChk('aioLocalSign'), korText = _aioChk('aioKorText');
         var realPerson = _aioChk('aioRealPerson');
@@ -32083,26 +32098,18 @@ ${commentText.slice(0, 12000)}`;
         var recLen = _aioGetOpt('aioRecLen'), realRatio = _aioGetOpt('aioReal');
         var cdRatio = _aioGetOpt('aioCd'), groupSize = _aioGetOpt('aioGroup') || '4';
 
-        var parts = script.split('--- 도입부 ---');
-        var introText = parts[0].trim(), bodyText = parts[1].trim();
-        // 도입부: 문단 단위 (1문단=1장면)
-        var introScenes = introText.split(/\n\s*\n/).filter(function(s){return s.trim();});
-        // 본문: 문단을 먼저 나누고, 각 문단을 N문장씩 묶어서 장면 분리
-        var bodyParagraphs = bodyText.split(/\n\s*\n/).filter(function(s){return s.trim();});
-        var bodyScenes = [];
+        // 도입부: 한 줄 = 1장면 (빈 줄 무시)
+        var introScenes = introRaw ? introRaw.split('\n').filter(function(s){return s.trim();}) : [];
+        // 본문: 마침표 기준 문장 분리 → N문장씩 묶기
         var gs = parseInt(groupSize) || 4;
-        bodyParagraphs.forEach(function(para) {
-            // 마침표(.) 기준으로 문장 분리 (단, 소수점/약어 등은 유지)
-            var sentences = para.split(/(?<=[.?!])\s+/).filter(function(s){return s.trim();});
-            if (sentences.length <= gs) {
-                bodyScenes.push(para.trim());
-            } else {
-                for (var i = 0; i < sentences.length; i += gs) {
-                    var chunk = sentences.slice(i, i + gs).join(' ');
-                    if (chunk.trim()) bodyScenes.push(chunk.trim());
-                }
+        var bodyScenes = [];
+        if (bodyRaw) {
+            var allSentences = bodyRaw.replace(/\n/g, ' ').split(/(?<=[.?!])\s+/).filter(function(s){return s.trim();});
+            for (var i = 0; i < allSentences.length; i += gs) {
+                var chunk = allSentences.slice(i, i + gs).join(' ');
+                if (chunk.trim()) bodyScenes.push(chunk.trim());
             }
-        });
+        }
         var total = introScenes.length + bodyScenes.length;
 
         var p = '';
@@ -32188,7 +32195,7 @@ ${commentText.slice(0, 12000)}`;
         p += '\n## 안전 규칙\n';
         p += '- scene_None.png 발생 시 즉시 중단\n- 실패 시 URL 로그 저장\n- 다운로드 3회 재시도\n- JSON 완성 시 클립보드 복사 필수\n\n';
 
-        p += '# ===== 대본 전문 =====\n\n' + introText + '\n\n' + bodyText + '\n\n';
+        p += '# ===== 대본 전문 =====\n\n' + script + '\n\n';
 
         p += '# ===== 입력 장면 ' + total + '개 (도입부 ' + introScenes.length + '개 + 본문 ' + bodyScenes.length + '개) =====\n\n';
         introScenes.forEach(function(scene, i) {
