@@ -32198,7 +32198,10 @@ ${commentText.slice(0, 12000)}`;
         p += '- ❌ 금지: 설명 문장, 비교 표, 수치 나열 → 이런 건 claude_design으로 분류\n';
         p += '- 간판/이름 → 해당 국가 언어 (일본 간판→일본어, 프랑스 명패→프랑스어)\n';
         p += '- 설명/제목 → 한국어 (시청자가 한국인이므로)\n';
-        p += '- 장면의 핵심이 "비교/설명/수치"면 → ai가 아니라 claude_design으로 분류할 것\n\n';
+        p += '- 장면의 핵심이 "비교/설명/수치"면 → ai가 아니라 claude_design으로 분류할 것\n';
+        p += '- ❌ 이미지 상단/하단에 제목/헤더 텍스트 오버레이 금지. 자막처럼 깔기 금지\n';
+        p += '- ✅ 텍스트는 장면 속 소품에 자연스럽게: 신문 헤드라인, 간판, 배 이름, 서류/도면, TV/모니터 화면\n';
+        p += '- 텍스트가 장면의 일부로 녹아들어야 함. 그래픽 오버레이처럼 보이면 안 됨\n\n';
 
         p += '### grok_prompt 템플릿 (모든 장면에 동일)\n';
         p += '"STRICT RULES: maintain the EXACT original 2D illustrated style from the input image. NO photorealism, NO live-action drift, NO style change, NO 3D, NO anime conversion. NO scene transitions, NO location change, NO new background, NO cuts to other shots. Stay in the SAME scene from the input image throughout the entire clip. ABSOLUTELY NO NEW HUMAN FACES anywhere in the video. NO new characters appearing, NO portraits emerging, NO people materializing in empty areas. NO exaggerated actions, NO dramatic gestures, NO talking, NO lip sync. ONLY subtle micro-movements: gentle breathing, slight head tilt, soft blink, light hair sway, subtle camera push-in or slow pan. Keep the composition 95% identical to the input image. The total number of human figures MUST stay constant from frame 1 to last frame."\n';
