@@ -2243,6 +2243,7 @@
                 <button class="process-btn inactive" id="procBtn_json" onclick="switchProcess('json')">JSON</button>
                 <button class="process-btn inactive" id="procBtn_sellpot" onclick="switchProcess('sellpot')">셀팟 기본</button>
                 <button class="process-btn inactive" id="procBtn_tts" onclick="switchProcess('tts')">TTS변환</button>
+                <button class="process-btn inactive" id="procBtn_allinone" onclick="switchProcess('allinone')" style="background:#6f42c1;border-color:#6f42c1;">🎬 올인원</button>
             </div>
             <!-- 그룹 3: 도구·리서치 -->
             <div class="proc-group" data-label="도구·리서치">
@@ -3966,6 +3967,163 @@
                 </div>
             </div>
         </div><!-- /process-tts -->
+
+        <!-- ===== 프로세스: 올인원 ===== -->
+        <div id="process-allinone" style="display:none;">
+            <div class="section">
+                <div class="section-title">🎬 영상 자산 올인원</div>
+                <div class="section-content">
+                    <p style="font-size:0.85rem;color:#888;margin-bottom:16px;">
+                        대본 → 맥락분석 → JSON 생성 → 1장 테스트 → 작가 OK → 이미지/클로드디자인/빈화면 → ZIP 패키징까지 한번에.
+                    </p>
+
+                    <!-- 콘텐츠 옵션 -->
+                    <div class="input-group">
+                        <label>📝 콘텐츠 옵션</label>
+                        <div style="display:flex;flex-direction:column;gap:6px;margin-top:4px;">
+                            <label style="font-size:0.85rem;cursor:pointer;display:flex;align-items:center;gap:8px;"><input type="checkbox" id="aioKorText" checked style="width:18px;height:18px;flex-shrink:0;"> 한글 텍스트 허용 (가격표, 피켓 등 핵심만)</label>
+                            <label style="font-size:0.85rem;cursor:pointer;display:flex;align-items:center;gap:8px;"><input type="checkbox" id="aioRealPerson" checked style="width:18px;height:18px;flex-shrink:0;"> 실존 인물 닮은 캐릭터 허용</label>
+                            <label style="font-size:0.85rem;cursor:pointer;display:flex;align-items:center;gap:8px;"><input type="checkbox" id="aioBrandLogo" style="width:18px;height:18px;flex-shrink:0;"> 특정 브랜드 로고 포함</label>
+                            <label style="font-size:0.85rem;cursor:pointer;display:flex;align-items:center;gap:8px;"><input type="checkbox" id="aioSensitive" style="width:18px;height:18px;flex-shrink:0;"> 민감/폭력 장면 허용</label>
+                        </div>
+                    </div>
+
+                    <!-- 출력물 옵션 -->
+                    <div class="input-group">
+                        <label>🖼️ 출력물 옵션</label>
+                        <div style="display:flex;flex-direction:column;gap:6px;margin-top:4px;">
+                            <label style="font-size:0.85rem;cursor:pointer;display:flex;align-items:center;gap:8px;"><input type="checkbox" id="aioGrokVideo" checked style="width:18px;height:18px;flex-shrink:0;"> 도입부 영상 생성 (Grok image-to-video)</label>
+                            <label style="font-size:0.85rem;cursor:pointer;display:flex;align-items:center;gap:8px;"><input type="checkbox" id="aioClaudeDesign" checked style="width:18px;height:18px;flex-shrink:0;"> 클로드디자인 HTML + 녹화</label>
+                            <label style="font-size:0.85rem;cursor:pointer;display:flex;align-items:center;gap:8px;"><input type="checkbox" id="aioBlank" checked style="width:18px;height:18px;flex-shrink:0;"> 빈화면 자동 생성 (real + claude_design)</label>
+                            <label style="font-size:0.85rem;cursor:pointer;display:flex;align-items:center;gap:8px;"><input type="checkbox" id="aioThumb" checked style="width:18px;height:18px;flex-shrink:0;"> 썸네일 프롬프트 생성 (3개)</label>
+                            <label style="font-size:0.85rem;cursor:pointer;display:flex;align-items:center;gap:8px;"><input type="checkbox" id="aioZip" checked style="width:18px;height:18px;flex-shrink:0;"> ZIP 패키징</label>
+                        </div>
+                    </div>
+
+                    <!-- AI 이미지 설정 -->
+                    <div class="input-group">
+                        <label>🖼️ AI 이미지 생성 설정</label>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:6px;padding:12px;background:#f9f9f9;border-radius:10px;">
+                            <div>
+                                <span style="font-size:0.8rem;color:#555;font-weight:600;">이미지 해상도</span>
+                                <div style="display:flex;gap:6px;margin-top:4px;">
+                                    <button class="search-btn aio-opt" data-group="aioRes" data-val="1K" onclick="_aioSet(this)" style="padding:6px 14px;font-size:0.85rem;background:#e9ecef;border-color:#ced4da;color:#495057;">1K</button>
+                                    <button class="search-btn aio-opt active-n" data-group="aioRes" data-val="2K" onclick="_aioSet(this)" style="padding:6px 14px;font-size:0.85rem;background:#6f42c1;border-color:#6f42c1;">2K</button>
+                                    <button class="search-btn aio-opt" data-group="aioRes" data-val="4K" onclick="_aioSet(this)" style="padding:6px 14px;font-size:0.85rem;background:#e9ecef;border-color:#ced4da;color:#495057;">4K</button>
+                                </div>
+                            </div>
+                            <div>
+                                <span style="font-size:0.8rem;color:#555;font-weight:600;">동시 생성 수</span>
+                                <div style="display:flex;gap:6px;margin-top:4px;">
+                                    <button class="search-btn aio-opt" data-group="aioParallel" data-val="3" onclick="_aioSet(this)" style="padding:6px 14px;font-size:0.85rem;background:#e9ecef;border-color:#ced4da;color:#495057;">3개</button>
+                                    <button class="search-btn aio-opt active-n" data-group="aioParallel" data-val="5" onclick="_aioSet(this)" style="padding:6px 14px;font-size:0.85rem;background:#6f42c1;border-color:#6f42c1;">5개</button>
+                                    <button class="search-btn aio-opt" data-group="aioParallel" data-val="8" onclick="_aioSet(this)" style="padding:6px 14px;font-size:0.85rem;background:#e9ecef;border-color:#ced4da;color:#495057;">8개</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 클로드디자인 설정 -->
+                    <div class="input-group">
+                        <label>🎨 클로드디자인 설정 <span style="color:#888;font-weight:400;">(인포그래픽/차트 HTML)</span></label>
+                        <div style="padding:12px;background:#f5f0ff;border-radius:10px;margin-top:6px;">
+                            <span style="font-size:0.8rem;color:#555;font-weight:600;">녹화 길이 (HTML → WebM 영상)</span>
+                            <div style="display:flex;gap:6px;margin-top:4px;">
+                                <button class="search-btn aio-opt" data-group="aioRecLen" data-val="10" onclick="_aioSet(this)" style="padding:6px 14px;font-size:0.85rem;background:#e9ecef;border-color:#ced4da;color:#495057;">10초</button>
+                                <button class="search-btn aio-opt active-n" data-group="aioRecLen" data-val="15" onclick="_aioSet(this)" style="padding:6px 14px;font-size:0.85rem;background:#6f42c1;border-color:#6f42c1;">15초</button>
+                                <button class="search-btn aio-opt" data-group="aioRecLen" data-val="20" onclick="_aioSet(this)" style="padding:6px 14px;font-size:0.85rem;background:#e9ecef;border-color:#ced4da;color:#495057;">20초</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 장면 비율 설정 -->
+                    <div class="input-group">
+                        <label>📊 장면 타입 비율 <span style="color:#888;font-weight:400;">(전체 장면 중 각 타입 비율)</span></label>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:6px;padding:12px;background:#f0f7f0;border-radius:10px;">
+                            <div>
+                                <span style="font-size:0.8rem;color:#555;font-weight:600;">실사(real) 비율</span>
+                                <div style="display:flex;gap:6px;margin-top:4px;">
+                                    <button class="search-btn aio-opt active-n" data-group="aioReal" data-val="7-12" onclick="_aioSet(this)" style="padding:6px 12px;font-size:0.82rem;background:#6f42c1;border-color:#6f42c1;">7~12%</button>
+                                    <button class="search-btn aio-opt" data-group="aioReal" data-val="10-15" onclick="_aioSet(this)" style="padding:6px 12px;font-size:0.82rem;background:#e9ecef;border-color:#ced4da;color:#495057;">10~15%</button>
+                                    <button class="search-btn aio-opt" data-group="aioReal" data-val="15-20" onclick="_aioSet(this)" style="padding:6px 12px;font-size:0.82rem;background:#e9ecef;border-color:#ced4da;color:#495057;">15~20%</button>
+                                </div>
+                            </div>
+                            <div>
+                                <span style="font-size:0.8rem;color:#555;font-weight:600;">클로드디자인 비율</span>
+                                <div style="display:flex;gap:6px;margin-top:4px;">
+                                    <button class="search-btn aio-opt active-n" data-group="aioCd" data-val="7-10" onclick="_aioSet(this)" style="padding:6px 12px;font-size:0.82rem;background:#6f42c1;border-color:#6f42c1;">7~10%</button>
+                                    <button class="search-btn aio-opt" data-group="aioCd" data-val="10-15" onclick="_aioSet(this)" style="padding:6px 12px;font-size:0.82rem;background:#e9ecef;border-color:#ced4da;color:#495057;">10~15%</button>
+                                    <button class="search-btn aio-opt" data-group="aioCd" data-val="15-20" onclick="_aioSet(this)" style="padding:6px 12px;font-size:0.82rem;background:#e9ecef;border-color:#ced4da;color:#495057;">15~20%</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 본문 묶음 수 -->
+                    <div class="input-group">
+                        <label>📦 본문 묶음 수 <span style="color:#888;font-weight:400;">(도입부는 1문단=1장면, 본문만 적용)</span></label>
+                        <div style="display:flex;gap:6px;margin-top:6px;">
+                            <button class="search-btn aio-opt" data-group="aioGroup" data-val="2" onclick="_aioSet(this)" style="padding:8px 16px;font-size:0.9rem;background:#e9ecef;border-color:#ced4da;color:#495057;">2문장</button>
+                            <button class="search-btn aio-opt" data-group="aioGroup" data-val="3" onclick="_aioSet(this)" style="padding:8px 16px;font-size:0.9rem;background:#e9ecef;border-color:#ced4da;color:#495057;">3문장</button>
+                            <button class="search-btn aio-opt active-n" data-group="aioGroup" data-val="4" onclick="_aioSet(this)" style="padding:8px 16px;font-size:0.9rem;background:#6f42c1;border-color:#6f42c1;">4문장</button>
+                            <button class="search-btn aio-opt" data-group="aioGroup" data-val="5" onclick="_aioSet(this)" style="padding:8px 16px;font-size:0.9rem;background:#e9ecef;border-color:#ced4da;color:#495057;">5문장</button>
+                            <button class="search-btn aio-opt" data-group="aioGroup" data-val="6" onclick="_aioSet(this)" style="padding:8px 16px;font-size:0.9rem;background:#e9ecef;border-color:#ced4da;color:#495057;">6문장</button>
+                        </div>
+                        <p style="font-size:0.75rem;color:#888;margin-top:4px;">본문의 문장을 몇 개씩 묶어 1장면으로 만들지 설정. 숫자가 작을수록 장면 수 ↑</p>
+                    </div>
+
+                    <!-- 그림체 프롬프트 -->
+                    <div class="input-group">
+                        <label>🎨 그림체 프롬프트 <span style="color:#888;font-weight:400;">(채널별 기본값, 직접 수정 가능)</span></label>
+                        <textarea id="aioStylePrompt" rows="3" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:0.82rem;resize:vertical;font-family:inherit;line-height:1.5;">semi-realistic 2D editorial illustration style, fully illustrated and hand-drawn, NOT rendered, clean but human linework, flat color fills with gentle tonal variation, round white stickman-style head, two small dot eyes, minimal nose, simple mouth line, thin simplified limbs, natural human proportions, grounded documentary-like atmosphere.</textarea>
+                    </div>
+
+                    <!-- 대본 입력 -->
+                    <div class="input-group">
+                        <label>📄 대본 전문 <span style="color:#888;font-weight:400;">(<code style="background:#fff3cd;padding:2px 6px;border-radius:4px;">--- 도입부 ---</code> 표시로 도입부/본문 구분)</span></label>
+                        <textarea id="aioFullScript" rows="14" placeholder="새벽 세 시, 아버지가 숨을 거뒀습니다... 도대체 무슨 일이 벌어지고 있는 걸까요?&#10;&#10;--- 도입부 ---&#10;&#10;먼저 이 시장이 수십 년간 어떻게 돌아갔는지를 알아야 하거든요...&#10;&#10;병원들은 이 관성을 정교한 수익 구조로 만들었습니다..." style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;resize:vertical;font-family:inherit;line-height:1.6;"></textarea>
+                        <p style="font-size:0.75rem;color:#888;margin-top:4px;">💡 줄바꿈 공백 = 장면 구분 | <code>--- 도입부 ---</code> 위 = 도입부, 아래 = 본문 | Claude가 자동 장면번호 + 분류</p>
+                    </div>
+
+                    <!-- 올인원 버튼 -->
+                    <button class="search-btn" onclick="_aioGenPrompt()" style="background:#6f42c1;border-color:#6f42c1;width:100%;font-size:1.05rem;padding:14px;margin-bottom:8px;">
+                        📋 Claude용 올인원 프롬프트 복사 (JSON → 테스트 → 전체 생성 → ZIP)
+                    </button>
+                    <p style="font-size:0.78rem;color:#888;margin-bottom:16px;text-align:center;">Claude에 붙여넣기 → 맥락분석 → JSON → 1장 테스트 → 작가 OK → 나머지 전부 자동</p>
+
+                    <!-- JSON Import -->
+                    <div class="input-group">
+                        <label>📥 JSON 붙여넣기 <span style="color:#888;font-weight:400;">(Claude에서 받은 결과 import)</span></label>
+                        <textarea id="aioJsonInput" rows="3" placeholder='{"scenes":[{"sceneNo":1,"type":"ai",...},...]}' style="width:100%;padding:10px;border:2px solid #daa520;border-radius:8px;font-size:0.82rem;resize:vertical;font-family:monospace;line-height:1.5;"></textarea>
+                        <button class="search-btn" onclick="_aioImportJson()" style="margin-top:6px;background:#daa520;border-color:#daa520;width:100%;">
+                            📦 JSON Import → 결과 표시
+                        </button>
+                    </div>
+
+                    <!-- 새 컴퓨터 세팅 -->
+                    <details style="margin-top:16px;border:1px solid #e0e0e0;border-radius:10px;padding:12px;">
+                        <summary style="font-weight:700;cursor:pointer;font-size:0.88rem;">⚙️ 새 컴퓨터에서 처음 설정할 때</summary>
+                        <div style="margin-top:10px;font-size:0.8rem;color:#666;line-height:1.8;">
+                            <b>1. Git 클론:</b> <code>git clone https://github.com/nanappooo135-coder/yujeong-economics.git</code><br>
+                            <b>2. Python:</b> <code>pip install playwright && playwright install chromium</code><br>
+                            <b>3. API 키:</b> <code>setx KIE_API_KEY "your-key-here"</code><br>
+                            <b>4. 이미지 생성:</b> <code>python _시스템\scripts\generate_images.py scenes.json output --resolution 2K --parallel 5</code><br>
+                            <b>Kie AI:</b> api.kie.ai | nano-banana-2 | 1크레딧=$0.005 | 이미지2K=12cr($0.06) | 영상720p=18cr($0.09)
+                        </div>
+                    </details>
+                </div>
+            </div>
+
+            <!-- JSON Import 결과 -->
+            <div id="aioJsonResult" style="display:none;">
+                <div class="section">
+                    <div class="section-title">📊 JSON 분석 결과</div>
+                    <div class="section-content">
+                        <div id="aioJsonDisplay"></div>
+                    </div>
+                </div>
+            </div>
+        </div><!-- /process-allinone -->
 
         <!-- ===== 프로세스: 대본 검수 (구버전 - 제거됨, scriptReview 탭으로 대체) ===== -->
         <div id="process-review" style="display:none;" hidden>
@@ -8684,6 +8842,8 @@ ${_retryRound > 0 ? `⚠️ 이번은 ${_retryRound}차 추가 요청입니다. 
             if (proc === 'plan') pnLoadAll();
             if (proc === 'trend') { fetchIssueRadar(); fetchGoogleTrends(); fetchEconYoutube(); }
             if (proc === 'sellpot') _spInit();
+            const aioEl = document.getElementById('process-allinone');
+            if (aioEl) aioEl.style.display = proc === 'allinone' ? '' : 'none';
             } catch(err) {
                 console.error('[switchProcess ERROR]', err);
                 alert('탭 전환 오류: ' + err.message + ' (F12 콘솔 확인)');
@@ -31892,6 +32052,170 @@ ${commentText.slice(0, 12000)}`;
                 setTimeout(vbRenderSceneList, 100);
             };
         }
+    // ===== 올인원 함수들 =====
+    function _aioSet(btn) {
+        var g = btn.dataset.group;
+        document.querySelectorAll('.aio-opt[data-group="'+g+'"]').forEach(function(b) {
+            b.classList.remove('active-n');
+            b.style.background = '#e9ecef'; b.style.borderColor = '#ced4da'; b.style.color = '#495057';
+        });
+        btn.classList.add('active-n');
+        btn.style.background = '#6f42c1'; btn.style.borderColor = '#6f42c1'; btn.style.color = '';
+    }
+    function _aioGetOpt(group) {
+        var el = document.querySelector('.aio-opt.active-n[data-group="'+group+'"]');
+        return el ? el.dataset.val : '';
+    }
+    function _aioChk(id) { return document.getElementById(id).checked; }
+
+    function _aioGenPrompt() {
+        var style = document.getElementById('aioStylePrompt').value.trim();
+        var script = document.getElementById('aioFullScript').value.trim();
+        if (!script) { alert('대본을 입력해주세요.'); return; }
+        if (script.indexOf('--- 도입부 ---') === -1) { alert('"--- 도입부 ---" 표시가 없습니다.\n도입부 끝에 넣어주세요.'); return; }
+
+        var korText = _aioChk('aioKorText'), realPerson = _aioChk('aioRealPerson');
+        var brandLogo = _aioChk('aioBrandLogo'), sensitive = _aioChk('aioSensitive');
+        var grok = _aioChk('aioGrokVideo'), cd = _aioChk('aioClaudeDesign');
+        var blank = _aioChk('aioBlank'), thumb = _aioChk('aioThumb'), zip = _aioChk('aioZip');
+        var res = _aioGetOpt('aioRes'), parallel = _aioGetOpt('aioParallel');
+        var recLen = _aioGetOpt('aioRecLen'), realRatio = _aioGetOpt('aioReal');
+        var cdRatio = _aioGetOpt('aioCd'), groupSize = _aioGetOpt('aioGroup') || '4';
+
+        var parts = script.split('--- 도입부 ---');
+        var introText = parts[0].trim(), bodyText = parts[1].trim();
+        var introScenes = introText.split(/\n\s*\n/).filter(function(s){return s.trim();});
+        var bodyScenes = bodyText.split(/\n\s*\n/).filter(function(s){return s.trim();});
+        var total = introScenes.length + bodyScenes.length;
+
+        var p = '';
+        p += '당신은 유튜브 영상 자산 생성 전문가입니다. 아래 지시를 순서대로 실행하세요.\n\n';
+
+        p += '# ===== PHASE 1: 대본 맥락 분석 + JSON 생성 =====\n\n';
+        p += '## STEP 1: 대본 전체 읽기 + 맥락 분석\n\n';
+        p += '대본을 처음부터 끝까지 읽고 아래를 정리해서 작가에게 보여주세요:\n';
+        p += '- 주제 / 전체 톤 / 주요 국가 / 시대 범위 / 핵심 인물 / 핵심 소품 / 핵심 비유\n';
+        p += '- 장면 구간별 맥락 (도입부, 본문 전반/중반/후반, 마무리)\n\n';
+
+        p += '## STEP 2: scenes_classified.json 생성\n\n';
+        p += '입력 장면 수 = 정확히 ' + total + '개. 출력 scenes 배열 = 반드시 ' + total + '개.\n';
+        p += '1:1 매핑. split/merge/재배치/삭제/수정/추가 절대 금지.\n';
+        p += '본문 묶음 수: ' + groupSize + '문장 (도입부는 1문단=1장면)\n\n';
+
+        p += '### ★ nano_prompt 작성 전 필수 체크리스트 (매 장면마다)\n\n';
+        p += '하나라도 빠지면 FAIL:\n';
+        p += '□ 국가: 이 장면은 어느 나라인가?\n';
+        p += '□ 시대: 몇 년도인가?\n';
+        p += '□ 인종: 등장인물은 어느 나라 사람인가?\n';
+        p += '□ 장소: 구체적으로 어디인가?\n';
+        p += '□ 배경: 실내/실외? 도시/시골? 깨끗한/황폐한?\n';
+        p += '□ 차종/브랜드: 차나 제품이 나오면 어느 브랜드인가?\n';
+        p += '□ 소품: 이 장면의 핵심 사물은?\n';
+        p += '□ 인물 복장: 정장/작업복/캐주얼? 어떤 직업?\n';
+        p += '□ 감정 톤: 자신감/분노/절망/긴장/위협?\n';
+        p += '□ 조명: 밝음/어두움/새벽/밤/형광등?\n';
+        p += '□ 핵심 키워드: 나레이션에서 반드시 시각화해야 할 단어는?\n';
+        p += '□ 핵심 텍스트: 한글 텍스트가 필요한 장면인가? → ' + (korText ? '허용' : '금지') + '\n';
+        p += '□ 모르는 것: 차종, 장소, 인물 외모 등 모르면 웹검색. 추측 금지.\n\n';
+
+        p += '### 옵션 설정\n';
+        p += '- 한글 텍스트: ' + (korText ? '허용 (핵심 장면만)' : '금지') + '\n';
+        p += '- 실존 인물: ' + (realPerson ? '허용' : '금지') + '\n';
+        p += '- 브랜드 로고: ' + (brandLogo ? '허용' : '금지') + '\n';
+        p += '- 민감 장면: ' + (sensitive ? '허용' : '금지') + '\n';
+        p += '- real 비율: ' + realRatio + '%\n';
+        p += '- claude_design 비율: ' + cdRatio + '%\n\n';
+
+        p += '### 그림체\n"' + style + '"\n\n';
+        p += '### 스타일 라인 (모든 nano_prompt 끝에)\n';
+        p += '"Colored semi-realistic 2D editorial illustration, flat color fills with muted natural tones, visible pen linework, paper grain texture."\n\n';
+
+        if (korText) {
+            p += '한글 텍스트 필요 장면: ABSOLUTE RULE 생략\n';
+            p += '한글 텍스트 불필요 장면: "ABSOLUTE RULE: NO text, NO letters, NO words, NO numbers anywhere in the image."\n\n';
+        } else {
+            p += '모든 장면: "ABSOLUTE RULE: NO text, NO letters, NO words, NO numbers anywhere in the image."\n\n';
+        }
+
+        p += '## STEP 3: JSON 완성 후 → 1장 테스트\n\n';
+        p += '1. JSON을 클립보드에 복사하거나 채팅에 출력\n';
+        p += '2. 1장만 테스트 생성 (--parallel 1)\n';
+        p += '3. 확인: 파일명 scene_1.png인지, 컬러 맞는지, 대본 맥락 맞는지\n';
+        p += '4. 테스트 이미지를 작가에게 보여주고 "이 스타일로 전체 만들어도 되나요?" 질문\n';
+        p += '5. ★★★ 작가 OK 받기 전까지 PHASE 2 진행 금지 ★★★\n\n';
+
+        p += '# ===== PHASE 2: 전체 자산 생성 (작가 OK 후 자동 실행) =====\n\n';
+        p += '## Kie AI 정보\n';
+        p += '- API: https://api.kie.ai/api/v1/jobs/\n';
+        p += '- 이미지 모델: nano-banana-2\n';
+        p += '- 영상 모델: grok-imagine/image-to-video\n';
+        p += '- 인증: Authorization: Bearer {API_KEY} (환경변수 KIE_API_KEY)\n';
+        p += '- 1크레딧=$0.005 | 이미지 2K=12크레딧 | 영상 720p 6초=18크레딧\n';
+        p += '- 잔액 확인: GET https://api.kie.ai/api/v1/chat/credit\n\n';
+
+        p += '## 이미지 생성\npython _시스템\\scripts\\generate_images.py scenes_classified.json output --resolution ' + res + ' --parallel ' + parallel + '\n\n';
+
+        p += '## 생성 순서\n';
+        p += '1. 잔액 확인 → 부족하면 중단\n';
+        p += '2. AI 이미지 전체 생성 (기존 이미지 자동 스킵)\n';
+        if (blank) p += '3. 빈화면: real + claude_design = 검정 1920x1080 scene_XX.png (blank 접두사 금지)\n';
+        if (cd) {
+            p += '4. 클로드디자인 HTML (1920x1080, #F5EDE0, Pretendard, 스케일링JS, 애니메이션, pulse+glow, 글자 크게, 빈공간 최소)\n';
+            p += '5. HTML 녹화: Playwright ' + recLen + '초 WebM\n';
+        }
+        if (grok) p += '6. 도입부 영상: grok-imagine/image-to-video, isIntro:true만, 720p 6초\n';
+        if (thumb) p += '7. 썸네일 프롬프트 3개: 초현실 포토리얼, 하단 30% 검정 그라데이션, 블렌딩, 핵심 주체 포함\n';
+        if (zip) p += '8. ZIP 패키징: scene_*.png + html/*.html + videos/*.webm → 폴더 열기\n';
+
+        p += '\n## 안전 규칙\n';
+        p += '- scene_None.png 발생 시 즉시 중단\n- 실패 시 URL 로그 저장\n- 다운로드 3회 재시도\n- JSON 완성 시 클립보드 복사 필수\n\n';
+
+        p += '# ===== 대본 전문 =====\n\n' + introText + '\n\n' + bodyText + '\n\n';
+
+        p += '# ===== 입력 장면 ' + total + '개 (도입부 ' + introScenes.length + '개 + 본문 ' + bodyScenes.length + '개) =====\n\n';
+        introScenes.forEach(function(scene, i) {
+            p += '=== INPUT SCENE ' + (i+1) + ' of ' + total + ' [🎯 INTRO] ===\n' + scene.trim() + '\n=== END SCENE ' + (i+1) + ' ===\n\n';
+        });
+        bodyScenes.forEach(function(scene, i) {
+            var num = introScenes.length + i + 1;
+            p += '=== INPUT SCENE ' + num + ' of ' + total + ' [📝 BODY] ===\n' + scene.trim() + '\n=== END SCENE ' + num + ' ===\n\n';
+        });
+
+        navigator.clipboard.writeText(p).then(function() {
+            alert('Claude용 올인원 프롬프트 복사 완료!\n\n총 ' + total + '개 장면 (도입부 ' + introScenes.length + ' + 본문 ' + bodyScenes.length + ')\n\nClaude에 붙여넣기 하세요.');
+        });
+    }
+
+    function _aioImportJson() {
+        var raw = document.getElementById('aioJsonInput').value.trim();
+        if (!raw) { alert('JSON을 붙여넣어주세요.'); return; }
+        try {
+            var data = JSON.parse(raw);
+            var scenes = data.scenes || data;
+            var total = scenes.length;
+            var ai = scenes.filter(function(s){return s.type==='ai';}).length;
+            var real = scenes.filter(function(s){return s.type==='real';}).length;
+            var cd = scenes.filter(function(s){return s.type==='claude_design';}).length;
+            var intro = scenes.filter(function(s){return s.isIntro;}).length;
+
+            var html = '<div style="margin-bottom:12px;">';
+            html += '<b>총 장면:</b> ' + total + ' | <b>도입부:</b> ' + intro + ' | ';
+            html += '<span style="color:#1565C0"><b>ai:</b> ' + ai + '</span> | ';
+            html += '<span style="color:#C62828"><b>real:</b> ' + real + '</span> | ';
+            html += '<span style="color:#6f42c1"><b>claude_design:</b> ' + cd + '</span></div>';
+            html += '<div style="max-height:350px;overflow-y:auto;border:1px solid #e0e0e0;border-radius:8px;padding:6px;">';
+            scenes.forEach(function(s) {
+                var color = s.type==='real'?'#C62828':s.type==='claude_design'?'#6f42c1':'#333';
+                var tag = s.isIntro?'🎯':'📝';
+                html += '<div style="padding:5px 8px;border-bottom:1px solid #f0f0f0;font-size:0.8rem;">';
+                html += '<span style="color:'+color+';font-weight:700;">'+tag+' #'+(s.sceneNo||s.scene)+' ['+s.type+'] '+s.duration+'s</span> ';
+                html += '<span style="color:#666;">'+((s.narration||'').substring(0,50))+'...</span></div>';
+            });
+            html += '</div>';
+            document.getElementById('aioJsonDisplay').innerHTML = html;
+            document.getElementById('aioJsonResult').style.display = '';
+        } catch(e) { alert('JSON 파싱 에러: ' + e.message); }
+    }
     </script>
 </body>
 </html>
