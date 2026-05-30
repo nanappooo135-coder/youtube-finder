@@ -32163,6 +32163,41 @@ ${commentText.slice(0, 12000)}`;
             p += '모든 장면: "ABSOLUTE RULE: NO text, NO letters, NO words, NO numbers anywhere in the image."\n\n';
         }
 
+        // === JSON 구조 + 분류 규칙 + 프롬프트 규칙 ===
+        p += '### JSON 출력 형식\n';
+        p += '```json\n{"scenes": [\n';
+        p += '  {"sceneNo": 1, "isIntro": true, "type": "ai", "duration": 6, "narration": "...", "nano_prompt": "...", "grok_prompt": "STRICT RULES: ..."},\n';
+        p += '  {"sceneNo": 2, "isIntro": false, "type": "real", "duration": 10, "narration": "...", "real_keywords": ["...", "...", "..."], "real_subject": "...", "nano_prompt": "...", "grok_prompt": "..."},\n';
+        p += '  {"sceneNo": 3, "isIntro": false, "type": "claude_design", "duration": 10, "narration": "...", "claude_prompt": "...", "claude_kind": "인포그래픽", "nano_prompt": "...", "grok_prompt": "..."}\n';
+        p += ']}\n```\n\n';
+
+        p += '### type 분류 기준\n';
+        p += '- **ai** (대부분): 일러스트 이미지. 추상/은유, 상징적 묘사, 도입부 전부\n';
+        p += '- **real** (' + realRatio + '%): 실제 사진 자리. 4가지만 해당: ①실제 장소 ②실존 인물 ③과거 역사 사진 ④근거 사진. 같은 엔티티 3회 초과 금지\n';
+        p += '- **claude_design** (' + cdRatio + '%): 숫자/차트/비교표/연표만. 퍼센트, 숫자 대비, 구조도\n';
+        p += '- 도입부(isIntro:true): 무조건 type="ai", duration=6\n';
+        p += '- 본문: duration=6(짧은 장면) 또는 10(4문장 이상/복잡한 장면)\n\n';
+
+        p += '### type별 필수 필드\n';
+        p += '- **ai**: nano_prompt(영문) + grok_prompt\n';
+        p += '- **real**: real_keywords(영문 3개 배열) + real_subject(한글) + nano_prompt(백업용) + grok_prompt\n';
+        p += '- **claude_design**: claude_prompt(한글 시각화 설명) + claude_kind("인포그래픽"|"도식"|"차트") + nano_prompt(백업용) + grok_prompt\n\n';
+
+        p += '### nano_prompt 작성 규칙\n';
+        p += '구조: [Subject+Action 60~70%] → [Location/Setting] → [Composition] → [Style 한 줄] → [ABSOLUTE RULE]\n';
+        p += '- Subject(장면 묘사)가 맨 앞, 가장 길게. Style은 맨 뒤 한 줄만\n';
+        p += '- 판타지/추상/신비/빛나는 보물/거대 손/하늘에서 내려오는 빛 절대 금지. 현실 장면만\n';
+        p += '- 캐릭터 디테일 필수: 안경, 넥타이색, 체형, 머리스타일, 감정 표현 구체적으로\n';
+        p += '- 배경 소품 5개 이상: 커피잔, 시계, 서류, 모니터, 화분 등\n';
+        p += '- 구도 반복 금지: 매 장면 카메라앵글/장소/행동/인물수 중 최소 2개 다르게\n';
+        p += '- "캐릭터가 빌딩 앞에 서서 올려다봄" 구도 전체에서 1회만\n';
+        p += '- 도입부: 가만히 서있는 장면 금지. 강한 임팩트 시각 장면만\n\n';
+
+        p += '### grok_prompt 템플릿 (모든 장면에 동일)\n';
+        p += '"STRICT RULES: maintain the EXACT original 2D illustrated style from the input image. NO photorealism, NO live-action drift, NO style change, NO 3D, NO anime conversion. NO scene transitions, NO location change, NO new background, NO cuts to other shots. Stay in the SAME scene from the input image throughout the entire clip. ABSOLUTELY NO NEW HUMAN FACES anywhere in the video. NO new characters appearing, NO portraits emerging, NO people materializing in empty areas. NO exaggerated actions, NO dramatic gestures, NO talking, NO lip sync. ONLY subtle micro-movements: gentle breathing, slight head tilt, soft blink, light hair sway, subtle camera push-in or slow pan. Keep the composition 95% identical to the input image. The total number of human figures MUST stay constant from frame 1 to last frame."\n';
+        p += '+ duration 6~10: "Motion: gentle breathing, subtle hair sway, very slight ambient drift, camera push-in 5% max."\n';
+        p += '+ duration 10+: "Motion: visible breathing rhythm, noticeable but soft hair movement, gentle ambient drift, camera push-in or slow pan up to 7%."\n\n';
+
         p += '## STEP 3: JSON 완성 후 → 1장 테스트\n\n';
         p += '1. JSON을 클립보드에 복사하거나 채팅에 출력\n';
         p += '2. 1장만 테스트 생성 (--parallel 1)\n';
