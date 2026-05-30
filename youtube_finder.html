@@ -2052,14 +2052,6 @@
                                     <button class="tb-opt" data-val="8" onclick="toggleTbOpt(this,'aioParallel',1)"><div class="opt-title">8개</div></button>
                                 </div>
                             </div>
-                            <div style="grid-column:span 2;">
-                                <span style="font-size:0.8rem;color:#555;font-weight:600;">이미지 컬러 톤</span>
-                                <div class="tb-options" id="aioTone">
-                                    <button class="tb-opt selected" data-val="warm" onclick="toggleTbOpt(this,'aioTone',1)"><div class="opt-title">따뜻한 어스톤</div></button>
-                                    <button class="tb-opt" data-val="cool" onclick="toggleTbOpt(this,'aioTone',1)"><div class="opt-title">차가운 블루</div></button>
-                                    <button class="tb-opt" data-val="dark" onclick="toggleTbOpt(this,'aioTone',1)"><div class="opt-title">어두운 무디</div></button>
-                                </div>
-                            </div>
                         </div>
                     </div>
 
@@ -6592,8 +6584,6 @@ Example format:
         const sensitive = aioGetCheck('aioSensitive');
         const realRatio = aioGetOpt('aioReal');
         const cdRatio = aioGetOpt('aioCd');
-        const tone = aioGetOpt('aioTone');
-        const toneMap = {warm:'따뜻한 어스톤, warm earth palette',cool:'차가운 블루톤, cool blue palette',dark:'어두운 무디톤, dark moody palette'};
 
         if (!intro && !body) { alert('장면을 입력해주세요.'); return; }
         if (!script) { alert('대본 전문을 입력해주세요. 맥락 분석에 필수입니다.'); return; }
@@ -6633,12 +6623,12 @@ Example format:
         prompt += '- 민감 장면: ' + (sensitive ? '허용' : '금지') + '\n';
         prompt += '- real 비율: ' + realRatio + '%\n';
         prompt += '- claude_design 비율: ' + cdRatio + '%\n';
-        prompt += '- 컬러 톤: ' + (toneMap[tone]||'') + '\n\n';
+        prompt += '\n';
 
         prompt += '# 그림체 프롬프트\n"' + style + '"\n\n';
 
         prompt += '# 스타일 라인 (모든 nano_prompt 끝에)\n';
-        prompt += '"Colored semi-realistic 2D editorial illustration, flat color fills with muted natural tones, ' + (toneMap[tone]||'warm earth palette') + ', visible pen linework, paper grain texture."\n\n';
+        prompt += '"Colored semi-realistic 2D editorial illustration, flat color fills with muted natural tones, visible pen linework, paper grain texture."\n\n';
 
         if (korText) {
             prompt += '한글 텍스트 필요 장면: ABSOLUTE RULE 생략\n';
