@@ -32233,7 +32233,17 @@ ${commentText.slice(0, 12000)}`;
         p += '2. AI 이미지 전체 생성 (기존 이미지 자동 스킵)\n';
         if (blank) p += '3. 빈화면: real + claude_design = 검정 1920x1080 scene_XX.png (blank 접두사 금지)\n';
         if (cd) {
-            p += '4. 클로드디자인 HTML (1920x1080, #F5EDE0, Pretendard, 스케일링JS, 애니메이션 느리게: duration 0.8~1.2s delay 간격 0.8~1.5s, pulse+glow, 글자 크게, 빈공간 최소)\n';
+            p += '4. 클로드디자인 HTML 필수 규칙:\n';
+            p += '   - body: margin:0; background:#222; overflow:hidden; width:100vw; height:100vh\n';
+            p += '   - 콘텐츠 래퍼: <div id="s"> width:1920px; height:1080px; background:#F5EDE0; position:absolute; transform-origin:0 0; overflow:hidden\n';
+            p += '   - ★ 모든 콘텐츠가 1080px 높이 안에 반드시 들어갈 것. 넘치면 FAIL. 요소 높이 합계를 계산해서 1080px 초과하지 않도록\n';
+            p += '   - 폰트: Pretendard (CDN @import)\n';
+            p += '   - 자동 스케일링 JS (필수 복사):\n';
+            p += '     var d=document.getElementById("s");function f(){var s=Math.min(innerWidth/1920,innerHeight/1080);d.style.transform="scale("+s+")";d.style.left=((innerWidth-1920*s)/2)+"px";d.style.top=((innerHeight-1080*s)/2)+"px";}f();onresize=f;\n';
+            p += '   - 애니메이션: duration 0.8~1.2s, delay 간격 0.8~1.5s (빠르게 툭툭 금지)\n';
+            p += '   - 핵심 숫자에 무한 pulse + glow 반복 애니메이션\n';
+            p += '   - 글자 크기: 제목 46px+, 숫자 44px+, 본문 20px+\n';
+            p += '   - 빈 공간 최소화. 콘텐츠가 1920x1080을 고르게 채울 것\n';
             p += '5. HTML 녹화: Playwright ' + recLen + '초 WebM\n';
         }
         if (grok) p += '6. 도입부 영상: grok-imagine/image-to-video, isIntro:true만, 720p 6초\n';
