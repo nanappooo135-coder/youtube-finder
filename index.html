@@ -32201,6 +32201,7 @@ ${commentText.slice(0, 12000)}`;
         p += '구조: [Subject+Action 60~70%] → [Location/Setting] → [Composition] → [Style 한 줄] → [ABSOLUTE RULE]\n';
         p += '- Subject(장면 묘사)가 맨 앞, 가장 길게. Style은 맨 뒤 한 줄만\n';
         p += '- 판타지/추상/신비/빛나는 보물/거대 손/하늘에서 내려오는 빛 절대 금지. 현실 장면만\n';
+        p += '- 과장 톤 절대 금지: dramatic, cinematic, blazing, brilliant, fierce, devastating, gut-wrenching, breathtaking, epic, majestic 등 소설/영화 톤 단어 사용 금지. 다큐멘터리처럼 차분하고 현실적으로\n';
         p += '- 캐릭터 디테일 필수: 안경, 넥타이색, 체형, 머리스타일, 감정 표현 구체적으로\n';
         p += '- 배경 소품 5개 이상: 커피잔, 시계, 서류, 모니터, 화분 등\n';
         p += '- 구도 반복 금지: 매 장면 카메라앵글/장소/행동/인물수 중 최소 2개 다르게\n';
@@ -32224,12 +32225,13 @@ ${commentText.slice(0, 12000)}`;
         p += '+ duration 6~10: "Motion: gentle breathing, subtle hair sway, very slight ambient drift, camera push-in 5% max."\n';
         p += '+ duration 10+: "Motion: visible breathing rhythm, noticeable but soft hair movement, gentle ambient drift, camera push-in or slow pan up to 7%."\n\n';
 
-        p += '## STEP 3: JSON 완성 후 → 1장 테스트\n\n';
+        p += '## STEP 3: JSON 완성 후 → 검수 → 1장 테스트\n\n';
         p += '1. JSON을 클립보드에 복사하거나 채팅에 출력\n';
-        p += '2. 1장만 테스트 생성 (--parallel 1)\n';
-        p += '3. 확인: 파일명 scene_1.png인지, 컬러 맞는지, 대본 맥락 맞는지\n';
-        p += '4. 테스트 이미지를 작가에게 보여주고 "이 스타일로 전체 만들어도 되나요?" 질문\n';
-        p += '5. ★★★ 작가 OK 받기 전까지 PHASE 2 진행 금지 ★★★\n\n';
+        p += '2. 검수기 실행: python scripts/validators/image_prompt_validator.py scenes_classified.json (FAIL 0개가 될 때까지 수정 반복)\n';
+        p += '3. 1장만 테스트 생성: python scripts/generate_images.py scenes.json output --style-file style.txt --limit 1 (⚠️ --limit 1 필수, --parallel은 테스트 장수 제한이 아님)\n';
+        p += '4. 확인: 파일명 scene_1.png인지, 그림체 맞는지, 대본 맥락 맞는지\n';
+        p += '5. 테스트 이미지를 작가에게 보여주고 "이 스타일로 전체 만들어도 되나요?" 질문\n';
+        p += '6. ★★★ 작가 OK 받기 전까지 PHASE 2 진행 금지 ★★★\n\n';
 
         p += '# ===== PHASE 2: 전체 자산 생성 (작가 OK 후 자동 실행) =====\n\n';
         p += '## Kie AI 정보\n';
@@ -32240,7 +32242,9 @@ ${commentText.slice(0, 12000)}`;
         p += '- 1크레딧=$0.005 | 이미지 2K=12크레딧 | 영상 720p 6초=18크레딧\n';
         p += '- 잔액 확인: GET https://api.kie.ai/api/v1/chat/credit\n\n';
 
-        p += '## 이미지 생성\npython _시스템\\scripts\\generate_images.py scenes_classified.json output --resolution ' + res + ' --parallel ' + parallel + '\n\n';
+        p += '## 이미지 생성\npython scripts/generate_images.py scenes_classified.json output --style-file style.txt --resolution ' + res + ' --parallel ' + parallel + '\n';
+        p += '※ style.txt = 그림체 프롬프트 전문이 담긴 파일. nano_prompt에는 1줄 요약만, 전문은 --style-file로 자동 적용\n';
+        p += '※ generate_images.py가 이미지 생성 전 검수기를 자동 실행함. FAIL이면 생성 차단됨\n\n';
 
         p += '## 생성 순서\n';
         p += '1. 잔액 확인 → 부족하면 중단\n';
@@ -32265,6 +32269,12 @@ ${commentText.slice(0, 12000)}`;
 
         p += '\n## 안전 규칙\n';
         p += '- scene_None.png 발생 시 즉시 중단\n- 실패 시 URL 로그 저장\n- 다운로드 3회 재시도\n- JSON 완성 시 클립보드 복사 필수\n\n';
+        p += '## 🔁 JSON 자가검증 (출력 전 필수)\n';
+        p += '- nano_prompt에 dramatic/cinematic/blazing/brilliant/fierce 같은 과장 단어 없음? ✅\n';
+        p += '- 나레이션에 연도(1997년 등)가 있으면 nano_prompt에도 반영됨? ✅\n';
+        p += '- 한국 장면이면 nano_prompt에 Korean 명시됨? ✅\n';
+        p += '- 모르는 인물/장소/차종은 웹검색으로 확인했음? ✅\n';
+        p += '모두 YES일 때만 출력. 하나라도 NO면 수정 후 다시 확인.\n\n';
 
         p += '# ===== 대본 전문 =====\n\n' + script + '\n\n';
 
