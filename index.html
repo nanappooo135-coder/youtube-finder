@@ -4114,14 +4114,21 @@
                     </div>
 
                     <!-- 새 컴퓨터 세팅 -->
-                    <details style="margin-top:16px;border:1px solid #e0e0e0;border-radius:10px;padding:12px;">
-                        <summary style="font-weight:700;cursor:pointer;font-size:0.88rem;">⚙️ 새 컴퓨터에서 처음 설정할 때</summary>
-                        <div style="margin-top:10px;font-size:0.8rem;color:#666;line-height:1.8;">
-                            <b>1. Git 클론:</b> <code>git clone https://github.com/nanappooo135-coder/yujeong-economics.git</code><br>
-                            <b>2. Python:</b> <code>pip install playwright && playwright install chromium</code><br>
-                            <b>3. API 키:</b> <code>setx KIE_API_KEY "your-key-here"</code><br>
-                            <b>4. 이미지 생성:</b> <code>python scripts/generate_images.py scenes.json output --style-file style.txt --resolution 2K --parallel 5</code><br>
-                            <b>Kie AI:</b> api.kie.ai | nano-banana-2 | 1크레딧=$0.005 | 이미지2K=12cr($0.06) | 영상720p=18cr($0.09)
+                    <details style="margin-top:16px;border:2px solid #6f42c1;border-radius:10px;padding:12px;background:#faf5ff;">
+                        <summary style="font-weight:700;cursor:pointer;font-size:0.88rem;color:#6f42c1;">⚙️ 새 컴퓨터에서 처음 설정할 때 (필수)</summary>
+                        <div style="margin-top:10px;font-size:0.82rem;color:#444;line-height:2;">
+                            <b>① 터미널에서 작업 폴더로 이동 후:</b><br>
+                            <code style="display:block;background:#1a1a2e;color:#e0e0e0;padding:10px;border-radius:6px;margin:6px 0;font-size:0.82rem;user-select:all;">git clone https://github.com/nanappooo135-coder/youtube-finder.git && python youtube-finder/scripts/setup.py</code>
+                            <span style="color:#888;">→ 스크립트(검수기+이미지생성) 자동 복사 + 환경 체크</span><br><br>
+                            <b>② style.txt에 그림체 붙여넣기:</b><br>
+                            <span style="color:#888;">→ setup.py가 style.txt 템플릿을 만들어줌. 위 [그림체 프롬프트] 내용 전체를 복사해서 style.txt에 덮어쓰기</span><br><br>
+                            <b>③ Kie AI API 키 설정:</b><br>
+                            <code style="display:block;background:#1a1a2e;color:#e0e0e0;padding:10px;border-radius:6px;margin:6px 0;font-size:0.82rem;">Windows: setx KIE_API_KEY "your-key-here"</code>
+                            <span style="color:#888;">→ kie.ai 가입 → API Key 발급 → 위 명령어로 등록</span><br><br>
+                            <b>④ (선택) Playwright 설치 (클로드디자인 HTML 녹화용):</b><br>
+                            <code style="display:block;background:#1a1a2e;color:#e0e0e0;padding:10px;border-radius:6px;margin:6px 0;font-size:0.82rem;">pip install playwright && playwright install chromium</code><br>
+                            <b>⑤ 세팅 확인:</b> <code>python scripts/setup.py</code> 다시 실행 → 전부 ✅ 뜨면 완료<br><br>
+                            <b style="color:#6f42c1;">세팅 완료 후:</b> 위에서 올인원 프롬프트 복사 → VS Code Claude에 붙여넣기 → 끝
                         </div>
                     </details>
                 </div>
