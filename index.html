@@ -4120,7 +4120,7 @@
                             <b>1. Git 클론:</b> <code>git clone https://github.com/nanappooo135-coder/yujeong-economics.git</code><br>
                             <b>2. Python:</b> <code>pip install playwright && playwright install chromium</code><br>
                             <b>3. API 키:</b> <code>setx KIE_API_KEY "your-key-here"</code><br>
-                            <b>4. 이미지 생성:</b> <code>python _시스템\scripts\generate_images.py scenes.json output --resolution 2K --parallel 5</code><br>
+                            <b>4. 이미지 생성:</b> <code>python scripts/generate_images.py scenes.json output --style-file style.txt --resolution 2K --parallel 5</code><br>
                             <b>Kie AI:</b> api.kie.ai | nano-banana-2 | 1크레딧=$0.005 | 이미지2K=12cr($0.06) | 영상720p=18cr($0.09)
                         </div>
                     </details>
@@ -28211,11 +28211,11 @@ ${sceneList}
 모두 YES일 때만 출력. 하나라도 NO면 다시 작성.
 
 # ⚠️ JSON 출력 후 필수 실행 순서
-1. JSON을 파일로 저장 후 **반드시 검수기 실행**: \`python _시스템/scripts/validators/image_prompt_validator.py scenes_classified.json\`
+1. JSON을 파일로 저장 후 **반드시 검수기 실행**: \`python scripts/validators/image_prompt_validator.py scenes_classified.json\`
 2. FAIL이 있으면 JSON 수정 후 재검수. FAIL 0개가 될 때까지 반복.
-3. 1장 테스트: \`python _시스템/scripts/generate_images.py scenes.json output --style-file style.txt --limit 1\` (⚠️ --limit 1 필수, --parallel은 테스트 장수 제한 아님. --style-file로 그림체 전문 자동 적용)
+3. 1장 테스트: \`python scripts/generate_images.py scenes.json output --style-file style.txt --limit 1\` (⚠️ --limit 1 필수, --parallel은 테스트 장수 제한 아님. --style-file로 그림체 전문 자동 적용)
 4. 작가에게 테스트 이미지 보여주고 OK 받기 (OK 전까지 전체 생성 금지)
-5. 작가 OK 후 전체 생성: \`python _시스템/scripts/generate_images.py scenes.json output --style-file style.txt --parallel 5\`
+5. 작가 OK 후 전체 생성: \`python scripts/generate_images.py scenes.json output --style-file style.txt --parallel 5\`
 ※ style.txt = 그림체 프롬프트 전문이 담긴 파일. nano_prompt에는 1줄 요약만 넣고, 전문은 --style-file로 자동 적용됨.`;
 
             navigator.clipboard.writeText(prompt).then(() => {
