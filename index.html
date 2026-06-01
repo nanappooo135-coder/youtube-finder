@@ -32129,6 +32129,25 @@ ${commentText.slice(0, 12000)}`;
         var p = '';
         p += '당신은 유튜브 영상 자산 생성 전문가입니다. 아래 지시를 순서대로 실행하세요.\n\n';
 
+        p += '# ===== STEP 0: 환경 세팅 (가장 먼저 실행) =====\n\n';
+        p += '아래 3가지를 확인하고, 없으면 만들어라. 이 단계를 건너뛰면 이후 모든 작업이 실패한다.\n\n';
+        p += '## 0-1. 스크립트 준비\n';
+        p += '`scripts/generate_images.py` 파일이 작업 디렉토리에 있는지 확인.\n';
+        p += '없으면:\n';
+        p += '```\ngit clone https://github.com/nanappooo135-coder/youtube-finder.git\n```\n';
+        p += 'clone한 `youtube-finder/scripts/` 폴더를 작업 디렉토리에 복사한다.\n';
+        p += '복사 후 아래 파일이 있어야 한다:\n';
+        p += '- `scripts/generate_images.py` (이미지 생성 + 자동 검수)\n';
+        p += '- `scripts/validators/image_prompt_validator.py` (JSON 검수기)\n\n';
+        p += '## 0-2. style.txt 생성\n';
+        p += '아래 [그림체] 섹션의 전체 내용을 `style.txt` 파일로 저장한다.\n';
+        p += '이 파일은 `--style-file style.txt`로 이미지 생성 시 자동 적용된다.\n';
+        p += 'nano_prompt에는 스타일 1줄 요약만 넣고, 전문은 이 파일이 처리한다.\n\n';
+        p += '## 0-3. 프로젝트 폴더 생성\n';
+        p += '`projects/{프로젝트명}/images/` 폴더를 만든다.\n';
+        p += '`scenes_classified.json`은 `projects/{프로젝트명}/` 에 저장한다.\n\n';
+        p += '⚠️ 위 3가지가 준비된 후에만 PHASE 1을 진행한다.\n\n';
+
         p += '# ===== PHASE 1: 대본 맥락 분석 + JSON 생성 =====\n\n';
         p += '## STEP 1: 대본 전체 읽기 + 맥락 분석\n\n';
         p += '대본을 처음부터 끝까지 읽고 아래를 정리해서 작가에게 보여주세요:\n';
