@@ -134,7 +134,19 @@ def main():
     args = parser.parse_args()
 
     if args.style_file:
-        args.style_prompt = Path(args.style_file).read_text(encoding="utf-8").strip()
+        sf = Path(args.style_file)
+        if not sf.exists():
+            print("[!] style file not found: {}".format(args.style_file))
+            sys.exit(1)
+        content = sf.read_text(encoding="utf-8").strip()
+        if len(content) < 50 or content.startswith("#"):
+            print("[!] style file is empty or template only. Paste the full art style prompt into {}".format(args.style_file))
+            sys.exit(1)
+        args.style_prompt = content
+    elif not args.style_prompt:
+        print("[!] --style-file or --style-prompt required. Art style must be applied.")
+        print("[!] Create style.txt with the full art style prompt, then use --style-file style.txt")
+        sys.exit(1)
 
     if not args.api_key:
         print("[!] API key required. Use --api-key or set KIE_API_KEY env var.")

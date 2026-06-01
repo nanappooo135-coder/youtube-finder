@@ -32294,6 +32294,7 @@ ${commentText.slice(0, 12000)}`;
         if (zip) p += '7. ZIP 패키징: scene_*.png + html/*.html + videos/*.webm → 폴더 열기\n';
 
         p += '\n## 안전 규칙\n';
+        p += '- 🚨 이미지 생성은 반드시 scripts/generate_images.py만 사용. 직접 API 호출 코드를 작성하거나 별도 파이썬 스크립트를 만들어서 이미지를 생성하는 것은 절대 금지. generate_images.py가 검수기 자동 실행 + style.txt 자동 적용 + --limit 제한을 전부 처리함. 이걸 우회하면 모든 안전장치가 무력화됨.\n';
         p += '- scene_None.png 발생 시 즉시 중단\n- 실패 시 URL 로그 저장\n- 다운로드 3회 재시도\n- JSON 완성 시 클립보드 복사 필수\n\n';
         p += '## 🔁 JSON 자가검증 (출력 전 필수)\n';
         p += '- nano_prompt에 dramatic/cinematic/blazing/brilliant/fierce 같은 과장 단어 없음? ✅\n';
