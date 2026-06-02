@@ -32270,46 +32270,17 @@ ${commentText.slice(0, 12000)}`;
         p += '5. 테스트 이미지를 작가에게 보여주고 "이 스타일로 전체 만들어도 되나요?" 질문\n';
         p += '6. ★★★ 작가 OK 받기 전까지 PHASE 2 진행 금지 ★★★\n\n';
 
-        p += '# ===== PHASE 2: 전체 자산 생성 (작가 OK 후 자동 실행) =====\n\n';
-        p += '## Kie AI 정보\n';
-        p += '- API: https://api.kie.ai/api/v1/jobs/\n';
-        p += '- 이미지 모델: nano-banana-2\n';
-        p += '- 영상 모델: grok-imagine/image-to-video\n';
-        p += '- 인증: Authorization: Bearer {API_KEY} (환경변수 KIE_API_KEY)\n';
-        p += '- 1크레딧=$0.005 | 이미지 2K=12크레딧 | 영상 720p 6초=18크레딧\n';
-        p += '- 잔액 확인: GET https://api.kie.ai/api/v1/chat/credit\n\n';
-
-        p += '## 이미지 생성\npython scripts/generate_images.py scenes_classified.json output --style-file style.txt --resolution ' + res + ' --parallel ' + parallel + '\n';
-        p += '※ style.txt = 그림체 프롬프트 전문이 담긴 파일. nano_prompt에는 1줄 요약만, 전문은 --style-file로 자동 적용\n';
-        p += '※ generate_images.py가 이미지 생성 전 검수기를 자동 실행함. FAIL이면 생성 차단됨\n\n';
-
-        p += '## 생성 순서\n';
-        p += '1. 잔액 확인 → 부족하면 중단\n';
-        p += '2. AI 이미지 전체 생성 (기존 이미지 자동 스킵)\n';
-        if (blank) p += '3. 빈화면: real + claude_design = 검정 1920x1080 scene_XX.png (blank 접두사 금지)\n';
+        p += '# ===== PHASE 2: 전체 자산 생성 (작가 OK 후 순서대로 실행) =====\n\n';
+        p += '1. AI 이미지: `python scripts/generate_images.py scenes_classified.json output --style-file style.txt --resolution ' + res + ' --parallel ' + parallel + '`\n';
+        if (blank) p += '2. 빈화면: real+claude_design 장면 → 검정 1920x1080 PNG (scene_XX.png)\n';
         if (cd) {
-            p += '4. 클로드디자인 HTML 필수 규칙:\n';
-            p += '   - body: margin:0; background:#222; overflow:hidden; width:100vw; height:100vh\n';
-            p += '   - 콘텐츠 래퍼: <div id="s"> width:1920px; height:1080px; background:#F5EDE0; position:absolute; transform-origin:0 0; overflow:hidden\n';
-            p += '   - ★ 모든 콘텐츠가 1080px 높이 안에 반드시 들어갈 것. 넘치면 FAIL. 요소 높이 합계를 계산해서 1080px 초과하지 않도록\n';
-            p += '   - 폰트: Pretendard (CDN @import)\n';
-            p += '   - 자동 스케일링 JS (필수 복사):\n';
-            p += '     var d=document.getElementById("s");function f(){var s=Math.min(innerWidth/1920,innerHeight/1080);d.style.transform="scale("+s+")";d.style.left=((innerWidth-1920*s)/2)+"px";d.style.top=((innerHeight-1080*s)/2)+"px";}f();onresize=f;\n';
-            p += '   - 애니메이션: duration 0.8~1.2s, delay 간격 0.8~1.5s (빠르게 툭툭 금지)\n';
-            p += '   - 핵심 숫자에 무한 pulse + glow 반복 애니메이션\n';
-            p += '   - 글자 크기: 제목 46px+, 숫자 44px+, 본문 20px+\n';
-            p += '   - 빈 공간 최소화. 콘텐츠가 1920x1080을 고르게 채울 것\n';
-            p += '5. HTML 녹화: Playwright ' + recLen + '초 WebM\n';
+            p += '3. 클로드디자인: claude_design 장면 → 1920x1080 HTML. 규칙: 배경 #F5EDE0, Pretendard 폰트, 콘텐츠 1080px 초과 금지, 제목 46px+/숫자 44px+/본문 20px+, 핵심 숫자에 pulse 애니메이션. 자동 스케일링 JS 필수: `var d=document.getElementById("s");function f(){var s=Math.min(innerWidth/1920,innerHeight/1080);d.style.transform="scale("+s+")";d.style.left=((innerWidth-1920*s)/2)+"px";d.style.top=((innerHeight-1080*s)/2)+"px";}f();onresize=f;`\n';
+            p += '4. HTML 녹화: Playwright ' + recLen + '초 WebM\n';
         }
         if (grok) {
-            p += '6. 도입부 영상 자동 생성 (isIntro:true 장면만):\n';
-            p += '   - 스크립트 다운로드 (없을 경우): curl -O https://raw.githubusercontent.com/nanappooo135-coder/youtube-finder/main/scripts/grok_video_auto.py\n';
-            p += '   - 실행: python grok_video_auto.py <scenes_classified.json 경로> <이미지 폴더 경로> --resolution 720p --duration 6s\n';
-            p += '   - 스크립트가 자동 처리: websocket-client 설치, Chrome 디버깅 모드 실행(별도 프로필 ~/GrokAutoProfile, 기존 프로필 절대 안 건드림), 로그인 확인, grok.com에서 이미지 업로드→프롬프트 입력→영상 생성→다운로드 전부 자동\n';
-            p += '   - 로그인 안 되어있으면 "로그인해주세요" 출력 → 사용자 로그인 후 재실행\n';
-            p += '   - 출력: intro_scene_1.mp4 ~ intro_scene_N.mp4\n';
+            p += '5. 도입부 영상: `python scripts/grok_video_auto.py scenes_classified.json output --resolution 720p --duration 6s` (스크립트 없으면: `curl -O https://raw.githubusercontent.com/nanappooo135-coder/youtube-finder/main/scripts/grok_video_auto.py`). Chrome 자동 실행+로그인 확인+영상 생성+다운로드 전부 자동. 로그인 필요 시 사용자에게 안내.\n';
         }
-        if (zip) p += '7. ZIP 패키징: scene_*.png + html/*.html + videos/*.webm → 폴더 열기\n';
+        if (zip) p += '6. ZIP: 전체 자산 묶어서 폴더 열기\n';
 
         p += '\n## 안전 규칙\n';
         p += '- 🚨 이미지 생성은 반드시 scripts/generate_images.py만 사용. 직접 API 호출 코드를 작성하거나 별도 파이썬 스크립트를 만들어서 이미지를 생성하는 것은 절대 금지. generate_images.py가 검수기 자동 실행 + style.txt 자동 적용 + --limit 제한을 전부 처리함. 이걸 우회하면 모든 안전장치가 무력화됨.\n';
