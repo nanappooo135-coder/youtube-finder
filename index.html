@@ -24783,8 +24783,7 @@ ABSOLUTE PROHIBITIONS:
             }
         }
 
-        window._spInit = _spInit;
-        function _spInit() {
+        window._spInit = function _spInit() {
             if (_spInited) return;
             _spInited = true;
             const checked = document.querySelector('input[name="spChannel"]:checked');
