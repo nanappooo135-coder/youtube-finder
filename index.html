@@ -8861,7 +8861,7 @@ ${_retryRound > 0 ? `⚠️ 이번은 ${_retryRound}차 추가 요청입니다. 
             if (proc === 'scriptReview') { srLoadAll(); claudeUnifiedLoad(); }
             if (proc === 'plan') pnLoadAll();
             if (proc === 'trend') { fetchIssueRadar(); fetchGoogleTrends(); fetchEconYoutube(); }
-            if (proc === 'sellpot' && typeof _spInit === 'function') _spInit(); else if (proc === 'sellpot') setTimeout(function(){ if (typeof _spInit === 'function') _spInit(); }, 500);
+            if (proc === 'sellpot' && window._spInit) window._spInit(); else if (proc === 'sellpot') setTimeout(function(){ if (window._spInit) window._spInit(); }, 500);
             const aioEl = document.getElementById('process-allinone');
             if (aioEl) aioEl.style.display = proc === 'allinone' ? '' : 'none';
             } catch(err) {
