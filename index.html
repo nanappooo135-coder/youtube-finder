@@ -26263,23 +26263,23 @@ ${stylePrompt}
   "ABSOLUTE RULE: NO text, NO letters, NO words, NO numbers, NO typography, NO captions, NO labels, NO signs, NO logos, NO watermarks, NO Korean text, NO English text, NO characters of ANY language anywhere in the image. The image must be 100% purely visual with ZERO text elements."
   이미지 안에 글자·숫자·기호가 단 1개라도 보이면 실패. 인포그래픽 숫자 라벨도 금지. 차트 축 라벨도 금지. 어떤 형태의 문자도 절대 금지.
 - grok_prompt: (ai만) 영문. **짧고 핵심만** 작성. 긴 규칙을 복붙하지 않는다.
-  **템플릿**: `Maintain EXACT original 2D illustrated style. [캐릭터 외형 긍정형 묘사]. [장면 맞춤 미세 동작]. camera push-in [N]% max.`
+  **템플릿**: "Maintain EXACT original 2D illustrated style. [캐릭터 외형 긍정형 묘사]. [장면 맞춤 미세 동작]. camera push-in [N]% max."
   **장면 맞춤 동작 규칙 (★중요★)**:
   - 나레이션 내용에 맞는 미세 동작을 grok_prompt에 포함. 모든 장면이 같은 움직임이면 안 됨
   - 반드시 slowly/gently/subtle 수준만. 과한 동작은 캐릭터 깨짐 유발
-  - 예: 서류 미는 장면 → `slowly sliding briefcase forward`, 문 닫히는 장면 → `heavy door slowly swinging shut`, 가리키는 장면 → `gently pointing at map`
-  - 동작 없는 정적 장면은 `gentle breathing, slight head tilt, soft blink` 기본값 사용
+  - 예: 서류 미는 장면 → "slowly sliding briefcase forward", 문 닫히는 장면 → "heavy door slowly swinging shut", 가리키는 장면 → "gently pointing at map"
+  - 동작 없는 정적 장면은 "gentle breathing, slight head tilt, soft blink" 기본값 사용
   **캐릭터 외형 규칙 (★중요★)**:
   - Grok은 네거티브 프롬프트("no hair", "don't add")에 반응하지 않음. 반드시 **긍정형 묘사**만 사용
-  - 대머리/둥근머리 캐릭터: `Character has completely bald smooth bare scalp with light reflecting off clean-shaven head - preserve exactly`
+  - 대머리/둥근머리 캐릭터: "Character has completely bald smooth bare scalp with light reflecting off clean-shaven head - preserve exactly"
   - 기타 캐릭터: 해당 캐릭터의 외형 특징을 긍정형으로 구체 묘사
-  - ❌ 금지: `hair sway`, `hair movement`, `no hair` 등 hair 관련 단어 일체 사용 금지
+  - ❌ 금지: "hair sway", "hair movement", "no hair" 등 hair 관련 단어 일체 사용 금지
   **모션 강도 — 장면 길이(duration)별 자동 조정**:
   그록은 max 10초만 생성 가능. duration이 10초 초과면 셀팟이 자동 슬로우 처리함.
-  - **duration ≤ 10초**: `gentle breathing, soft ambient drift, camera push-in 5% max`
-  - **10 < duration ≤ 13초**: `visible breathing rhythm, gentle ambient drift, camera push-in or slow pan up to 7%`
-  - **13 < duration ≤ 16초**: `fuller breathing arc, ambient elements drifting visibly, camera push-in or slow pan up to 10%`
-  - **duration > 16초**: `full natural breathing rhythm with chest motion, ambient elements with continuous drift, camera push-in or slow pan up to 13%`
+  - **duration ≤ 10초**: "gentle breathing, soft ambient drift, camera push-in 5% max"
+  - **10 < duration ≤ 13초**: "visible breathing rhythm, gentle ambient drift, camera push-in or slow pan up to 7%"
+  - **13 < duration ≤ 16초**: "fuller breathing arc, ambient elements drifting visibly, camera push-in or slow pan up to 10%"
+  - **duration > 16초**: "full natural breathing rhythm with chest motion, ambient elements with continuous drift, camera push-in or slow pan up to 13%"
 - nano_prompt: (real 장면에서도 필수 — AI 백업용) real 장면이라도 **반드시 nano_prompt + grok_prompt를 함께 생성**. 실사 검색 결과가 마음에 안 들면 사용자가 AI 이미지로 대체할 수 있도록 백업. ai 장면과 동일한 규칙(그림체·텍스트 금지·한 장면 한 그림 등) 적용.
 - grok_prompt: (real 장면에서도 필수 — AI 백업용) nano_prompt 이미지의 그록 영상화용. ai 장면과 동일한 STRICT RULES + 모션 강도 규칙 적용.
 - real_keywords: (real만) **영문 검색어 배열, 정확히 3개**. 구글 이미지 검색용. 한글 금지.
