@@ -4102,7 +4102,13 @@
                     <button class="search-btn" onclick="_aioGenPrompt()" style="background:#6f42c1;border-color:#6f42c1;width:100%;font-size:1.05rem;padding:14px;margin-bottom:8px;">
                         📋 Claude용 올인원 프롬프트 복사 (JSON → 테스트 → 전체 생성 → ZIP)
                     </button>
-                    <p style="font-size:0.78rem;color:#888;margin-bottom:16px;text-align:center;">Claude에 붙여넣기 → 맥락분석 → JSON → 1장 테스트 → 작가 OK → 나머지 전부 자동</p>
+                    <p style="font-size:0.78rem;color:#888;margin-bottom:10px;text-align:center;">Claude에 붙여넣기 → 맥락분석 → JSON → 1장 테스트 → 작가 OK → 나머지 전부 자동</p>
+
+                    <!-- 젠스파크용 올인원 버튼 (Kie 미사용) -->
+                    <button class="search-btn" onclick="_aioGenPrompt('genspark')" style="background:#7048e8;border-color:#7048e8;width:100%;font-size:1.0rem;padding:13px;margin-bottom:8px;">
+                        🎨 젠스파크용 올인원 프롬프트 복사 (JSON → 프롬프트 출력 → 이미지 ZIP 받아 영상·디자인·ZIP)
+                    </button>
+                    <p style="font-size:0.78rem;color:#888;margin-bottom:16px;text-align:center;">Kie 미사용 — 젠스파크로 직접 이미지 생성. Claude는 JSON·프롬프트 만들고, scene_N.png ZIP 받으면 그록 영상·클로드디자인·빈화면·ZIP 완성</p>
 
                     <!-- JSON Import -->
                     <div class="input-group">
@@ -32111,7 +32117,8 @@ ${commentText.slice(0, 12000)}`;
     }
     function _aioChk(id) { return document.getElementById(id).checked; }
 
-    function _aioGenPrompt() {
+    function _aioGenPrompt(mode) {
+        var genspark = (mode === 'genspark');
         var style = document.getElementById('aioStylePrompt').value.trim();
         var introRaw = document.getElementById('aioIntro').value.trim();
         var bodyRaw = document.getElementById('aioBody').value.trim();
@@ -32271,16 +32278,30 @@ ${commentText.slice(0, 12000)}`;
         p += '+ duration 6~10: "Motion: gentle breathing, soft ambient drift, camera push-in 5% max."\n';
         p += '+ duration 10+: "Motion: visible breathing rhythm, gentle ambient drift, camera push-in or slow pan up to 7%."\n\n';
 
-        p += '## STEP 3: JSON 완성 후 → 검수 → 1장 테스트\n\n';
-        p += '1. JSON을 클립보드에 복사하거나 채팅에 출력\n';
-        p += '2. 검수기 실행: python scripts/validators/image_prompt_validator.py scenes_classified.json (FAIL 0개가 될 때까지 수정 반복)\n';
-        p += '3. 1장만 테스트 생성: python scripts/generate_images.py scenes.json output --style-file style.txt --limit 1 (⚠️ --limit 1 필수, --parallel은 테스트 장수 제한이 아님)\n';
-        p += '4. 확인: 파일명 scene_1.png인지, 그림체 맞는지, 대본 맥락 맞는지\n';
-        p += '5. 테스트 이미지를 작가에게 보여주고 "이 스타일로 전체 만들어도 되나요?" 질문\n';
-        p += '6. ★★★ 작가 OK 받기 전까지 PHASE 2 진행 금지 ★★★\n\n';
+        if (genspark) {
+            p += '## STEP 3: JSON 완성 → 검수 → 이미지 프롬프트 출력 (젠스파크용)\n\n';
+            p += '1. JSON을 클립보드에 복사하거나 채팅에 출력\n';
+            p += '2. 검수기 실행: python scripts/validators/image_prompt_validator.py scenes_classified.json (FAIL 0개가 될 때까지 수정 반복)\n';
+            p += '3. ⚠️ 이미지는 작가가 젠스파크(Nano Banana)로 직접 생성한다. Kie/generate_images.py 절대 호출 금지.\n';
+            p += '4. 모든 type="ai" 장면의 nano_prompt를 "scene_1: <영문 프롬프트>" 형식으로 장면번호와 함께 전부 출력 → 작가가 젠스파크에 붙여넣어 이미지 생성\n';
+            p += '5. 작가가 scene_1.png ~ scene_N.png 형식으로 압축한 이미지 ZIP을 건네줄 때까지 대기\n';
+            p += '6. ★★★ 작가가 이미지 ZIP을 줄 때까지 PHASE 2 진행 금지 ★★★\n\n';
+        } else {
+            p += '## STEP 3: JSON 완성 후 → 검수 → 1장 테스트\n\n';
+            p += '1. JSON을 클립보드에 복사하거나 채팅에 출력\n';
+            p += '2. 검수기 실행: python scripts/validators/image_prompt_validator.py scenes_classified.json (FAIL 0개가 될 때까지 수정 반복)\n';
+            p += '3. 1장만 테스트 생성: python scripts/generate_images.py scenes.json output --style-file style.txt --limit 1 (⚠️ --limit 1 필수, --parallel은 테스트 장수 제한이 아님)\n';
+            p += '4. 확인: 파일명 scene_1.png인지, 그림체 맞는지, 대본 맥락 맞는지\n';
+            p += '5. 테스트 이미지를 작가에게 보여주고 "이 스타일로 전체 만들어도 되나요?" 질문\n';
+            p += '6. ★★★ 작가 OK 받기 전까지 PHASE 2 진행 금지 ★★★\n\n';
+        }
 
         p += '# ===== PHASE 2: 전체 자산 생성 (작가 OK 후 순서대로 실행) =====\n\n';
-        p += '1. AI 이미지: `python scripts/generate_images.py scenes_classified.json output --style-file style.txt --resolution ' + res + ' --parallel ' + parallel + '`\n';
+        if (genspark) {
+            p += '1. AI 이미지: 작가가 준 scene_N.png 이미지 ZIP을 풀어 projects/{프로젝트}/images/ 에 배치 (Kie 생성·generate_images.py 호출 안 함). 누락된 장면 번호가 있으면 작가에게 알릴 것.\n';
+        } else {
+            p += '1. AI 이미지: `python scripts/generate_images.py scenes_classified.json output --style-file style.txt --resolution ' + res + ' --parallel ' + parallel + '`\n';
+        }
         if (blank) p += '2. 빈화면: real+claude_design 장면 → 검정 1920x1080 PNG (scene_XX.png)\n';
         if (cd) {
             p += '3. 클로드디자인: claude_design 장면 → 1920x1080 HTML. 규칙: 배경 #F5EDE0, Pretendard 폰트, 콘텐츠 1080px 초과 금지, 제목 46px+/숫자 44px+/본문 20px+, 핵심 숫자에 pulse 애니메이션. 자동 스케일링 JS 필수: `var d=document.getElementById("s");function f(){var s=Math.min(innerWidth/1920,innerHeight/1080);d.style.transform="scale("+s+")";d.style.left=((innerWidth-1920*s)/2)+"px";d.style.top=((innerHeight-1080*s)/2)+"px";}f();onresize=f;`\n';
@@ -32292,7 +32313,11 @@ ${commentText.slice(0, 12000)}`;
         if (zip) p += '6. ZIP: 전체 자산 묶어서 폴더 열기\n';
 
         p += '\n## 안전 규칙\n';
-        p += '- 🚨 이미지 생성은 반드시 scripts/generate_images.py만 사용. 직접 API 호출 코드를 작성하거나 별도 파이썬 스크립트를 만들어서 이미지를 생성하는 것은 절대 금지. generate_images.py가 검수기 자동 실행 + style.txt 자동 적용 + --limit 제한을 전부 처리함. 이걸 우회하면 모든 안전장치가 무력화됨.\n';
+        if (genspark) {
+            p += '- 🚨 이미지는 작가가 젠스파크로 직접 생성한다. Claude가 이미지 생성 API/스크립트를 호출하거나 작성하지 말 것. 작가가 준 scene_N.png ZIP만 사용.\n';
+        } else {
+            p += '- 🚨 이미지 생성은 반드시 scripts/generate_images.py만 사용. 직접 API 호출 코드를 작성하거나 별도 파이썬 스크립트를 만들어서 이미지를 생성하는 것은 절대 금지. generate_images.py가 검수기 자동 실행 + style.txt 자동 적용 + --limit 제한을 전부 처리함. 이걸 우회하면 모든 안전장치가 무력화됨.\n';
+        }
         p += '- scene_None.png 발생 시 즉시 중단\n- 실패 시 URL 로그 저장\n- 다운로드 3회 재시도\n- JSON 완성 시 클립보드 복사 필수\n\n';
         p += '## 🔁 JSON 자가검증 (출력 전 필수)\n';
         p += '- nano_prompt에 dramatic/cinematic/blazing/brilliant/fierce 같은 과장 단어 없음? ✅\n';
@@ -32313,7 +32338,7 @@ ${commentText.slice(0, 12000)}`;
         });
 
         navigator.clipboard.writeText(p).then(function() {
-            alert('Claude용 올인원 프롬프트 복사 완료!\n\n총 ' + total + '개 장면 (도입부 ' + introScenes.length + ' + 본문 ' + bodyScenes.length + ')\n\nClaude에 붙여넣기 하세요.');
+            alert((genspark ? '🎨 젠스파크용 ' : 'Claude용 ') + '올인원 프롬프트 복사 완료!\n\n총 ' + total + '개 장면 (도입부 ' + introScenes.length + ' + 본문 ' + bodyScenes.length + ')\n\nClaude에 붙여넣기 하세요.' + (genspark ? '\n\n→ 이미지는 젠스파크로 직접 생성 후 scene_N.png ZIP을 Claude에 주면 영상·디자인·ZIP까지 완성됩니다.' : ''));
         });
     }
 
