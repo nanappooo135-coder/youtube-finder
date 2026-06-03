@@ -3986,6 +3986,7 @@
                             <label style="font-size:0.85rem;cursor:pointer;display:flex;align-items:center;gap:8px;"><input type="checkbox" id="aioRealPerson" checked style="width:18px;height:18px;flex-shrink:0;"> 실존 인물 닮은 캐릭터 허용</label>
                             <label style="font-size:0.85rem;cursor:pointer;display:flex;align-items:center;gap:8px;"><input type="checkbox" id="aioBrandLogo" style="width:18px;height:18px;flex-shrink:0;"> 특정 브랜드 로고 포함</label>
                             <label style="font-size:0.85rem;cursor:pointer;display:flex;align-items:center;gap:8px;"><input type="checkbox" id="aioSensitive" style="width:18px;height:18px;flex-shrink:0;"> 민감/폭력 장면 허용</label>
+                            <label style="font-size:0.85rem;cursor:pointer;display:flex;align-items:center;gap:8px;color:#7048e8;font-weight:700;"><input type="checkbox" id="aioGenspark" style="width:18px;height:18px;flex-shrink:0;"> 🎨 젠스파크로 이미지 생성 (Kie 안 씀 — 직접 뽑아 scene_N.png ZIP 제공)</label>
                         </div>
                     </div>
 
@@ -4102,13 +4103,7 @@
                     <button class="search-btn" onclick="_aioGenPrompt()" style="background:#6f42c1;border-color:#6f42c1;width:100%;font-size:1.05rem;padding:14px;margin-bottom:8px;">
                         📋 Claude용 올인원 프롬프트 복사 (JSON → 테스트 → 전체 생성 → ZIP)
                     </button>
-                    <p style="font-size:0.78rem;color:#888;margin-bottom:10px;text-align:center;">Claude에 붙여넣기 → 맥락분석 → JSON → 1장 테스트 → 작가 OK → 나머지 전부 자동</p>
-
-                    <!-- 젠스파크용 올인원 버튼 (Kie 미사용) -->
-                    <button class="search-btn" onclick="_aioGenPrompt('genspark')" style="background:#7048e8;border-color:#7048e8;width:100%;font-size:1.0rem;padding:13px;margin-bottom:8px;">
-                        🎨 젠스파크용 올인원 프롬프트 복사 (JSON → 프롬프트 출력 → 이미지 ZIP 받아 영상·디자인·ZIP)
-                    </button>
-                    <p style="font-size:0.78rem;color:#888;margin-bottom:16px;text-align:center;">Kie 미사용 — 젠스파크로 직접 이미지 생성. Claude는 JSON·프롬프트 만들고, scene_N.png ZIP 받으면 그록 영상·클로드디자인·빈화면·ZIP 완성</p>
+                    <p style="font-size:0.78rem;color:#888;margin-bottom:16px;text-align:center;">Claude에 붙여넣기 → JSON → (위 ☑젠스파크 체크 시 직접 이미지 / 미체크 시 Kie 자동) → 그록 영상·디자인·ZIP</p>
 
                     <!-- JSON Import -->
                     <div class="input-group">
@@ -4116,6 +4111,9 @@
                         <textarea id="aioJsonInput" rows="3" placeholder='{"scenes":[{"sceneNo":1,"type":"ai",...},...]}' style="width:100%;padding:10px;border:2px solid #daa520;border-radius:8px;font-size:0.82rem;resize:vertical;font-family:monospace;line-height:1.5;"></textarea>
                         <button class="search-btn" onclick="_aioImportJson()" style="margin-top:6px;background:#daa520;border-color:#daa520;width:100%;">
                             📦 JSON Import → 결과 표시
+                        </button>
+                        <button class="search-btn" onclick="_aioSendToSellpot()" style="margin-top:6px;background:#7048e8;border-color:#7048e8;width:100%;">
+                            📤 이 JSON을 셀팟으로 보내기 (결과 자동 표시)
                         </button>
                     </div>
 
@@ -32118,7 +32116,8 @@ ${commentText.slice(0, 12000)}`;
     function _aioChk(id) { return document.getElementById(id).checked; }
 
     function _aioGenPrompt(mode) {
-        var genspark = (mode === 'genspark');
+        var _gsEl = document.getElementById('aioGenspark');
+        var genspark = (mode === 'genspark') || !!(_gsEl && _gsEl.checked);
         var style = document.getElementById('aioStylePrompt').value.trim();
         var introRaw = document.getElementById('aioIntro').value.trim();
         var bodyRaw = document.getElementById('aioBody').value.trim();
@@ -32340,6 +32339,17 @@ ${commentText.slice(0, 12000)}`;
         navigator.clipboard.writeText(p).then(function() {
             alert((genspark ? '🎨 젠스파크용 ' : 'Claude용 ') + '올인원 프롬프트 복사 완료!\n\n총 ' + total + '개 장면 (도입부 ' + introScenes.length + ' + 본문 ' + bodyScenes.length + ')\n\nClaude에 붙여넣기 하세요.' + (genspark ? '\n\n→ 이미지는 젠스파크로 직접 생성 후 scene_N.png ZIP을 Claude에 주면 영상·디자인·ZIP까지 완성됩니다.' : ''));
         });
+    }
+
+    function _aioSendToSellpot() {
+        var raw = (document.getElementById('aioJsonInput').value || '').trim();
+        if (!raw) { alert('먼저 위 [JSON 붙여넣기] 칸에 Claude에서 받은 JSON을 넣어주세요.'); return; }
+        var sp = document.getElementById('spJsonImport');
+        if (!sp) { alert('셀팟 입력칸(spJsonImport)을 찾을 수 없습니다.'); return; }
+        sp.value = raw;
+        try { if (typeof switchProcess === 'function') switchProcess('sellpot'); } catch (e) {}
+        try { if (typeof spImportJson === 'function') spImportJson(); } catch (e) {}
+        alert('✅ 셀팟으로 JSON을 보냈어요!\n셀팟 탭의 결과(나노/그록/실사/클로드/Kie)에서 확인하세요.');
     }
 
     function _aioImportJson() {
