@@ -32205,7 +32205,16 @@ ${commentText.slice(0, 12000)}`;
         p += '### 스타일 라인 (모든 nano_prompt 끝에)\n';
         p += '"Colored semi-realistic 2D editorial illustration, flat color fills with muted natural tones, visible pen linework, paper grain texture."\n\n';
 
-        if (korText) {
+        if (localSign) {
+            // 현지어 간판 허용: 소품 텍스트(현지어)는 살려서 화면이 휑해지지 않게 하되, 한글 깨짐만 방지
+            p += '⚠️ 텍스트 규칙 (현지어 간판 허용 ON): 장면 속 소품(간판·시위 팻말·현수막·달력·신문·서류·TV/모니터 화면 등)에는 그 장면 국가의 현지어(중국→중국어, 일본→일본어, 미국→영어)를 자연스럽게 넣어 화면이 비어 보이지 않게 할 것. 달력·팻말 등을 통째로 백지로 비우지 말 것.\n';
+            if (korText) {
+                p += '- 한글 핵심 텍스트가 필요한 장면: ABSOLUTE RULE 생략 (소품에 한글 핵심 텍스트도 자연스럽게 허용)\n';
+            } else {
+                p += '- 한글은 깨지므로 넣지 말 것 (읽히는 한글/영어 오버레이 자막 금지). 현지어 소품 텍스트는 허용하며, 읽을 수 없게 뭉개도 무방.\n';
+            }
+            p += '- 한글이 박힐 위험이 큰 인물 클로즈업 등 텍스트가 전혀 필요 없는 장면에만: "ABSOLUTE RULE: NO text, NO letters, NO words, NO numbers anywhere in the image."\n\n';
+        } else if (korText) {
             p += '한글 텍스트 필요 장면: ABSOLUTE RULE 생략\n';
             p += '한글 텍스트 불필요 장면: "ABSOLUTE RULE: NO text, NO letters, NO words, NO numbers anywhere in the image."\n\n';
         } else {
