@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>벤치마크 큐레이터 - 푸짐한 경제학</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --bg:#f5f7fb; --surface:#fff; --text:#1f2937; --text-muted:#6b7280;
+  --border:#e5e7eb; --primary:#6366f1; --primary-hover:#4f46e5;
+  --accent:#ec4899; --success:#10b981; --warning:#f59e0b; --danger:#dc2626;
+  --shadow-sm:0 1px 3px rgba(0,0,0,.04); --shadow-md:0 4px 12px rgba(0,0,0,.06);
+  --radius:12px;
+}
+body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif;
+  background:var(--bg); color:var(--text); line-height:1.5; min-height:100vh; }
+.container { max-width:1600px; margin:0 auto; padding:24px; }
+header { margin-bottom:24px; }
+header h1 { font-size:24px; font-weight:700; }
+header .sub { color:var(--text-muted); font-size:14px; margin-top:4px; }
+header .meta { color:var(--text-muted); font-size:13px; margin-top:8px; }
+
+.layout { display:grid; grid-template-columns:1fr 380px; gap:20px; }
+@media (max-width:1100px){ .layout{grid-template-columns:1fr;} }
+
+.main-panel { background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow-sm); padding:20px; }
+.side-panel { background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow-sm); padding:16px; height:fit-content; position:sticky; top:24px; }
+
+/* 필터바 */
+.filter-bar { display:flex; flex-wrap:wrap; gap:10px; padding-bottom:16px; border-bottom:1px solid var(--border); margin-bottom:16px; }
+.filter-bar select, .filter-bar input { padding:8px 12px; border:1px solid var(--border); border-radius:8px; font-size:13px; background:#fff; }
+.filter-bar input[type=text]{ min-width:240px; }
+.view-toggle { display:flex; gap:4px; }
+.view-toggle button { padding:8px 14px; border:1px solid var(--border); background:#fff; cursor:pointer; font-size:13px; border-radius:8px; }
+.view-toggle button.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+.stats-line { font-size:13px; color:var(--text-muted); padding:8px 0 16px; }
+
+/* 테이블 */
+.video-table { width:100%; border-collapse:collapse; font-size:13px; }
+.video-table th, .video-table td { padding:10px 8px; text-align:left; border-bottom:1px solid #f1f5f9; }
+.video-table th { background:#fafbfc; font-weight:600; cursor:pointer; user-select:none; }
+.video-table th:hover { background:#eef0f6; }
+.video-table td.num { text-align:right; font-variant-numeric:tabular-nums; }
+.video-table tr:hover { background:#fafbff; }
+.video-table .thumb { width:120px; }
+.video-table .thumb img { width:120px; height:68px; object-fit:cover; border-radius:6px; display:block; }
+.video-table .title { max-width:380px; }
+.video-table .title a { color:var(--text); text-decoration:none; font-weight:500; }
+.video-table .title a:hover { color:var(--primary); text-decoration:underline; }
+.outperf { display:inline-block; padding:2px 8px; border-radius:6px; font-weight:600; font-size:12px; }
+
+/* 카드뷰 */
+.card-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px; }
+.card { border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; background:#fff; transition:transform .15s, box-shadow .15s; }
+.card:hover { transform:translateY(-2px); box-shadow:var(--shadow-md); }
+.card img { width:100%; aspect-ratio:16/9; object-fit:cover; display:block; background:#eee; }
+.card .info { padding:12px; }
+.card .badges { display:flex; gap:6px; margin-bottom:8px; font-size:12px; font-weight:600; }
+.card .ch { color:var(--text-muted); font-size:12px; margin-bottom:4px; }
+.card .title { font-size:13px; font-weight:600; line-height:1.4; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+.card .meta { font-size:11px; color:var(--text-muted); margin-top:8px; }
+
+/* 챗 패널 */
+.chat-header { font-weight:700; margin-bottom:8px; font-size:15px; display:flex; align-items:center; gap:8px; }
+.chat-header .badge { font-size:10px; padding:2px 6px; background:var(--primary); color:#fff; border-radius:4px; }
+.chat-sub { font-size:11px; color:var(--text-muted); margin-bottom:12px; }
+.chat-msgs { height:420px; overflow-y:auto; border:1px solid var(--border); border-radius:8px; padding:10px; background:#fafbfc; margin-bottom:10px; font-size:13px; }
+.msg { padding:8px 10px; border-radius:8px; margin-bottom:8px; }
+.msg.user { background:var(--primary); color:#fff; margin-left:30px; }
+.msg.assist { background:#fff; border:1px solid var(--border); margin-right:10px; white-space:pre-wrap; }
+.msg.sys { background:#fff3cd; color:#856404; font-size:12px; }
+.chat-input { display:flex; gap:6px; }
+.chat-input textarea { flex:1; padding:8px; border:1px solid var(--border); border-radius:8px; font-size:13px; resize:vertical; min-height:50px; max-height:150px; font-family:inherit; }
+.chat-input button { padding:8px 14px; background:var(--primary); color:#fff; border:none; border-radius:8px; cursor:pointer; font-weight:600; }
+.chat-input button:disabled { opacity:.5; cursor:not-allowed; }
+
+.suggest-chips { display:flex; flex-wrap:wrap; gap:4px; margin-bottom:10px; }
+.suggest-chips button { padding:4px 10px; font-size:11px; background:#f3f4f6; border:1px solid var(--border); border-radius:12px; cursor:pointer; }
+.suggest-chips button:hover { background:var(--primary); color:#fff; border-color:var(--primary); }
+
+.api-setup { padding:12px; background:#fef3c7; border:1px solid #fbbf24; border-radius:8px; margin-bottom:10px; }
+.api-setup input { width:100%; padding:6px; border:1px solid var(--border); border-radius:4px; margin-top:6px; }
+.api-setup button { margin-top:6px; padding:6px 12px; background:var(--primary); color:#fff; border:none; border-radius:4px; cursor:pointer; }
+
+.back-link { display:inline-block; margin-bottom:12px; color:var(--primary); text-decoration:none; font-size:13px; }
+.back-link:hover { text-decoration:underline; }
+
+#loading { padding:40px; text-align:center; color:var(--text-muted); }
+#error { padding:20px; background:#fee; border:1px solid var(--danger); border-radius:8px; color:var(--danger); }
+</style>
+</head>
+<body>
+<div class="container">
+<a href="index.html" class="back-link">← 메인으로</a>
+<header>
+  <h1>🎯 벤치마크 큐레이터</h1>
+  <div class="sub">한국 경제·지정학 채널 영상 데이터 + Claude 챗 추천</div>
+  <div class="meta" id="datasetMeta">데이터셋 로딩 중...</div>
+</header>
+
+<div id="loading">📥 dataset.json 로딩 중...</div>
+<div id="error" style="display:none"></div>
+
+<div class="layout" id="mainLayout" style="display:none">
+  <!-- 메인: 영상 데이터 -->
+  <div class="main-panel">
+    <div class="filter-bar">
+      <select id="filterPeriod">
+        <option value="7">최근 7일</option>
+        <option value="30" selected>최근 30일</option>
+        <option value="90">최근 90일</option>
+        <option value="180">최근 180일</option>
+        <option value="0">전체</option>
+      </select>
+      <select id="filterChannel"><option value="">전체 채널</option></select>
+      <select id="filterTier">
+        <option value="">전체 체급</option>
+        <option value="초소(5K미만)">초소(5K미만)</option>
+        <option value="소형(10-50K)">소형(10-50K)</option>
+        <option value="중소(50-200K)">중소(50-200K)</option>
+        <option value="중형(200K-1M)">중형(200K-1M)</option>
+        <option value="대형(1M+)">대형(1M+)</option>
+      </select>
+      <select id="filterSort">
+        <option value="hit_score">정렬: Hit Score</option>
+        <option value="outperformance">정렬: Outperformance</option>
+        <option value="views">정렬: 조회수</option>
+        <option value="date">정렬: 최신순</option>
+        <option value="engagement_rate">정렬: 좋아요율</option>
+      </select>
+      <input type="number" id="filterMinOutperf" placeholder="최소 outperf (예: 2)" min="0" step="0.5" style="width:140px">
+      <input type="text" id="filterSearch" placeholder="🔍 제목 검색">
+      <div class="view-toggle">
+        <button id="viewTable" class="active" onclick="setView('table')">📋 테이블</button>
+        <button id="viewCard" onclick="setView('card')">🖼 카드</button>
+      </div>
+    </div>
+    <div class="stats-line" id="statsLine"></div>
+    <div id="videoArea"></div>
+  </div>
+
+  <!-- 사이드: 챗 -->
+  <div class="side-panel">
+    <div class="chat-header">💬 큐레이터 챗 <span class="badge">kie.ai Claude</span></div>
+    <div class="chat-sub">현재 화면의 데이터를 컨텍스트로 질문 가능. 추천·필터링·분석 요청.</div>
+
+    <div id="apiSetup" class="api-setup" style="display:none">
+      <strong>⚠️ kie.ai API 키 설정 필요</strong>
+      <div style="font-size:12px;margin-top:4px;">키는 브라우저 localStorage에만 저장. 코드에 노출 안 됨.</div>
+      <input type="password" id="apiKeyInput" placeholder="sk-... 형식 키">
+      <button onclick="saveApiKey()">저장</button>
+    </div>
+
+    <div class="suggest-chips" id="suggestChips">
+      <button onclick="askChat('현재 보이는 영상들 중 푸짐 결 가장 강한 것 5개 골라줘 (이유 포함)')">결 매칭 Top 5</button>
+      <button onclick="askChat('현재 보이는 영상 패턴 분석해서 다음 영상 주제 3개 추천. 푸짐 채널 4공식 매칭 명시.')">주제 3개 추천</button>
+      <button onclick="askChat('현재 보이는 영상 중 중국 견제 코드 가진 영상 모두 추리고 공통 패턴 분석')">중국 견제 분석</button>
+      <button onclick="askChat('최근 30일 데이터에서 활성 wave 탐지 (3개 이상 채널이 다룬 테마)')">활성 wave 탐지</button>
+    </div>
+
+    <div class="chat-msgs" id="chatMsgs"></div>
+    <div class="chat-input">
+      <textarea id="chatInput" placeholder="질문 입력 (Shift+Enter 줄바꿈, Enter 전송)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}"></textarea>
+      <button id="chatSendBtn" onclick="sendChat()">전송</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+// ========== 전역 상태 ==========
+const STATE = {
+  allVideos: [],
+  filteredVideos: [],
+  view: 'table',
+  meta: null,
+};
+
+const KIE_ENDPOINT = 'https://api.kie.ai/claude/v1/messages';
+const KIE_MODEL = 'claude-sonnet-4-6';
+
+// ========== API 키 관리 ==========
+function getApiKey() { return localStorage.getItem('kie_api_key') || ''; }
+function saveApiKey() {
+  const k = document.getElementById('apiKeyInput').value.trim();
+  if (!k) { alert('키 입력 필요'); return; }
+  localStorage.setItem('kie_api_key', k);
+  document.getElementById('apiSetup').style.display = 'none';
+  appendMsg('sys', 'API 키 저장 완료. 챗 사용 가능합니다.');
+}
+function checkApiKey() {
+  if (!getApiKey()) {
+    document.getElementById('apiSetup').style.display = 'block';
+    return false;
+  }
+  return true;
+}
+
+// ========== 데이터셋 로드 ==========
+async function loadDataset() {
+  try {
+    const res = await fetch('data/dataset.json?t=' + Date.now());
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    STATE.meta = data.meta;
+    STATE.allVideos = data.videos || [];
+    document.getElementById('datasetMeta').textContent =
+      `데이터셋: ${STATE.meta.channel_count}개 채널 / ${STATE.meta.video_count.toLocaleString()}개 영상 / 생성 ${new Date(STATE.meta.generated_at).toLocaleString('ko-KR')}`;
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('mainLayout').style.display = 'grid';
+    initFilters();
+    applyFilters();
+    if (!getApiKey()) document.getElementById('apiSetup').style.display = 'block';
+  } catch (e) {
+    document.getElementById('loading').style.display = 'none';
+    const err = document.getElementById('error');
+    err.style.display = 'block';
+    err.innerHTML = `<strong>데이터셋 로드 실패:</strong> ${e.message}<br><br>
+      <code>data/dataset.json</code> 파일이 있는지 확인하세요. (build_dataset_json.py 실행 후 복사 필요)`;
+  }
+}
+
+// ========== 필터 ==========
+function initFilters() {
+  const channels = [...new Set(STATE.allVideos.map(v => v.channel_name))].sort();
+  const sel = document.getElementById('filterChannel');
+  channels.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c; opt.textContent = c;
+    sel.appendChild(opt);
+  });
+  ['filterPeriod','filterChannel','filterTier','filterSort','filterMinOutperf','filterSearch'].forEach(id => {
+    document.getElementById(id).addEventListener('input', applyFilters);
+  });
+}
+
+function applyFilters() {
+  const period = parseInt(document.getElementById('filterPeriod').value);
+  const ch = document.getElementById('filterChannel').value;
+  const tier = document.getElementById('filterTier').value;
+  const sortBy = document.getElementById('filterSort').value;
+  const minOutperf = parseFloat(document.getElementById('filterMinOutperf').value) || 0;
+  const search = document.getElementById('filterSearch').value.toLowerCase().trim();
+
+  let v = STATE.allVideos.filter(x => {
+    if (period > 0 && x.days_old > period) return false;
+    if (ch && x.channel_name !== ch) return false;
+    if (tier && x.channel_tier !== tier) return false;
+    if (minOutperf > 0 && x.outperformance < minOutperf) return false;
+    if (search && !x.title.toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  v.sort((a,b) => {
+    if (sortBy === 'date') return new Date(b.date) - new Date(a.date);
+    return (b[sortBy] || 0) - (a[sortBy] || 0);
+  });
+
+  STATE.filteredVideos = v;
+  render();
+}
+
+// ========== 렌더 ==========
+function setView(v) {
+  STATE.view = v;
+  document.getElementById('viewTable').classList.toggle('active', v === 'table');
+  document.getElementById('viewCard').classList.toggle('active', v === 'card');
+  render();
+}
+
+function render() {
+  const v = STATE.filteredVideos;
+  document.getElementById('statsLine').textContent = `${v.length.toLocaleString()}개 영상 표시 중 (총 ${STATE.allVideos.length.toLocaleString()}개)`;
+  if (STATE.view === 'table') renderTable(v);
+  else renderCards(v);
+}
+
+function outperfColor(o) {
+  if (o >= 10) return 'background:#fee2e2;color:#991b1b;';
+  if (o >= 5) return 'background:#fed7aa;color:#9a3412;';
+  if (o >= 3) return 'background:#fef3c7;color:#854d0e;';
+  if (o >= 1.5) return 'background:#dcfce7;color:#166534;';
+  return 'background:#f1f5f9;color:#475569;';
+}
+
+function renderTable(videos) {
+  const html = `<table class="video-table">
+    <thead><tr>
+      <th class="thumb">썸네일</th><th class="num">Hit</th><th class="num">Outperf</th>
+      <th class="num">조회수</th><th>날짜</th><th>채널</th><th class="title">제목</th>
+    </tr></thead><tbody>
+    ${videos.slice(0,500).map(v => `
+      <tr>
+        <td><img src="${v.thumbnail_mq || ''}" loading="lazy" alt=""></td>
+        <td class="num"><strong>${(v.hit_score||0).toFixed(1)}</strong></td>
+        <td class="num"><span class="outperf" style="${outperfColor(v.outperformance||0)}">${(v.outperformance||0).toFixed(1)}x</span></td>
+        <td class="num">${(v.views||0).toLocaleString()}</td>
+        <td>${v.date || '-'}<br><small style="color:#9ca3af">${v.days_old}일 전</small></td>
+        <td>${v.channel_name || '-'}<br><small style="color:#9ca3af">${v.channel_tier || ''}</small></td>
+        <td class="title"><a href="${v.video_url}" target="_blank" rel="noopener">${v.title}</a></td>
+      </tr>
+    `).join('')}
+    </tbody></table>
+    ${videos.length > 500 ? `<div style="padding:10px;text-align:center;color:#9ca3af;font-size:12px;">상위 500개만 표시 (전체 ${videos.length}개)</div>` : ''}
+  `;
+  document.getElementById('videoArea').innerHTML = html;
+}
+
+function renderCards(videos) {
+  const html = `<div class="card-grid">
+    ${videos.slice(0,200).map(v => `
+      <a class="card" href="${v.video_url}" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;">
+        <img src="${v.thumbnail_hq || v.thumbnail_mq || ''}" loading="lazy" alt="">
+        <div class="info">
+          <div class="badges">
+            <span class="outperf" style="${outperfColor(v.outperformance||0)}">${(v.outperformance||0).toFixed(1)}x</span>
+            <span style="color:#6b7280;">${(v.views||0).toLocaleString()}회</span>
+          </div>
+          <div class="ch">${v.channel_name} · ${v.days_old}일 전</div>
+          <div class="title">${v.title}</div>
+          <div class="meta">Hit ${(v.hit_score||0).toFixed(1)} · ${v.channel_tier || ''}</div>
+        </div>
+      </a>
+    `).join('')}
+  </div>
+  ${videos.length > 200 ? `<div style="padding:10px;text-align:center;color:#9ca3af;font-size:12px;">상위 200개만 표시 (전체 ${videos.length}개)</div>` : ''}`;
+  document.getElementById('videoArea').innerHTML = html;
+}
+
+// ========== 챗 ==========
+function appendMsg(role, text) {
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+  div.textContent = text;
+  document.getElementById('chatMsgs').appendChild(div);
+  document.getElementById('chatMsgs').scrollTop = 99999;
+}
+
+function askChat(prompt) {
+  document.getElementById('chatInput').value = prompt;
+  sendChat();
+}
+
+const PUJIM_SYSTEM = `너는 한국 유튜브 채널 "푸짐한 경제학"의 주제 큐레이터다.
+사용자가 현재 보고 있는 영상 리스트를 참고해서 분석·추천한다.
+
+푸짐 본질: 한국 30~50대 남자의 실존적 두려움(직장·집·자녀·노후·한국위치·건강)을 건드리는 채널 — "안정적이라 믿었던 것이 무너지는 이야기"
+
+흥행 4공식:
+1. 뉴질랜드형: 부러워하던 선진국이 무너지는 진짜 이유 (단, 이민 변형은 시즌 종료)
+2. 머스크형: 글로벌 거물의 충격적 발언 (단독 사용 금지 — 공식3/4와 결합 필수)
+3. 아프간형: "○○인 줄 알았는데 알고보니 ○○" 반전
+4. 이란요새형: "○○년 걸린 게 ○○일에" 시간 압축 (★ 격상, 거의 필수 결합)
+
+무너짐 7종: 신화/시스템/권력/약속/거리감/시간/인간성
+6대 두려움 가중치: 한국위치★5 > 노후★4 > 직장★2 > 자녀·집값★1
+
+가산점: 중국견제 +3 / 공식4 결합 +2 / 한국위치·노후 직격 +2
+
+지뢰 (재확인): 클리셰망국, 인물단독평론, 국내부동산단독, 자원부국찬양, AI추상론, "한국이 따라간다" 경고형
+
+추천 시 반드시:
+- 데이터에 있는 실제 영상만 인용 (id 명시)
+- video_url, thumbnail_hq 함께 출력
+- 6점 스코어카드 (각 1-5점) + 가산점
+- 절대 만들어내지 말 것`;
+
+async function sendChat() {
+  if (!checkApiKey()) return;
+  const input = document.getElementById('chatInput');
+  const q = input.value.trim();
+  if (!q) return;
+  input.value = '';
+  appendMsg('user', q);
+
+  // 현재 보이는 영상 컨텍스트 (상위 50개만 — 토큰 절약)
+  const context = STATE.filteredVideos.slice(0, 50).map(v => ({
+    id: v.id, title: v.title, channel: v.channel_name, date: v.date,
+    views: v.views, outperf: v.outperformance, hit_score: v.hit_score,
+    days_old: v.days_old, video_url: v.video_url, thumbnail_hq: v.thumbnail_hq,
+  }));
+
+  const userMsg = `[현재 화면에 표시된 영상 ${context.length}개]\n${JSON.stringify(context, null, 0)}\n\n[질문]\n${q}`;
+
+  document.getElementById('chatSendBtn').disabled = true;
+  appendMsg('assist', '⏳ 분석 중...');
+  const lastMsg = document.getElementById('chatMsgs').lastChild;
+
+  try {
+    const res = await fetch(KIE_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + getApiKey(),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: KIE_MODEL,
+        system: PUJIM_SYSTEM,
+        messages: [{ role: 'user', content: userMsg }],
+        max_tokens: 2000,
+        stream: false,
+      }),
+    });
+    if (!res.ok) {
+      const t = await res.text();
+      throw new Error(`HTTP ${res.status}: ${t.slice(0,200)}`);
+    }
+    const data = await res.json();
+    const text = data?.content?.[0]?.text || '(응답 없음)';
+    lastMsg.textContent = text;
+  } catch (e) {
+    lastMsg.textContent = '❌ 오류: ' + e.message;
+    lastMsg.style.background = '#fee';
+    lastMsg.style.color = '#c00';
+  } finally {
+    document.getElementById('chatSendBtn').disabled = false;
+  }
+}
+
+// ========== 시작 ==========
+loadDataset();
+</script>
+</body>
+</html>
