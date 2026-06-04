@@ -146,15 +146,32 @@ header .meta { color:var(--text-muted); font-size:13px; }
 </div>
 
 <script>
-const PUJIM_VIEWER_KEYWORDS = {
-  "중동·이란": ["이란","이스라엘","후티","사우디","호르무즈","중동","쿠르드","아프간","탈레반"],
-  "미군·트럼프": ["미군","트럼프","백악관","워싱턴","펜타곤"],
-  "중국 견제": ["중국","시진핑","BYD","화웨이","위안화","대만"],
-  "북한·한반도": ["북한","김정은","한반도","평양"],
-  "거인 몰락": ["부도","파산","몰락","무너지","폭락","위기","적자","23조","76조","증발"],
-  "시니어 자산": ["환율","유가","금값","연금","달러","엔화","리라","루블"],
-  "전쟁·안보": ["전쟁","공격","폭격","함대","미사일","핵","러시아","우크라"],
+// 핵심 코드 (반드시 1개 이상 매칭돼야 푸짐 결로 인정)
+const PUJIM_CORE_KEYWORDS = {
+  "중동·이란": ["이란","이스라엘","후티","사우디","호르무즈","중동","쿠르드","아프간","탈레반","헤즈볼라","팔레스타인","가자"],
+  "미군·트럼프": ["미군","트럼프","백악관","워싱턴","펜타곤","CIA","NSA"],
+  "중국 견제": ["중국","시진핑","BYD","화웨이","위안화","대만","공산당","위구르"],
+  "북한·한반도": ["북한","김정은","한반도","평양","핵실험"],
+  "강대국·러시아": ["러시아","푸틴","우크라","나토","EU"],
+  "거대 거인 몰락": ["삼성","현대","애플","구글","엔비디아","TSMC","ASML","LVMH","토요타","혼다","폭스바겐","벤츠"],
+  "거대 통화·자산": ["환율","유가","금값","연금","달러","엔화","리라","루블","페소"],
 };
+
+// 보조 코드 (더 강력하게 매칭, 단독으론 부족)
+const PUJIM_SUPPORT_KEYWORDS = [
+  "진짜 이유","충격적","비밀","실체","최후","마지막","처참한",
+  "사실상 항복","결국","박살","무너진","끝났다","짐 쌌다","발칵","통째로"
+];
+
+// 절대 제외 (작가 망한 카테고리 + 푸짐 결 아닌 명백한 신호)
+const PUJIM_EXCLUSION_KEYWORDS = [
+  "장례","결혼식","유족","상조","3일장",
+  "지방선거","구청장","투표","선거비용","유권자",
+  "유퀴즈","킬잇","선공개","티저","와일드","발라더",
+  "원가공개","이슈픽","돈선체크",
+  "강남 아파트","의대","청년 이민","자녀 교육",
+  "캠핑카","결혼식장","유사 가족","장례식장"
+];
 
 const STATE = { videos: [], pujim: [], meta: null };
 
@@ -193,7 +210,8 @@ function detectWaves(videos){
   const counter={};
   for(const v of videos){
     if(v.days_old>30) continue;
-    for(const [theme, keywords] of Object.entries(PUJIM_VIEWER_KEYWORDS)){
+    if(hasExclusion(v.title)) continue;  // 결 안 맞는 거 제외
+    for(const [theme, keywords] of Object.entries(PUJIM_CORE_KEYWORDS)){
       for(const kw of keywords){
         if(v.title.includes(kw)){
           if(!counter[theme]) counter[theme]={count:0, videos:[], channels:new Set()};
@@ -215,11 +233,47 @@ function detectWaves(videos){
     .sort((a,b)=>b.avgOutperf-a.avgOutperf);
 }
 
-function matchesPujimKeyword(title){
-  for(const keywords of Object.values(PUJIM_VIEWER_KEYWORDS)){
-    if(keywords.some(kw=>title.includes(kw))) return true;
+function hasExclusion(title){
+  return PUJIM_EXCLUSION_KEYWORDS.some(kw=>title.includes(kw));
+}
+
+function pujimMatchScore(title){
+  // 1. 절대 제외 키워드 있으면 즉시 0점
+  if(hasExclusion(title)) return 0;
+  // 2. 핵심 카테고리 매칭 카운트
+  let coreMatches = 0;
+  for(const keywords of Object.values(PUJIM_CORE_KEYWORDS)){
+    if(keywords.some(kw=>title.includes(kw))){ coreMatches++; }
   }
-  return false;
+  // 3. 보조 키워드 매칭
+  const supportMatch = PUJIM_SUPPORT_KEYWORDS.some(kw=>title.includes(kw));
+  // 점수: 핵심 1개 = 2점, 핵심 2개+ = 4점, 보조 추가 = +1
+  let score = 0;
+  if(coreMatches >= 2) score = 4;
+  else if(coreMatches === 1) score = 2;
+  if(supportMatch) score += 1;
+  return score;  // 0~5
+}
+
+function matchesPujimKeyword(title){
+  // 3점 이상만 진짜 매칭
+  return pujimMatchScore(title) >= 3;
+}
+
+// 작가 자기 채널 망한 영상에서 키워드 추출 → 자동 블랙리스트
+function getPujimFailedKeywords(){
+  const failed = STATE.pujim.filter(v=>v.outperformance < 1.0);
+  const keywords = new Set();
+  for(const v of failed){
+    // 제목에서 2~3글자 명사 추출 (단순 휴리스틱)
+    const words = v.title.replace(/[\"'()\[\]?!,.]/g,' ').split(/\s+/);
+    for(const w of words){
+      if(w.length>=2 && w.length<=5 && !/^[a-zA-Z0-9]+$/.test(w)){
+        keywords.add(w);
+      }
+    }
+  }
+  return keywords;
 }
 
 function render(){
@@ -241,9 +295,23 @@ function render(){
     document.getElementById('pujimLastDate').textContent = pujimSorted[0].date;
   }
 
-  // 추천 후보 (hit_score 상위 + 푸짐 키워드 매칭, 푸짐 제외)
+  // 추천 후보 (점수 4점 이상만, 푸짐 제외)
+  // 작가 망한 키워드도 자동 제외
+  const failedKws = getPujimFailedKeywords();
   const recommendations = STATE.videos
-    .filter(v=>v.channel_name!=='푸짐한 경제학' && matchesPujimKeyword(v.title) && v.days_old<=30)
+    .filter(v=>{
+      if(v.channel_name==='푸짐한 경제학') return false;
+      if(v.days_old>30) return false;
+      const score = pujimMatchScore(v.title);
+      if(score < 4) return false;  // 4점 이상만
+      // 작가 망한 키워드 겹치는지 체크
+      for(const kw of failedKws){
+        if(kw.length>=3 && v.title.includes(kw)){
+          return false;  // 망한 키워드 있으면 제외
+        }
+      }
+      return true;
+    })
     .sort((a,b)=>b.hit_score-a.hit_score)
     .slice(0, 10);
   document.getElementById('recoCount').textContent = recommendations.length;
