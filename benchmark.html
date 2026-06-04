@@ -92,7 +92,7 @@ header .meta { color:var(--text-muted); font-size:13px; margin-top:8px; }
 </head>
 <body>
 <div class="container">
-<a href="index.html" class="back-link">← 메인으로</a>
+<a href="index.html" class="back-link">← 메인으로</a> &nbsp; <a href="javascript:showBlockedList()" class="back-link" style="color:#dc2626;">🚫 차단 채널 관리</a>
 <header>
   <h1>🎯 벤치마크 큐레이터</h1>
   <div class="sub">한국 경제·지정학 채널 영상 데이터 + Claude 챗 추천</div>
@@ -107,6 +107,8 @@ header .meta { color:var(--text-muted); font-size:13px; margin-top:8px; }
   <div class="main-panel">
     <div class="filter-bar">
       <select id="filterPeriod">
+        <option value="1">최근 1일 (속보)</option>
+        <option value="3">최근 3일</option>
         <option value="7">최근 7일</option>
         <option value="30" selected>최근 30일</option>
         <option value="90">최근 90일</option>
@@ -175,7 +177,31 @@ const STATE = {
   filteredVideos: [],
   view: 'table',
   meta: null,
+  blockedChannels: new Set(JSON.parse(localStorage.getItem('blocked_channels')||'[]')),
 };
+
+function blockChannel(channelName){
+  if(!confirm(`"${channelName}" 채널을 차단할까요?\n앞으로 이 채널 영상 표시 안 됨.\n(설정에서 해제 가능)`)) return;
+  STATE.blockedChannels.add(channelName);
+  localStorage.setItem('blocked_channels', JSON.stringify([...STATE.blockedChannels]));
+  showToast(`✓ "${channelName}" 차단됨`);
+  applyFilters();
+}
+
+function unblockChannel(channelName){
+  STATE.blockedChannels.delete(channelName);
+  localStorage.setItem('blocked_channels', JSON.stringify([...STATE.blockedChannels]));
+  applyFilters();
+  showBlockedList();
+}
+
+function showBlockedList(){
+  const list = [...STATE.blockedChannels].sort();
+  if(list.length===0){ alert('차단된 채널 없음'); return; }
+  const html = list.map(n=>`<div style="padding:8px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;">${n} <button onclick="unblockChannel('${n.replace(/'/g,"\\'")}');this.parentElement.remove();" style="padding:2px 8px;font-size:11px;background:#10b981;color:#fff;border:none;border-radius:4px;cursor:pointer;">해제</button></div>`).join('');
+  const w = window.open('','blockedList','width=400,height=600');
+  w.document.write(`<html><head><title>차단된 채널</title></head><body style="font-family:sans-serif;padding:20px;"><h2>차단된 채널 (${list.length}개)</h2>${html}</body></html>`);
+}
 
 const KIE_ENDPOINT = 'https://api.kie.ai/claude/v1/messages';
 const KIE_MODEL = 'claude-sonnet-4-6';
@@ -244,6 +270,7 @@ function applyFilters() {
   const search = document.getElementById('filterSearch').value.toLowerCase().trim();
 
   let v = STATE.allVideos.filter(x => {
+    if (STATE.blockedChannels.has(x.channel_name)) return false;  // 차단 채널
     if (period > 0 && x.days_old > period) return false;
     if (ch && x.channel_name !== ch) return false;
     if (tier && x.channel_tier !== tier) return false;
@@ -309,7 +336,7 @@ function appendTableRows(videos){
     const v = videos[i];
     const escId = (v.id||'').replace(/'/g,"\\'");
     html += `<tr>
-      <td><img src="${v.thumbnail_mq || ''}" loading="lazy" alt=""></td>
+      <td><a href="${v.video_url}" target="_blank" rel="noopener"><img src="${v.thumbnail_mq || ''}" loading="lazy" alt="" style="cursor:pointer;"></a></td>
       <td class="num"><strong>${(v.hit_score||0).toFixed(1)}</strong></td>
       <td class="num"><span class="outperf" style="${outperfColor(v.outperformance||0)}">${(v.outperformance||0).toFixed(1)}x</span></td>
       <td class="num">${(v.views||0).toLocaleString()}</td>
@@ -317,7 +344,8 @@ function appendTableRows(videos){
       <td>${v.channel_name || '-'}<br><small style="color:#9ca3af">${v.channel_tier || ''}</small></td>
       <td class="title">
         <a href="${v.video_url}" target="_blank" rel="noopener">${v.title}</a>
-        <button onclick="copyForCurator('${escId}')" style="margin-left:8px;padding:2px 8px;font-size:11px;background:#6366f1;color:#fff;border:none;border-radius:4px;cursor:pointer;" title="큐레이터에 던질 프롬프트 복사">🤖 추천</button>
+        <button onclick="copyForCurator('${escId}')" style="margin-left:8px;padding:2px 8px;font-size:11px;background:#6366f1;color:#fff;border:none;border-radius:4px;cursor:pointer;" title="큐레이터 프롬프트 복사">🤖 추천</button>
+        <button onclick="blockChannel('${(v.channel_name||'').replace(/'/g,"\\'")}')" style="margin-left:4px;padding:2px 8px;font-size:11px;background:#dc2626;color:#fff;border:none;border-radius:4px;cursor:pointer;" title="이 채널 영원히 차단">🚫</button>
       </td>
     </tr>`;
   }
@@ -363,7 +391,8 @@ function appendCards(videos){
           <div class="meta">Hit ${(v.hit_score||0).toFixed(1)} · ${v.channel_tier || ''}</div>
         </div>
       </a>
-      <button onclick="copyForCurator('${escId}')" style="position:absolute;top:8px;right:8px;padding:4px 10px;font-size:11px;background:rgba(99,102,241,0.95);color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;backdrop-filter:blur(4px);" title="큐레이터 프롬프트 복사">🤖 추천</button>
+      <button onclick="copyForCurator('${escId}')" style="position:absolute;top:8px;right:8px;padding:4px 10px;font-size:11px;background:rgba(99,102,241,0.95);color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;backdrop-filter:blur(4px);" title="큐레이터 프롬프트 복사">🤖</button>
+      <button onclick="blockChannel('${(v.channel_name||'').replace(/'/g,"\\'")}')" style="position:absolute;top:8px;left:8px;padding:4px 8px;font-size:11px;background:rgba(220,38,38,0.9);color:#fff;border:none;border-radius:6px;cursor:pointer;backdrop-filter:blur(4px);" title="이 채널 차단">🚫</button>
     </div>`;
   }
   grid.insertAdjacentHTML('beforeend', html);

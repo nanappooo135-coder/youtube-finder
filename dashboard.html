@@ -121,7 +121,14 @@ header .meta { color:var(--text-muted); font-size:13px; }
   <!-- 푸짐 시청자 직격 폭주 + 활성 Wave -->
   <div class="two-col">
     <div class="section">
-      <h2>🔥 푸짐 시청자 직격 폭주 (최근 7일)</h2>
+      <h2>🔥 푸짐 시청자 직격 폭주
+        <div style="display:inline-flex;gap:4px;margin-left:12px;">
+          <button onclick="setHotPeriod(1)" id="hotBtn1" style="padding:4px 10px;font-size:12px;border:1px solid var(--border);background:#fff;border-radius:6px;cursor:pointer;">1일</button>
+          <button onclick="setHotPeriod(3)" id="hotBtn3" style="padding:4px 10px;font-size:12px;border:1px solid var(--border);background:#fff;border-radius:6px;cursor:pointer;">3일</button>
+          <button onclick="setHotPeriod(7)" id="hotBtn7" style="padding:4px 10px;font-size:12px;border:1px solid var(--border);background:var(--primary);color:#fff;border-radius:6px;cursor:pointer;">7일</button>
+          <button onclick="setHotPeriod(30)" id="hotBtn30" style="padding:4px 10px;font-size:12px;border:1px solid var(--border);background:#fff;border-radius:6px;cursor:pointer;">30일</button>
+        </div>
+      </h2>
       <div id="hotVideos"><div class="empty">로딩 중...</div></div>
     </div>
 
@@ -173,7 +180,32 @@ const PUJIM_EXCLUSION_KEYWORDS = [
   "캠핑카","결혼식장","유사 가족","장례식장"
 ];
 
-const STATE = { videos: [], pujim: [], meta: null };
+const STATE = {
+  videos: [], pujim: [], meta: null, hotPeriod: 7,
+  blockedChannels: new Set(JSON.parse(localStorage.getItem('blocked_channels')||'[]')),
+};
+
+function blockChannel(channelName){
+  if(!confirm(`"${channelName}" 채널을 차단할까요?`)) return;
+  STATE.blockedChannels.add(channelName);
+  localStorage.setItem('blocked_channels', JSON.stringify([...STATE.blockedChannels]));
+  render();
+}
+
+function setHotPeriod(days){
+  STATE.hotPeriod = days;
+  [1,3,7,30].forEach(d=>{
+    const btn = document.getElementById('hotBtn'+d);
+    if(d===days){
+      btn.style.background = 'var(--primary)';
+      btn.style.color = '#fff';
+    } else {
+      btn.style.background = '#fff';
+      btn.style.color = '';
+    }
+  });
+  render();
+}
 
 function outperfColor(o){
   if(o>=10) return 'background:#fee2e2;color:#991b1b;';
@@ -277,9 +309,10 @@ function getPujimFailedKeywords(){
 }
 
 function render(){
-  // 최근 7일 폭주 (outperf 3x+ + 푸짐 키워드 매칭)
+  // 선택된 기간 폭주 (outperf 3x+ + 푸짐 키워드 매칭 + 차단X)
+  const period = STATE.hotPeriod || 7;
   const hotVideos = STATE.videos
-    .filter(v=>v.days_old<=7 && v.outperformance>=3 && matchesPujimKeyword(v.title))
+    .filter(v=>!STATE.blockedChannels.has(v.channel_name) && v.days_old<=period && v.outperformance>=3 && matchesPujimKeyword(v.title))
     .sort((a,b)=>b.outperformance-a.outperformance);
 
   document.getElementById('hotCount').textContent = hotVideos.length;
@@ -295,20 +328,17 @@ function render(){
     document.getElementById('pujimLastDate').textContent = pujimSorted[0].date;
   }
 
-  // 추천 후보 (점수 4점 이상만, 푸짐 제외)
-  // 작가 망한 키워드도 자동 제외
+  // 추천 후보 (점수 4점 이상만, 푸짐 제외, 차단X)
   const failedKws = getPujimFailedKeywords();
   const recommendations = STATE.videos
     .filter(v=>{
+      if(STATE.blockedChannels.has(v.channel_name)) return false;
       if(v.channel_name==='푸짐한 경제학') return false;
       if(v.days_old>30) return false;
       const score = pujimMatchScore(v.title);
-      if(score < 4) return false;  // 4점 이상만
-      // 작가 망한 키워드 겹치는지 체크
+      if(score < 4) return false;
       for(const kw of failedKws){
-        if(kw.length>=3 && v.title.includes(kw)){
-          return false;  // 망한 키워드 있으면 제외
-        }
+        if(kw.length>=3 && v.title.includes(kw)) return false;
       }
       return true;
     })
@@ -354,10 +384,10 @@ function renderHotVideos(videos){
   if(!videos.length){ el.innerHTML='<div class="empty">최근 7일 직격 폭주 영상 없음.</div>'; return; }
   el.innerHTML = videos.slice(0,5).map(v=>`
     <div class="video-row">
-      <img src="${v.thumbnail_mq||''}" loading="lazy" alt="">
+      <a href="${v.video_url}" target="_blank" rel="noopener"><img src="${v.thumbnail_mq||''}" loading="lazy" alt="" style="cursor:pointer;"></a>
       <div class="info">
         <div class="title"><a href="${v.video_url}" target="_blank">${v.title}</a></div>
-        <div class="meta">${v.channel_name} · ${v.days_old}일 전 · ${v.views.toLocaleString()}회</div>
+        <div class="meta">${v.channel_name} · ${v.days_old}일 전 · ${v.views.toLocaleString()}회 <button onclick="blockChannel('${(v.channel_name||'').replace(/'/g,"\\'")}')" style="margin-left:6px;padding:1px 6px;font-size:10px;background:#dc2626;color:#fff;border:none;border-radius:3px;cursor:pointer;" title="차단">🚫</button></div>
       </div>
       <div class="stats">
         <span class="outperf-badge" style="${outperfColor(v.outperformance)}">${v.outperformance.toFixed(1)}x</span>
@@ -388,7 +418,7 @@ function renderPujimRecent(videos){
     const status = v.outperformance>=3 ? '★ 히트' : v.outperformance>=1 ? '평균' : '⚠️ 부진';
     return `
       <div class="video-row">
-        <img src="${v.thumbnail_mq||''}" loading="lazy" alt="">
+        <a href="${v.video_url}" target="_blank" rel="noopener"><img src="${v.thumbnail_mq||''}" loading="lazy" alt="" style="cursor:pointer;"></a>
         <div class="info">
           <div class="title"><a href="${v.video_url}" target="_blank">${v.title}</a></div>
           <div class="meta">${v.date} · ${v.days_old}일 전 · ${v.views.toLocaleString()}회 · 좋아요 ${v.likes.toLocaleString()}</div>
@@ -407,7 +437,7 @@ function renderRecommendations(videos){
   if(!videos.length){ el.innerHTML='<div class="empty">추천 후보 없음.</div>'; return; }
   el.innerHTML = videos.map(v=>`
     <div class="video-row">
-      <img src="${v.thumbnail_mq||''}" loading="lazy" alt="">
+      <a href="${v.video_url}" target="_blank" rel="noopener"><img src="${v.thumbnail_mq||''}" loading="lazy" alt="" style="cursor:pointer;"></a>
       <div class="info">
         <div class="title"><a href="${v.video_url}" target="_blank">${v.title}</a></div>
         <div class="meta">${v.channel_name} · ${v.days_old}일 전 · ${v.views.toLocaleString()}회 · hit ${v.hit_score.toFixed(1)}</div>
