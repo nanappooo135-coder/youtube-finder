@@ -284,48 +284,83 @@ function outperfColor(o) {
   return 'background:#f1f5f9;color:#475569;';
 }
 
+const PAGE_SIZE = 50;
+let displayedCount = PAGE_SIZE;
+
 function renderTable(videos) {
+  displayedCount = Math.min(PAGE_SIZE, videos.length);
   const html = `<table class="video-table">
     <thead><tr>
       <th class="thumb">썸네일</th><th class="num">Hit</th><th class="num">Outperf</th>
       <th class="num">조회수</th><th>날짜</th><th>채널</th><th class="title">제목</th>
-    </tr></thead><tbody>
-    ${videos.slice(0,500).map(v => `
-      <tr>
-        <td><img src="${v.thumbnail_mq || ''}" loading="lazy" alt=""></td>
-        <td class="num"><strong>${(v.hit_score||0).toFixed(1)}</strong></td>
-        <td class="num"><span class="outperf" style="${outperfColor(v.outperformance||0)}">${(v.outperformance||0).toFixed(1)}x</span></td>
-        <td class="num">${(v.views||0).toLocaleString()}</td>
-        <td>${v.date || '-'}<br><small style="color:#9ca3af">${v.days_old}일 전</small></td>
-        <td>${v.channel_name || '-'}<br><small style="color:#9ca3af">${v.channel_tier || ''}</small></td>
-        <td class="title"><a href="${v.video_url}" target="_blank" rel="noopener">${v.title}</a></td>
-      </tr>
-    `).join('')}
-    </tbody></table>
-    ${videos.length > 500 ? `<div style="padding:10px;text-align:center;color:#9ca3af;font-size:12px;">상위 500개만 표시 (전체 ${videos.length}개)</div>` : ''}
+    </tr></thead><tbody id="tableBody"></tbody></table>
+    <div id="loadMoreArea" style="padding:16px;text-align:center;"></div>
   `;
   document.getElementById('videoArea').innerHTML = html;
+  appendTableRows(videos);
+}
+
+function appendTableRows(videos){
+  const tbody = document.getElementById('tableBody');
+  const start = tbody.children.length;
+  const end = Math.min(start + PAGE_SIZE, videos.length);
+  let html = '';
+  for(let i=start; i<end; i++){
+    const v = videos[i];
+    html += `<tr>
+      <td><img src="${v.thumbnail_mq || ''}" loading="lazy" alt=""></td>
+      <td class="num"><strong>${(v.hit_score||0).toFixed(1)}</strong></td>
+      <td class="num"><span class="outperf" style="${outperfColor(v.outperformance||0)}">${(v.outperformance||0).toFixed(1)}x</span></td>
+      <td class="num">${(v.views||0).toLocaleString()}</td>
+      <td>${v.date || '-'}<br><small style="color:#9ca3af">${v.days_old}일 전</small></td>
+      <td>${v.channel_name || '-'}<br><small style="color:#9ca3af">${v.channel_tier || ''}</small></td>
+      <td class="title"><a href="${v.video_url}" target="_blank" rel="noopener">${v.title}</a></td>
+    </tr>`;
+  }
+  tbody.insertAdjacentHTML('beforeend', html);
+  displayedCount = end;
+  updateLoadMore(videos);
+}
+
+function updateLoadMore(videos){
+  const area = document.getElementById('loadMoreArea');
+  if(!area) return;
+  if(displayedCount < videos.length){
+    area.innerHTML = `<button onclick="${STATE.view==='table'?'appendTableRows':'appendCards'}(STATE.filteredVideos)" style="padding:10px 24px;background:var(--primary);color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:600;">더 보기 (${displayedCount}/${videos.length})</button>`;
+  } else {
+    area.innerHTML = `<div style="color:#9ca3af;font-size:12px;">전체 ${videos.length}개 표시 완료</div>`;
+  }
 }
 
 function renderCards(videos) {
-  const html = `<div class="card-grid">
-    ${videos.slice(0,200).map(v => `
-      <a class="card" href="${v.video_url}" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;">
-        <img src="${v.thumbnail_hq || v.thumbnail_mq || ''}" loading="lazy" alt="">
-        <div class="info">
-          <div class="badges">
-            <span class="outperf" style="${outperfColor(v.outperformance||0)}">${(v.outperformance||0).toFixed(1)}x</span>
-            <span style="color:#6b7280;">${(v.views||0).toLocaleString()}회</span>
-          </div>
-          <div class="ch">${v.channel_name} · ${v.days_old}일 전</div>
-          <div class="title">${v.title}</div>
-          <div class="meta">Hit ${(v.hit_score||0).toFixed(1)} · ${v.channel_tier || ''}</div>
+  displayedCount = Math.min(PAGE_SIZE, videos.length);
+  document.getElementById('videoArea').innerHTML = `<div class="card-grid" id="cardGrid"></div><div id="loadMoreArea" style="padding:16px;text-align:center;"></div>`;
+  appendCards(videos);
+}
+
+function appendCards(videos){
+  const grid = document.getElementById('cardGrid');
+  const start = grid.children.length;
+  const end = Math.min(start + PAGE_SIZE, videos.length);
+  let html = '';
+  for(let i=start; i<end; i++){
+    const v = videos[i];
+    html += `<a class="card" href="${v.video_url}" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;">
+      <img src="${v.thumbnail_hq || v.thumbnail_mq || ''}" loading="lazy" alt="">
+      <div class="info">
+        <div class="badges">
+          <span class="outperf" style="${outperfColor(v.outperformance||0)}">${(v.outperformance||0).toFixed(1)}x</span>
+          <span style="color:#6b7280;">${(v.views||0).toLocaleString()}회</span>
         </div>
-      </a>
-    `).join('')}
-  </div>
-  ${videos.length > 200 ? `<div style="padding:10px;text-align:center;color:#9ca3af;font-size:12px;">상위 200개만 표시 (전체 ${videos.length}개)</div>` : ''}`;
-  document.getElementById('videoArea').innerHTML = html;
+        <div class="ch">${v.channel_name} · ${v.days_old}일 전</div>
+        <div class="title">${v.title}</div>
+        <div class="meta">Hit ${(v.hit_score||0).toFixed(1)} · ${v.channel_tier || ''}</div>
+      </div>
+    </a>`;
+  }
+  grid.insertAdjacentHTML('beforeend', html);
+  displayedCount = end;
+  updateLoadMore(videos);
 }
 
 // ========== 챗 ==========
