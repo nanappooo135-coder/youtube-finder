@@ -307,6 +307,7 @@ function appendTableRows(videos){
   let html = '';
   for(let i=start; i<end; i++){
     const v = videos[i];
+    const escId = (v.id||'').replace(/'/g,"\\'");
     html += `<tr>
       <td><img src="${v.thumbnail_mq || ''}" loading="lazy" alt=""></td>
       <td class="num"><strong>${(v.hit_score||0).toFixed(1)}</strong></td>
@@ -314,7 +315,10 @@ function appendTableRows(videos){
       <td class="num">${(v.views||0).toLocaleString()}</td>
       <td>${v.date || '-'}<br><small style="color:#9ca3af">${v.days_old}일 전</small></td>
       <td>${v.channel_name || '-'}<br><small style="color:#9ca3af">${v.channel_tier || ''}</small></td>
-      <td class="title"><a href="${v.video_url}" target="_blank" rel="noopener">${v.title}</a></td>
+      <td class="title">
+        <a href="${v.video_url}" target="_blank" rel="noopener">${v.title}</a>
+        <button onclick="copyForCurator('${escId}')" style="margin-left:8px;padding:2px 8px;font-size:11px;background:#6366f1;color:#fff;border:none;border-radius:4px;cursor:pointer;" title="큐레이터에 던질 프롬프트 복사">🤖 추천</button>
+      </td>
     </tr>`;
   }
   tbody.insertAdjacentHTML('beforeend', html);
@@ -345,22 +349,64 @@ function appendCards(videos){
   let html = '';
   for(let i=start; i<end; i++){
     const v = videos[i];
-    html += `<a class="card" href="${v.video_url}" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;">
-      <img src="${v.thumbnail_hq || v.thumbnail_mq || ''}" loading="lazy" alt="">
-      <div class="info">
-        <div class="badges">
-          <span class="outperf" style="${outperfColor(v.outperformance||0)}">${(v.outperformance||0).toFixed(1)}x</span>
-          <span style="color:#6b7280;">${(v.views||0).toLocaleString()}회</span>
+    const escId = (v.id||'').replace(/'/g,"\\'");
+    html += `<div class="card" style="position:relative;">
+      <a href="${v.video_url}" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;display:block;">
+        <img src="${v.thumbnail_hq || v.thumbnail_mq || ''}" loading="lazy" alt="">
+        <div class="info">
+          <div class="badges">
+            <span class="outperf" style="${outperfColor(v.outperformance||0)}">${(v.outperformance||0).toFixed(1)}x</span>
+            <span style="color:#6b7280;">${(v.views||0).toLocaleString()}회</span>
+          </div>
+          <div class="ch">${v.channel_name} · ${v.days_old}일 전</div>
+          <div class="title">${v.title}</div>
+          <div class="meta">Hit ${(v.hit_score||0).toFixed(1)} · ${v.channel_tier || ''}</div>
         </div>
-        <div class="ch">${v.channel_name} · ${v.days_old}일 전</div>
-        <div class="title">${v.title}</div>
-        <div class="meta">Hit ${(v.hit_score||0).toFixed(1)} · ${v.channel_tier || ''}</div>
-      </div>
-    </a>`;
+      </a>
+      <button onclick="copyForCurator('${escId}')" style="position:absolute;top:8px;right:8px;padding:4px 10px;font-size:11px;background:rgba(99,102,241,0.95);color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;backdrop-filter:blur(4px);" title="큐레이터 프롬프트 복사">🤖 추천</button>
+    </div>`;
   }
   grid.insertAdjacentHTML('beforeend', html);
   displayedCount = end;
   updateLoadMore(videos);
+}
+
+function copyForCurator(videoId){
+  const v = STATE.allVideos.find(x => x.id === videoId);
+  if(!v) return;
+  const prompt = `이 영상으로 푸짐 결 신규 주제 추천해줘:
+
+[벤치마크 영상]
+- 채널: ${v.channel_name}
+- 제목: ${v.title}
+- 조회수: ${v.views.toLocaleString()}회
+- outperformance: ${v.outperformance.toFixed(1)}x
+- 발행: ${v.date} (${v.days_old}일 전)
+- 영상 URL: ${v.video_url}
+- 썸네일: ${v.thumbnail_hq}
+- video_id: ${v.id}
+
+위 영상의 패턴을 분석하고 푸짐 결로 비틀어서:
+1. 비틀린 각도 (다른 시점/반대결론/다른주인공/시간차원/스케일 중 하나)
+2. 푸짐 톤 제목 5변형 (분석 보고서 단어 X, 진짜 유튜버 톤)
+3. 썸네일 디자인 브리프 (3단 텍스트 + 색상 + 인물 + 배경)
+4. Genspark 영어 프롬프트
+5. 한국 시청자 직격 한 줄
+
+결매칭 5점 만점, 시점검증 필수, 차별화 필수.`;
+  navigator.clipboard.writeText(prompt).then(()=>{
+    showToast('✓ 큐레이터 프롬프트 복사됨! Claude 프로젝트에 붙여넣기');
+  }).catch(()=>{
+    alert('복사 실패. 수동으로 복사:\n\n' + prompt);
+  });
+}
+
+function showToast(msg){
+  const toast = document.createElement('div');
+  toast.textContent = msg;
+  toast.style.cssText = 'position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#10b981;color:#fff;padding:14px 24px;border-radius:8px;z-index:9999;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,0.2);';
+  document.body.appendChild(toast);
+  setTimeout(()=>toast.remove(), 2500);
 }
 
 // ========== 챗 ==========
