@@ -92,7 +92,18 @@ header .meta { color:var(--text-muted); font-size:13px; margin-top:8px; }
 </head>
 <body>
 <div class="container">
-<a href="index.html" class="back-link">← 메인으로</a> &nbsp; <a href="javascript:showBlockedList()" class="back-link" style="color:#dc2626;">🚫 차단 채널 관리</a>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+  <div>
+    <a href="index.html" class="back-link">← 메인</a> &nbsp;
+    <a href="dashboard.html" class="back-link">📊 대시보드</a> &nbsp;
+    <a href="javascript:showBlockedList()" class="back-link" style="color:#dc2626;">🚫 차단 관리</a>
+  </div>
+  <select id="categorySelector" onchange="changeCategory(this.value)" style="padding:8px 14px;font-size:14px;font-weight:700;border:2px solid var(--primary);border-radius:8px;background:#fff;cursor:pointer;color:var(--primary);">
+    <option value="economy">💰 경제</option>
+    <option value="psychology">🧠 심리</option>
+    <option value="history">📜 역사</option>
+  </select>
+</div>
 <header>
   <h1>🎯 벤치마크 큐레이터</h1>
   <div class="sub">한국 경제·지정학 채널 영상 데이터 + Claude 챗 추천</div>
@@ -223,10 +234,21 @@ function checkApiKey() {
   return true;
 }
 
+// ========== 카테고리 ==========
+function getCategory(){
+  return localStorage.getItem('curator_category') || 'economy';
+}
+function changeCategory(cat){
+  localStorage.setItem('curator_category', cat);
+  location.reload();
+}
+
 // ========== 데이터셋 로드 ==========
 async function loadDataset() {
   try {
-    const res = await fetch('data/dataset.json?t=' + Date.now());
+    const cat = getCategory();
+    document.getElementById('categorySelector').value = cat;
+    const res = await fetch(`data/${cat}/dataset.json?t=` + Date.now());
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     STATE.meta = data.meta;

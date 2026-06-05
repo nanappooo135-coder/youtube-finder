@@ -72,11 +72,16 @@ header .meta { color:var(--text-muted); font-size:13px; }
 
 <header>
   <div>
-    <h1>📊 푸짐한 경제학 운영 대시보드</h1>
+    <h1>📊 운영 대시보드</h1>
     <div class="sub">매일 아침 10초 컷 — 오늘 영상 만들 단서 한 화면에</div>
     <div class="meta" id="datasetMeta">로딩 중...</div>
   </div>
   <div class="nav-links">
+    <select id="categorySelector" onchange="changeCategory(this.value)" style="padding:8px 14px;font-size:14px;font-weight:700;border:2px solid var(--primary);border-radius:8px;background:#fff;cursor:pointer;color:var(--primary);">
+      <option value="economy">💰 경제</option>
+      <option value="psychology">🧠 심리</option>
+      <option value="history">📜 역사</option>
+    </select>
     <a href="benchmark.html">🎯 벤치마크</a>
     <a href="index.html">🏠 메인</a>
   </div>
@@ -153,32 +158,59 @@ header .meta { color:var(--text-muted); font-size:13px; }
 </div>
 
 <script>
-// 핵심 코드 (반드시 1개 이상 매칭돼야 푸짐 결로 인정)
-const PUJIM_CORE_KEYWORDS = {
-  "중동·이란": ["이란","이스라엘","후티","사우디","호르무즈","중동","쿠르드","아프간","탈레반","헤즈볼라","팔레스타인","가자"],
-  "미군·트럼프": ["미군","트럼프","백악관","워싱턴","펜타곤","CIA","NSA"],
-  "중국 견제": ["중국","시진핑","BYD","화웨이","위안화","대만","공산당","위구르"],
-  "북한·한반도": ["북한","김정은","한반도","평양","핵실험"],
-  "강대국·러시아": ["러시아","푸틴","우크라","나토","EU"],
-  "거대 거인 몰락": ["삼성","현대","애플","구글","엔비디아","TSMC","ASML","LVMH","토요타","혼다","폭스바겐","벤츠"],
-  "거대 통화·자산": ["환율","유가","금값","연금","달러","엔화","리라","루블","페소"],
+// 카테고리별 키워드 (자동 전환)
+const CATEGORY_KEYWORDS = {
+  economy: {
+    core: {
+      "중동·이란": ["이란","이스라엘","후티","사우디","호르무즈","중동","쿠르드","아프간","탈레반","헤즈볼라"],
+      "미군·트럼프": ["미군","트럼프","백악관","워싱턴","펜타곤"],
+      "중국 견제": ["중국","시진핑","BYD","화웨이","위안화","대만","위구르"],
+      "북한": ["북한","김정은","한반도","평양"],
+      "강대국": ["러시아","푸틴","우크라","나토"],
+      "거인 몰락": ["삼성","현대","애플","구글","엔비디아","TSMC","LVMH","토요타","혼다","벤츠"],
+      "통화·자산": ["환율","유가","금값","연금","달러","엔화","리라","루블"],
+    },
+    support: ["진짜 이유","충격적","비밀","실체","최후","처참한","박살","무너진","끝났다","짐 쌌다"],
+    exclude: ["장례","결혼식","유족","3일장","지방선거","구청장","투표","유퀴즈","킬잇","원가공개","돈선체크","강남 아파트","의대","청년 이민","캠핑카"],
+  },
+  psychology: {
+    core: {
+      "트라우마·치유": ["트라우마","상처","치유","극복","우울","불안","공황","번아웃"],
+      "관계 갈등": ["인간관계","대인관계","연애","결혼","이혼","갈등","상처주는","나르시시스트","가스라이팅","독성"],
+      "성격·자존": ["성격","자존감","열등감","콤플렉스","MBTI","INFP","ENFP"],
+      "심리 작동": ["심리","뇌","뇌과학","무의식","본능","감정","분노","집착"],
+      "직장·관계": ["직장","상사","동료","꼰대","면접","협상","설득"],
+      "부모·자녀": ["부모","자녀","육아","엄마","아빠","아이","사춘기"],
+    },
+    support: ["진짜 이유","충격","비밀","숨겨진","실수","피해야","해야","무조건","반드시","절대"],
+    exclude: ["사주","타로","점성술","운세","풍수","주식","부동산","경제","역사","한국사","세계사","사극","드라마"],
+  },
+  history: {
+    core: {
+      "한국사": ["한국사","조선","고려","삼국","왕조","이순신","세종","광해","근현대사","일제","독립"],
+      "세계 제국": ["로마","오스만","몽골","대영제국","나폴레옹","프랑스","대영","스페인","포르투갈"],
+      "전쟁사": ["전쟁","2차 세계대전","1차 세계대전","베트남전","한국전쟁","냉전","십자군"],
+      "중국·일본": ["중국사","청나라","명나라","원나라","일본사","에도","메이지"],
+      "왕조 흥망": ["멸망","흥망","몰락","왕","황제","제국","흥기"],
+      "문명·종교": ["문명","종교","이슬람","기독교","유대","불교"],
+    },
+    support: ["진짜 이유","충격","비밀","숨겨진","처참","비참","최후","마지막","역대"],
+    exclude: ["사주","타로","점성술","운세","주식","부동산","경제","심리","자기계발","드라마","사극","연예"],
+  },
 };
 
-// 보조 코드 (더 강력하게 매칭, 단독으론 부족)
-const PUJIM_SUPPORT_KEYWORDS = [
-  "진짜 이유","충격적","비밀","실체","최후","마지막","처참한",
-  "사실상 항복","결국","박살","무너진","끝났다","짐 쌌다","발칵","통째로"
-];
-
-// 절대 제외 (작가 망한 카테고리 + 푸짐 결 아닌 명백한 신호)
-const PUJIM_EXCLUSION_KEYWORDS = [
-  "장례","결혼식","유족","상조","3일장",
-  "지방선거","구청장","투표","선거비용","유권자",
-  "유퀴즈","킬잇","선공개","티저","와일드","발라더",
-  "원가공개","이슈픽","돈선체크",
-  "강남 아파트","의대","청년 이민","자녀 교육",
-  "캠핑카","결혼식장","유사 가족","장례식장"
-];
+function getCoreKeywords(){
+  const cat = getCategory();
+  return (CATEGORY_KEYWORDS[cat] || CATEGORY_KEYWORDS.economy).core;
+}
+function getSupportKeywords(){
+  const cat = getCategory();
+  return (CATEGORY_KEYWORDS[cat] || CATEGORY_KEYWORDS.economy).support;
+}
+function getExclusionKeywords(){
+  const cat = getCategory();
+  return (CATEGORY_KEYWORDS[cat] || CATEGORY_KEYWORDS.economy).exclude;
+}
 
 const STATE = {
   videos: [], pujim: [], meta: null, hotPeriod: 7,
@@ -215,9 +247,20 @@ function outperfColor(o){
   return 'background:#f1f5f9;color:#475569;';
 }
 
+function getCategory(){
+  return localStorage.getItem('curator_category') || 'economy';
+}
+
+function changeCategory(cat){
+  localStorage.setItem('curator_category', cat);
+  location.reload();
+}
+
 async function load(){
   try{
-    const res = await fetch('data/dataset.json?t='+Date.now());
+    const cat = getCategory();
+    document.getElementById('categorySelector').value = cat;
+    const res = await fetch(`data/${cat}/dataset.json?t=`+Date.now());
     if(!res.ok) throw new Error('HTTP '+res.status);
     const d = await res.json();
     STATE.meta = d.meta;
@@ -243,7 +286,7 @@ function detectWaves(videos){
   for(const v of videos){
     if(v.days_old>30) continue;
     if(hasExclusion(v.title)) continue;  // 결 안 맞는 거 제외
-    for(const [theme, keywords] of Object.entries(PUJIM_CORE_KEYWORDS)){
+    for(const [theme, keywords] of Object.entries(getCoreKeywords())){
       for(const kw of keywords){
         if(v.title.includes(kw)){
           if(!counter[theme]) counter[theme]={count:0, videos:[], channels:new Set()};
@@ -266,19 +309,16 @@ function detectWaves(videos){
 }
 
 function hasExclusion(title){
-  return PUJIM_EXCLUSION_KEYWORDS.some(kw=>title.includes(kw));
+  return getExclusionKeywords().some(kw=>title.includes(kw));
 }
 
 function pujimMatchScore(title){
-  // 1. 절대 제외 키워드 있으면 즉시 0점
   if(hasExclusion(title)) return 0;
-  // 2. 핵심 카테고리 매칭 카운트
   let coreMatches = 0;
-  for(const keywords of Object.values(PUJIM_CORE_KEYWORDS)){
+  for(const keywords of Object.values(getCoreKeywords())){
     if(keywords.some(kw=>title.includes(kw))){ coreMatches++; }
   }
-  // 3. 보조 키워드 매칭
-  const supportMatch = PUJIM_SUPPORT_KEYWORDS.some(kw=>title.includes(kw));
+  const supportMatch = getSupportKeywords().some(kw=>title.includes(kw));
   // 점수: 핵심 1개 = 2점, 핵심 2개+ = 4점, 보조 추가 = +1
   let score = 0;
   if(coreMatches >= 2) score = 4;
