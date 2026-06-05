@@ -1,0 +1,72 @@
+name: 자동 데이터 갱신 (3 카테고리)
+
+on:
+  schedule:
+    # UTC 기준 — 0시(KST 9시), 12시(KST 21시) 매일 2회
+    - cron: '0 0 * * *'
+    - cron: '0 12 * * *'
+  workflow_dispatch:  # 수동 실행 가능 (Actions 탭에서 "Run workflow" 클릭)
+
+jobs:
+  update-datasets:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: 리포 체크아웃
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Python 셋업
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 의존성 설치
+        run: pip install google-api-python-client
+
+      - name: 경제 카테고리 갱신
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+        run: |
+          cd scripts/economy
+          python fetch_youtube_api.py --per-channel 50 --merge
+          python compute_metrics.py
+          python build_dataset_json.py
+          mkdir -p ../../data/economy
+          cp dataset.json ../../data/economy/dataset.json
+
+      - name: 심리 카테고리 갱신
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+        run: |
+          cd scripts/psychology
+          python fetch_youtube_api.py --per-channel 50 --merge
+          python compute_metrics.py
+          python build_dataset_json.py
+          mkdir -p ../../data/psychology
+          cp dataset.json ../../data/psychology/dataset.json
+
+      - name: 역사 카테고리 갱신
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+        run: |
+          cd scripts/history
+          python fetch_youtube_api.py --per-channel 50 --merge
+          python compute_metrics.py
+          python build_dataset_json.py
+          mkdir -p ../../data/history
+          cp dataset.json ../../data/history/dataset.json
+
+      - name: 변경사항 커밋·푸시
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/ scripts/
+          if git diff --cached --quiet; then
+            echo "변경사항 없음 - 커밋 스킵"
+          else
+            git commit -m "auto: 데이터 갱신 ($(TZ=Asia/Seoul date +'%Y-%m-%d %H:%M KST'))"
+            git push
+          fi
