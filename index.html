@@ -4106,6 +4106,7 @@
                             <div>
                                 <span style="font-size:0.8rem;color:#555;font-weight:600;">실사(real) 비율</span>
                                 <div style="display:flex;gap:6px;margin-top:4px;">
+                                    <button class="search-btn aio-opt" data-group="aioReal" data-val="0" onclick="_aioSet(this)" style="padding:6px 12px;font-size:0.82rem;background:#e9ecef;border-color:#ced4da;color:#495057;">없음</button>
                                     <button class="search-btn aio-opt active-n" data-group="aioReal" data-val="7-12" onclick="_aioSet(this)" style="padding:6px 12px;font-size:0.82rem;background:#6f42c1;border-color:#6f42c1;">7~12%</button>
                                     <button class="search-btn aio-opt" data-group="aioReal" data-val="10-15" onclick="_aioSet(this)" style="padding:6px 12px;font-size:0.82rem;background:#e9ecef;border-color:#ced4da;color:#495057;">10~15%</button>
                                     <button class="search-btn aio-opt" data-group="aioReal" data-val="15-20" onclick="_aioSet(this)" style="padding:6px 12px;font-size:0.82rem;background:#e9ecef;border-color:#ced4da;color:#495057;">15~20%</button>
@@ -4114,6 +4115,7 @@
                             <div>
                                 <span style="font-size:0.8rem;color:#555;font-weight:600;">클로드디자인 비율</span>
                                 <div style="display:flex;gap:6px;margin-top:4px;">
+                                    <button class="search-btn aio-opt" data-group="aioCd" data-val="0" onclick="_aioSet(this)" style="padding:6px 12px;font-size:0.82rem;background:#e9ecef;border-color:#ced4da;color:#495057;">없음</button>
                                     <button class="search-btn aio-opt active-n" data-group="aioCd" data-val="7-10" onclick="_aioSet(this)" style="padding:6px 12px;font-size:0.82rem;background:#6f42c1;border-color:#6f42c1;">7~10%</button>
                                     <button class="search-btn aio-opt" data-group="aioCd" data-val="10-15" onclick="_aioSet(this)" style="padding:6px 12px;font-size:0.82rem;background:#e9ecef;border-color:#ced4da;color:#495057;">10~15%</button>
                                     <button class="search-btn aio-opt" data-group="aioCd" data-val="15-20" onclick="_aioSet(this)" style="padding:6px 12px;font-size:0.82rem;background:#e9ecef;border-color:#ced4da;color:#495057;">15~20%</button>
@@ -32267,8 +32269,12 @@ ${commentText.slice(0, 12000)}`;
         p += '- 실존 인물: ' + (realPerson ? '허용' : '금지') + '\n';
         p += '- 브랜드 로고: ' + (brandLogo ? '허용' : '금지') + '\n';
         p += '- 민감 장면: ' + (sensitive ? '허용' : '금지') + '\n';
-        p += '- real 비율: ' + realRatio + '%\n';
-        p += '- claude_design 비율: ' + cdRatio + '%\n\n';
+        p += '- real 비율: ' + (realRatio === '0' ? '0% (real 장면 만들지 말 것 — 전부 ai)' : realRatio + '%') + '\n';
+        p += '- claude_design 비율: ' + (cdRatio === '0' ? '0% (claude_design 장면 만들지 말 것 — 전부 ai)' : cdRatio + '%') + '\n';
+        if (realRatio === '0' && cdRatio === '0') {
+            p += '⚠️ real·claude_design 모두 0% → 모든 장면을 반드시 type="ai"로 분류 (real/claude_design 0개).\n';
+        }
+        p += '\n';
 
         p += '### 그림체\n"' + style + '"\n\n';
         p += '### 스타일 라인 (모든 nano_prompt 끝에)\n';
@@ -32300,8 +32306,8 @@ ${commentText.slice(0, 12000)}`;
 
         p += '### type 분류 기준\n';
         p += '- **ai** (대부분): 일러스트 이미지. 추상/은유, 상징적 묘사, 도입부 전부\n';
-        p += '- **real** (' + realRatio + '%): 실제 사진 자리. 4가지만 해당: ①실제 장소 ②실존 인물 ③과거 역사 사진 ④근거 사진. 같은 엔티티 3회 초과 금지\n';
-        p += '- **claude_design** (' + cdRatio + '%): 숫자/차트/비교표/연표, 그리고 **설명/비교가 핵심인 장면**. AI 이미지로는 한글이 깨지므로 텍스트 설명이 많이 필요한 장면은 반드시 claude_design으로 분류\n';
+        p += '- **real** (' + (realRatio === '0' ? '0% — 사용 안 함: real 장면 절대 만들지 말 것' : realRatio + '%') + '): 실제 사진 자리. 4가지만 해당: ①실제 장소 ②실존 인물 ③과거 역사 사진 ④근거 사진. 같은 엔티티 3회 초과 금지\n';
+        p += '- **claude_design** (' + (cdRatio === '0' ? '0% — 사용 안 함: claude_design 장면 절대 만들지 말 것' : cdRatio + '%') + '): 숫자/차트/비교표/연표, 그리고 **설명/비교가 핵심인 장면**. AI 이미지로는 한글이 깨지므로 텍스트 설명이 많이 필요한 장면은 반드시 claude_design으로 분류\n';
         p += '- 도입부(isIntro:true): 무조건 type="ai", duration=6\n';
         p += '- 본문: duration=6(짧은 장면) 또는 10(4문장 이상/복잡한 장면)\n\n';
 
