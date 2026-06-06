@@ -4057,6 +4057,14 @@
                         <label>🖼️ 출력물 옵션</label>
                         <div style="display:flex;flex-direction:column;gap:6px;margin-top:4px;">
                             <label style="font-size:0.85rem;cursor:pointer;display:flex;align-items:center;gap:8px;"><input type="checkbox" id="aioGrokVideo" checked style="width:18px;height:18px;flex-shrink:0;"> 도입부 영상 생성 (Grok image-to-video)</label>
+                            <details id="aioIntroDurDetails" ontoggle="if(this.open)_aioRenderIntroDur()" style="margin:0 0 2px 26px;border-left:2px solid #e03131;padding:4px 0 6px 10px;">
+                                <summary style="cursor:pointer;font-size:0.8rem;color:#c92a2a;font-weight:600;">⏱️ 도입부 장면별 길이 (펼쳐서 6초/10초 클릭)</summary>
+                                <div style="margin-top:8px;">
+                                    <button type="button" onclick="_aioRenderIntroDur()" style="padding:4px 12px;font-size:0.78rem;background:#fff;border:1px solid #e03131;color:#c92a2a;border-radius:6px;cursor:pointer;font-weight:600;">🔄 도입부 불러오기</button>
+                                    <div id="aioIntroDurList" style="margin-top:8px;display:flex;flex-direction:column;gap:5px;"></div>
+                                    <p style="font-size:0.72rem;color:#888;margin-top:6px;line-height:1.5;">기본 <b>10초</b>. 6초로 만들 장면만 <b>[6초]</b> 클릭 → 도입부 입력에 (6) 자동 표기. (그록은 6·10초만 가능)</p>
+                                </div>
+                            </details>
                             <label style="font-size:0.85rem;cursor:pointer;display:flex;align-items:center;gap:8px;"><input type="checkbox" id="aioClaudeDesign" checked style="width:18px;height:18px;flex-shrink:0;"> 클로드디자인 HTML + 녹화</label>
                             <label style="font-size:0.85rem;cursor:pointer;display:flex;align-items:center;gap:8px;"><input type="checkbox" id="aioBlank" checked style="width:18px;height:18px;flex-shrink:0;"> 빈화면 자동 생성 (real + claude_design)</label>
                             <label style="font-size:0.85rem;cursor:pointer;display:flex;align-items:center;gap:8px;"><input type="checkbox" id="aioZip" checked style="width:18px;height:18px;flex-shrink:0;"> ZIP 패키징</label>
@@ -32272,7 +32280,8 @@ ${commentText.slice(0, 12000)}`;
         p += '□ 핵심 키워드: 나레이션에서 반드시 시각화해야 할 단어는?\n';
         p += '□ 간판/배경 텍스트: 이 장면의 국가에 맞는 언어로 간판 표현 → ' + (localSign ? '허용 (한국→한글, 중국→중국어, 일본→일본어, 미국→영어)' : '금지') + '\n';
         p += '□ 핵심 텍스트: 가격표/피켓/자막 등 핵심 텍스트가 필요한가? → ' + (korText ? '허용' : '금지') + '\n';
-        p += '□ 모르는 것: 차종, 장소, 인물 외모 등 모르면 웹검색. 추측 금지.\n\n';
+        p += '□ 모르는 것: 차종, 장소, 인물 외모 등 모르면 웹검색. 추측 금지.\n';
+        p += '□ 실존 인물 외모 검증(★자주 틀림): 고유명사 인물(CEO·정치인·유명인)은 "안다고 생각해도" 반드시 웹검색으로 헤어(대머리 여부)·안경·체형·시그니처 의상을 1회 확인 후 확정. 기억·2차자료(style.txt 포함) 단정 금지. 사용자가 외모를 지적하면 방어·반복 말고 즉시 사진 확인. 예: 젠슨 황 = 은백색 머리 뒤로 넘김(대머리 아님)+짙은 사각 안경+검은 가죽 잠바.\n\n';
 
         p += '### 옵션 설정\n';
         p += '- 현지 언어 간판: ' + (localSign ? '허용 (국가별 자동)' : '금지') + '\n';
@@ -32352,7 +32361,7 @@ ${commentText.slice(0, 12000)}`;
 
         p += '### grok_prompt 규칙 (짧고 핵심만)\n';
         p += '템플릿: "Maintain EXACT original 2D illustrated style. [캐릭터 외형 긍정형 묘사]. [장면 맞춤 미세 동작]. camera push-in [N]% max."\n';
-        p += '대머리 캐릭터: "completely bald smooth bare scalp with light reflecting off clean-shaven head" 필수. hair 관련 단어 일체 금지.\n';
+        p += '캐릭터 외형은 검증된 실제 모습대로 긍정형 묘사: 머리 있으면 머리색·길이·스타일 명시(예: "swept-back silver-gray hair"), 대머리일 때만 "completely bald smooth bare scalp with light reflecting off clean-shaven head". 인물이 대머리인지 먼저 확인하고, 부정문("no hair") 금지.\n';
         p += '장면 맞춤 동작: 나레이션에 맞는 미세 동작 포함 (slowly/gently/subtle 수준만).\n';
         p += '+ duration 6~10: "Motion: gentle breathing, soft ambient drift, camera push-in 5% max."\n';
         p += '+ duration 10+: "Motion: visible breathing rhythm, gentle ambient drift, camera push-in or slow pan up to 7%."\n\n';
@@ -32419,6 +32428,47 @@ ${commentText.slice(0, 12000)}`;
         navigator.clipboard.writeText(p).then(function() {
             alert((genspark ? '🎨 젠스파크용 ' : 'Claude용 ') + '올인원 프롬프트 복사 완료!\n\n총 ' + total + '개 장면 (도입부 ' + introScenes.length + ' + 본문 ' + bodyScenes.length + ')\n\nClaude에 붙여넣기 하세요.' + (genspark ? '\n\n→ 이미지는 젠스파크로 직접 생성 후 scene_N.png ZIP을 Claude에 주면 영상·디자인·ZIP까지 완성됩니다.' : ''));
         });
+    }
+
+    // 도입부 영상 생성 패널: 도입부 textarea를 읽어 장면별 6초/10초 버튼 렌더
+    function _aioRenderIntroDur() {
+        var ta = document.getElementById('aioIntro');
+        var box = document.getElementById('aioIntroDurList');
+        if (!ta || !box) return;
+        var lines = ta.value.split('\n');
+        var html = '';
+        var sceneNo = 0;
+        lines.forEach(function(line, li) {
+            var t = line.trim();
+            if (!t) return;
+            sceneNo++;
+            var m = t.match(/\(\s*(6|10)\s*\)\s*$/);
+            var dur = m ? parseInt(m[1], 10) : 10;
+            var clean = t.replace(/\(\s*(6|10)\s*\)\s*$/, '').trim();
+            var short = clean.length > 34 ? clean.substring(0, 34) + '…' : clean;
+            var btn6 = 'padding:3px 11px;font-size:0.76rem;border-radius:5px;cursor:pointer;font-weight:700;border:1px solid #e03131;' + (dur === 6 ? 'background:#e03131;color:#fff;' : 'background:#fff;color:#c92a2a;');
+            var btn10 = 'padding:3px 11px;font-size:0.76rem;border-radius:5px;cursor:pointer;font-weight:700;border:1px solid #6f42c1;' + (dur === 10 ? 'background:#6f42c1;color:#fff;' : 'background:#fff;color:#6f42c1;');
+            html += '<div style="display:flex;align-items:center;gap:8px;padding:4px 6px;background:#faf7f7;border-radius:6px;">'
+                + '<span style="flex-shrink:0;font-size:0.74rem;font-weight:700;color:#c92a2a;">#' + sceneNo + '</span>'
+                + '<span style="flex:1;min-width:0;font-size:0.74rem;color:#555;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _escapeHtml(short) + '</span>'
+                + '<button type="button" onclick="_aioSetIntroDur(' + li + ',6)" style="' + btn6 + '">6초</button>'
+                + '<button type="button" onclick="_aioSetIntroDur(' + li + ',10)" style="' + btn10 + '">10초</button>'
+                + '</div>';
+        });
+        box.innerHTML = sceneNo ? html : '<p style="font-size:0.78rem;color:#888;">아래 [🎯 도입부] 칸을 먼저 입력한 뒤 [🔄 도입부 불러오기]를 누르세요.</p>';
+    }
+
+    // 해당 줄의 길이 마커를 갱신 (6초=줄끝 (6) 추가 / 10초=마커 제거)
+    function _aioSetIntroDur(lineIdx, dur) {
+        var ta = document.getElementById('aioIntro');
+        if (!ta) return;
+        var lines = ta.value.split('\n');
+        if (lineIdx < 0 || lineIdx >= lines.length) return;
+        var t = lines[lineIdx].replace(/\s*\(\s*(6|10)\s*\)\s*$/, '').replace(/\s+$/, '');
+        if (dur === 6) t = t + ' (6)';
+        lines[lineIdx] = t;
+        ta.value = lines.join('\n');
+        _aioRenderIntroDur();
     }
 
     function _aioSendToSellpot() {
