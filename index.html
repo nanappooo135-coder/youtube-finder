@@ -26848,7 +26848,7 @@ JSON만 출력. 코드블록 마커 금지.`;
                     }
 
                     // grok_prompt: nano_prompt 기반 + STRICT RULES + 모션 강도
-                    const STRICT = 'Maintain EXACT original 2D illustrated style. Character has completely bald smooth bare scalp with light reflecting off clean-shaven head - preserve exactly.';
+                    const STRICT = 'Maintain EXACT original 2D illustrated style. Preserve the EXACT hair, face, and clothing of each character from the input image - if bald stay bald, if the character has hair keep the identical hair; never add, grow, remove, or change hair.';
                     let motion;
                     if (dur <= 10) motion = 'ONLY subtle micro-movements: gentle breathing, slight head tilt, soft blink, soft ambient drift, camera push-in 5% max.';
                     else if (dur <= 13) motion = 'Subtle micro-movements: visible breathing rhythm, gentle ambient drift, camera push-in or slow pan up to 7%.';
