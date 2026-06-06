@@ -50,23 +50,23 @@
         }
 
         .container {
-            max-width: 880px;
+            max-width: 1040px;
             margin: 0 auto;
         }
 
         header {
             text-align: center;
-            margin-bottom: 28px;
+            margin-bottom: 14px;
             background: linear-gradient(135deg, #eef2ff, #f3e8ff, #fce7f3);
-            padding: 28px 24px;
+            padding: 16px 22px;
             border-radius: var(--radius-lg);
             border: 1px solid rgba(99, 102, 241, 0.15);
-            box-shadow: var(--shadow-md);
+            box-shadow: var(--shadow-sm);
         }
 
         header h1 {
-            font-size: 2rem;
-            margin-bottom: 8px;
+            font-size: 1.5rem;
+            margin-bottom: 3px;
             color: var(--primary-hover);
             letter-spacing: -0.02em;
             font-weight: 800;
@@ -81,9 +81,9 @@
         .process-nav {
             display: flex;
             flex-wrap: wrap;
-            gap: 14px;
-            margin-bottom: 16px;
-            padding: 14px 16px;
+            gap: 10px;
+            margin-bottom: 12px;
+            padding: 12px 14px 10px;
             background: linear-gradient(180deg, #fafafa 0%, #f3f4f6 100%);
             border: 1px solid #e5e7eb;
             border-radius: 14px;
@@ -116,8 +116,8 @@
         }
         .process-btn {
             padding: 9px 16px;
-            border: 1.5px solid var(--danger);
-            background: var(--danger);
+            border: 1.5px solid var(--primary);
+            background: var(--primary);
             color: white;
             border-radius: 999px;
             font-size: 0.9rem;
@@ -134,11 +134,14 @@
         }
         .process-btn.inactive {
             background: var(--surface);
-            color: var(--danger);
+            color: var(--text-muted);
+            border-color: var(--border);
             box-shadow: none;
         }
         .process-btn.inactive:hover {
-            background: #fef2f2;
+            background: #f5f3ff;
+            border-color: var(--primary);
+            color: var(--primary);
         }
         @media (max-width: 768px) {
             .process-nav {
@@ -396,10 +399,10 @@
         .channel-nav {
             display: flex;
             gap: 8px;
-            margin-bottom: 16px;
+            margin-bottom: 10px;
         }
         .ch-btn {
-            padding: 10px 20px;
+            padding: 9px 18px;
             border: 2px solid #e0e0e0;
             background: white;
             color: #666;
@@ -410,13 +413,13 @@
             transition: all 0.2s;
         }
         .ch-btn.active {
-            border-color: #dc3545;
-            background: #fff0f1;
-            color: #dc3545;
+            border-color: var(--primary);
+            background: #eef2ff;
+            color: var(--primary-hover);
         }
         .ch-btn:hover:not(.active) {
-            border-color: #dc3545;
-            color: #dc3545;
+            border-color: var(--primary);
+            color: var(--primary);
         }
 
         /* === Tab Navigation (하위) === */
@@ -443,7 +446,7 @@
         }
 
         .tab-btn.active {
-            background: #dc3545;
+            background: var(--primary);
             color: white;
         }
 
@@ -464,8 +467,8 @@
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: var(--radius-md);
-            padding: 22px;
-            margin-bottom: 18px;
+            padding: 14px 16px;
+            margin-bottom: 10px;
             box-shadow: var(--shadow-sm);
             transition: box-shadow 0.2s ease;
         }
@@ -484,6 +487,11 @@
             align-items: center;
             color: var(--text);
             letter-spacing: -0.01em;
+        }
+
+        /* 접힌 섹션은 제목 아래 여백 제거 → 빈 박스 공백 최소화 */
+        .section-title.collapsed {
+            margin-bottom: 0;
         }
 
         .section-title .arrow {
@@ -631,12 +639,12 @@
         }
 
         .btn-primary {
-            background: #dc3545;
+            background: var(--primary);
             color: white;
         }
 
         .btn-primary:hover {
-            background: #c82333;
+            background: var(--primary-hover);
         }
 
         .btn-primary:disabled {
@@ -2254,7 +2262,7 @@
         <div id="process-topic">
 
         <!-- 큐레이터 바로가기 (대시보드 / 벤치마크) — 카테고리별 -->
-        <div class="topic-only" style="background:#fff;border:1px solid #e0e0e0;border-radius:12px;padding:14px 16px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04);">
+        <div class="topic-only" style="background:#fff;border:1px solid #e0e0e0;border-radius:12px;padding:12px 14px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.04);">
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
                 <span style="min-width:88px;font-weight:700;font-size:0.95rem;color:#10b981;">📊 대시보드</span>
                 <button onclick="localStorage.setItem('curator_category','economy');window.location.href='dashboard.html'" style="padding:8px 16px;border:none;border-radius:8px;background:#10b981;color:#fff;font-weight:700;cursor:pointer;">💰 경제</button>
