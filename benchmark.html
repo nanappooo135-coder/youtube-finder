@@ -191,17 +191,51 @@ const STATE = {
   blockedChannels: new Set(JSON.parse(localStorage.getItem('blocked_channels')||'[]')),
 };
 
+// ========== 차단 채널 클라우드 동기화 (Firebase — index.html과 공유) ==========
+// blocked_channels를 모든 PC가 공유. 한 곳에서 차단/해제하면 다른 PC에도 반영됨.
+const FIREBASE_DB = 'https://finder-30aa6-default-rtdb.firebaseio.com';
+
+// 클라우드 → 로컬: 최신 차단목록 불러오기
+async function cloudLoadBlocked(){
+  try {
+    const res = await fetch(`${FIREBASE_DB}/settings/blocked_channels.json?t=` + Date.now());
+    if(!res.ok) return;
+    let raw = await res.json();
+    if(raw == null) return;
+    // index.html은 localStorage 문자열 그대로 저장하므로 값이 JSON 문자열일 수 있음
+    let arr = raw;
+    if(typeof raw === 'string'){ try { arr = JSON.parse(raw); } catch { arr = []; } }
+    if(!Array.isArray(arr)) return;
+    STATE.blockedChannels = new Set(arr);
+    localStorage.setItem('blocked_channels', JSON.stringify(arr));
+  } catch(e){ console.warn('차단목록 클라우드 로드 실패:', e); }
+}
+
+// 로컬 → 클라우드: 현재 차단목록 저장 (index.html SYNC 포맷과 동일하게 문자열로)
+async function cloudSaveBlocked(){
+  try {
+    const str = JSON.stringify([...STATE.blockedChannels]);
+    await fetch(`${FIREBASE_DB}/settings/blocked_channels.json`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(str),
+    });
+  } catch(e){ console.warn('차단목록 클라우드 저장 실패:', e); }
+}
+
 function blockChannel(channelName){
-  if(!confirm(`"${channelName}" 채널을 차단할까요?\n앞으로 이 채널 영상 표시 안 됨.\n(설정에서 해제 가능)`)) return;
+  if(!confirm(`"${channelName}" 채널을 차단할까요?\n앞으로 이 채널 영상 표시 안 됨.\n(모든 PC에 공유됩니다. 설정에서 해제 가능)`)) return;
   STATE.blockedChannels.add(channelName);
   localStorage.setItem('blocked_channels', JSON.stringify([...STATE.blockedChannels]));
-  showToast(`✓ "${channelName}" 차단됨`);
+  cloudSaveBlocked();
+  showToast(`✓ "${channelName}" 차단됨 (모든 PC 공유)`);
   applyFilters();
 }
 
 function unblockChannel(channelName){
   STATE.blockedChannels.delete(channelName);
   localStorage.setItem('blocked_channels', JSON.stringify([...STATE.blockedChannels]));
+  cloudSaveBlocked();
   applyFilters();
   showBlockedList();
 }
@@ -257,6 +291,7 @@ async function loadDataset() {
       `데이터셋: ${STATE.meta.channel_count}개 채널 / ${STATE.meta.video_count.toLocaleString()}개 영상 / 생성 ${new Date(STATE.meta.generated_at).toLocaleString('ko-KR')}`;
     document.getElementById('loading').style.display = 'none';
     document.getElementById('mainLayout').style.display = 'grid';
+    await cloudLoadBlocked();  // 다른 PC에서 차단한 목록 먼저 반영
     initFilters();
     applyFilters();
     if (!getApiKey()) document.getElementById('apiSetup').style.display = 'block';

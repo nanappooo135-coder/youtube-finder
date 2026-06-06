@@ -87,8 +87,8 @@ def main():
         if not videos:
             continue
 
-        # 숏폼·뉴스클립 제외 (3분 미만)
-        videos = [v for v in videos if (v.get("duration", 0) or 0) >= 180]
+        # 숏폼·뉴스클립·짧은영상 제외 (10분 미만)
+        videos = [v for v in videos if (v.get("duration", 0) or 0) >= 600]
         if not videos:
             continue
 
