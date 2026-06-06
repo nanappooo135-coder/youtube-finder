@@ -423,6 +423,47 @@
             color: var(--primary);
         }
 
+        /* === 큐레이터/채널 통합 카드 === */
+        .nav-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 4px 16px;
+            margin-bottom: 12px;
+            box-shadow: var(--shadow-sm);
+        }
+        .nav-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            padding: 10px 0;
+        }
+        .nav-row + .nav-row {
+            border-top: 1px solid #f1f3f5;
+        }
+        .nav-label {
+            min-width: 86px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: #4e5968;
+        }
+        .cat-chip {
+            padding: 7px 15px;
+            border: 1px solid transparent;
+            border-radius: 9px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .cat-chip.eco { background: #e6f7ef; color: #099268; border-color: #c3ecd9; }
+        .cat-chip.eco:hover { background: #d3f1e3; }
+        .cat-chip.psy { background: #f1ecfd; color: #6741d9; border-color: #ddd0fb; }
+        .cat-chip.psy:hover { background: #e7defc; }
+        .cat-chip.his { background: #fff2e0; color: #e8830c; border-color: #fbe2bd; }
+        .cat-chip.his:hover { background: #ffe9cc; }
+
         /* === Tab Navigation (하위) === */
         .tab-nav {
             display: flex;
@@ -951,17 +992,19 @@
         }
 
         .card {
-            background: #f8f9fa;
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 16px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 14px;
+            margin-bottom: 12px;
+            box-shadow: var(--shadow-sm);
             transition: transform 0.2s, box-shadow 0.2s;
         }
 
         .card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+            border-color: #d6e4fb;
         }
 
         .card-inner {
@@ -1069,16 +1112,16 @@
             transition: all 0.15s;
         }
         .thumb-modal-actions button:hover {
-            border-color: #dc3545;
-            color: #dc3545;
+            border-color: var(--primary);
+            color: var(--primary);
         }
         .thumb-modal-actions button.primary {
-            background: #dc3545;
+            background: var(--primary);
             color: white;
-            border-color: #dc3545;
+            border-color: var(--primary);
         }
         .thumb-modal-actions button.primary:hover {
-            background: #c82333;
+            background: var(--primary-hover);
         }
 
         .card-content {
@@ -1102,7 +1145,7 @@
         }
 
         .card-title a:hover {
-            color: #dc3545;
+            color: var(--primary);
         }
 
         .card-channel {
@@ -1116,7 +1159,7 @@
         }
 
         .card-channel a:hover {
-            color: #dc3545;
+            color: var(--primary);
         }
 
         .card-stats {
@@ -1127,15 +1170,15 @@
         }
 
         .stat-badge {
-            background: #e9ecef;
+            background: #f2f4f6;
             padding: 4px 10px;
             border-radius: 20px;
             font-size: 0.8rem;
-            color: #555;
+            color: #4e5968;
         }
 
         .stat-badge.highlight {
-            background: #dc3545;
+            background: var(--primary);
             color: white;
             font-weight: 600;
         }
@@ -2260,28 +2303,27 @@
         <!-- ===== 프로세스 1: 주제찾기 ===== -->
         <div id="process-topic">
 
-        <!-- 큐레이터 바로가기 (대시보드 / 벤치마크) — 카테고리별 -->
-        <div class="topic-only" style="background:#fff;border:1px solid #e0e0e0;border-radius:12px;padding:12px 14px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.04);">
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
-                <span style="min-width:88px;font-weight:700;font-size:0.95rem;color:#10b981;">📊 대시보드</span>
-                <button onclick="localStorage.setItem('curator_category','economy');window.location.href='dashboard.html'" style="padding:8px 16px;border:none;border-radius:8px;background:#10b981;color:#fff;font-weight:700;cursor:pointer;">💰 경제</button>
-                <button onclick="localStorage.setItem('curator_category','psychology');window.location.href='dashboard.html'" style="padding:8px 16px;border:none;border-radius:8px;background:#8b5cf6;color:#fff;font-weight:700;cursor:pointer;">🧠 심리</button>
-                <button onclick="localStorage.setItem('curator_category','history');window.location.href='dashboard.html'" style="padding:8px 16px;border:none;border-radius:8px;background:#f59e0b;color:#fff;font-weight:700;cursor:pointer;">📜 역사</button>
+        <!-- 큐레이터 + 채널 통합 카드 -->
+        <div class="nav-card topic-only">
+            <div class="nav-row">
+                <span class="nav-label">📊 대시보드</span>
+                <button class="cat-chip eco" onclick="localStorage.setItem('curator_category','economy');window.location.href='dashboard.html'">💰 경제</button>
+                <button class="cat-chip psy" onclick="localStorage.setItem('curator_category','psychology');window.location.href='dashboard.html'">🧠 심리</button>
+                <button class="cat-chip his" onclick="localStorage.setItem('curator_category','history');window.location.href='dashboard.html'">📜 역사</button>
             </div>
-            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-                <span style="min-width:88px;font-weight:700;font-size:0.95rem;color:#6366f1;">🎯 벤치마크</span>
-                <button onclick="localStorage.setItem('curator_category','economy');window.location.href='benchmark.html'" style="padding:8px 16px;border:none;border-radius:8px;background:#10b981;color:#fff;font-weight:700;cursor:pointer;">💰 경제</button>
-                <button onclick="localStorage.setItem('curator_category','psychology');window.location.href='benchmark.html'" style="padding:8px 16px;border:none;border-radius:8px;background:#8b5cf6;color:#fff;font-weight:700;cursor:pointer;">🧠 심리</button>
-                <button onclick="localStorage.setItem('curator_category','history');window.location.href='benchmark.html'" style="padding:8px 16px;border:none;border-radius:8px;background:#f59e0b;color:#fff;font-weight:700;cursor:pointer;">📜 역사</button>
+            <div class="nav-row">
+                <span class="nav-label">🎯 벤치마크</span>
+                <button class="cat-chip eco" onclick="localStorage.setItem('curator_category','economy');window.location.href='benchmark.html'">💰 경제</button>
+                <button class="cat-chip psy" onclick="localStorage.setItem('curator_category','psychology');window.location.href='benchmark.html'">🧠 심리</button>
+                <button class="cat-chip his" onclick="localStorage.setItem('curator_category','history');window.location.href='benchmark.html'">📜 역사</button>
             </div>
-        </div>
-
-        <!-- 채널 선택기 -->
-        <div class="channel-nav topic-only">
-            <button class="ch-btn active" onclick="switchChannel('경제')" id="chBtn_경제">경제 🇰🇷</button>
-            <button class="ch-btn" onclick="switchChannel('역사')" id="chBtn_역사">역사 🇰🇷</button>
-            <button class="ch-btn" onclick="switchChannel('일본경제')" id="chBtn_일본경제">일본경제 🇯🇵</button>
-            <button class="ch-btn" onclick="switchChannel('심리학')" id="chBtn_심리학">심리학 🇰🇷</button>
+            <div class="nav-row">
+                <span class="nav-label">🔎 내 채널</span>
+                <button class="ch-btn active" onclick="switchChannel('경제')" id="chBtn_경제">경제 🇰🇷</button>
+                <button class="ch-btn" onclick="switchChannel('역사')" id="chBtn_역사">역사 🇰🇷</button>
+                <button class="ch-btn" onclick="switchChannel('일본경제')" id="chBtn_일본경제">일본경제 🇯🇵</button>
+                <button class="ch-btn" onclick="switchChannel('심리학')" id="chBtn_심리학">심리학 🇰🇷</button>
+            </div>
         </div>
 
         <!-- API 키 섹션 -->
