@@ -32392,7 +32392,7 @@ ${commentText.slice(0, 12000)}`;
         }
         if (blank) p += '2. 빈화면: real+claude_design 장면 → 검정 1920x1080 PNG (scene_XX.png)\n';
         if (cd) {
-            p += '3. 클로드디자인: claude_design 장면 → 1920x1080 HTML. 규칙: 배경 #F5EDE0, Pretendard 폰트, 콘텐츠 1080px 초과 금지, 제목 46px+/숫자 44px+/본문 20px+, 핵심 숫자에 pulse 애니메이션. 자동 스케일링 JS 필수: `var d=document.getElementById("s");function f(){var s=Math.min(innerWidth/1920,innerHeight/1080);d.style.transform="scale("+s+")";d.style.left=((innerWidth-1920*s)/2)+"px";d.style.top=((innerHeight-1080*s)/2)+"px";}f();onresize=f;`\n';
+            p += '3. 클로드디자인: claude_design 장면 → 1920x1080 HTML. 규칙: 배경 #F5EDE0, Pretendard 폰트, 콘텐츠 1080px 초과 금지, 제목 46px+/숫자 44px+/본문 20px+, 핵심 숫자에 pulse(은은하게 scale 1.03~1.04, 2.4~2.6s). 애니메이션은 천천히·부드럽게(등장 1s 내외 ease-out, 순차 딜레이는 흐르듯 — "훅훅" 빠른 등장 금지). 화면을 꽉 채울 것(가운데만 띄워 상하 공백 크게 두지 말 것). 요소 겹침 절대 금지. 흰 카드+둥근 모서리+부드러운 그림자(box-shadow)+칩/뱃지로 시인성 좋고 예쁜 UI. 하단 약 175px는 셀팜 자막 안전영역 — 콘텐츠·움직이는 요소를 두지 말고 padding-bottom ~175px 확보. 채널명·푸터·브랜딩(예: 유정경제학/YUJEONG) 넣지 말 것. 자동 스케일링 JS 필수: `var d=document.getElementById("s");function f(){var s=Math.min(innerWidth/1920,innerHeight/1080);d.style.transform="scale("+s+")";d.style.left=((innerWidth-1920*s)/2)+"px";d.style.top=((innerHeight-1080*s)/2)+"px";}f();onresize=f;`\n';
             p += '4. HTML 녹화: Playwright ' + recLen + '초 WebM\n';
         }
         if (grok) {
