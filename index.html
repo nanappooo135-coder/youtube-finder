@@ -4145,9 +4145,9 @@
 
                     <!-- 도입부 입력 -->
                     <div class="input-group">
-                        <label>🎯 도입부 <span style="color:#888;font-weight:400;">(1문장 = 1장면, isIntro:true, duration:6)</span></label>
-                        <textarea id="aioIntro" rows="6" placeholder="차를 팔면 팔수록 망해가는 회사가 있습니다.&#10;근데 이 회사, 전 세계에서 전기차를 제일 많이 파는 1위 기업이에요.&#10;작년에 전기차를 427만 대나 팔아서...&#10;&#10;(한 줄에 한 문장씩)" style="width:100%;padding:12px;border:2px solid #dc3545;border-radius:10px;font-size:0.9rem;resize:vertical;font-family:inherit;line-height:1.6;"></textarea>
-                        <p style="font-size:0.75rem;color:#888;margin-top:4px;">💡 한 줄 = 1장면. 빈 줄은 무시됨.</p>
+                        <label>🎯 도입부 <span style="color:#888;font-weight:400;">(1문장 = 1장면, isIntro:true · 기본 10초, 6초는 줄 끝에 (6))</span></label>
+                        <textarea id="aioIntro" rows="6" placeholder="차를 팔면 팔수록 망해가는 회사가 있습니다.&#10;근데 이 회사, 전 세계에서 전기차를 제일 많이 파는 1위 기업이에요. (6)&#10;작년에 전기차를 427만 대나 팔아서...&#10;&#10;(한 줄에 한 문장씩 · 6초로 만들 줄만 끝에 (6) 표기)" style="width:100%;padding:12px;border:2px solid #dc3545;border-radius:10px;font-size:0.9rem;resize:vertical;font-family:inherit;line-height:1.6;"></textarea>
+                        <p style="font-size:0.75rem;color:#888;margin-top:4px;">💡 한 줄 = 1장면. 빈 줄은 무시됨. <b>기본 10초</b>, 6초로 만들 줄만 끝에 <code>(6)</code> 표기 (그록은 6초·10초만 가능).</p>
                     </div>
 
                     <!-- 본문 입력 -->
@@ -32199,8 +32199,19 @@ ${commentText.slice(0, 12000)}`;
         var recLen = _aioGetOpt('aioRecLen'), realRatio = _aioGetOpt('aioReal');
         var cdRatio = _aioGetOpt('aioCd'), groupSize = _aioGetOpt('aioGroup') || '4';
 
-        // 도입부: 한 줄 = 1장면 (빈 줄 무시)
-        var introScenes = introRaw ? introRaw.split('\n').filter(function(s){return s.trim();}) : [];
+        // 도입부: 한 줄 = 1장면 (빈 줄 무시). 기본 10초, 줄 끝 (6)/(10) 마커로 길이 지정
+        // → {text, dur} 객체 배열. 그록은 6초·10초만 가능하므로 그 외 값은 10으로 스냅
+        var introScenes = [];
+        if (introRaw) {
+            introRaw.split('\n').forEach(function(line) {
+                var t = line.trim();
+                if (!t) return;
+                var dur = 10;
+                var m = t.match(/\(\s*(6|10)\s*\)\s*$/);
+                if (m) { dur = parseInt(m[1], 10); t = t.replace(/\(\s*(6|10)\s*\)\s*$/, '').trim(); }
+                if (t) introScenes.push({ text: t, dur: dur });
+            });
+        }
         // 본문: 마침표 기준 문장 분리 → N문장씩 묶기
         var gs = parseInt(groupSize) || 4;
         var bodyScenes = [];
@@ -32299,7 +32310,7 @@ ${commentText.slice(0, 12000)}`;
         // === JSON 구조 + 분류 규칙 + 프롬프트 규칙 ===
         p += '### JSON 출력 형식\n';
         p += '```json\n{"scenes": [\n';
-        p += '  {"sceneNo": 1, "isIntro": true, "type": "ai", "duration": 6, "narration": "...", "nano_prompt": "...", "grok_prompt": "STRICT RULES: ..."},\n';
+        p += '  {"sceneNo": 1, "isIntro": true, "type": "ai", "duration": 10, "narration": "...", "nano_prompt": "...", "grok_prompt": "STRICT RULES: ..."},\n';
         p += '  {"sceneNo": 2, "isIntro": false, "type": "real", "duration": 10, "narration": "...", "real_keywords": ["...", "...", "..."], "real_subject": "...", "nano_prompt": "...", "grok_prompt": "..."},\n';
         p += '  {"sceneNo": 3, "isIntro": false, "type": "claude_design", "duration": 10, "narration": "...", "claude_prompt": "...", "claude_kind": "인포그래픽", "nano_prompt": "...", "grok_prompt": "..."}\n';
         p += ']}\n```\n\n';
@@ -32308,7 +32319,7 @@ ${commentText.slice(0, 12000)}`;
         p += '- **ai** (대부분): 일러스트 이미지. 추상/은유, 상징적 묘사, 도입부 전부\n';
         p += '- **real** (' + (realRatio === '0' ? '0% — 사용 안 함: real 장면 절대 만들지 말 것' : realRatio + '%') + '): 실제 사진 자리. 4가지만 해당: ①실제 장소 ②실존 인물 ③과거 역사 사진 ④근거 사진. 같은 엔티티 3회 초과 금지\n';
         p += '- **claude_design** (' + (cdRatio === '0' ? '0% — 사용 안 함: claude_design 장면 절대 만들지 말 것' : cdRatio + '%') + '): 숫자/차트/비교표/연표, 그리고 **설명/비교가 핵심인 장면**. AI 이미지로는 한글이 깨지므로 텍스트 설명이 많이 필요한 장면은 반드시 claude_design으로 분류\n';
-        p += '- 도입부(isIntro:true): 무조건 type="ai", duration=6\n';
+        p += '- 도입부(isIntro:true): 무조건 type="ai". **duration은 각 INPUT SCENE에 표기된 값(6 또는 10)을 그대로 사용** — 임의로 바꾸지 말 것\n';
         p += '- 본문: duration=6(짧은 장면) 또는 10(4문장 이상/복잡한 장면)\n\n';
 
         p += '### type별 필수 필드\n';
@@ -32376,7 +32387,7 @@ ${commentText.slice(0, 12000)}`;
             p += '4. HTML 녹화: Playwright ' + recLen + '초 WebM\n';
         }
         if (grok) {
-            p += '5. 도입부 영상: `python scripts/grok_video_auto.py scenes_classified.json output --resolution 720p --duration 6s` (스크립트 없으면: `curl -O https://raw.githubusercontent.com/nanappooo135-coder/youtube-finder/main/scripts/grok_video_auto.py`). Chrome 자동 실행+로그인 확인+영상 생성+다운로드 전부 자동. 로그인 필요 시 사용자에게 안내.\n';
+            p += '5. 도입부 영상: `python scripts/grok_video_auto.py scenes_classified.json output --resolution 720p` (스크립트 없으면: `curl -O https://raw.githubusercontent.com/nanappooo135-coder/youtube-finder/main/scripts/grok_video_auto.py`). 길이는 각 장면 JSON의 duration(6 또는 10)을 자동으로 읽어 장면마다 6초·10초로 생성. 720p 한도 도달 시 자동으로 480p로 폴백해 영상 생성 지속. Chrome 자동 실행+로그인 확인+영상 생성+다운로드 전부 자동. 로그인 필요 시 사용자에게 안내.\n';
         }
         if (zip) p += '6. ZIP: 전체 자산 묶어서 폴더 열기\n';
 
@@ -32398,7 +32409,7 @@ ${commentText.slice(0, 12000)}`;
 
         p += '# ===== 입력 장면 ' + total + '개 (도입부 ' + introScenes.length + '개 + 본문 ' + bodyScenes.length + '개) =====\n\n';
         introScenes.forEach(function(scene, i) {
-            p += '=== INPUT SCENE ' + (i+1) + ' of ' + total + ' [🎯 INTRO] ===\n' + scene.trim() + '\n=== END SCENE ' + (i+1) + ' ===\n\n';
+            p += '=== INPUT SCENE ' + (i+1) + ' of ' + total + ' [🎯 INTRO · duration=' + scene.dur + '] ===\n' + scene.text.trim() + '\n=== END SCENE ' + (i+1) + ' ===\n\n';
         });
         bodyScenes.forEach(function(scene, i) {
             var num = introScenes.length + i + 1;
