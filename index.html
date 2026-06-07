@@ -4039,6 +4039,16 @@
                         대본 → 맥락분석 → JSON 생성 → 1장 테스트 → 작가 OK → 이미지/클로드디자인/빈화면 → ZIP 패키징까지 한번에.
                     </p>
 
+                    <!-- 2026-06-08: 오버레이 채널 선택 (경제/역사 — 오버레이 규칙·색의미가 채널마다 완전히 다름) -->
+                    <div class="input-group">
+                        <label>📺 오버레이 채널 <span style="color:#888;font-weight:400;">(채널마다 오버레이 규칙·색의미가 완전히 다름)</span></label>
+                        <div style="display:flex;gap:6px;margin-top:6px;padding:12px;background:#fff7ed;border:2px solid #f59e0b;border-radius:10px;">
+                            <button class="search-btn aio-opt active-n" data-group="aioOverlayCh" data-val="경제" onclick="_aioSet(this)" style="padding:8px 20px;font-size:0.92rem;background:#6f42c1;border-color:#6f42c1;">📊 경제</button>
+                            <button class="search-btn aio-opt" data-group="aioOverlayCh" data-val="역사" onclick="_aioSet(this)" style="padding:8px 20px;font-size:0.92rem;background:#e9ecef;border-color:#ced4da;color:#495057;">📜 역사</button>
+                        </div>
+                        <p style="font-size:0.75rem;color:#888;margin-top:4px;">고른 채널의 오버레이 규칙이 프롬프트에 들어갑니다. <b>경제</b>=수치·차트·VS 중심 / <b>역사</b>=연표·지도·인물 중심(별도 규칙).</p>
+                    </div>
+
                     <!-- 콘텐츠 옵션 -->
                     <div class="input-group">
                         <label>📝 콘텐츠 옵션</label>
@@ -32206,6 +32216,8 @@ ${commentText.slice(0, 12000)}`;
         var res = _aioGetOpt('aioRes'), parallel = _aioGetOpt('aioParallel');
         var recLen = _aioGetOpt('aioRecLen'), realRatio = _aioGetOpt('aioReal');
         var cdRatio = _aioGetOpt('aioCd'), groupSize = _aioGetOpt('aioGroup') || '4';
+        var overlayCh = _aioGetOpt('aioOverlayCh') || '경제';  // 오버레이 채널 (경제/역사) — 채널별 오버레이 규칙 분기용
+        window._aioOverlayChannel = overlayCh;
 
         // 도입부: 한 줄 = 1장면 (빈 줄 무시). 기본 10초, 줄 끝 (6)/(10) 마커로 길이 지정
         // → {text, dur} 객체 배열. 그록은 6초·10초만 가능하므로 그 외 값은 10으로 스냅
