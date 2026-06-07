@@ -32268,7 +32268,10 @@ ${commentText.slice(0, 12000)}`;
                 '- 필드 형식: `"overlay":{"type":"...","source":"나레이션 원문 부분문자열 그대로","data":{...},"derived":[],"accent":"amber","size":"std","position":"tl"}`\n' +
                 '- ⚠️ 오버레이는 배경(ai/real)을 **대체하지 않고 그 위에 얹는다**. claude_design(풀스크린 인포그래픽)과는 완전 별개 — 오버레이 넣었다고 claude_design으로 바꾸지 말 것.\n\n';
             overlayPhase2 =
-                '7. 오버레이 클립: `python scripts/overlay/generate_overlays.py scenes_classified.json --images-dir output --out-dir overlay_clips` — overlay 필드 있는 장면만 이미지 위에 데이터 카드를 얹은 mp4로 렌더. 셀팟엔 그 장면 이미지 대신 overlay_clips/scene_N.mp4를 올린다.\n';
+                '6. 오버레이 클립: overlay 필드 있는 장면을 이미지 위에 데이터 카드 얹은 mp4로 렌더 (ZIP보다 먼저).\n' +
+                '   - 의존성(없으면 먼저 설치): `pip install playwright imageio imageio-ffmpeg pillow && playwright install chromium`\n' +
+                '   - 실행: `python scripts/overlay/generate_overlays.py scenes_classified.json --images-dir output --out-dir overlay_clips`\n' +
+                '   - 셀팟엔 그 장면의 이미지 대신 overlay_clips/scene_N.mp4를 올린다.\n';
         } else if (overlayCh === '역사') {
             overlayBlock =
                 '\n### 📜 오버레이 (역사 채널)\n⚠️ 역사 오버레이 규칙은 아직 준비 중. 이번 출력에서는 `overlay` 필드를 만들지 말 것.\n\n';
@@ -32365,6 +32368,9 @@ ${commentText.slice(0, 12000)}`;
         p += '  {"sceneNo": 2, "isIntro": false, "type": "real", "duration": 10, "narration": "...", "real_keywords": ["...", "...", "..."], "real_subject": "...", "nano_prompt": "...", "grok_prompt": "..."},\n';
         p += '  {"sceneNo": 3, "isIntro": false, "type": "claude_design", "duration": 10, "narration": "...", "claude_prompt": "...", "claude_kind": "인포그래픽", "nano_prompt": "...", "grok_prompt": "..."}\n';
         p += ']}\n```\n\n';
+        if (overlayCh === '경제') {
+            p += '※ 위 각 scene(도입부 제외)에 `overlay` 필드를 선택적으로 추가 가능. 예: `{"sceneNo":5,"isIntro":false,"type":"ai",...,"overlay":{"type":"single_stat_card","source":"전체 수입의 약 70%가 중동산이에요","data":{"value":"70%","label":"중동산 원유 비중"},"derived":[],"accent":"amber","size":"std","position":"tl"}}`. 데이터 없는 장면은 overlay 생략. 자세한 규칙은 아래 "📊 오버레이" 섹션 참조.\n\n';
+        }
 
         p += '### type 분류 기준\n';
         p += '- **ai** (대부분): 일러스트 이미지. 추상/은유, 상징적 묘사, 도입부 전부\n';
@@ -32443,7 +32449,7 @@ ${commentText.slice(0, 12000)}`;
             p += '5. 도입부 영상: `python scripts/grok_video_auto.py scenes_classified.json output --resolution 720p` (스크립트 없으면: `curl -O https://raw.githubusercontent.com/nanappooo135-coder/youtube-finder/main/scripts/grok_video_auto.py`). 길이는 각 장면 JSON의 duration(6 또는 10)을 자동으로 읽어 장면마다 6초·10초로 생성. 720p 한도 도달 시 자동으로 480p로 폴백해 영상 생성 지속. Chrome 자동 실행+로그인 확인+영상 생성+다운로드 전부 자동. 로그인 필요 시 사용자에게 안내.\n';
         }
         if (overlayPhase2) p += overlayPhase2;
-        if (zip) p += '6. ZIP: 전체 자산 묶어서 폴더 열기\n';
+        if (zip) p += '7. ZIP: 전체 자산(이미지·영상·오버레이 클립) 묶어서 폴더 열기\n';
 
         p += '\n## 안전 규칙\n';
         if (genspark) {
