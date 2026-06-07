@@ -32232,6 +32232,16 @@ ${commentText.slice(0, 12000)}`;
         }
         var total = introScenes.length + bodyScenes.length;
 
+        // 🔢 카운트 검증용: 기대 장면 수 저장 (Import 때 실제 결과와 대조)
+        window._aioExpectedCount = total;
+        window._aioExpectedIntro = introScenes.length;
+        window._aioExpectedBody = bodyScenes.length;
+        try {
+            localStorage.setItem('aio_expected_count', JSON.stringify({
+                total: total, intro: introScenes.length, body: bodyScenes.length
+            }));
+        } catch (e) {}
+
         var p = '';
         p += '당신은 유튜브 영상 자산 생성 전문가입니다. 아래 지시를 순서대로 실행하세요.\n\n';
 
@@ -32474,12 +32484,77 @@ ${commentText.slice(0, 12000)}`;
     function _aioSendToSellpot() {
         var raw = (document.getElementById('aioJsonInput').value || '').trim();
         if (!raw) { alert('먼저 위 [JSON 붙여넣기] 칸에 Claude에서 받은 JSON을 넣어주세요.'); return; }
+        // 🔢 보내기 전 카운트 검증 — 밀린 JSON을 셀팟에 넘기는 사고 방지
+        try {
+            var _d = JSON.parse(raw);
+            var _scenes = _d.scenes || _d;
+            var _v = _aioValidateCount(_scenes);
+            if (!_v.ok) {
+                var _msg = '🚨 장면 수 검증 실패:\n\n' +
+                    _v.problems.map(function(p){ return '• ' + p.replace(/<[^>]+>/g, ''); }).join('\n') +
+                    '\n\n이대로 셀팟에 보내면 이미지·영상 순서가 밀립니다.\n그래도 보낼까요?';
+                if (!confirm(_msg)) return;
+            }
+        } catch (e) { alert('JSON 파싱 에러: ' + e.message); return; }
         var sp = document.getElementById('spJsonImport');
         if (!sp) { alert('셀팟 입력칸(spJsonImport)을 찾을 수 없습니다.'); return; }
         sp.value = raw;
         try { if (typeof switchProcess === 'function') switchProcess('sellpot'); } catch (e) {}
         try { if (typeof spImportJson === 'function') spImportJson(); } catch (e) {}
         alert('✅ 셀팟으로 JSON을 보냈어요!\n셀팟 탭의 결과(나노/그록/실사/클로드/Kie)에서 확인하세요.');
+    }
+
+    // 🔢 장면 수 카운트 검증 — 기대 수 ↔ 실제 수 + 번호 1~N 연속성 확인
+    // 반환: { ok: bool, problems: [문제 문자열...], expected: {...}|null }
+    function _aioValidateCount(scenes) {
+        var problems = [];
+        var expected = null;
+        if (window._aioExpectedCount != null) {
+            expected = { total: window._aioExpectedCount, intro: window._aioExpectedIntro, body: window._aioExpectedBody };
+        } else {
+            try { expected = JSON.parse(localStorage.getItem('aio_expected_count') || 'null'); } catch (e) { expected = null; }
+        }
+
+        var actualTotal = scenes.length;
+
+        // 1) 기대 장면 수와 실제 장면 수 비교
+        if (expected && expected.total != null) {
+            if (actualTotal !== expected.total) {
+                problems.push('장면 수 불일치: 입력 <b>' + expected.total + '개</b>를 보냈는데 결과는 <b>' + actualTotal + '개</b>입니다 (' +
+                    (actualTotal > expected.total ? '+' + (actualTotal - expected.total) + '개 늘어남' : (expected.total - actualTotal) + '개 빠짐') + ').');
+            }
+        }
+
+        // 2) sceneNo가 1,2,3...N 연속인지 (밀림·중복·누락 탐지)
+        var nums = scenes.map(function(s){ return parseInt(s.sceneNo || s.scene, 10); });
+        var seen = {};
+        var dups = [];
+        var bad = false;
+        nums.forEach(function(n){
+            if (isNaN(n)) { bad = true; return; }
+            if (seen[n]) { if (dups.indexOf(n) < 0) dups.push(n); }
+            seen[n] = true;
+        });
+        if (bad) problems.push('번호 없는 장면이 있습니다 (sceneNo 누락).');
+        if (dups.length) problems.push('중복된 장면 번호: <b>' + dups.join(', ') + '</b> (같은 번호가 두 번).');
+        var missing = [];
+        for (var i = 1; i <= actualTotal; i++) { if (!seen[i]) missing.push(i); }
+        if (missing.length) problems.push('빠진 장면 번호: <b>' + missing.join(', ') + '</b> (1~' + actualTotal + ' 중 비는 칸).');
+
+        return { ok: problems.length === 0, problems: problems, expected: expected, actualTotal: actualTotal };
+    }
+
+    // 검증 결과 → 화면 배너 HTML
+    function _aioCountBanner(v) {
+        if (v.ok) {
+            var expStr = v.expected ? (' (입력 ' + v.expected.total + '개와 일치)') : '';
+            return '<div style="margin-bottom:12px;padding:10px 14px;background:#e6f7ed;border:2px solid #2f9e44;border-radius:8px;color:#1b6b35;font-size:0.88rem;font-weight:600;">' +
+                '✅ 장면 수 검증 통과 — 총 ' + v.actualTotal + '개, 번호 1~' + v.actualTotal + ' 연속' + expStr + '</div>';
+        }
+        return '<div style="margin-bottom:12px;padding:12px 14px;background:#fff0f0;border:2px solid #e03131;border-radius:8px;color:#c92a2a;font-size:0.88rem;line-height:1.7;">' +
+            '🚨 <b>장면 수 검증 실패 — 그대로 쓰면 이미지·영상이 밀립니다.</b><br>' +
+            v.problems.map(function(p){ return '• ' + p; }).join('<br>') +
+            '<br><span style="font-size:0.8rem;color:#a00;">→ Claude에게 "장면 번호 1~N 연속으로, 입력과 같은 개수로 다시 정리해줘"라고 요청하세요.</span></div>';
     }
 
     function _aioImportJson() {
@@ -32494,7 +32569,9 @@ ${commentText.slice(0, 12000)}`;
             var cd = scenes.filter(function(s){return s.type==='claude_design';}).length;
             var intro = scenes.filter(function(s){return s.isIntro;}).length;
 
-            var html = '<div style="margin-bottom:12px;">';
+            var _v = _aioValidateCount(scenes);
+            var html = _aioCountBanner(_v);
+            html += '<div style="margin-bottom:12px;">';
             html += '<b>총 장면:</b> ' + total + ' | <b>도입부:</b> ' + intro + ' | ';
             html += '<span style="color:#1565C0"><b>ai:</b> ' + ai + '</span> | ';
             html += '<span style="color:#C62828"><b>real:</b> ' + real + '</span> | ';
