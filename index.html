@@ -32254,6 +32254,26 @@ ${commentText.slice(0, 12000)}`;
             }));
         } catch (e) {}
 
+        // ===== 오버레이 채널별 블록 (경제/역사) — 선택칸(overlayCh)에 따라 주입 =====
+        var overlayBlock = '', overlayPhase2 = '';
+        if (overlayCh === '경제') {
+            overlayBlock =
+                '\n### 📊 오버레이 (경제 채널 — 데이터 시각화 13종, AI 배경 위에 얹는 카드)\n' +
+                'scenes_classified.json의 각 scene에 **선택적으로** `overlay` 필드를 추가한다. 전체 규칙은 클론한 `scripts/overlay/MATCHING_PROMPT.md`를 읽고 그대로 따른다. 핵심:\n' +
+                '- **전체 장면의 25~30%에만** 오버레이(상한). 진짜 데이터(숫자·비교·순위·연도흐름·핵심발언·충격한마디) 있는 장면만. 애매하면 `overlay:null`. 도입부(isIntro)는 무조건 null. 같은 타입 연속 3회 금지. 데이터 적으면 25% 미만도 OK(억지로 채우지 말 것).\n' +
+                '- **숫자는 나레이션에 글자 그대로 있는 것만**. 없는 숫자 절대 생성 금지(알아도 금지). 계산값(증감률·차이)은 `derived:[{value,from,formula}]`에 신고.\n' +
+                '- 13종 type: single_stat_card · hero_stat(훅/절정 대형) · stat_change · versus · bar_chart · donut · ranking · timeline · route · headline · quote · nametag · bullets\n' +
+                '- accent(색=의미): red(위기·하락) · amber(돈·리스크·일반강조) · green(회복·성장) · cyan(정보형: route·timeline·bullets) · gold(인용)\n' +
+                '- size: hero(훅·절정만) / std. position: 인물·핵심 안 가리는 빈 공간 tl/tc/tr/cl/cc/cr.\n' +
+                '- 필드 형식: `"overlay":{"type":"...","source":"나레이션 원문 부분문자열 그대로","data":{...},"derived":[],"accent":"amber","size":"std","position":"tl"}`\n' +
+                '- ⚠️ 오버레이는 배경(ai/real)을 **대체하지 않고 그 위에 얹는다**. claude_design(풀스크린 인포그래픽)과는 완전 별개 — 오버레이 넣었다고 claude_design으로 바꾸지 말 것.\n\n';
+            overlayPhase2 =
+                '7. 오버레이 클립: `python scripts/overlay/generate_overlays.py scenes_classified.json --images-dir output --out-dir overlay_clips` — overlay 필드 있는 장면만 이미지 위에 데이터 카드를 얹은 mp4로 렌더. 셀팟엔 그 장면 이미지 대신 overlay_clips/scene_N.mp4를 올린다.\n';
+        } else if (overlayCh === '역사') {
+            overlayBlock =
+                '\n### 📜 오버레이 (역사 채널)\n⚠️ 역사 오버레이 규칙은 아직 준비 중. 이번 출력에서는 `overlay` 필드를 만들지 말 것.\n\n';
+        }
+
         var p = '';
         p += '당신은 유튜브 영상 자산 생성 전문가입니다. 아래 지시를 순서대로 실행하세요.\n\n';
 
@@ -32388,6 +32408,8 @@ ${commentText.slice(0, 12000)}`;
         p += '+ duration 6~10: "Motion: gentle breathing, soft ambient drift, camera push-in 5% max."\n';
         p += '+ duration 10+: "Motion: visible breathing rhythm, gentle ambient drift, camera push-in or slow pan up to 7%."\n\n';
 
+        p += overlayBlock;
+
         if (genspark) {
             p += '## STEP 3: JSON 완성 → 검수 → 이미지 프롬프트 출력 (젠스파크용)\n\n';
             p += '1. JSON을 클립보드에 복사하거나 채팅에 출력\n';
@@ -32420,6 +32442,7 @@ ${commentText.slice(0, 12000)}`;
         if (grok) {
             p += '5. 도입부 영상: `python scripts/grok_video_auto.py scenes_classified.json output --resolution 720p` (스크립트 없으면: `curl -O https://raw.githubusercontent.com/nanappooo135-coder/youtube-finder/main/scripts/grok_video_auto.py`). 길이는 각 장면 JSON의 duration(6 또는 10)을 자동으로 읽어 장면마다 6초·10초로 생성. 720p 한도 도달 시 자동으로 480p로 폴백해 영상 생성 지속. Chrome 자동 실행+로그인 확인+영상 생성+다운로드 전부 자동. 로그인 필요 시 사용자에게 안내.\n';
         }
+        if (overlayPhase2) p += overlayPhase2;
         if (zip) p += '6. ZIP: 전체 자산 묶어서 폴더 열기\n';
 
         p += '\n## 안전 규칙\n';
@@ -32448,7 +32471,7 @@ ${commentText.slice(0, 12000)}`;
         });
 
         navigator.clipboard.writeText(p).then(function() {
-            alert((genspark ? '🎨 젠스파크용 ' : 'Claude용 ') + '올인원 프롬프트 복사 완료!\n\n총 ' + total + '개 장면 (도입부 ' + introScenes.length + ' + 본문 ' + bodyScenes.length + ')\n\nClaude에 붙여넣기 하세요.' + (genspark ? '\n\n→ 이미지는 젠스파크로 직접 생성 후 scene_N.png ZIP을 Claude에 주면 영상·디자인·ZIP까지 완성됩니다.' : ''));
+            alert((genspark ? '🎨 젠스파크용 ' : 'Claude용 ') + '올인원 프롬프트 복사 완료!\n\n총 ' + total + '개 장면 (도입부 ' + introScenes.length + ' + 본문 ' + bodyScenes.length + ')\n오버레이 채널: ' + overlayCh + (overlayCh === '역사' ? ' (규칙 준비중 — overlay 미생성)' : ' (데이터 13종, 25~30%)') + '\n\nClaude에 붙여넣기 하세요.' + (genspark ? '\n\n→ 이미지는 젠스파크로 직접 생성 후 scene_N.png ZIP을 Claude에 주면 영상·디자인·ZIP까지 완성됩니다.' : ''));
         });
     }
 

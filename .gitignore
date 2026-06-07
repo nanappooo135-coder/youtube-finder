@@ -1,0 +1,11 @@
+.env
+*.log
+__pycache__/
+*.pyc
+scripts/*/fetch_log*.txt
+scripts/*/dataset_metrics.json
+scripts/*/dataset_top.json
+scripts/*/dataset_summary.md
+
+# overlay 테스트·스크래치 산출물 (소스만 커밋: overlay.html / generate_overlays.py / validate_overlays.py / MATCHING_PROMPT.md)
+scripts/overlay/_*
