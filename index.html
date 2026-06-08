@@ -2266,14 +2266,6 @@
     </style>
 </head>
 <body>
-    <!-- 양쪽 마스코트 (블렌딩) -->
-    <img src="assets/mascot/baby2.png" alt="" style="position:fixed;left:-40px;bottom:10px;height:380px;opacity:0.7;pointer-events:none;z-index:0;mask-image:radial-gradient(ellipse 70% 60% at center, rgba(0,0,0,0.85) 30%, transparent 70%);-webkit-mask-image:radial-gradient(ellipse 70% 60% at center, rgba(0,0,0,0.85) 30%, transparent 70%);" onerror="this.style.display='none'">
-    <img src="assets/mascot/baby3.png" alt="" style="position:fixed;right:-40px;bottom:10px;height:380px;opacity:0.7;pointer-events:none;z-index:0;mask-image:radial-gradient(ellipse 70% 60% at center, rgba(0,0,0,0.85) 30%, transparent 70%);-webkit-mask-image:radial-gradient(ellipse 70% 60% at center, rgba(0,0,0,0.85) 30%, transparent 70%);" onerror="this.style.display='none'">
-    <img src="assets/mascot/baby1.png" alt="" style="position:fixed;left:-20px;top:60px;height:280px;opacity:0.5;pointer-events:none;z-index:0;mask-image:radial-gradient(ellipse 70% 60% at center, rgba(0,0,0,0.75) 25%, transparent 65%);-webkit-mask-image:radial-gradient(ellipse 70% 60% at center, rgba(0,0,0,0.75) 25%, transparent 65%);" onerror="this.style.display='none'">
-
-    <!-- 모바일 오버레이 -->
-    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleYtSidebar()"></div>
-
     <!-- 왼쪽 사이드바 -->
     <div class="process-nav" id="ytSidebar">
         <div class="sidebar-top">
@@ -5290,6 +5282,14 @@
         </div><!-- /process-topic -->
 
     </div><!-- /container -->
+
+    <!-- 모바일 오버레이 -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleYtSidebar()"></div>
+
+    <!-- 양쪽 마스코트 (블렌딩) -->
+    <img src="assets/mascot/baby2.png" alt="" style="position:fixed;left:-40px;bottom:10px;height:380px;opacity:0.7;pointer-events:none;z-index:0;mask-image:radial-gradient(ellipse 70% 60% at center, rgba(0,0,0,0.85) 30%, transparent 70%);-webkit-mask-image:radial-gradient(ellipse 70% 60% at center, rgba(0,0,0,0.85) 30%, transparent 70%);" onerror="this.style.display='none'">
+    <img src="assets/mascot/baby3.png" alt="" style="position:fixed;right:-40px;bottom:10px;height:380px;opacity:0.7;pointer-events:none;z-index:0;mask-image:radial-gradient(ellipse 70% 60% at center, rgba(0,0,0,0.85) 30%, transparent 70%);-webkit-mask-image:radial-gradient(ellipse 70% 60% at center, rgba(0,0,0,0.85) 30%, transparent 70%);" onerror="this.style.display='none'">
+    <img src="assets/mascot/baby1.png" alt="" style="position:fixed;left:-20px;top:60px;height:280px;opacity:0.5;pointer-events:none;z-index:0;mask-image:radial-gradient(ellipse 70% 60% at center, rgba(0,0,0,0.75) 25%, transparent 65%);-webkit-mask-image:radial-gradient(ellipse 70% 60% at center, rgba(0,0,0,0.75) 25%, transparent 65%);" onerror="this.style.display='none'">
 
     <!-- 썸네일 모달 -->
     <div id="thumbModal" class="thumb-modal-overlay" onclick="if(event.target===this)closeThumbModal()">
