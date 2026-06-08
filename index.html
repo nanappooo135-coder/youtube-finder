@@ -32258,24 +32258,50 @@ ${commentText.slice(0, 12000)}`;
         var overlayBlock = '', overlayPhase2 = '';
         if (overlayCh === '경제') {
             overlayBlock =
-                '\n### 📊 오버레이 (경제 채널 — 데이터 시각화 13종, AI 배경 위에 얹는 카드)\n' +
-                'scenes_classified.json의 각 scene에 **선택적으로** `overlay` 필드를 추가한다. 전체 규칙은 클론한 `scripts/overlay/MATCHING_PROMPT.md`를 읽고 그대로 따른다. 핵심:\n' +
-                '- **전체 장면의 25~30%에만** 오버레이(상한). 진짜 데이터(숫자·비교·순위·연도흐름·핵심발언·충격한마디) 있는 장면만. 애매하면 `overlay:null`. 도입부(isIntro)는 무조건 null. 같은 타입 연속 3회 금지. 데이터 적으면 25% 미만도 OK(억지로 채우지 말 것).\n' +
-                '- **숫자는 나레이션에 글자 그대로 있는 것만**. 없는 숫자 절대 생성 금지(알아도 금지). 계산값(증감률·차이)은 `derived:[{value,from,formula}]`에 신고.\n' +
-                '- 13종 type: single_stat_card · hero_stat(훅/절정 대형) · stat_change · versus · bar_chart · donut · ranking · timeline · route · headline · quote · nametag · bullets\n' +
-                '- accent(색=의미): red(위기·하락) · amber(돈·리스크·일반강조) · green(회복·성장) · cyan(정보형: route·timeline·bullets) · gold(인용)\n' +
-                '- size: hero(훅·절정만) / std. position: 인물·핵심 안 가리는 빈 공간 tl/tc/tr/cl/cc/cr.\n' +
-                '- 필드 형식: `"overlay":{"type":"...","source":"나레이션 원문 부분문자열 그대로","data":{...},"derived":[],"accent":"amber","size":"std","position":"tl"}`\n' +
-                '- ⚠️ 오버레이는 배경(ai/real)을 **대체하지 않고 그 위에 얹는다**. claude_design(풀스크린 인포그래픽)과는 완전 별개 — 오버레이 넣었다고 claude_design으로 바꾸지 말 것.\n\n';
+                '\n### 📊 오버레이 (경제 채널 — 데이터 시각화 13종)\n' +
+                '\n🚫 **새로 설계·제작하지 마라. 이미 완성된 시스템이다.** 레포(`scripts/overlay/`)에 다음이 다 들어있다:\n' +
+                '   - `overlay.html` : 13종 오버레이 렌더러 (디자인·애니메이션 전부 구현됨)\n' +
+                '   - `generate_overlays.py` : 이미지 위에 오버레이 합성하는 스크립트\n' +
+                '   - `MATCHING_PROMPT.md` : 어느 장면에 무엇을 넣을지 규칙\n' +
+                '   없으면 먼저 `git clone https://github.com/nanappooo135-coder/youtube-finder.git` 후 scripts 폴더 사용.\n' +
+                '\n**네가 할 일은 딱 2가지뿐이다(디자인/애니/위치/색은 이미 코드에 정해져 있으니 새로 정하지 마라):**\n' +
+                '  ① scenes_classified.json의 각 scene에 `overlay` 필드를 채운다(아래 스키마대로).\n' +
+                '  ② PHASE2에서 generate_overlays.py를 실행한다(아래 명령).\n' +
+                '\n**산출물:** AI 이미지 위에 오버레이가 합성된 mp4 클립(scene_N.mp4). 투명배경 아님. 셀팟에 그 장면 이미지 대신 이 클립을 올린다.\n' +
+                '**디자인(이미 구현, 변경 불가):** 글래스모피즘 반투명 유리카드 + Pretendard + 등장 슬라이드/페이드 + 숫자 카운트업 + 상시 미세 글로우/둥둥. 타입마다 디자인 다름(코드에 13종 렌더함수 존재).\n' +
+                '\n**넣는 규칙(MATCHING_PROMPT.md 그대로):**\n' +
+                '- **전체 장면의 25~30%에만**. 진짜 데이터(숫자·비교·순위·연도흐름·핵심발언) 있는 장면만. 애매하면 `overlay:null`. isIntro는 무조건 null. 같은 type 연속 3회 금지. 데이터 적으면 더 적어도 됨(억지로 채우지 말 것).\n' +
+                '- **숫자는 나레이션에 글자 그대로 있는 것만**. 없는 숫자 생성 금지(알아도). 계산값은 `derived:[{value,from,formula}]`에 신고.\n' +
+                '- accent(색=의미): red(위기·하락)/amber(돈·일반강조)/green(회복)/cyan(정보형 route·timeline·bullets)/gold(인용). size: hero(훅·절정)/std. position: 인물·핵심 안 가리는 빈공간 tl/tc/tr/cl/cc/cr (하단 자막영역 피함).\n' +
+                '- 공통 형식: `"overlay":{"type":"...","source":"나레이션 원문 부분문자열","data":{...},"accent":"amber","size":"std","position":"tl"}`. source=그 숫자가 나온 나레이션 원문 그대로.\n' +
+                '\n**type별 data 스키마(13종):**\n' +
+                '- single_stat_card: `{"value":"70%","label":"중동산 비중"}`\n' +
+                '- hero_stat(훅·절정 대형): `{"value":"$92","cap":"공습 당일 유가","sub":"하루 만에 ▲18%"}`\n' +
+                '- stat_change: `{"label":"휘발유 평균가","from":"1,650원","to":"1,920원","pct":"+16%","dir":"up"}`\n' +
+                '- versus: `{"label":"운송 일수","left":{"label":"평시","value":"22일"},"right":{"label":"봉쇄시","value":"60일"}}`\n' +
+                '- bar_chart: `{"title":"산유국 생산량","unit":"만 b/d","items":[{"name":"사우디","value":"1,100"},{"name":"UAE","value":"420"}]}`\n' +
+                '- donut: `{"value":"40%","label":"UAE 수출구성","legend":"석유·가스","rest":"나머지 60% 물류"}`\n' +
+                '- ranking: `{"title":"매장량 순위","unit":"억 배럴","items":[{"rank":1,"name":"베네수엘라","value":"3,030"}]}`\n' +
+                '- timeline: `{"title":"오일머니","events":[{"year":"1971","label":"건국"},{"year":"2024","label":"국부펀드 4위"}]}`\n' +
+                '- route: `{"label":"수송로","from":"중동","to":"한국","caption":"전 세계 원유 20% 통과"}`\n' +
+                '- headline(숫자없는 충격): `{"text":"단 하루 만에 유가가 출렁였다","highlight":"출렁였다"}`\n' +
+                '- quote: `{"quote":"석유가 영원할 거란 착각이 가장 비싼 실수다","by":"국부펀드 관계자"}`\n' +
+                '- nametag(인물 첫등장): `{"name":"술탄 알 자베르","title":"UAE 산업장관"}`\n' +
+                '- bullets(N가지): `{"title":"한국을 때리는 3단계","items":["공급 충격","환율 상승","물가 전가"]}`\n' +
+                '- ⚠️ 오버레이는 배경(ai/real)을 **대체하지 않고 위에 얹는다**. claude_design(풀스크린 인포그래픽)과 별개 — 오버레이 넣었다고 claude_design으로 바꾸지 말 것.\n\n';
             overlayPhase2 =
-                '6. 오버레이 클립: overlay 필드 있는 장면을 이미지 위에 데이터 카드 얹은 mp4로 렌더 (ZIP보다 먼저).\n' +
-                '   - 의존성(없으면 먼저 설치): `pip install playwright imageio imageio-ffmpeg pillow && playwright install chromium`\n' +
-                '   - 실행: `python scripts/overlay/generate_overlays.py scenes_classified.json --images-dir output --out-dir overlay_clips`\n' +
-                '   - 셀팟엔 그 장면의 이미지 대신 overlay_clips/scene_N.mp4를 올린다.\n';
+                '6. 오버레이 클립 생성 (ZIP보다 먼저). **기존 scripts/overlay/generate_overlays.py를 실행만 한다 — 새 스크립트 만들지 말 것.**\n' +
+                '   - scripts/overlay/ 없으면: `git clone https://github.com/nanappooo135-coder/youtube-finder.git` 후 scripts 폴더 복사\n' +
+                '   - 의존성(없으면 먼저): `pip install playwright imageio imageio-ffmpeg pillow && playwright install chromium`\n' +
+                '   - 실행(Windows는 앞에 `PYTHONIOENCODING=utf-8`): `python scripts/overlay/generate_overlays.py scenes_classified.json --images-dir output --out-dir overlay_clips`\n' +
+                '   - 전제: 이미지 파일명이 scene_1.png, scene_2.png … 형식이어야 매칭됨. overlay 필드 있는 장면만 mp4가 나옴.\n' +
+                '   - 결과: overlay_clips/scene_N.mp4 → 셀팟에 그 장면 이미지 대신 이 클립을 올린다.\n';
         } else if (overlayCh === '역사') {
             overlayBlock =
                 '\n### 📜 역사 효과·오버레이 (3레이어: 모션 + 무드 + 오버레이)\n' +
-                '각 scene에 **motion · mood · overlay** 3필드를 추가한다. 전체 규칙은 클론한 `scripts/overlay/history/MATCHING_HISTORY.md`를 읽고 그대로 따른다. 핵심:\n' +
+                '\n🚫 **새로 설계·제작하지 마라. 이미 완성된 시스템이다.** 레포 `scripts/overlay/`에 `history_overlay.html`(렌더러)·`render_history.py`(합성기)·`history/MATCHING_HISTORY.md`(규칙)가 다 있다. 없으면 `git clone https://github.com/nanappooo135-coder/youtube-finder.git`.\n' +
+                '**네가 할 일은 2가지뿐:** ①각 scene에 motion·mood·overlay 필드 채우기 ②PHASE2에서 render_history.py 실행. 디자인/애니/색은 코드에 정해져 있으니 새로 정하지 마라.\n' +
+                '전체 규칙은 `scripts/overlay/history/MATCHING_HISTORY.md`를 읽고 그대로 따른다. 핵심:\n' +
                 '- **절대원칙**: 핵심만(문장 통째 자막 금지) · 타이밍=말하는 순간 · 한 화면 한 초점 · 정보 없는 장면(감정·묘사)은 overlay:null로 비움(절반 이상). 숫자는 나레이션에 있는 것만.\n' +
                 '- **motion**(전 장면): `{"preset":"dolly","intensity":0.35~0.55}` — 차분=0.35, 긴장·절정=0.55, 인포그래픽=`{"preset":"none"}`. 느린 전진·루프(긴 장면도 안 멈춤).\n' +
                 '- **mood**(분위기): 전장→`{ember,fog}` / 궁·실내→`{dust,godray}` / 새벽·원정→`{fog,godray}` / 폐허→`{dust}`. grade: warm/cool/desat. 효과는 "약간만 티나게"(과하지 않게).\n' +
