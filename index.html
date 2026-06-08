@@ -48,6 +48,8 @@
             padding: 0;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
+        }
+        .app-layout {
             display: flex;
             height: 100vh;
             overflow: hidden;
@@ -148,7 +150,7 @@
             border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 600;
             color: var(--text-muted); margin-bottom: 12px;
         }
-        .process-nav.collapsed ~ .container .sidebar-toggle { display: inline-flex; }
+        .process-nav.collapsed ~ .container .sidebar-toggle { display: inline-flex !important; }
         .sidebar-toggle:hover { background: #f3f4f6; }
 
         .sidebar-overlay {
@@ -2266,6 +2268,7 @@
     </style>
 </head>
 <body>
+    <div class="app-layout">
     <!-- 왼쪽 사이드바 -->
     <div class="process-nav" id="ytSidebar">
         <div class="sidebar-top">
@@ -5282,6 +5285,7 @@
         </div><!-- /process-topic -->
 
     </div><!-- /container -->
+    </div><!-- /app-layout -->
 
     <!-- 모바일 오버레이 -->
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleYtSidebar()"></div>
