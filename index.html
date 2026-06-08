@@ -53,20 +53,22 @@
             display: flex;
             height: 100vh;
             overflow: hidden;
-            outline: 3px solid red;
         }
-        .process-nav { outline: 3px solid blue !important; }
-        .container { outline: 3px solid green !important; }
-        .container > * { outline: 2px dashed red !important; margin-bottom: 2px; }
 
         .container {
             flex: 1;
             min-width: 0;
+            min-height: 0;
             overflow-y: auto;
+            overflow-x: hidden;
             padding: 20px 28px;
+            display: flex;
+            flex-direction: column;
         }
         .container > [id^="process-"] {
             max-width: 1100px;
+            width: 100%;
+            flex-shrink: 0;
         }
         #process-allinone, #process-genspark {
             max-width: none;
