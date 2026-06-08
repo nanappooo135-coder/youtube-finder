@@ -50,25 +50,23 @@
             -moz-osx-font-smoothing: grayscale;
         }
         .app-layout {
-            display: flex;
+            display: grid;
+            grid-template-columns: 200px 1fr;
             height: 100vh;
             overflow: hidden;
         }
+        .app-layout.sidebar-closed {
+            grid-template-columns: 0px 1fr;
+        }
 
         .container {
-            flex: 1;
-            min-width: 0;
-            min-height: 0;
             overflow-y: auto;
             overflow-x: hidden;
             padding: 20px 28px;
-            display: flex;
-            flex-direction: column;
+            min-height: 0;
         }
         .container > [id^="process-"] {
             max-width: 1100px;
-            width: 100%;
-            flex-shrink: 0;
         }
         #process-allinone, #process-genspark {
             max-width: none;
@@ -99,9 +97,6 @@
 
         /* === 왼쪽 사이드바 === */
         .process-nav {
-            width: 200px;
-            min-width: 200px;
-            height: 100vh;
             background: #fff;
             border-right: 1px solid var(--border);
             overflow-y: auto;
@@ -109,11 +104,10 @@
             display: flex;
             flex-direction: column;
             padding: 0;
-            transition: width 0.25s, min-width 0.25s, padding 0.25s;
-            flex-shrink: 0;
+            min-height: 0;
         }
         .process-nav.collapsed {
-            width: 0; min-width: 0; padding: 0; overflow: hidden;
+            display: none;
         }
         .process-nav::-webkit-scrollbar { width: 3px; }
         .process-nav::-webkit-scrollbar-thumb { background: #ddd; border-radius: 2px; }
@@ -156,7 +150,7 @@
             border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 600;
             color: var(--text-muted); margin-bottom: 12px;
         }
-        .process-nav.collapsed ~ .container .sidebar-toggle { display: inline-flex !important; }
+        .sidebar-closed .sidebar-toggle { display: inline-flex !important; }
         .sidebar-toggle:hover { background: #f3f4f6; }
 
         .sidebar-overlay {
@@ -8918,8 +8912,11 @@ ${_retryRound > 0 ? `⚠️ 이번은 ${_retryRound}차 추가 요청입니다. 
         function toggleYtSidebar() {
             const sb = document.getElementById('ytSidebar');
             const ov = document.getElementById('sidebarOverlay');
+            const layout = document.querySelector('.app-layout');
             sb.classList.toggle('collapsed');
-            if (ov) ov.classList.toggle('show', !sb.classList.contains('collapsed'));
+            const isCollapsed = sb.classList.contains('collapsed');
+            if (layout) layout.classList.toggle('sidebar-closed', isCollapsed);
+            if (ov) ov.classList.toggle('show', !isCollapsed);
         }
 
         function switchProcess(proc) {
