@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700;900&family=EB+Garamond:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:1920px;height:1080px;overflow:hidden;background:#0d0b08;font-family:'Pretendard',serif}
+  #stage{position:absolute;inset:0;width:1920px;height:1080px;overflow:hidden}
+  /* 어두운 다큐 배경 + 비네트 + 옛지도 격자 */
+  #bg{position:absolute;inset:0;background:
+      radial-gradient(120% 100% at 50% 38%, #20180e 0%, #120d07 55%, #080604 100%)}
+  #grid{position:absolute;inset:0;opacity:.10;background-image:
+      linear-gradient(rgba(220,190,130,.5) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(220,190,130,.5) 1px,transparent 1px);
+      background-size:120px 120px}
+  #vig{position:absolute;inset:0;box-shadow:inset 0 0 360px 120px rgba(0,0,0,.75);pointer-events:none}
+  #scene{position:absolute;inset:0}
+  #scene svg,#scene img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  #scrim2{position:absolute;inset:0;display:none;pointer-events:none}
+
+  :root{--g:#e8c66a;--cr:#c0392b}
+  .gold{color:var(--g)}
+  .ts{text-shadow:0 4px 26px rgba(0,0,0,.7)}
+  .panel{position:absolute}
+  .pos-bl{left:130px;bottom:230px}.pos-cl{left:130px;top:50%;transform:translateY(-50%)}
+  .pos-cc{left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;width:1400px}
+  .pos-tc{left:50%;top:120px;transform:translateX(-50%);text-align:center;width:1500px}
+  .pos-tr{right:130px;top:120px;text-align:right}
+
+  /* 공통 등장 */
+  .in{animation:rise .7s cubic-bezier(.2,.8,.25,1) both;color:#f3ecdb}
+  @keyframes rise{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:none}}
+  /* 상시 미세 모션 (다큐 톤 — 느리고 절제) */
+  .amb{animation:amb 9s ease-in-out infinite}
+  @keyframes amb{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+  @keyframes gpulse{0%,100%{box-shadow:0 0 14px 1px rgba(232,198,106,.5)}50%{box-shadow:0 0 28px 6px rgba(232,198,106,.85)}}
+  .rule{height:2px;background:linear-gradient(90deg,transparent,var(--g),transparent);width:0;animation:rulew 1.1s ease-out .15s both}
+  @keyframes rulew{to{width:100%}}
+  .gglow{animation:gg 3.4s ease-in-out infinite}
+  @keyframes gg{0%,100%{text-shadow:0 4px 26px rgba(0,0,0,.7),0 0 22px rgba(232,198,106,.25)}50%{text-shadow:0 4px 26px rgba(0,0,0,.7),0 0 46px rgba(232,198,106,.55)}}
+
+  /* 1. 챕터(막) */
+  .chap{display:flex;flex-direction:column;align-items:center;gap:22px}
+  .chap .kick{font-size:34px;font-weight:700;letter-spacing:.5em;color:var(--g);padding-left:.5em}
+  .chap .rule{width:440px}
+  .chap .ttl{font-size:104px;font-weight:800;letter-spacing:-.01em}
+
+  /* 2. 날짜·장소 스탬프 (하단) */
+  .stamp{display:flex;align-items:center;gap:26px}
+  .stamp .tick{width:6px;height:108px;background:var(--g);box-shadow:0 0 18px 2px rgba(232,198,106,.6);animation:gpulse 3.2s ease-in-out infinite}
+  .stamp .yr{font-size:92px;font-weight:800;line-height:.95}
+  .stamp .pl{font-size:42px;font-weight:600;color:rgba(255,255,255,.9);margin-top:8px;letter-spacing:.04em}
+
+  /* 3. 인물 카드 */
+  .fig{display:flex;gap:26px;align-items:stretch}
+  .fig .bar{width:9px;background:var(--g);border-radius:6px;box-shadow:0 0 18px 2px rgba(232,198,106,.5);animation:gpulse 3.2s ease-in-out infinite}
+  .fig .nm{font-size:78px;font-weight:800;line-height:1}
+  .fig .ti{font-size:38px;font-weight:600;color:rgba(255,255,255,.85);margin-top:12px}
+  .fig .rg{font-size:32px;font-weight:600;color:var(--g);margin-top:14px;letter-spacing:.04em}
+
+  /* 4. 시대 연표 */
+  .tl{position:relative;margin-top:40px;width:1400px;height:150px;left:50%;transform:translateX(-50%)}
+  .tl .base{position:absolute;left:40px;right:40px;top:24px;height:3px;background:rgba(232,198,106,.35)}
+  .tl .fill{position:absolute;left:40px;top:24px;height:3px;background:var(--g);width:0;box-shadow:0 0 12px var(--g)}
+  .tl .run{position:absolute;top:18px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 0 18px 6px var(--g)}
+  .tl .ev{position:absolute;top:0;transform:translateX(-50%);text-align:center;width:260px}
+  .tl .ev .pt{width:26px;height:26px;border-radius:50%;background:var(--g);margin:14px auto 0;box-shadow:0 0 16px 3px rgba(232,198,106,.6)}
+  .tl .ev .yr{font-size:46px;font-weight:800;margin-top:16px}
+  .tl .ev .lb{font-size:26px;font-weight:500;color:rgba(255,255,255,.85);margin-top:6px}
+
+  /* 5. 명언 */
+  .quote{max-width:1100px}
+  .quote .mk{font-size:150px;line-height:.4;color:var(--g);font-weight:800;height:64px;display:block}
+  .quote .q{font-size:58px;font-weight:600;line-height:1.45;margin:14px 0 22px}
+  .quote .by{font-size:34px;font-weight:600;color:rgba(255,255,255,.82)}.quote .by b{color:var(--g)}
+
+  /* 6. 애니메이션 지도 (시그니처) */
+  .map{position:absolute;inset:0}
+  .map svg{position:absolute;inset:0;width:100%;height:100%}
+  .map .land{fill:#bda981;stroke:#6e5532;stroke-width:3}
+  .map .terr{fill:rgba(192,57,43,.62);stroke:#7a1f17;stroke-width:4}
+  .map .arrow{stroke:#1c140a;stroke-width:8;fill:none;filter:drop-shadow(0 0 5px rgba(232,198,106,.9))}
+  .map .mk{fill:#fff;filter:drop-shadow(0 0 10px var(--g))}
+  .map .city{fill:#1c140a;stroke:#fff;stroke-width:2}
+  .map .clab{position:absolute;white-space:nowrap;font-size:32px;font-weight:800;color:#fff;text-shadow:0 2px 12px #000,0 0 4px #000;transform:translate(-50%,-150%)}
+  .map .title{position:absolute;left:130px;top:120px;font-size:46px;font-weight:800}
+
+  /* 7. 세력 비교 */
+  .force{width:980px}
+  .force .cap{font-size:36px;font-weight:700;color:var(--g);letter-spacing:.05em;margin-bottom:26px;text-align:center}
+  .force .row{display:flex;align-items:center;gap:24px;margin-bottom:24px}
+  .force .nm{width:200px;font-size:40px;font-weight:700;text-align:right}
+  .force .track{flex:1;height:54px;background:rgba(255,255,255,.08);border-radius:8px;overflow:hidden}
+  .force .fl{height:100%;width:0;border-radius:8px;position:relative;overflow:hidden}
+  .force .fl::after{content:'';position:absolute;top:0;bottom:0;left:-40%;width:32%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.4),transparent);animation:fsheen 3s ease-in-out infinite}
+  @keyframes fsheen{0%{left:-40%}60%,100%{left:135%}}
+  .force .fl.a{background:linear-gradient(90deg,#7a1f17,var(--cr))}
+  .force .fl.b{background:linear-gradient(90deg,#6b5320,var(--g))}
+  .force .vl{width:200px;font-size:44px;font-weight:800}
+  .force .nm,.force .cap,.force .vl{text-shadow:0 3px 16px rgba(0,0,0,.9),0 0 7px rgba(0,0,0,.6)}
+
+  /* ★ 역사 세리프(명조) — 제목·이름·연도·명언에 무게감. 작은 라벨은 Pretendard 유지 */
+  .chap .ttl,.fig .nm,.quote .q,.quote .by,.cas .lb,.eband .er{font-family:'Noto Serif KR',serif}
+  .stamp .yr,.fig .rg,.tl .ev .yr,.force .vl,.cas .v,.eband .yr,.chap .kick{font-family:'EB Garamond','Noto Serif KR',serif}
+
+  /* ★ 추모 수치 (사상자·기간 등 묵직한 단일 숫자) */
+  .cas{text-align:center}
+  .cas .v{font-size:230px;font-weight:900;line-height:.92;color:#f3ecdb}
+  .cas .lb{font-size:48px;font-weight:600;color:var(--g);margin-top:6px;letter-spacing:.04em}
+  .cas .sub{font-size:32px;font-weight:500;color:rgba(255,255,255,.72);margin-top:16px}
+
+  /* ★ 시대 띠 (상시 시대 표시) */
+  .eband{display:flex;align-items:center;gap:30px}
+  .eband .er{font-size:58px;font-weight:800;color:#f3ecdb;letter-spacing:.05em}
+  .eband .ln{width:130px;height:2px;background:linear-gradient(90deg,var(--g),transparent)}
+  .eband .yr{font-size:42px;font-weight:600;color:var(--g);letter-spacing:.04em}
+
+  /* 무드 파티클 (패럴랙스 위 합성 레이어용) */
+  .fxfog{position:absolute;border-radius:50%;filter:blur(70px);pointer-events:none;background:radial-gradient(closest-side,rgba(200,188,165,.6),transparent)}
+  .fxember{position:absolute;width:6px;height:6px;border-radius:50%;background:#f5c77f;box-shadow:0 0 11px 3px rgba(255,180,90,.7);pointer-events:none}
+  .fxdust{position:absolute;width:4px;height:4px;border-radius:50%;background:rgba(235,225,195,.72);box-shadow:0 0 7px 2px rgba(235,225,195,.32);pointer-events:none}
+  .fxray{position:absolute;top:-260px;height:1720px;width:360px;pointer-events:none;mix-blend-mode:screen;background:linear-gradient(180deg,rgba(255,236,185,0),rgba(255,236,185,.16),rgba(255,236,185,0));filter:blur(53px)}
+  @keyframes fxraysway2{0%,100%{opacity:.34}50%{opacity:.68}}
+  @keyframes fxemberrise{0%{transform:translate(0,0);opacity:0}8%{opacity:1}85%{opacity:.85}100%{transform:translate(46px,-1180px);opacity:0}}
+  @keyframes fxdustdrift{0%{transform:translate(0,0);opacity:0}18%{opacity:.7}100%{transform:translate(130px,-200px);opacity:0}}
+  @keyframes fxfogdrift{0%{transform:translateX(-120px)}100%{transform:translateX(220px)}}
+  @keyframes fxraysway{0%,100%{opacity:.4}50%{opacity:.9}}
+</style></head>
+<body>
+  <div id="stage"><div id="bg"></div><div id="scene"></div><div id="scrim2"></div><div id="grid"></div><div id="vig"></div></div>
+<script>
+  function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function digits(s){var m=String(s).replace(/,/g,'').match(/\d+(?:\.\d+)?/);return m?parseFloat(m[0]):0;}
+  function suffixOf(v){var s=String(v==null?'':v);var m=s.match(/[^\d.,\s]+$/);return m?m[0]:'';}
+
+  var R={
+    chapter:function(d){return '<div class="chap"><div class="kick">'+esc(d.act||'제 1 막')+'</div>'+
+      '<div class="rule"></div><div class="ttl ts gglow">'+esc(d.title||'')+'</div><div class="rule"></div></div>';},
+    date_place:function(d){return '<div class="stamp"><div class="tick"></div><div><div class="yr ts gold">'+esc(d.year||'')+'</div>'+
+      '<div class="pl ts">'+esc(d.place||'')+'</div></div></div>';},
+    figure:function(d){return '<div class="fig"><div class="bar"></div><div><div class="nm ts">'+esc(d.name||'')+'</div>'+
+      '<div class="ti ts">'+esc(d.title||'')+'</div>'+(d.reign?'<div class="rg">'+esc(d.reign)+'</div>':'')+'</div></div>';},
+    timeline:function(d){var ev=d.events||[];var n=ev.length;var cells=ev.map(function(e,i){
+        var x=n>1?(i/(n-1)*100):50;
+        return '<div class="ev" style="left:'+x+'%"><div class="pt"></div><div class="yr ts">'+esc(e.year)+'</div><div class="lb">'+esc(e.label)+'</div></div>';}).join('');
+      return '<div class="tlwrap"><div class="kick" style="text-align:center;font-size:30px;font-weight:700;letter-spacing:.4em;color:var(--g)">'+esc(d.title||'')+'</div>'+
+        '<div class="tl"><div class="base"></div><div class="fill"></div><div class="run"></div>'+cells+'</div></div>';},
+    quote:function(d){return '<div class="quote"><span class="mk">“</span><div class="q ts">'+esc(d.quote)+'</div><div class="by">— <b>'+esc(d.by)+'</b></div></div>';},
+    force:function(d){var L=d.left||{},Rt=d.right||{};var lv=digits(L.value),rv=digits(Rt.value);var mx=Math.max(lv,rv,1);
+      return '<div class="force"><div class="cap">'+esc(d.label||'병력')+'</div>'+
+        '<div class="row"><div class="nm">'+esc(L.name)+'</div><div class="track"><div class="fl a" data-w="'+Math.round(lv/mx*100)+'"></div></div><div class="vl ts" style="color:var(--cr)"><span class="hcnt" data-to="'+lv+'">0</span></div></div>'+
+        '<div class="row"><div class="nm">'+esc(Rt.name)+'</div><div class="track"><div class="fl b" data-w="'+Math.round(rv/mx*100)+'"></div></div><div class="vl ts gold"><span class="hcnt" data-to="'+rv+'">0</span></div></div></div>';},
+    anim_map:function(d){
+      // 추상 대륙 + 영토 확장(영역 채움) + 진군 화살표 + 도착 마커
+      return '<div class="map"><svg viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">'+
+        '<path class="land" d="M250,720 C300,500 520,420 760,440 C1000,460 1080,300 1340,330 C1560,355 1700,500 1660,690 C1600,900 1200,940 900,900 C600,860 210,900 250,720 Z"/>'+
+        '<path class="terr" id="terr" d="M560,560 C660,500 820,500 900,560 C980,620 960,740 840,770 C700,805 540,760 540,660 C540,610 540,590 560,560 Z" pathLength="1"/>'+
+        '<path class="arrow" id="arrow" d="M600,640 C780,560 1000,560 1240,470" pathLength="1"/>'+
+        '<circle class="city" cx="600" cy="640" r="12"/>'+
+        '<circle class="city" cx="1240" cy="470" r="12"/>'+
+        '<circle class="mk" id="mk" r="13" cx="600" cy="640"/></svg>'+
+        '<div class="title gold ts gglow">'+esc(d.label||'')+'</div>'+
+        '<div class="clab" style="left:31%;top:59%">'+esc(d.from||'')+'</div>'+
+        '<div class="clab" style="left:64%;top:43%">'+esc(d.to||'')+'</div></div>';},
+    casualty:function(d){return '<div class="cas"><div class="v ts"><span class="hcnt" data-to="'+digits(d.value)+'" data-suffix="'+esc(suffixOf(d.value))+'">0</span></div>'+
+      '<div class="lb ts">'+esc(d.label||'')+'</div>'+(d.sub?'<div class="sub ts">'+esc(d.sub)+'</div>':'')+'</div>';},
+    era_band:function(d){return '<div class="eband"><div class="er ts">'+esc(d.era||'')+'</div><div class="ln"></div><div class="yr ts">'+esc(d.years||'')+'</div></div>';}
+  };
+
+  var BARE={chapter:1,quote:1,anim_map:1,timeline:1};
+  function render(OV){
+    var inner=(R[OV.type]||function(){return '';})(OV.data||{});
+    var html;
+    if(OV.type==='anim_map'){
+      // 지도는 풀스크린 (작은 박스에 가두면 안 됨)
+      html='<div class="panel" style="left:0;top:0;width:1920px;height:1080px"><div class="in" style="position:absolute;inset:0">'+inner+'</div></div>';
+    } else {
+      var pos=OV.position||'bl';
+      if(OV.type==='chapter')pos='cc';
+      if(OV.type==='timeline')pos='tc';
+      if(OV.type==='date_place')pos='bl';
+      if(OV.type==='figure')pos='cl';
+      if(OV.type==='quote')pos='cl';
+      if(OV.type==='force')pos='cc';
+      if(OV.type==='casualty')pos='cc';
+      if(OV.type==='era_band')pos='tc';
+      html='<div class="panel pos-'+pos+'"><div class="in"><div class="amb">'+inner+'</div></div></div>';
+    }
+    // 배경 이미지 (역사 장면 위에 오버레이 얹기) + 가독성 스크림
+    var sceneEl=document.getElementById('scene'),scrim=document.getElementById('scrim2'),grid=document.getElementById('grid');
+    if(OV.image){
+      sceneEl.innerHTML='<img src="'+OV.image+'">';grid.style.display='none';scrim.style.display='block';
+      var SC={date_place:'18% 80%',figure:'20% 50%',quote:'24% 48%',chapter:'50% 50%',force:'50% 55%'};
+      scrim.style.background='radial-gradient(135% 115% at '+(SC[OV.type]||'30% 60%')+', rgba(0,0,0,.74), rgba(0,0,0,0) 60%)';
+    } else {
+      sceneEl.innerHTML='';scrim.style.display='none';grid.style.display='block';
+    }
+    var old=document.querySelector('.panel');if(old)old.remove();
+    document.querySelectorAll('.fxp').forEach(function(e){e.remove();});
+    document.getElementById('stage').insertAdjacentHTML('beforeend',html);
+    // 무드 파티클 (오버레이 뒤에 삽입 → 글자 가독성 유지)
+    var M=OV.mood||{}, st2=document.getElementById('stage'), panelEl=document.querySelector('.panel');
+    function addfx(c,css){var d=document.createElement('div');d.className='fxp '+c;d.style.cssText=css;st2.insertBefore(d,panelEl);}
+    if(M.fog) for(var i=0;i<4;i++){var w=520+Math.random()*420;addfx('fxfog','left:'+(Math.random()*1500)+'px;top:'+(280+Math.random()*620)+'px;width:'+w+'px;height:'+w+'px;opacity:'+(.14+Math.random()*.14).toFixed(2)+';animation:fxfogdrift '+(20+Math.random()*11).toFixed(1)+'s ease-in-out infinite alternate;animation-delay:-'+(Math.random()*10).toFixed(1)+'s');}
+    if(M.ember) for(var i=0;i<23;i++){var d2=(6+Math.random()*6).toFixed(1);addfx('fxember','left:'+(Math.random()*1920)+'px;top:'+(720+Math.random()*360)+'px;opacity:.82;animation:fxemberrise '+d2+'s linear infinite;animation-delay:-'+(Math.random()*d2).toFixed(1)+'s');}
+    if(M.dust) for(var i=0;i<23;i++){var d3=(8+Math.random()*7).toFixed(1);addfx('fxdust','left:'+(Math.random()*1920)+'px;top:'+(Math.random()*1080)+'px;opacity:.72;animation:fxdustdrift '+d3+'s linear infinite;animation-delay:-'+(Math.random()*d3).toFixed(1)+'s');}
+    if(M.godray) for(var i=0;i<2;i++){var ang=[16,19][i];addfx('fxray','left:'+(380+i*760)+'px;transform:rotate('+ang+'deg);animation:fxraysway2 '+(7+i*1.5)+'s ease-in-out infinite;animation-delay:-'+(i*2)+'s');}
+    // 투명 모드 (패럴랙스 위 합성용 — 배경 레이어 숨김)
+    if(OV.transparent){document.documentElement.style.background='transparent';document.body.style.background='transparent';
+      ['bg','scene','grid','vig'].forEach(function(id){var e=document.getElementById(id);if(e)e.style.display='none';});
+      // 가독성 스크림 유지 (글자 뒤 은은한 어둠 → 패럴랙스 위에 합성돼도 글자 또렷)
+      var SC={date_place:'18% 80%',figure:'20% 50%',quote:'24% 50%',chapter:'50% 50%',force:'48% 47%',casualty:'50% 50%',headline:'24% 50%',era_band:'50% 18%',timeline:'50% 24%'};
+      var sc=document.getElementById('scrim2');sc.style.display='block';
+      sc.style.background='radial-gradient(118% 98% at '+(SC[OV.type]||'40% 55%')+', rgba(0,0,0,.52), rgba(0,0,0,0) 56%)';}
+    window.__dur=(OV.duration||8)*1000;
+    window.__type=OV.type;
+  }
+
+  function applyState(t){
+    // 켄번즈 — 배경 이미지에 느린 줌/팬 (역사 다큐 핵심, 5~13% 점진)
+    var bgimg=document.querySelector('#scene img');
+    if(bgimg){var bd=window.__dur||4500;var bp=Math.max(0,Math.min(1,t/bd));
+      bgimg.style.transformOrigin='52% 46%';
+      bgimg.style.transform='scale('+(1.05+0.08*bp).toFixed(4)+') translateX('+(-1.2*bp).toFixed(3)+'%)';}
+    // 카운트업 (세력·추모수치)
+    document.querySelectorAll('.hcnt').forEach(function(c){
+      var to=parseFloat(c.dataset.to||'0'),suf=c.dataset.suffix||'',start=500,dur=1400;
+      var p=Math.max(0,Math.min(1,(t-start)/dur));var e=1-Math.pow(1-p,3);
+      c.textContent=Math.round(to*e).toLocaleString()+suf;
+    });
+    // 세력 막대
+    document.querySelectorAll('.force .fl').forEach(function(b){
+      var w=parseFloat(b.dataset.w||'0'),start=500,dur=1300;
+      var p=Math.max(0,Math.min(1,(t-start)/dur));var e=1-Math.pow(1-p,3);
+      b.style.width=(w*e)+'%';
+    });
+    // 시대 연표: 선 채움 + 빛 이동 + 포인트 순차
+    var fill=document.querySelector('.tl .fill'),run=document.querySelector('.tl .run');
+    if(fill){var W=1320;var p=Math.max(0,Math.min(1,(t-400)/2600));var e=1-Math.pow(1-p,2);
+      fill.style.width=(W*e)+'px';run.style.left=(40+W*e)+'px';run.style.opacity=(p>0&&p<1)?1:0;
+      document.querySelectorAll('.tl .ev').forEach(function(ev,i){
+        var appear=600+i*700;ev.style.opacity=t>appear?1:0.15;});
+    }
+    // 애니메이션 지도: 영토 채움 + 화살표 진군 + 마커 이동
+    var terr=document.getElementById('terr'),arrow=document.getElementById('arrow'),mk=document.getElementById('mk');
+    if(terr){
+      var pf=Math.max(0,Math.min(1,(t-300)/2200));var ef=1-Math.pow(1-pf,3);
+      terr.style.opacity=ef;terr.style.transformOrigin='720px 640px';terr.style.transform='scale('+(0.6+0.4*ef)+')';
+      var pa=Math.max(0,Math.min(1,(t-700)/2600));
+      arrow.style.strokeDashoffset=(1-pa);  // pathLength=1 → 0~1로 그려짐
+      arrow.style.strokeDasharray='1';
+      var ap=document.getElementById('arrow');
+      try{var L=ap.getTotalLength();var pt=ap.getPointAtLength(L*pa);mk.setAttribute('cx',pt.x);mk.setAttribute('cy',pt.y);}catch(e){}
+    }
+  }
+  function seek(t){
+    try{document.getAnimations().forEach(function(a){a.pause();try{a.currentTime=t;}catch(e){}});}catch(e){}
+    applyState(t);
+  }
+  window.render=render;window.seek=seek;
+  if(window.OV){render(window.OV);var t0=null;function loop(ts){if(!t0)t0=ts;applyState(ts-t0);requestAnimationFrame(loop);}requestAnimationFrame(loop);}
+</script>
+</body></html>

@@ -32274,7 +32274,19 @@ ${commentText.slice(0, 12000)}`;
                 '   - 셀팟엔 그 장면의 이미지 대신 overlay_clips/scene_N.mp4를 올린다.\n';
         } else if (overlayCh === '역사') {
             overlayBlock =
-                '\n### 📜 오버레이 (역사 채널)\n⚠️ 역사 오버레이 규칙은 아직 준비 중. 이번 출력에서는 `overlay` 필드를 만들지 말 것.\n\n';
+                '\n### 📜 역사 효과·오버레이 (3레이어: 모션 + 무드 + 오버레이)\n' +
+                '각 scene에 **motion · mood · overlay** 3필드를 추가한다. 전체 규칙은 클론한 `scripts/overlay/history/MATCHING_HISTORY.md`를 읽고 그대로 따른다. 핵심:\n' +
+                '- **절대원칙**: 핵심만(문장 통째 자막 금지) · 타이밍=말하는 순간 · 한 화면 한 초점 · 정보 없는 장면(감정·묘사)은 overlay:null로 비움(절반 이상). 숫자는 나레이션에 있는 것만.\n' +
+                '- **motion**(전 장면): `{"preset":"dolly","intensity":0.35~0.55}` — 차분=0.35, 긴장·절정=0.55, 인포그래픽=`{"preset":"none"}`. 느린 전진·루프(긴 장면도 안 멈춤).\n' +
+                '- **mood**(분위기): 전장→`{ember,fog}` / 궁·실내→`{dust,godray}` / 새벽·원정→`{fog,godray}` / 폐허→`{dust}`. grade: warm/cool/desat. 효과는 "약간만 티나게"(과하지 않게).\n' +
+                '- **overlay**(키포인트 30~45%만): 날짜·장소→date_place / 인물→figure / 발언→quote / 단일충격수치·기간→casualty / A vs B→force / 이동·정복로→anim_map / 연도흐름→timeline / 시대구간→era_band / N가지→bullets / 막전환→chapter / 숫자없는충격→headline. 없으면 null.\n' +
+                '- overlay.source = 그 정보의 **나레이션 원문(부분 문자열 그대로)**. 같은 type 연속 3회 금지. 도입부 overlay:null.\n' +
+                '- ⚠️ 경제 오버레이(글래스·숫자카드)와 **완전 별개**. 역사는 어두운 다큐+명조+골드 톤. economy 규칙 적용 금지.\n\n';
+            overlayPhase2 =
+                '6. 역사 효과 합성: 의존성(없으면) `pip install depthflow torch playwright imageio imageio-ffmpeg pillow numpy && playwright install chromium`\n' +
+                '   - 실행: `python scripts/overlay/render_history.py scenes_classified.json --images-dir output --out-dir history_clips`\n' +
+                '   - 장면별로 [패럴랙스 베이스 + 무드 파티클 + 오버레이]를 합성한 mp4 생성. 셀팟엔 그 장면 이미지 대신 history_clips/scene_N.mp4를 올린다.\n' +
+                '   - GPU(NVIDIA)면 CUDA torch로 ~10배 빠름. 없으면 CPU(개당 ~50초) — 그록 영상화와 병렬로 돌리면 추가 시간 거의 없음.\n';
         }
 
         var p = '';
@@ -32370,6 +32382,8 @@ ${commentText.slice(0, 12000)}`;
         p += ']}\n```\n\n';
         if (overlayCh === '경제') {
             p += '※ 위 각 scene(도입부 제외)에 `overlay` 필드를 선택적으로 추가 가능. 예: `{"sceneNo":5,"isIntro":false,"type":"ai",...,"overlay":{"type":"single_stat_card","source":"전체 수입의 약 70%가 중동산이에요","data":{"value":"70%","label":"중동산 원유 비중"},"derived":[],"accent":"amber","size":"std","position":"tl"}}`. 데이터 없는 장면은 overlay 생략. 자세한 규칙은 아래 "📊 오버레이" 섹션 참조.\n\n';
+        } else if (overlayCh === '역사') {
+            p += '※ 위 각 scene에 `motion`·`mood`·`overlay` 3필드 추가. 예: `{"sceneNo":5,"isIntro":false,"type":"ai","narration":"8만 대군이 7천 수비대를 에워쌌다","motion":{"preset":"dolly","intensity":0.55},"mood":{"fog":true,"ember":true,"grade":"warm"},"overlay":{"type":"force","source":"8만 대군이 7천","data":{"label":"공방전 병력","left":{"name":"오스만","value":"80,000"},"right":{"name":"비잔틴","value":"7,000"}}}}`. 정보 없는 장면은 overlay:null. 자세한 규칙은 아래 "📜 역사 효과" 섹션 참조.\n\n';
         }
 
         p += '### type 분류 기준\n';
