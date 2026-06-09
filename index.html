@@ -4109,10 +4109,14 @@
                     <!-- 장면 비율 설정 -->
                     <div class="input-group">
                         <label>📊 장면 타입 비율 <span style="color:#888;font-weight:400;">(전체 장면 중 각 타입 비율)</span></label>
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:6px;padding:12px;background:#f0f7f0;border-radius:10px;">
+                        <div style="margin-top:6px;margin-bottom:8px;display:flex;align-items:center;gap:10px;">
+                            <button id="btnRatioManual" class="search-btn" onclick="_toggleRatioMode('manual')" style="padding:8px 18px;font-size:0.85rem;border-radius:20px;background:#6f42c1;border-color:#6f42c1;">수동 설정</button>
+                            <button id="btnRatioAuto" class="search-btn" onclick="_toggleRatioMode('auto')" style="padding:8px 18px;font-size:0.85rem;border-radius:20px;background:#e9ecef;border-color:#ced4da;color:#495057;">🤖 AI 자동 매칭</button>
+                        </div>
+                        <div id="ratioManualArea" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px;background:#f0f7f0;border-radius:10px;">
                             <div>
                                 <span style="font-size:0.8rem;color:#555;font-weight:600;">실사(real) 비율</span>
-                                <div style="display:flex;gap:6px;margin-top:4px;">
+                                <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;">
                                     <button class="search-btn aio-opt" data-group="aioReal" data-val="0" onclick="_aioSet(this)" style="padding:6px 12px;font-size:0.82rem;background:#e9ecef;border-color:#ced4da;color:#495057;">없음</button>
                                     <button class="search-btn aio-opt active-n" data-group="aioReal" data-val="7-12" onclick="_aioSet(this)" style="padding:6px 12px;font-size:0.82rem;background:#6f42c1;border-color:#6f42c1;">7~12%</button>
                                     <button class="search-btn aio-opt" data-group="aioReal" data-val="10-15" onclick="_aioSet(this)" style="padding:6px 12px;font-size:0.82rem;background:#e9ecef;border-color:#ced4da;color:#495057;">10~15%</button>
@@ -4121,12 +4125,21 @@
                             </div>
                             <div>
                                 <span style="font-size:0.8rem;color:#555;font-weight:600;">클로드디자인 비율</span>
-                                <div style="display:flex;gap:6px;margin-top:4px;">
+                                <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;">
                                     <button class="search-btn aio-opt" data-group="aioCd" data-val="0" onclick="_aioSet(this)" style="padding:6px 12px;font-size:0.82rem;background:#e9ecef;border-color:#ced4da;color:#495057;">없음</button>
                                     <button class="search-btn aio-opt active-n" data-group="aioCd" data-val="7-10" onclick="_aioSet(this)" style="padding:6px 12px;font-size:0.82rem;background:#6f42c1;border-color:#6f42c1;">7~10%</button>
                                     <button class="search-btn aio-opt" data-group="aioCd" data-val="10-15" onclick="_aioSet(this)" style="padding:6px 12px;font-size:0.82rem;background:#e9ecef;border-color:#ced4da;color:#495057;">10~15%</button>
                                     <button class="search-btn aio-opt" data-group="aioCd" data-val="15-20" onclick="_aioSet(this)" style="padding:6px 12px;font-size:0.82rem;background:#e9ecef;border-color:#ced4da;color:#495057;">15~20%</button>
                                 </div>
+                            </div>
+                        </div>
+                        <div id="ratioAutoArea" style="display:none;padding:14px;background:linear-gradient(135deg,#f3e8ff,#ede9fe);border-radius:10px;border:2px solid #c4b5fd;">
+                            <div style="font-size:0.85rem;color:#5b21b6;font-weight:700;margin-bottom:6px;">🤖 AI가 대본 내용을 분석해서 자동 배정합니다</div>
+                            <div style="font-size:0.78rem;color:#6d28d9;line-height:1.6;">
+                                <b>claude_design 자동 배정:</b> 수치 비교, 순위, 지도/경로, 타임라인, 관계도 장면<br>
+                                <b>real/archive 자동 배정:</b> 실제 장소/건물, 뉴스 현장, 랜드마크 장면<br>
+                                <b>ai 이미지:</b> 나머지 전부 (기본값)<br>
+                                <span style="color:#7c3aed;">비율에 얽매이지 않고 내용에 맞는 장면에만 배정. 해당 내용이 없으면 0개도 OK.</span>
                             </div>
                         </div>
                     </div>
@@ -32190,6 +32203,29 @@ ${commentText.slice(0, 12000)}`;
             };
         }
     // ===== 올인원 함수들 =====
+    var _ratioMode = 'manual';
+    function _toggleRatioMode(mode) {
+        _ratioMode = mode;
+        var manualBtn = document.getElementById('btnRatioManual');
+        var autoBtn = document.getElementById('btnRatioAuto');
+        var manualArea = document.getElementById('ratioManualArea');
+        var autoArea = document.getElementById('ratioAutoArea');
+        if (mode === 'auto') {
+            autoBtn.style.background = 'linear-gradient(135deg,#6f42c1,#a855f7)';
+            autoBtn.style.borderColor = '#6f42c1'; autoBtn.style.color = '#fff';
+            manualBtn.style.background = '#e9ecef';
+            manualBtn.style.borderColor = '#ced4da'; manualBtn.style.color = '#495057';
+            manualArea.style.display = 'none';
+            autoArea.style.display = 'block';
+        } else {
+            manualBtn.style.background = '#6f42c1';
+            manualBtn.style.borderColor = '#6f42c1'; manualBtn.style.color = '#fff';
+            autoBtn.style.background = '#e9ecef';
+            autoBtn.style.borderColor = '#ced4da'; autoBtn.style.color = '#495057';
+            manualArea.style.display = 'grid';
+            autoArea.style.display = 'none';
+        }
+    }
     function _aioSet(btn) {
         var g = btn.dataset.group;
         document.querySelectorAll('.aio-opt[data-group="'+g+'"]').forEach(function(b) {
@@ -32379,8 +32415,12 @@ ${commentText.slice(0, 12000)}`;
         p += '- 실존 인물: ' + (realPerson ? '허용' : '금지') + '\n';
         p += '- 브랜드 로고: ' + (brandLogo ? '허용' : '금지') + '\n';
         p += '- 민감 장면: ' + (sensitive ? '허용' : '금지') + '\n';
-        p += '- real 비율: ' + (realRatio === '0' ? '0% (real 장면 만들지 말 것 — 전부 ai)' : realRatio + '%') + '\n';
-        p += '- claude_design 비율: ' + (cdRatio === '0' ? '0% (claude_design 장면 만들지 말 것 — 전부 ai)' : cdRatio + '%') + '\n';
+        if (_ratioMode === 'auto') {
+            p += '- 장면 타입: **AI 자동 매칭 모드** (비율 무시, 내용 기반 배정)\n';
+        } else {
+            p += '- real 비율: ' + (realRatio === '0' ? '0% (real 장면 만들지 말 것 — 전부 ai)' : realRatio + '%') + '\n';
+            p += '- claude_design 비율: ' + (cdRatio === '0' ? '0% (claude_design 장면 만들지 말 것 — 전부 ai)' : cdRatio + '%') + '\n';
+        }
         if (realRatio === '0' && cdRatio === '0') {
             p += '⚠️ real·claude_design 모두 0% → 모든 장면을 반드시 type="ai"로 분류 (real/claude_design 0개).\n';
         }
@@ -32406,11 +32446,22 @@ ${commentText.slice(0, 12000)}`;
             p += '모든 장면: "ABSOLUTE RULE: NO text, NO letters, NO words, NO numbers anywhere in the image."\n\n';
         }
 
+        // === 패턴 인터럽트 ===
+        p += '### 패턴 인터럽트 (popup_text)\n';
+        p += '충격적 수치, 핵심 키워드, 반전 포인트에 사용. 전체의 10~20% 장면에만.\n';
+        p += '```json\n"popup_text": [{"text": "47억 달러", "at": 2.0, "duration": 1.5, "size": 140, "color": "#FF4444", "position": "center"}]\n```\n';
+        p += '- text: 짧은 핵심 텍스트 (필수)\n';
+        p += '- at: 장면 시작 후 몇 초에 등장 (기본 0)\n';
+        p += '- duration: 표시 시간 초 (기본 1.5)\n';
+        p += '- size: 폰트 크기 px (기본 120)\n';
+        p += '- color: 색상 (기본 #FFFFFF)\n';
+        p += '- position: center/top/bottom (기본 center, 자막은 하단이므로 center/top 권장)\n\n';
+
         // === JSON 구조 + 분류 규칙 + 프롬프트 규칙 ===
         p += '### JSON 출력 형식\n';
         p += '```json\n{"scenes": [\n';
-        p += '  {"sceneNo": 1, "isIntro": true, "type": "ai", "duration": 10, "narration": "...", "nano_prompt": "...", "grok_prompt": "STRICT RULES: ..."},\n';
-        p += '  {"sceneNo": 2, "isIntro": false, "type": "real", "duration": 10, "narration": "...", "real_keywords": ["...", "...", "..."], "real_subject": "...", "nano_prompt": "...", "grok_prompt": "..."},\n';
+        p += '  {"sceneNo": 1, "isIntro": true, "type": "ai", "duration": 10, "narration": "...", "nano_prompt": "...", "grok_prompt": "..."},\n';
+        p += '  {"sceneNo": 2, "isIntro": false, "type": "real", "duration": 10, "narration": "...", "real_keywords": ["...", "...", "..."], "real_subject": "...", "nano_prompt": "...", "grok_prompt": "...", "popup_text": [{"text": "47억", "at": 2, "duration": 1.5}]},\n';
         p += '  {"sceneNo": 3, "isIntro": false, "type": "claude_design", "duration": 10, "narration": "...", "claude_prompt": "...", "claude_kind": "인포그래픽", "nano_prompt": "...", "grok_prompt": "..."}\n';
         p += ']}\n```\n\n';
         if (overlayCh === '경제') {
@@ -32420,9 +32471,28 @@ ${commentText.slice(0, 12000)}`;
         }
 
         p += '### type 분류 기준\n';
-        p += '- **ai** (대부분): 일러스트 이미지. 추상/은유, 상징적 묘사, 도입부 전부\n';
-        p += '- **real** (' + (realRatio === '0' ? '0% — 사용 안 함: real 장면 절대 만들지 말 것' : realRatio + '%') + '): 실제 사진 자리. 4가지만 해당: ①실제 장소 ②실존 인물 ③과거 역사 사진 ④근거 사진. 같은 엔티티 3회 초과 금지\n';
-        p += '- **claude_design** (' + (cdRatio === '0' ? '0% — 사용 안 함: claude_design 장면 절대 만들지 말 것' : cdRatio + '%') + '): 숫자/차트/비교표/연표, 그리고 **설명/비교가 핵심인 장면**. AI 이미지로는 한글이 깨지므로 텍스트 설명이 많이 필요한 장면은 반드시 claude_design으로 분류\n';
+        if (_ratioMode === 'auto') {
+            p += '\n### ★ 장면 타입: AI 자동 매칭 모드\n';
+            p += '비율에 얽매이지 말고, **나레이션 내용을 보고 어떤 타입이 가장 효과적인지 판단**해서 배정한다.\n\n';
+            p += '**claude_design으로 배정해야 하는 장면 (내용 키워드 기반):**\n';
+            p += '- 수치 비교/대조: "~배", "~%", "~달러", "~억", 전후 비교, 순위\n';
+            p += '- 지도/경로: "이동", "진출", "교역", "수출", "확장", "침공", 국가 간 관계\n';
+            p += '- 타임라인: "~년", "~세기", 연도 3개 이상 나열, 시간순 변화\n';
+            p += '- 구조/관계도: "~와 ~의 관계", "동맹", "대립", "소속", 조직 구조\n';
+            p += '- 프로세스: 단계별 흐름, "1단계→2단계→", 순서도\n\n';
+            p += '**real/archive로 배정해야 하는 장면:**\n';
+            p += '- 실제 장소/건물 언급: "현재 ~는", "지금도 남아있는", 실존 랜드마크\n';
+            p += '- 실제 사건 현장: 뉴스 현장, 실제 사진이 존재하는 역사적 순간\n';
+            p += '- 현대 도시/거리 풍경: AI 이미지보다 실사가 자연스러운 경우\n\n';
+            p += '**ai로 배정하는 장면 (기본값):**\n';
+            p += '- 인물 행동/감정 묘사, 상상/가정 장면, 분위기/감정 전달\n';
+            p += '- 위 키워드에 해당하지 않는 모든 장면\n\n';
+            p += '**매칭 우선순위:** 내용 적합성 > 비율 맞추기. 해당 내용이 없으면 0개도 OK.\n\n';
+        } else {
+            p += '- **ai** (대부분): 일러스트 이미지. 추상/은유, 상징적 묘사, 도입부 전부\n';
+            p += '- **real** (' + (realRatio === '0' ? '0% — 사용 안 함: real 장면 절대 만들지 말 것' : realRatio + '%') + '): 실제 사진 자리. 4가지만 해당: ①실제 장소 ②실존 인물 ③과거 역사 사진 ④근거 사진. 같은 엔티티 3회 초과 금지\n';
+            p += '- **claude_design** (' + (cdRatio === '0' ? '0% — 사용 안 함: claude_design 장면 절대 만들지 말 것' : cdRatio + '%') + '): 숫자/차트/비교표/연표, 그리고 **설명/비교가 핵심인 장면**. AI 이미지로는 한글이 깨지므로 텍스트 설명이 많이 필요한 장면은 반드시 claude_design으로 분류\n';
+        }
         p += '- 도입부(isIntro:true): 무조건 type="ai". **duration은 각 INPUT SCENE에 표기된 값(6 또는 10)을 그대로 사용** — 임의로 바꾸지 말 것\n';
         p += '- 본문: duration=6(짧은 장면) 또는 10(4문장 이상/복잡한 장면)\n\n';
 
