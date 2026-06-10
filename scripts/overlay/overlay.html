@@ -150,6 +150,8 @@
     headline:function(d){var t=esc(d.text||'');if(d.highlight){t=t.replace(esc(d.highlight),'<span class="hl">'+esc(d.highlight)+'</span>');}return '<div class="headline ts">'+t+'</div>';},
     quote:function(d){return '<div class="quote"><span class="mk">“</span><div class="q ts">'+esc(d.quote)+'</div><div class="by">— <b>'+esc(d.by)+'</b></div></div>';},
     nametag:function(d){return '<div class="nametag"><div class="barL"></div><div><div class="nm ts">'+esc(d.name)+'</div><div class="ti">'+esc(d.title)+'</div></div></div>';},
+    term:function(d){return '<div class="nametag"><div class="barL"></div><div><div class="nm ts"><span class="accent">'+esc(d.term)+'</span></div><div class="ti" style="max-width:780px;line-height:1.45">'+esc(d.def)+'</div></div></div>';},
+    experiment:function(d){return '<div class="nametag"><div class="barL"></div><div><div class="nm ts"><span class="accent">'+esc(d.year||'')+'</span>'+(d.place?' <span style="font-weight:600">'+esc(d.place)+'</span>':'')+'</div>'+(d.subject?'<div class="ti">'+esc(d.subject)+'</div>':'')+'</div></div>';},
     bullets:function(d){var items=d.items||[];var lis=items.map(function(it,i){return '<li style="animation-delay:'+(0.5+i*0.4)+'s"><span class="bd"></span><div>'+esc(it)+'</div></li>';}).join('');
       return '<div class="cap ts"><span class="dot"></span>'+esc(d.title||'')+'</div><ul class="blist">'+lis+'</ul>';}
   };

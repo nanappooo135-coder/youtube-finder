@@ -55,6 +55,9 @@ TYPE_RULES = {
     'quote':            {'need_quote': True},
     'nametag':          {'need_name': True},
     'bullets':          {'min_items': 2},
+    # 심리 채널 전용
+    'term':             {'need_term': True},   # 용어+정의 카드
+    'experiment':       {},                    # 실험 카드 (연도·기관·피험자)
 }
 
 def validate_overlay(ov, narration):
@@ -131,6 +134,8 @@ def validate_overlay(ov, narration):
                 problems.append('timeline인데 연도 2개 미만')
         if rule.get('min_sides') and not (data.get('left') and data.get('right')):
             problems.append('versus인데 좌/우 2개가 없음')
+        if rule.get('need_term') and not (data.get('term') and data.get('def')):
+            problems.append('term인데 용어(term)/정의(def)가 없음')
 
     return (len(problems) == 0, problems)
 

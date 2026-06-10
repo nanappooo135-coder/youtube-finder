@@ -4034,8 +4034,9 @@
                         <div style="display:flex;gap:6px;margin-top:6px;padding:12px;background:#fff7ed;border:2px solid #f59e0b;border-radius:10px;">
                             <button class="search-btn aio-opt active-n" data-group="aioOverlayCh" data-val="경제" onclick="_aioSet(this)" style="padding:8px 20px;font-size:0.92rem;background:#6f42c1;border-color:#6f42c1;">📊 경제</button>
                             <button class="search-btn aio-opt" data-group="aioOverlayCh" data-val="역사" onclick="_aioSet(this)" style="padding:8px 20px;font-size:0.92rem;background:#e9ecef;border-color:#ced4da;color:#495057;">📜 역사</button>
+                            <button class="search-btn aio-opt" data-group="aioOverlayCh" data-val="심리" onclick="_aioSet(this)" style="padding:8px 20px;font-size:0.92rem;background:#e9ecef;border-color:#ced4da;color:#495057;">🧠 심리</button>
                         </div>
-                        <p style="font-size:0.75rem;color:#888;margin-top:4px;">고른 채널의 오버레이 규칙이 프롬프트에 들어갑니다. <b>경제</b>=수치·차트·VS 중심 / <b>역사</b>=연표·지도·인물 중심(별도 규칙).</p>
+                        <p style="font-size:0.75rem;color:#888;margin-top:4px;">고른 채널의 오버레이 규칙이 프롬프트에 들어갑니다. <b>경제</b>=수치·차트·VS 중심 / <b>역사</b>=연표·지도·인물 중심 / <b>심리</b>=용어·실험·통계 중심(각각 별도 규칙).</p>
                     </div>
 
                     <!-- 콘텐츠 옵션 -->
@@ -32367,6 +32368,24 @@ ${commentText.slice(0, 12000)}`;
                 '   - 실행: `python scripts/overlay/render_history.py scenes_classified.json --images-dir output --out-dir history_clips`\n' +
                 '   - 장면별로 [패럴랙스 베이스 + 무드 파티클 + 오버레이]를 합성한 mp4 생성. 셀팟엔 그 장면 이미지 대신 history_clips/scene_N.mp4를 올린다.\n' +
                 '   - GPU(NVIDIA)면 CUDA torch로 ~10배 빠름. 없으면 CPU(개당 ~50초) — 그록 영상화와 병렬로 돌리면 추가 시간 거의 없음.\n';
+        } else if (overlayCh === '심리') {
+            overlayBlock =
+                '\n### 🧠 오버레이 (심리 채널 — 용어·실험·통계 12종)\n' +
+                '\n🚫 **새로 설계·제작하지 마라. 이미 완성된 시스템이다.** 레포 `scripts/overlay/`에 `overlay.html`(렌더러 — 경제와 공용 글래스모피즘)·`generate_overlays.py`(합성기)·`psychology/MATCHING_PSYCHOLOGY.md`(규칙)가 다 있다. 없으면 `git clone https://github.com/nanappooo135-coder/youtube-finder.git`.\n' +
+                '**네가 할 일은 2가지뿐:** ①각 scene에 `overlay` 필드 채우기 ②PHASE2에서 generate_overlays.py 실행. 디자인/애니/색은 코드에 정해져 있다.\n' +
+                '전체 규칙은 `scripts/overlay/psychology/MATCHING_PSYCHOLOGY.md`를 읽고 그대로 따른다. 핵심:\n' +
+                '- **절대원칙**: 핵심만 · 타이밍=말하는 순간(overlay.source=나레이션 원문 부분 문자열) · 정보 없는 감정·비유 장면은 overlay:null(절반 이상). 숫자·용어·이름은 나레이션에 글자 그대로 있는 것만 — 배경지식·사전 정의로 채우면 검수기가 DROP한다.\n' +
+                '- **타입 매칭**: 용어 첫 정의→term(term,def) / 실험 첫 소개→experiment(year,place,subject) / 학자 첫 등장→nametag / 발언 직접인용→quote / 실험군 비교→versus / 비율 1개→donut / 단일 충격 수치→single_stat_card / 전후 변화→stat_change / 신호·증상 나열→bullets / 연구사→timeline / 순위→ranking / 숫자 없는 반전→headline(최후의 선택지). 없으면 null.\n' +
+                '- **1회 규칙**: term은 그 용어가 처음 정의될 때 1회만, experiment는 실험당 1회만, nametag은 학자 첫 등장 1회만. 재등장 시 수치 타입이나 null.\n' +
+                '- **우선순위**: ①실험 수치(donut/single_stat_card/stat_change) ②비교(versus) ③용어(term) ④소개(experiment/nametag) ⑤인용(quote) ⑥나열(bullets/timeline/ranking). headline은 마지막.\n' +
+                '- **accent**: cyan=기본(정보·정의·차분한 분석) / red=충격 수치·위험 신호 / amber=실험·학자 / green=회복·긍정.\n' +
+                '- **비율·리듬**: 전체의 25~35%만(40% 초과 FAIL). 연속 3장면 초과 금지. headline 25% 이하. 단일 타입 40% 초과 금지(8개 이상이면 4종+). popup_text와 동시 사용 금지.\n' +
+                '- **★도입부(isIntro:true)·claude_design 전면 금지**: overlay·popup_text·mood·motion 어떤 효과도 절대 넣지 마라.\n' +
+                '- ⚠️ 역사 오버레이(다크 다큐+명조)·경제 규칙과 **별개**. 심리는 차분한 다큐 톤 + cyan 기본. 단 렌더러는 경제와 같은 overlay.html을 쓴다.\n\n';
+            overlayPhase2 =
+                '6. 오버레이 검증+합성: `python scripts/overlay/validate_overlays.py scenes_classified.json` 실행 — DROP/분포 위반이 있으면 수정 후 재실행(exit 0까지).\n' +
+                '   통과 후: `python scripts/overlay/generate_overlays.py scenes_classified.json --images-dir output --out-dir overlay_clips`\n' +
+                '   오버레이가 합성된 mp4 클립 생성. 셀팟엔 그 장면 이미지 대신 overlay_clips/scene_N.mp4를 올린다.\n';
         }
 
         var p = '';
