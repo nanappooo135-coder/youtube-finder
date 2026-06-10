@@ -35,24 +35,6 @@ except ImportError:
 CHROME_DEBUG_URL = "http://localhost:9222"
 GROK_PROFILE_DIR = os.path.join(os.path.expanduser("~"), "GrokAutoProfile")
 
-# 720p 한도 도달 감지 키워드 (그록이 화질 한도 시 띄우는 안내 문구)
-LIMIT_KEYWORDS = [
-    "reached your limit", "limit reached", "out of", "ran out",
-    "daily limit", "you've used", "quota", "exceeded", "upgrade to",
-    "한도", "초과", "모두 사용", "다 사용", "사용량",
-]
-
-
-class GrokLimitError(Exception):
-    """720p 등 특정 화질 한도 도달 — 더 낮은 화질로 폴백 신호"""
-    pass
-
-
-def detect_limit_message(cdp):
-    """화면에 화질/생성 한도 안내 문구가 떴는지 검사"""
-    txt = cdp.evaluate("(document.body.innerText || '').toLowerCase()") or ""
-    return any(k in txt for k in LIMIT_KEYWORDS)
-
 
 # --- 2. Chrome 자동 실행 ---
 def find_chrome_path():
@@ -77,7 +59,7 @@ def find_chrome_path():
 def is_chrome_debug_running():
     """Chrome 디버깅 포트가 열려있는지 확인"""
     try:
-        urllib.request.urlopen(f"{CHROME_DEBUG_URL}/json", timeout=3)
+        urllib.request.urlopen(f"{CHROME_DEBUG_URL}/json/version", timeout=3)
         return True
     except Exception:
         return False
@@ -151,7 +133,7 @@ def check_grok_login(cdp):
 
 
 def get_ws_url(target_url_fragment="grok.com"):
-    """디버깅 포트에서 grok.com 탭의 WebSocket URL을 찾거나 새 탭 생성"""
+    """디버깅 포트에서 grok.com 탭의 WebSocket URL을 찾거나 기존 탭 활용"""
     resp = urllib.request.urlopen(f"{CHROME_DEBUG_URL}/json").read()
     tabs = json.loads(resp)
 
@@ -159,11 +141,32 @@ def get_ws_url(target_url_fragment="grok.com"):
         if target_url_fragment in tab.get("url", "") and tab.get("webSocketDebuggerUrl"):
             return tab["webSocketDebuggerUrl"], tab["id"]
 
-    # grok.com 탭이 없으면 새로 생성
-    resp = urllib.request.urlopen(f"{CHROME_DEBUG_URL}/json/new?https://grok.com/imagine").read()
-    tab = json.loads(resp)
-    time.sleep(3)
-    return tab["webSocketDebuggerUrl"], tab["id"]
+    # grok.com 탭이 없으면 /json/new 시도, 실패 시 브라우저 레벨 CDP로 새 탭 생성
+    try:
+        resp = urllib.request.urlopen(f"{CHROME_DEBUG_URL}/json/new?https://grok.com/imagine").read()
+        tab = json.loads(resp)
+        time.sleep(3)
+        return tab["webSocketDebuggerUrl"], tab["id"]
+    except Exception:
+        browser_resp = json.loads(urllib.request.urlopen(f"{CHROME_DEBUG_URL}/json/version").read())
+        browser_ws = browser_resp.get("webSocketDebuggerUrl")
+        if not browser_ws:
+            raise Exception("브라우저 WebSocket URL을 찾을 수 없습니다")
+        ws = websocket.create_connection(browser_ws, timeout=30)
+        msg = json.dumps({"id": 1, "method": "Target.createTarget", "params": {"url": "https://grok.com/imagine"}})
+        ws.send(msg)
+        result = json.loads(ws.recv())
+        ws.close()
+        target_id = result.get("result", {}).get("targetId")
+        if not target_id:
+            raise Exception("새 탭 생성 실패")
+        time.sleep(3)
+        resp = urllib.request.urlopen(f"{CHROME_DEBUG_URL}/json").read()
+        tabs = json.loads(resp)
+        for tab in tabs:
+            if tab.get("id") == target_id and tab.get("webSocketDebuggerUrl"):
+                return tab["webSocketDebuggerUrl"], tab["id"]
+        raise Exception("생성된 탭의 WebSocket을 찾을 수 없습니다")
 
 
 class CDPSession:
@@ -312,50 +315,67 @@ def find_input_pos(cdp):
     return cdp.evaluate(js)
 
 
-def wait_for_video(cdp, existing_srcs, timeout=180, detect_limit=False):
-    """영상 URL이 나타날 때까지 폴링. detect_limit=True면 한도 안내 문구 감지 시 GrokLimitError"""
+def wait_for_video(cdp, existing_srcs, timeout=600):
+    """영상 URL이 나타날 때까지 폴링 (post 페이지 포함)"""
     existing = set(existing_srcs) if existing_srcs else set()
     start = time.time()
+    post_detected = False
 
     while time.time() - start < timeout:
+        # post 페이지로 이동했는지 확인
+        url = cdp.evaluate("window.location.href") or ""
+        if "/post/" in url and not post_detected:
+            post_detected = True
+            elapsed = int(time.time() - start)
+            print(f"  post 페이지 감지 ({elapsed}s), 영상 렌더 대기...")
+
         result = cdp.evaluate("""
         (() => {
             const videos = Array.from(document.querySelectorAll('video'));
-            const srcs = videos.map(v => v.src).filter(s => s);
+            const srcs = videos.map(v => v.src || v.currentSrc).filter(s => s && s.startsWith('http'));
             const links = Array.from(document.querySelectorAll('a[href*=".mp4"], a[download]'));
             const hrefs = links.map(a => a.href).filter(s => s);
-            return {videos: srcs, links: hrefs};
+            const sources = Array.from(document.querySelectorAll('video source')).map(s => s.src).filter(s => s);
+            return {videos: srcs, links: hrefs, sources: sources};
         })()
         """)
 
         if result:
-            for src in (result.get("videos", []) + result.get("links", [])):
-                if src and src not in existing:
+            for src in (result.get("videos", []) + result.get("links", []) + result.get("sources", [])):
+                if src and src not in existing and "assets.grok.com" in src:
                     return src
 
-        # 영상이 아직 안 나왔으면 한도 안내 문구가 떴는지 확인 (720p 등)
-        if detect_limit and detect_limit_message(cdp):
-            raise GrokLimitError("화질 한도 안내 문구 감지")
+        # post 페이지에서 API로도 확인 (assets.grok.com URL이 HTML에 있을 수 있음)
+        if post_detected:
+            html_check = cdp.evaluate("""
+            (() => {
+                const m = document.body.innerHTML.match(/https:\\/\\/assets\\.grok\\.com[^"'\\s]+generated_video\\.mp4[^"'\\s]*/);
+                return m ? m[0] : null;
+            })()
+            """)
+            if html_check and html_check not in existing:
+                return html_check
 
-        time.sleep(3)
+        time.sleep(5)
 
     raise TimeoutError("영상 생성 타임아웃")
 
 
 def get_existing_video_srcs(cdp):
     return cdp.evaluate("""
-    Array.from(document.querySelectorAll('video')).map(v => v.src).filter(s => s)
+    Array.from(document.querySelectorAll('video')).map(v => v.src || v.currentSrc).filter(s => s && s.startsWith('http'))
     """) or []
 
 
 def download_video_cdp(cdp, video_url, save_path):
-    """브라우저 내 fetch로 다운로드 (쿠키 인증 포함)"""
+    """브라우저 쿠키로 다운로드 (fetch → 실패 시 Network.getCookies + urllib)"""
     b64 = cdp.evaluate(f"""
     (async () => {{
         try {{
-            const resp = await fetch("{video_url}", {{credentials: 'include'}});
+            const resp = await fetch("{video_url}", {{credentials: 'include', mode: 'cors'}});
             if (!resp.ok) return null;
             const blob = await resp.blob();
+            if (blob.size === 0) return null;
             return new Promise(resolve => {{
                 const reader = new FileReader();
                 reader.onloadend = () => resolve(reader.result.split(',')[1]);
@@ -364,12 +384,32 @@ def download_video_cdp(cdp, video_url, save_path):
         }} catch(e) {{ return null; }}
     }})()
     """)
-    if b64:
+    if b64 and len(b64) > 100:
         with open(save_path, "wb") as f:
             f.write(base64.b64decode(b64))
         print(f"  [OK] 다운로드 완료: {os.path.basename(save_path)} ({len(b64)//1024}KB)")
         return True
-    print(f"  [WARN] 다운로드 실패")
+
+    # fallback: 쿠키 추출 후 urllib
+    print("  [INFO] fetch 실패, 쿠키 방식 시도...")
+    cookies = cdp.send("Network.getCookies", {"urls": [video_url, "https://grok.com"]})
+    cookie_list = cookies.get("cookies", [])
+    cookie_str = "; ".join(c["name"] + "=" + c["value"] for c in cookie_list)
+    try:
+        req = urllib.request.Request(video_url)
+        req.add_header("Cookie", cookie_str)
+        req.add_header("Referer", "https://grok.com/")
+        resp = urllib.request.urlopen(req, timeout=30)
+        data = resp.read()
+        if len(data) > 1000:
+            with open(save_path, "wb") as f:
+                f.write(data)
+            print(f"  [OK] 쿠키 다운로드 완료: {os.path.basename(save_path)} ({len(data)//1024}KB)")
+            return True
+    except Exception as e:
+        print(f"  [WARN] 쿠키 다운로드 실패: {e}")
+
+    print(f"  [WARN] 다운로드 실패 — 수동 저장 필요: {video_url}")
     return False
 
 
@@ -385,7 +425,7 @@ def process_scene(cdp, scene, image_path, output_dir, is_first=False, resolution
         cdp.evaluate("window.history.back()")
         time.sleep(3)
 
-    # 1. 비디오 모드 (하단 compose bar 버튼만 - 정확 매치) — 최초 1회만
+    # 1. 비디오 모드 + 해상도/길이 (매 장면마다 확인)
     if is_first:
         print("  비디오 모드 설정...")
         btn = find_compose_bar_button(cdp, ["비디오", "video"])
@@ -396,21 +436,27 @@ def process_scene(cdp, scene, image_path, output_dir, is_first=False, resolution
         else:
             print("  [WARN] 비디오 버튼 못 찾음 (이미 비디오 모드?)")
 
-    # 1-2. 화질 + 길이는 장면마다 다를 수 있으므로 매 장면 설정
-    print(f"  화질 {resolution} / 길이 {duration} 설정...")
+    # 해상도/길이는 매 장면마다 확인 (Grok이 리셋할 수 있음)
     btn = find_compose_bar_button(cdp, [resolution.lower()])
     if btn:
         cdp.click(btn["x"], btn["y"])
         time.sleep(0.5)
-    else:
-        print(f"  [WARN] {resolution} 버튼 못 찾음")
+        print(f"  해상도 설정: {resolution}")
 
     btn = find_compose_bar_button(cdp, [duration.lower()])
     if btn:
         cdp.click(btn["x"], btn["y"])
         time.sleep(0.5)
+        print(f"  길이 설정: {duration}")
+
+    # 화면비 16:9 강제 — Grok UI가 마지막 설정(9:16 등)을 기억하므로 매번 명시적으로 선택
+    btn = find_compose_bar_button(cdp, ["16:9"])
+    if btn:
+        cdp.click(btn["x"], btn["y"])
+        time.sleep(0.5)
+        print("  화면비 설정: 16:9")
     else:
-        print(f"  [WARN] {duration} 버튼 못 찾음")
+        print("  ! 16:9 버튼 못 찾음 — 현재 UI 설정 그대로 진행 (영상 비율 확인 필요)")
 
     # 2. 이미지 업로드 (DOM.setFileInputFiles - 파일 다이얼로그 우회)
     print(f"  이미지 업로드: {os.path.basename(image_path)}")
@@ -479,9 +525,9 @@ def process_scene(cdp, scene, image_path, output_dir, is_first=False, resolution
         cdp.press_enter()
     time.sleep(2)
 
-    # 5. 영상 대기 (720p면 한도 안내 문구 감지 → 폴백 신호)
+    # 5. 영상 대기
     print("  영상 생성 대기 (최대 3분)...")
-    video_url = wait_for_video(cdp, existing_srcs, detect_limit=(resolution.lower() == "720p"))
+    video_url = wait_for_video(cdp, existing_srcs)
     print(f"  영상 감지: {video_url[:80]}...")
 
     # 6. 다운로드
@@ -498,16 +544,6 @@ def process_scene(cdp, scene, image_path, output_dir, is_first=False, resolution
     return save_path
 
 
-def scene_duration_str(scene, default="10s"):
-    """장면 JSON의 duration(6/10)을 그록 길이 문자열로 변환. 그록은 6초·10초만 가능 → 스냅"""
-    d = scene.get("grokVideoDuration", scene.get("duration"))
-    try:
-        d = int(d)
-    except (TypeError, ValueError):
-        return default
-    return "6s" if d <= 6 else "10s"
-
-
 def main():
     if len(sys.argv) < 3:
         print("사용법: python grok_video_auto.py <scenes_classified.json> <images_dir> [output_dir] [--resolution 720p] [--duration 6s]")
@@ -519,8 +555,9 @@ def main():
     output_dir = sys.argv[3] if len(sys.argv) > 3 and not sys.argv[3].startswith("--") else os.path.join(os.path.dirname(json_path), "videos")
 
     resolution = "720p"
-    duration = "10s"  # 장면에 duration 없을 때만 쓰는 폴백 기본값 (장면별 값이 우선)
+    duration = "6s"
     limit = 0
+    scene_filter = None
     for i, arg in enumerate(sys.argv):
         if arg == "--resolution" and i + 1 < len(sys.argv):
             resolution = sys.argv[i + 1]
@@ -528,6 +565,8 @@ def main():
             duration = sys.argv[i + 1]
         if arg == "--limit" and i + 1 < len(sys.argv):
             limit = int(sys.argv[i + 1])
+        if arg == "--scenes" and i + 1 < len(sys.argv):
+            scene_filter = set(int(x) for x in sys.argv[i + 1].split(","))
 
     os.makedirs(output_dir, exist_ok=True)
 
@@ -536,11 +575,15 @@ def main():
 
     scenes = data.get("scenes", data) if isinstance(data, dict) else data
     targets = [s for s in scenes if s.get("isIntro") and s.get("grok_prompt")]
+    if scene_filter:
+        targets = [s for s in targets if (s.get("sceneNo") or s.get("scene")) in scene_filter]
     if limit > 0:
         targets = targets[:limit]
 
     print(f"총 {len(targets)}개 도입부 영상 생성")
-    print(f"화질: {resolution} (한도 시 480p 자동 폴백), 길이: 장면별 duration 자동(6초/10초)")
+    print(f"화질: {resolution}, 길이: {duration}")
+    if scene_filter:
+        print(f"대상 장면: {sorted(scene_filter)}")
     print(f"이미지: {images_dir}")
     print(f"출력: {output_dir}")
 
@@ -587,27 +630,20 @@ def main():
         cdp.navigate("https://grok.com/imagine")
 
     results = []
-    fallback_res = "480p"
-    res_exhausted = False  # 720p 한도 소진 → 이후 전부 480p
+    first_real = True
     for i, scene in enumerate(targets):
         sno = scene.get("sceneNo") or scene.get("scene") or scene.get("id")
         img_path = os.path.join(images_dir, f"scene_{sno}.png")
-        scene_dur = scene_duration_str(scene, default=duration)  # 장면별 6초/10초
-        eff_res = fallback_res if res_exhausted else resolution
-        print(f"  → 화질 {eff_res} / 길이 {scene_dur}")
+        out_path = os.path.join(output_dir, f"intro_scene_{sno}.mp4")
+        if os.path.exists(out_path) and os.path.getsize(out_path) > 1000:
+            print(f"\n[Scene {sno}] 이미 존재 ({os.path.getsize(out_path)//1024}KB) → 스킵")
+            results.append(out_path)
+            continue
 
         try:
-            saved = process_scene(cdp, scene, img_path, output_dir, is_first=(i == 0), resolution=eff_res, duration=scene_dur)
+            saved = process_scene(cdp, scene, img_path, output_dir, is_first=first_real, resolution=resolution, duration=duration)
+            first_real = False
             results.append(saved)
-        except GrokLimitError:
-            # 720p 한도 도달 → 480p로 폴백, 같은 장면 재시도 + 이후 장면도 480p 유지
-            print(f"  [한도] {eff_res} 한도 도달 → {fallback_res}로 폴백 후 재시도")
-            res_exhausted = True
-            try:
-                saved = process_scene(cdp, scene, img_path, output_dir, is_first=False, resolution=fallback_res, duration=scene_dur)
-                results.append(saved)
-            except Exception as e2:
-                print(f"  [FAIL] Scene {sno} ({fallback_res} 재시도): {e2}")
         except Exception as e:
             print(f"  [FAIL] Scene {sno}: {e}")
             if "rate limit" in str(e).lower() or "Rate" in str(e):
