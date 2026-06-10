@@ -51,6 +51,7 @@
 - 관용·과장("수만 번", "천하무적") → 실수치 아님 → 무시
 - 한 문장에 정보 여러 개면 **진짜 핵심 하나만**
 - **도입부(isIntro) → 전면 금지**: overlay·mood·motion 어떤 효과도 절대 금지 (motion은 preset:none). 그록 영상이 재생되는 구간 — 영상만으로 커버한다
+- **claude_design → 전면 금지**: 디자인 자체가 정보+애니메이션 — overlay·mood 전부 null, motion은 preset:none
 
 ---
 
