@@ -13,6 +13,8 @@
 4. **한 화면 한 초점**: 한 번에 한 정보. 지도+숫자+인용 동시 금지(신호원리).
 5. **숨 쉴 틈**: 정보 없는 장면(감정·묘사·연결문)은 **비운다**(overlay:null). 오버레이 0개 장면이 **절반 이상**이어야 정보 장면이 박힌다.
 6. **숫자는 나레이션에 글자 그대로 있는 것만**. 없는 숫자 생성 금지(알아도). 계산값은 `derived`에 신고.
+7. **비수치 정보도 나레이션에 있는 것만**: 인물의 관계·호칭·서수(삼남, 차남 등)·직책 같은 텍스트 정보도 **나레이션에 명시된 것만**. 네가 역사를 알아도 나레이션에 없으면 금지.
+8. **quote는 직접 인용만**: 실제 인물의 발언·기록을 그대로 옮길 수 있을 때만 `quote`. 나레이터의 요약·주석·평가는 `headline`이다. 인용문은 **의미가 완결되는 지점까지** 그대로 — 중간에 자르면 무효.
 
 ---
 
@@ -102,6 +104,7 @@
 - `overlay.data`: type별 구조 (date_place:{year,place} / figure:{name,title,reign} / quote:{quote,by} / casualty:{value,label,sub} / force:{label,left:{name,value},right:{name,value}} / headline:{text,highlight} / timeline:{title,events:[{year,label}]} / era_band:{era,years} / anim_map:{label,from,to} / bullets:{title,items:[]})
 - 숫자 계산값은 `overlay.derived:[{value,from,formula}]`에 신고
 - 오버레이 비율 **전체 30~45%** (데이터 적으면 더 적어도 OK, 억지로 채우지 말 것). 같은 type 연속 3회 금지
+- **타입 편중 금지**: `headline`은 전체 오버레이의 **25% 이하**. 어떤 타입도 전체의 **40% 초과 금지**. 오버레이가 8개 이상이면 **최소 4종 이상** 사용. 날짜가 있으면 date_place, 비교가 있으면 force, 인물이면 figure를 먼저 검토 — headline은 마지막 선택지다.
 
 ---
 

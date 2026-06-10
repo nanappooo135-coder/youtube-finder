@@ -32314,7 +32314,9 @@ ${commentText.slice(0, 12000)}`;
                 '**디자인(이미 구현, 변경 불가):** 글래스모피즘 반투명 유리카드 + Pretendard + 등장 슬라이드/페이드 + 숫자 카운트업 + 상시 미세 글로우/둥둥. 타입마다 디자인 다름(코드에 13종 렌더함수 존재).\n' +
                 '\n**넣는 규칙(MATCHING_PROMPT.md 그대로):**\n' +
                 '- **전체 장면의 25~30%에만**. 진짜 데이터(숫자·비교·순위·연도흐름·핵심발언) 있는 장면만. 애매하면 `overlay:null`. isIntro는 무조건 null. 같은 type 연속 3회 금지. 데이터 적으면 더 적어도 됨(억지로 채우지 말 것).\n' +
-                '- **숫자는 나레이션에 글자 그대로 있는 것만**. 없는 숫자 생성 금지(알아도). 계산값은 `derived:[{value,from,formula}]`에 신고.\n' +
+                '- **타입 편중 금지**: headline은 전체 오버레이의 25% 이하, 어떤 type도 40% 초과 금지(오버레이 8개 이상이면 최소 4종 사용). 숫자 있으면 숫자 타입, 비교면 versus를 먼저 검토 — headline은 마지막 선택지.\n' +
+                '- **quote는 직접 인용만**: 실제 발언·기록을 그대로 옮길 수 있을 때만 quote. 나레이터의 요약·주석·평가는 headline. 인용문은 의미가 완결되는 지점까지 그대로(중간 절단 금지).\n' +
+                '- **숫자는 나레이션에 글자 그대로 있는 것만**. 없는 숫자 생성 금지(알아도). 계산값은 `derived:[{value,from,formula}]`에 신고. **비수치 정보(호칭·서수·관계·직책)도 나레이션에 명시된 것만.**\n' +
                 '- accent(색=의미): red(위기·하락)/amber(돈·일반강조)/green(회복)/cyan(정보형 route·timeline·bullets)/gold(인용). size: hero(훅·절정)/std. position: 인물·핵심 안 가리는 빈공간 tl/tc/tr/cl/cc/cr (하단 자막영역 피함).\n' +
                 '- 공통 형식: `"overlay":{"type":"...","source":"나레이션 원문 부분문자열","data":{...},"accent":"amber","size":"std","position":"tl"}`. source=그 숫자가 나온 나레이션 원문 그대로.\n' +
                 '\n**type별 data 스키마(13종):**\n' +
@@ -32349,6 +32351,8 @@ ${commentText.slice(0, 12000)}`;
                 '- **motion**(전 장면): `{"preset":"dolly","intensity":0.35~0.55}` — 차분=0.35, 긴장·절정=0.55, 인포그래픽=`{"preset":"none"}`. 느린 전진·루프(긴 장면도 안 멈춤).\n' +
                 '- **mood**(분위기): 전장→`{ember,fog}` / 궁·실내→`{dust,godray}` / 새벽·원정→`{fog,godray}` / 폐허→`{dust}`. grade: warm/cool/desat. 효과는 "약간만 티나게"(과하지 않게).\n' +
                 '- **overlay**(키포인트 30~45%만): 날짜·장소→date_place / 인물→figure / 발언→quote / 단일충격수치·기간→casualty / A vs B→force / 이동·정복로→anim_map / 연도흐름→timeline / 시대구간→era_band / N가지→bullets / 막전환→chapter / 숫자없는충격→headline. 없으면 null.\n' +
+                '- **타입 편중 금지**: headline은 전체 오버레이의 25% 이하, 어떤 type도 40% 초과 금지(8개 이상이면 최소 4종 사용). 날짜→date_place, 비교→force, 인물→figure를 먼저 검토 — headline은 마지막 선택지.\n' +
+                '- **quote는 직접 인용만**: 실제 인물의 발언·기록을 그대로 옮길 수 있을 때만 quote. 나레이터 요약·주석은 headline. 인용문은 의미 완결 지점까지 그대로(중간 절단 금지). **비수치 정보(호칭·서수 "삼남" 등)도 나레이션에 명시된 것만.**\n' +
                 '- overlay.source = 그 정보의 **나레이션 원문(부분 문자열 그대로)**. 같은 type 연속 3회 금지. 도입부 overlay:null.\n' +
                 '- ⚠️ 경제 오버레이(글래스·숫자카드)와 **완전 별개**. 역사는 어두운 다큐+명조+골드 톤. economy 규칙 적용 금지.\n\n';
             overlayPhase2 =
@@ -32599,7 +32603,7 @@ ${commentText.slice(0, 12000)}`;
         });
 
         navigator.clipboard.writeText(p).then(function() {
-            alert((genspark ? '🎨 젠스파크용 ' : 'Claude용 ') + '올인원 프롬프트 복사 완료!\n\n총 ' + total + '개 장면 (도입부 ' + introScenes.length + ' + 본문 ' + bodyScenes.length + ')\n오버레이 채널: ' + overlayCh + (overlayCh === '역사' ? ' (규칙 준비중 — overlay 미생성)' : ' (데이터 13종, 25~30%)') + '\n\nClaude에 붙여넣기 하세요.' + (genspark ? '\n\n→ 이미지는 젠스파크로 직접 생성 후 scene_N.png ZIP을 Claude에 주면 영상·디자인·ZIP까지 완성됩니다.' : ''));
+            alert((genspark ? '🎨 젠스파크용 ' : 'Claude용 ') + '올인원 프롬프트 복사 완료!\n\n총 ' + total + '개 장면 (도입부 ' + introScenes.length + ' + 본문 ' + bodyScenes.length + ')\n오버레이 채널: ' + overlayCh + (overlayCh === '역사' ? ' (모션+무드+오버레이 3레이어, 30~45%)' : ' (데이터 13종, 25~30%)') + '\n\nClaude에 붙여넣기 하세요.' + (genspark ? '\n\n→ 이미지는 젠스파크로 직접 생성 후 scene_N.png ZIP을 Claude에 주면 영상·디자인·ZIP까지 완성됩니다.' : ''));
         });
     }
 
