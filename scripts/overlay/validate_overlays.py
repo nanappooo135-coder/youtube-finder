@@ -173,11 +173,52 @@ def main():
     if total:
         print('  통과율 %.0f%% (폐기된 것은 영상에 안 나감 = 안전)' % (passed / total * 100))
 
+    # === 분포·리듬 검증 (전체 구성 — 개별 통과해도 구성이 나쁘면 FAIL) ===
+    import math
+    from collections import Counter
+    dist_problems = []
+    n_scenes = len(scenes)
+    ov_scenes = [s for s in scenes if s.get('overlay')]
+    n_ov = len(ov_scenes)
+
+    if n_scenes >= 10:
+        ratio = n_ov / n_scenes
+        if ratio > 0.40:
+            dist_problems.append('overlay 과다: %d/%d (%.0f%%) → 목표 25~35%%, 40%% 초과 금지. 임팩트 약한 것부터 제거' % (n_ov, n_scenes, ratio * 100))
+
+    run = 0
+    for s in scenes:
+        if s.get('overlay'):
+            run += 1
+            if run == 4:
+                dist_problems.append('#%s: overlay 4장면 연속 — 연속 3장면 초과 금지, 중간 1~2장면 비울 것' % s.get('sceneNo', s.get('scene', '?')))
+        else:
+            run = 0
+
+    if n_ov >= 8:
+        tc = Counter((s['overlay'].get('type') or '?') for s in ov_scenes)
+        hl = tc.get('headline', 0)
+        hl_max = max(2, math.floor(n_ov * 0.25))
+        if hl > hl_max:
+            dist_problems.append('headline 편중: %d/%d → 25%% 이하(최대 %d개). 날짜→date_place, 비교→versus, 인물→nametag/figure 먼저 검토' % (hl, n_ov, hl_max))
+        top_type, top_n = tc.most_common(1)[0]
+        top_max = max(3, math.floor(n_ov * 0.40))
+        if top_n > top_max:
+            dist_problems.append("타입 편중: '%s' %d/%d → 단일 타입 40%% 초과 금지(최대 %d개)" % (top_type, top_n, n_ov, top_max))
+        if len(tc) < 4:
+            dist_problems.append('타입 다양성 부족: %d종만 사용 → 최소 4종 이상' % len(tc))
+
+    if dist_problems:
+        print('-' * 60)
+        print('  ❌ 분포·리듬 위반 %d건 (개별 데이터는 통과해도 구성 수정 필요):' % len(dist_problems))
+        for p in dist_problems:
+            print('     - ' + p)
+
     if args.out:
         json.dump(data, open(args.out, 'w', encoding='utf-8'), ensure_ascii=False, indent=2)
         print('  검증 통과본 저장: %s' % args.out)
 
-    sys.exit(1 if dropped else 0)
+    sys.exit(1 if (dropped or dist_problems) else 0)
 
 
 if __name__ == '__main__':
