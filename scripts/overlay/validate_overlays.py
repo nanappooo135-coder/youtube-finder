@@ -154,6 +154,13 @@ def main():
         if not ov:
             continue
         total += 1
+        # 도입부는 그록 영상 전용 — 오버레이 절대 금지, 무조건 폐기
+        if s.get('isIntro'):
+            dropped += 1
+            s['overlay'] = None
+            s['_overlay_dropped'] = ['isIntro 장면 오버레이 절대 금지 (그록 영상이 커버)']
+            print('  ❌ DROP  #%s [%s] — isIntro 장면 (그록 영상 전용, 오버레이 금지)' % (s.get('sceneNo', s.get('scene', '?')), ov.get('type', '?')))
+            continue
         narr = s.get('narration', '') or s.get('text', '')
         ok, probs = validate_overlay(ov, narr)
         tag = '#%s [%s]' % (s.get('sceneNo', s.get('scene', '?')), ov.get('type', '?'))
