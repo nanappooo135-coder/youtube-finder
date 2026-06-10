@@ -24,7 +24,7 @@
 |---|---|---|
 | **① 베이스 (모션)** | 이미지에 패럴랙스/켄번즈 | **전 장면 기본** (정보 없음) |
 | **② 무드** | 파티클·그레인·시대그레이딩·빛 | 장면 **분위기**에 맞춰 |
-| **③ 정보 (오버레이)** | 9종 오버레이 | 나레이션 **키포인트에만** (전체 30~45%) |
+| **③ 정보 (오버레이)** | 9종 오버레이 | 나레이션 **키포인트에만** (전체 25~35%) |
 
 ---
 
@@ -103,7 +103,8 @@
 - `overlay.source`: 그 정보가 나온 **나레이션 원문(부분 문자열 그대로)**. 타이밍 동기화·검증용
 - `overlay.data`: type별 구조 (date_place:{year,place} / figure:{name,title,reign} / quote:{quote,by} / casualty:{value,label,sub} / force:{label,left:{name,value},right:{name,value}} / headline:{text,highlight} / timeline:{title,events:[{year,label}]} / era_band:{era,years} / anim_map:{label,from,to} / bullets:{title,items:[]})
 - 숫자 계산값은 `overlay.derived:[{value,from,formula}]`에 신고
-- 오버레이 비율 **전체 30~45%** (데이터 적으면 더 적어도 OK, 억지로 채우지 말 것). 같은 type 연속 3회 금지
+- 오버레이 비율 **전체 25~35%** (데이터 적으면 더 적어도 OK, 억지로 채우지 말 것 — 모션+무드가 이미 전 장면에 깔리므로 오버레이까지 많으면 과함). 같은 type 연속 3회 금지
+- **리듬 (배치 간격)**: 오버레이 **연속 3장면 초과 금지** (타입 무관), 3연속 후 1~2장면 강제 공백. 본문에서 빈 구간이 **8장면 이상** 이어지지 않게 — 단 데이터 없으면 억지로 채우지 말 것
 - **타입 편중 금지**: `headline`은 전체 오버레이의 **25% 이하**. 어떤 타입도 전체의 **40% 초과 금지**. 오버레이가 8개 이상이면 **최소 4종 이상** 사용. 날짜가 있으면 date_place, 비교가 있으면 force, 인물이면 figure를 먼저 검토 — headline은 마지막 선택지다.
 
 ---
