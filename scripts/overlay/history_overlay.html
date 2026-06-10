@@ -202,10 +202,15 @@
     // 무드 파티클 (오버레이 뒤에 삽입 → 글자 가독성 유지)
     var M=OV.mood||{}, st2=document.getElementById('stage'), panelEl=document.querySelector('.panel');
     function addfx(c,css){var d=document.createElement('div');d.className='fxp '+c;d.style.cssText=css;st2.insertBefore(d,panelEl);}
-    if(M.fog) for(var i=0;i<4;i++){var w=520+Math.random()*420;addfx('fxfog','left:'+(Math.random()*1500)+'px;top:'+(280+Math.random()*620)+'px;width:'+w+'px;height:'+w+'px;opacity:'+(.14+Math.random()*.14).toFixed(2)+';animation:fxfogdrift '+(20+Math.random()*11).toFixed(1)+'s ease-in-out infinite alternate;animation-delay:-'+(Math.random()*10).toFixed(1)+'s');}
-    if(M.ember) for(var i=0;i<23;i++){var d2=(6+Math.random()*6).toFixed(1);addfx('fxember','left:'+(Math.random()*1920)+'px;top:'+(720+Math.random()*360)+'px;opacity:.82;animation:fxemberrise '+d2+'s linear infinite;animation-delay:-'+(Math.random()*d2).toFixed(1)+'s');}
-    if(M.dust) for(var i=0;i<23;i++){var d3=(8+Math.random()*7).toFixed(1);addfx('fxdust','left:'+(Math.random()*1920)+'px;top:'+(Math.random()*1080)+'px;opacity:.72;animation:fxdustdrift '+d3+'s linear infinite;animation-delay:-'+(Math.random()*d3).toFixed(1)+'s');}
-    if(M.godray) for(var i=0;i<2;i++){var ang=[16,19][i];addfx('fxray','left:'+(380+i*760)+'px;transform:rotate('+ang+'deg);animation:fxraysway2 '+(7+i*1.5)+'s ease-in-out infinite;animation-delay:-'+(i*2)+'s');}
+    // 프리뷰 플레이어의 파티클 세부값(밀도/크기/속도) 반영 — 없으면 기존 기본값
+    var fD=M.fogDensity||1, fV=M.fogSpeed||1;
+    var eN=Math.round(M.emberDensity||23), eS=M.emberSize||1, eV=M.emberSpeed||1;
+    var dN=Math.round(M.dustDensity||23), dS=M.dustSize||1, dV=M.dustSpeed||1;
+    var gB=M.godrayBright||1, gW=M.godrayWidth||1;
+    if(M.fog) for(var i=0;i<Math.max(1,Math.round(4*fD));i++){var w=520+Math.random()*420;addfx('fxfog','left:'+(Math.random()*1500)+'px;top:'+(280+Math.random()*620)+'px;width:'+w+'px;height:'+w+'px;opacity:'+((.14+Math.random()*.14)*Math.min(fD,1.6)).toFixed(2)+';animation:fxfogdrift '+((20+Math.random()*11)/fV).toFixed(1)+'s ease-in-out infinite alternate;animation-delay:-'+(Math.random()*10).toFixed(1)+'s');}
+    if(M.ember) for(var i=0;i<eN;i++){var d2=((6+Math.random()*6)/eV).toFixed(1);addfx('fxember','left:'+(Math.random()*1920)+'px;top:'+(720+Math.random()*360)+'px;width:'+(6*eS).toFixed(1)+'px;height:'+(6*eS).toFixed(1)+'px;opacity:.82;animation:fxemberrise '+d2+'s linear infinite;animation-delay:-'+(Math.random()*d2).toFixed(1)+'s');}
+    if(M.dust) for(var i=0;i<dN;i++){var d3=((8+Math.random()*7)/dV).toFixed(1);addfx('fxdust','left:'+(Math.random()*1920)+'px;top:'+(Math.random()*1080)+'px;width:'+(4*dS).toFixed(1)+'px;height:'+(4*dS).toFixed(1)+'px;opacity:.72;animation:fxdustdrift '+d3+'s linear infinite;animation-delay:-'+(Math.random()*d3).toFixed(1)+'s');}
+    if(M.godray) for(var i=0;i<2;i++){var ang=[16,19][i];addfx('fxray','left:'+(380+i*760)+'px;transform:rotate('+ang+'deg) scaleX('+gW+');filter:brightness('+gB+');animation:fxraysway2 '+(7+i*1.5)+'s ease-in-out infinite;animation-delay:-'+(i*2)+'s');}
     // 투명 모드 (패럴랙스 위 합성용 — 배경 레이어 숨김)
     if(OV.transparent){document.documentElement.style.background='transparent';document.body.style.background='transparent';
       ['bg','scene','grid','vig'].forEach(function(id){var e=document.getElementById(id);if(e)e.style.display='none';});
