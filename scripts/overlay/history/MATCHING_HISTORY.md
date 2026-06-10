@@ -30,6 +30,8 @@
 
 ## A. 오버레이 매칭 (나레이션이 이러면 → 이 type)
 
+**타입 우선순위 (시청 유지 효과 검증 순):** ①충격 숫자(casualty) ②비교(force) ③인물(figure) ④시공간(date_place/era_band/anim_map/timeline) → 이 4계열을 먼저 검토. quote/stamp는 절정 순간에만(영상당 2~4회), headline은 마지막 선택지.
+
 | 나레이션 신호 | type | 예시 |
 |---|---|---|
 | 날짜·장소 못박음 | `date_place` | "1453년, 콘스탄티노플" |

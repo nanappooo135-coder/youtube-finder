@@ -32316,7 +32316,8 @@ ${commentText.slice(0, 12000)}`;
                 '- **전체 장면의 25~30%에만**. 진짜 데이터(숫자·비교·순위·연도흐름·핵심발언) 있는 장면만. 애매하면 `overlay:null`. 같은 type 연속 3회 금지. 데이터 적으면 더 적어도 됨(억지로 채우지 말 것).\n' +
                 '- **★도입부(isIntro:true)는 전면 금지**: overlay·popup_text·mood·motion 어떤 효과도 절대 넣지 마라. 그록 영상이 재생되는 구간이라 영상만으로 커버한다 — 뭐든 얹으면 오히려 망친다.\n' +
                 '- **리듬**: 오버레이 연속 3장면 초과 금지(타입 무관), 3연속 후 1~2장면 강제 공백. 본문에서 빈 구간 8장면 이상 금지(단 데이터 없으면 억지로 채우지 말 것). 오버레이는 희소해야 박힌다 — 계속 나오면 시청자가 무시한다.\n' +
-                '- **타입 편중 금지**: headline은 전체 오버레이의 25% 이하, 어떤 type도 40% 초과 금지(오버레이 8개 이상이면 최소 4종 사용). 숫자 있으면 숫자 타입, 비교면 versus를 먼저 검토 — headline은 마지막 선택지.\n' +
+                '- **타입 우선순위(시청 유지 효과순)**: ①숫자 카드(single_stat_card/hero_stat/stat_change) ②비교(versus) ③인물(nametag) ④시간/경로(timeline/route)를 먼저 검토. 차트류는 데이터가 정말 그 모양일 때만.\n' +
+                '- **타입 편중 금지**: headline은 전체 오버레이의 25% 이하, 어떤 type도 40% 초과 금지(오버레이 8개 이상이면 최소 4종 사용). headline은 마지막 선택지.\n' +
                 '- **quote는 직접 인용만**: 실제 발언·기록을 그대로 옮길 수 있을 때만 quote. 나레이터의 요약·주석·평가는 headline. 인용문은 의미가 완결되는 지점까지 그대로(중간 절단 금지).\n' +
                 '- **숫자는 나레이션에 글자 그대로 있는 것만**. 없는 숫자 생성 금지(알아도). 계산값은 `derived:[{value,from,formula}]`에 신고. **비수치 정보(호칭·서수·관계·직책)도 나레이션에 명시된 것만.**\n' +
                 '- accent(색=의미): red(위기·하락)/amber(돈·일반강조)/green(회복)/cyan(정보형 route·timeline·bullets)/gold(인용). size: hero(훅·절정)/std. position: 인물·핵심 안 가리는 빈공간 tl/tc/tr/cl/cc/cr (하단 자막영역 피함).\n' +
@@ -32355,7 +32356,8 @@ ${commentText.slice(0, 12000)}`;
                 '- **mood**(분위기): 전장→`{ember,fog}` / 궁·실내→`{dust,godray}` / 새벽·원정→`{fog,godray}` / 폐허→`{dust}`. grade: warm/cool/desat. 효과는 "약간만 티나게"(과하지 않게).\n' +
                 '- **overlay**(키포인트 25~35%만 — 모션+무드가 전 장면에 깔리므로 오버레이까지 많으면 과함): 날짜·장소→date_place / 인물→figure / 발언→quote / 단일충격수치·기간→casualty / A vs B→force / 이동·정복로→anim_map / 연도흐름→timeline / 시대구간→era_band / N가지→bullets / 막전환→chapter / 숫자없는충격→headline. 없으면 null.\n' +
                 '- **리듬**: 오버레이 연속 3장면 초과 금지(타입 무관), 3연속 후 1~2장면 강제 공백. 본문에서 빈 구간 8장면 이상 금지(단 데이터 없으면 억지로 채우지 말 것).\n' +
-                '- **타입 편중 금지**: headline은 전체 오버레이의 25% 이하, 어떤 type도 40% 초과 금지(8개 이상이면 최소 4종 사용). 날짜→date_place, 비교→force, 인물→figure를 먼저 검토 — headline은 마지막 선택지.\n' +
+                '- **타입 우선순위(시청 유지 효과순)**: ①충격 숫자(casualty) ②비교(force) ③인물(figure) ④시공간(date_place/era_band/anim_map/timeline)을 먼저 검토. quote/stamp는 절정 순간에만(영상당 2~4회).\n' +
+                '- **타입 편중 금지**: headline은 전체 오버레이의 25% 이하, 어떤 type도 40% 초과 금지(8개 이상이면 최소 4종 사용). headline은 마지막 선택지.\n' +
                 '- **quote는 직접 인용만**: 실제 인물의 발언·기록을 그대로 옮길 수 있을 때만 quote. 나레이터 요약·주석은 headline. 인용문은 의미 완결 지점까지 그대로(중간 절단 금지). **비수치 정보(호칭·서수 "삼남" 등)도 나레이션에 명시된 것만.**\n' +
                 '- overlay.source = 그 정보의 **나레이션 원문(부분 문자열 그대로)**. 같은 type 연속 3회 금지.\n' +
                 '- **★도입부(isIntro:true)는 전면 금지**: overlay·popup_text·mood·motion 어떤 효과도 절대 넣지 마라(motion은 preset:none). 그록 영상이 재생되는 구간 — 영상만으로 커버한다.\n' +

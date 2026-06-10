@@ -34,6 +34,8 @@
 
 ## 2단계 — 데이터 모양 → 타입 (결정표)
 
+**타입 우선순위 (시청 유지 효과 검증 순):** ①숫자 카드(single_stat_card/hero_stat/stat_change) ②비교(versus) ③인물(nametag) ④시간/경로(timeline/route) → 이 4계열을 먼저 검토. 차트류(bar_chart/donut/ranking)는 데이터가 정말 그 모양일 때만, headline은 마지막 선택지.
+
 | 나레이션 신호 | type |
 |---|---|
 | 숫자 1개가 주인공(%·금액·수량) | `single_stat_card` |
