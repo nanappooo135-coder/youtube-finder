@@ -61,11 +61,21 @@ def main():
                     record_video_size={'width': W, 'height': H},
                 )
                 pg = ctx.new_page()
+                # 모든 애니메이션을 일시정지 상태로 로드 → 폰트 안정 후 0초부터 1회만 재생
+                # (기존: 로드 중 한 번 재생된 걸 리셋해 또 재생 → 등장이 2번 찍히던 버그)
+                pg.add_init_script(
+                    "document.addEventListener('DOMContentLoaded',()=>{"
+                    "const s=document.createElement('style');s.id='__pauseAll';"
+                    "s.textContent='*,*::before,*::after{animation-play-state:paused !important}';"
+                    "document.head.appendChild(s);});"
+                )
                 pg.goto('file:///' + os.path.abspath(html).replace('\\', '/'))
-                # 폰트/레이아웃 안정 후 애니메이션을 처음부터 다시 시작
-                pg.wait_for_timeout(400)
-                pg.evaluate("document.getAnimations().forEach(a => { try { a.cancel(); a.play(); } catch(e) {} })")
-                pg.wait_for_timeout(int((dur + 0.4) * 1000))
+                pg.wait_for_timeout(700)  # 폰트/레이아웃 안정 (이 동안 화면은 정지)
+                pg.evaluate(
+                    "const s=document.getElementById('__pauseAll'); if(s) s.remove();"
+                    "document.getAnimations().forEach(a => { try { a.cancel(); a.play(); } catch(e) {} });"
+                )
+                pg.wait_for_timeout(int((dur + 0.2) * 1000))
                 video = pg.video
                 pg.close()
                 ctx.close()
