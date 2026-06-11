@@ -195,17 +195,32 @@ def main():
 
     if n_scenes >= 10:
         ratio = n_ov / n_scenes
-        if ratio > 0.40:
-            dist_problems.append('overlay 과다: %d/%d (%.0f%%) → 목표 25~35%%, 40%% 초과 금지. 임팩트 약한 것부터 제거' % (n_ov, n_scenes, ratio * 100))
+        if ratio > 0.55:
+            dist_problems.append('overlay 과다: %d/%d (%.0f%%) → 목표 30~50%%, 55%% 초과 금지. 임팩트 약한 것부터 제거' % (n_ov, n_scenes, ratio * 100))
+        # 커버리지 하한: 데이터 흔적(숫자·따옴표·한글 수사) 있는 장면 대비 오버레이가 너무 적으면 누락 경고
+        import re as _re
+        _HANGUL_NUM = _re.compile(r'(한 ?달|반 ?년|절반|두 ?배|세 ?배|[일이삼사오육칠팔구십백천만억조]+ ?(위|배|년|개월|명|원|톤|미터|층|개국))')
+        data_scenes = [s for s in scenes
+                       if not s.get('isIntro') and s.get('type') != 'claude_design'
+                       and (_re.search(r'\d', s.get('narration', '') or '') or '"' in (s.get('narration', '') or '')
+                            or '“' in (s.get('narration', '') or '') or _HANGUL_NUM.search(s.get('narration', '') or ''))]
+        if data_scenes and n_ov < len(data_scenes) * 0.5:
+            dist_problems.append('커버리지 부족: 데이터 흔적 장면 %d개 중 오버레이 %d개 → 숫자·따옴표 발언·한글 수사("한 달/반년/1위") 장면을 다시 훑어 누락을 채울 것 (작가가 보면서 지우는 워크플로우 — 넉넉히)' % (len(data_scenes), n_ov))
 
     run = 0
+    prev_type = None
     for s in scenes:
         if s.get('overlay'):
             run += 1
             if run == 4:
                 dist_problems.append('#%s: overlay 4장면 연속 — 연속 3장면 초과 금지, 중간 1~2장면 비울 것' % s.get('sceneNo', s.get('scene', '?')))
+            cur_type = s['overlay'].get('type')
+            if prev_type and cur_type == prev_type:
+                dist_problems.append('#%s: 인접 장면 동일 타입(%s) 금지 — 같은 패널이 연달아 뜨면 단조로움. 둘 중 하나를 다른 타입으로' % (s.get('sceneNo', s.get('scene', '?')), cur_type))
+            prev_type = cur_type
         else:
             run = 0
+            prev_type = None
 
     if n_ov >= 8:
         tc = Counter((s['overlay'].get('type') or '?') for s in ov_scenes)
@@ -214,9 +229,9 @@ def main():
         if hl > hl_max:
             dist_problems.append('headline 편중: %d/%d → 25%% 이하(최대 %d개). 날짜→date_place, 비교→versus, 인물→nametag/figure 먼저 검토' % (hl, n_ov, hl_max))
         top_type, top_n = tc.most_common(1)[0]
-        top_max = max(3, math.floor(n_ov * 0.40))
+        top_max = max(3, math.floor(n_ov * 0.30))
         if top_n > top_max:
-            dist_problems.append("타입 편중: '%s' %d/%d → 단일 타입 40%% 초과 금지(최대 %d개)" % (top_type, top_n, n_ov, top_max))
+            dist_problems.append("타입 편중: '%s' %d/%d → 단일 타입 30%% 초과 금지(최대 %d개) — 단일 수치 카드만 반복이 최악 패턴. 변화→stat_change, 비교→versus, 3개+→bar_chart/ranking, 비율→donut" % (top_type, top_n, n_ov, top_max))
         if len(tc) < 4:
             dist_problems.append('타입 다양성 부족: %d종만 사용 → 최소 4종 이상' % len(tc))
 
