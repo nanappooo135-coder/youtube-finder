@@ -32582,12 +32582,14 @@ ${commentText.slice(0, 12000)}`;
 
         if (genspark) {
             p += '## STEP 3: JSON 완성 → 검수 → 이미지 프롬프트 출력 (젠스파크용)\n\n';
+            p += '🚨🚨 **이 모드의 최우선 산출물 = 이미지 프롬프트.** 작가는 이걸 받아야 젠스파크에서 이미지 생성을 시작할 수 있다. 검수 통과 즉시, 다른 어떤 작업·설명·산출물보다 먼저 프롬프트 전체를 출력하라 — 무조건. (디자인·빈화면 등 다른 작업을 프롬프트 출력보다 먼저 하는 것 절대 금지)\n\n';
             p += '1. JSON을 클립보드에 복사하거나 채팅에 출력\n';
-            p += '2. 검수기 실행: python scripts/validators/image_prompt_validator.py scenes_classified.json (FAIL 0개가 될 때까지 수정 반복)\n';
-            p += '3. ⚠️ 이미지는 작가가 젠스파크(Nano Banana)로 직접 생성한다. Kie/generate_images.py 절대 호출 금지.\n';
-            p += '4. 모든 type="ai" 장면의 nano_prompt를 "scene_1: <영문 프롬프트>" 형식으로 장면번호와 함께 전부 출력 → 작가가 젠스파크에 붙여넣어 이미지 생성\n';
-            p += '5. 작가가 scene_1.png ~ scene_N.png 형식으로 압축한 이미지 ZIP을 건네줄 때까지 대기\n';
-            p += '6. ★★★ 작가가 이미지 ZIP을 줄 때까지 PHASE 2 진행 금지 ★★★\n\n';
+            p += '2. 검수기 실행: python scripts/validators/image_prompt_validator.py scenes_classified.json (FAIL 0개가 될 때까지 신속히 수정 반복)\n';
+            p += '3. ★ 검수 통과 즉시 — 모든 type="ai" 장면의 nano_prompt를 "scene_1: <영문 프롬프트>" 형식으로 장면번호와 함께 전부 출력. 이것이 1번 산출물이다.\n';
+            p += '4. ⚠️ 이미지는 작가가 젠스파크(Nano Banana)로 직접 생성한다. Kie/generate_images.py 절대 호출 금지.\n';
+            p += '5. 프롬프트 출력 후: 작가가 이미지를 만드는 동안 빈화면·클로드디자인 등 이미지가 필요 없는 작업은 병행 진행 가능.\n';
+            p += '6. 작가가 scene_1.png ~ scene_N.png 형식으로 압축한 이미지 ZIP을 건네줄 때까지 이미지 배치 대기\n';
+            p += '7. ★★★ 작가가 이미지 ZIP을 줄 때까지 이미지 배치·ZIP 패키징 진행 금지 ★★★\n\n';
         } else {
             p += '## STEP 3: JSON 완성 후 → 검수 → 1장 테스트\n\n';
             p += '1. JSON을 클립보드에 복사하거나 채팅에 출력\n';
