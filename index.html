@@ -4122,6 +4122,10 @@
                                     <button class="search-btn aio-opt active-n" data-group="aioReal" data-val="7-12" onclick="_aioSet(this)" style="padding:6px 12px;font-size:0.82rem;background:#6f42c1;border-color:#6f42c1;">7~12%</button>
                                     <button class="search-btn aio-opt" data-group="aioReal" data-val="10-15" onclick="_aioSet(this)" style="padding:6px 12px;font-size:0.82rem;background:#e9ecef;border-color:#ced4da;color:#495057;">10~15%</button>
                                     <button class="search-btn aio-opt" data-group="aioReal" data-val="15-20" onclick="_aioSet(this)" style="padding:6px 12px;font-size:0.82rem;background:#e9ecef;border-color:#ced4da;color:#495057;">15~20%</button>
+                                    <button class="search-btn aio-opt" data-group="aioReal" data-val="20-30" onclick="_aioSet(this)" style="padding:6px 12px;font-size:0.82rem;background:#e9ecef;border-color:#ced4da;color:#495057;">20~30%</button>
+                                    <button class="search-btn aio-opt" data-group="aioReal" data-val="30-40" onclick="_aioSet(this)" style="padding:6px 12px;font-size:0.82rem;background:#e9ecef;border-color:#ced4da;color:#495057;">30~40%</button>
+                                    <button class="search-btn aio-opt" data-group="aioReal" data-val="40-50" onclick="_aioSet(this)" style="padding:6px 12px;font-size:0.82rem;background:#e9ecef;border-color:#ced4da;color:#495057;">40~50%</button>
+                                    <button class="search-btn aio-opt" data-group="aioReal" data-val="50-60" onclick="_aioSet(this)" style="padding:6px 12px;font-size:0.82rem;background:#e9ecef;border-color:#ced4da;color:#495057;">50~60%</button>
                                 </div>
                             </div>
                             <div>
@@ -4131,6 +4135,8 @@
                                     <button class="search-btn aio-opt active-n" data-group="aioCd" data-val="7-10" onclick="_aioSet(this)" style="padding:6px 12px;font-size:0.82rem;background:#6f42c1;border-color:#6f42c1;">7~10%</button>
                                     <button class="search-btn aio-opt" data-group="aioCd" data-val="10-15" onclick="_aioSet(this)" style="padding:6px 12px;font-size:0.82rem;background:#e9ecef;border-color:#ced4da;color:#495057;">10~15%</button>
                                     <button class="search-btn aio-opt" data-group="aioCd" data-val="15-20" onclick="_aioSet(this)" style="padding:6px 12px;font-size:0.82rem;background:#e9ecef;border-color:#ced4da;color:#495057;">15~20%</button>
+                                    <button class="search-btn aio-opt" data-group="aioCd" data-val="20-30" onclick="_aioSet(this)" style="padding:6px 12px;font-size:0.82rem;background:#e9ecef;border-color:#ced4da;color:#495057;">20~30%</button>
+                                    <button class="search-btn aio-opt" data-group="aioCd" data-val="30-40" onclick="_aioSet(this)" style="padding:6px 12px;font-size:0.82rem;background:#e9ecef;border-color:#ced4da;color:#495057;">30~40%</button>
                                 </div>
                             </div>
                         </div>
@@ -32462,6 +32468,7 @@ ${commentText.slice(0, 12000)}`;
         } else {
             p += '- real 비율: ' + (realRatio === '0' ? '0% (real 장면 만들지 말 것 — 전부 ai)' : realRatio + '%') + '\n';
             p += '- claude_design 비율: ' + (cdRatio === '0' ? '0% (claude_design 장면 만들지 말 것 — 전부 ai)' : cdRatio + '%') + '\n';
+            p += '★★ 비율 최우선 규칙: 위에서 작가가 고른 real ' + (realRatio === '0' ? '0' : realRatio) + '%·claude_design ' + (cdRatio === '0' ? '0' : cdRatio) + '% 가 **최종 목표치**다. 이 프롬프트 다른 곳에 7~12%·15~20% 등 다른 비율 가이드가 보여도 **전부 무시하고 작가 선택값을 따른다**(작가 선택이 항상 우선). real을 높게 골랐으면(예 40~50%) 그만큼 실제로 real 장면을 늘려라 — "진짜 의미 있는 자리에만" 같은 보수적 문구로 선택 비율보다 적게 만들지 말 것. 단, real은 ①실제 장소 ②실존 인물 ③과거/역사 사진 ④근거 사진에 해당하는 자리에 배치(이 4종 안에서 선택 비율을 채운다).\n';
         }
         if (realRatio === '0' && cdRatio === '0') {
             p += '⚠️ real·claude_design 모두 0% → 모든 장면을 반드시 type="ai"로 분류 (real/claude_design 0개).\n';
@@ -32616,7 +32623,7 @@ ${commentText.slice(0, 12000)}`;
         }
         if (overlayPhase2) p += overlayPhase2;
         if (zip) p += '7. ZIP: 전체 자산(이미지·영상·오버레이 클립) 묶어서 폴더 열기\n';
-        p += '8. ★ 최종 검증 (생략 금지): 타입별 기대 개수 vs 실제 파일을 파이썬으로 대조해 출력 로그를 채팅에 붙인다. 누락이 있으면 해당 장면만 재생성하고 다시 검증 — 누락 0이 될 때까지 반복한 뒤에만 완료를 선언한다.\n';
+        p += '8. ★ 최종 검증 (생략 금지·코드 강제): `python scripts/verify_assets.py projects/{프로젝트}` 를 실행해 출력 로그를 채팅에 붙인다. 하드 누락(AI 이미지·클로드디자인 webm 녹화)이 0이 될 때까지 — 누락 장면만 재생성/재녹화 후 다시 검증 — 반복한 뒤에만 완료를 선언한다. ★claude_design은 HTML만 만들고 끝내지 말 것: render_html.py로 html_clips/scene_N.webm 녹화까지 해야 플레이어에 나온다. 그록 영상은 16:9 가로 확인.\n';
 
         p += '\n## 안전 규칙\n';
         if (genspark) {
