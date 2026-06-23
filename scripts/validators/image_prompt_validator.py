@@ -23,6 +23,25 @@ def load_json(path):
     return data.get("scenes", data if isinstance(data, list) else [])
 
 
+# 부정어(앞에 붙으면 '하지 마라'는 좋은 지시 → 오탐 아님)
+_NEG_RE = re.compile(r'\b(no|not|without|avoid(?:ing)?|never|free\s+of|free\s+from|exclude|excluding|sans|minus|zero)\b', re.IGNORECASE)
+
+
+def _has_unnegated(text, pattern):
+    """pattern이 text에 등장하되, '부정문(no dramatic·no added caption 등)이 아닌'
+    실제 긍정 등장이 하나라도 있으면 True. 부정문 등장만 있으면 False(통과).
+    같은 절(. ; : 줄바꿈으로 구분) 안에서 매치 앞 60자에 부정어가 있으면 negated로 본다
+    — 'no heroic, cinematic, or dramatic posing'처럼 콤마로 묶인 부정 리스트도 통과시킴."""
+    for m in re.finditer(pattern, text, re.IGNORECASE):
+        pre = text[:m.start()]
+        # 직전 절만 (마지막 . ; : 또는 줄바꿈 뒤부터), 최대 60자
+        seg = re.split(r'[.;:\n]', pre)[-1][-60:]
+        if _NEG_RE.search(seg):
+            continue  # 부정문 → 우리가 원하는 지시, 통과
+        return True   # 부정 안 된 진짜 긍정 등장 → 위험
+    return False
+
+
 def validate(scenes):
     fails = []
     warnings = []
@@ -49,7 +68,7 @@ def validate(scenes):
             r'\bbottom.*reading',
         ]
         for pat in overlay_patterns:
-            if re.search(pat, nano, re.IGNORECASE):
+            if _has_unnegated(nano, pat):  # 'no added caption' 등 부정문은 통과
                 fails.append("{} [FAIL] 제목/헤더 오버레이 위험: '{}'".format(prefix, pat))
                 break
 
@@ -80,7 +99,7 @@ def validate(scenes):
             r'\bepic\b', r'\bmajestic\b', r'\bmagnificent\b', r'\btremendous\b',
         ]
         for pat in dramatic_words:
-            if re.search(pat, nano, re.IGNORECASE):
+            if _has_unnegated(nano, pat):  # 'no dramatic lighting' 등 부정문은 통과
                 fails.append("{} [FAIL] 과장 톤 키워드 '{}' — 다큐멘터리 톤으로 차분하게 수정 필요".format(prefix, pat.replace(r'\b', '')))
                 break
 
@@ -102,6 +121,21 @@ def validate(scenes):
             year = year_in_narration.group(1)
             if year not in nano and "{}0s".format(year[:3]) not in nano:
                 fails.append("{} [FAIL] 나레이션에 {}년인데 nano_prompt에 시대 미반영".format(prefix, year))
+
+        # === 6.5 인종 미명시 감지 (사람이 등장하는데 인종/피부톤 없음 = FAIL) ===
+        # AI는 인종 안 적으면 백인을 기본으로 그림 → 비유럽 배경에서 치명적 오류.
+        people_pat = (r'\b(man|woman|men|women|people|persons?|figures?|players?|crowd|workers?|'
+                      r'child|children|family|families|soldiers?|villagers?|captives?|merchants?|'
+                      r'officials?|leader|singer|fighters?|recruits?|guests?|tourists?|sailors?|'
+                      r'laborers?|mother|father|citizens?|protesters?|residents?|teacher|voters?|'
+                      r'diva|nurses?|miners?|supporters?|goalkeeper|attackers?)\b')
+        ethnicity_pat = (r'\b(korean|chinese|japanese|asian|african|creole|cape verdean|cabo verde|'
+                         r'european|white|black|brown|dark[- ]?brown|light[- ]?skinned|portuguese|'
+                         r'spanish|american|british|french|german|mixed[- ]?race|skin|complexion|'
+                         r'caucasian|latino|hispanic|indian|arab)\b')
+        if stype in ("ai", "real") and nano and re.search(people_pat, nano, re.IGNORECASE):
+            if not re.search(ethnicity_pat, nano, re.IGNORECASE):
+                fails.append("{} [FAIL] 사람이 등장하는데 인종/피부톤 미명시 → nano_prompt 맨앞에 인종 명시 필요 (안 적으면 AI가 백인을 기본으로 그림)".format(prefix))
 
         # === 7. nano_prompt 비어있거나 placeholder ===
         if stype == "ai" and (not nano or nano == "null" or nano == "placeholder" or len(nano) < 30):
