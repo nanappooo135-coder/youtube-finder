@@ -5012,7 +5012,7 @@
                         고정 <strong>지침(스크립트→이미지 프롬프트 엔지니어)</strong> + 내가 넣는 <strong>그림체(캐릭터 시트)</strong> + <strong>도입부</strong> + <strong>대본</strong>을 하나로 합쳐서
                         <strong>다른 프로그램(AI)</strong>에 그대로 붙여넣을 수 있는 완성 지시문을 만듭니다.
                         받은 AI가 <span style="color:#0f7b5a;font-weight:700;">[한국어 번역]·[영어 이미지 프롬프트]</span>를 순서대로 생성합니다.
-                        <strong style="color:#0f7b5a;">도입부는 줄바꿈 1개 = 프롬프트 1개</strong>, 대본은 지침대로 처리됩니다.
+                        <strong style="color:#0f7b5a;">도입부는 줄바꿈 1개 = 프롬프트 1개</strong>, 본문은 아래에서 고른 <strong style="color:#0f7b5a;">N문장씩 묶어 1개 프롬프트</strong>로 만듭니다.
                     </p>
 
                     <!-- 그림체 / 캐릭터 시트 -->
@@ -5032,6 +5032,15 @@
                     <!-- 대본 -->
                     <div class="input-group">
                         <label>📝 대본 (스크립트) <span style="color:#888;font-weight:400;">— 도입부 다음 본문. 언어 무관, 타임스탬프 있어도 됩니다(지침이 자동 제거 지시).</span></label>
+                        <!-- 본문 묶음(N문장 = 프롬프트 1개) 선택 -->
+                        <div style="margin:2px 0 10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                            <span style="font-weight:700;font-size:0.88rem;color:#444;">📦 본문 묶음</span>
+                            <span style="font-weight:400;font-size:0.75rem;color:#888;">— 몇 문장을 한 덩어리(=이미지 프롬프트 1개)로 묶을지</span>
+                            <button type="button" class="cf-n-btn" data-n="3" onclick="_cfSetN(3)" style="padding:8px 14px;font-size:0.88rem;font-weight:700;border:2px solid #ced4da;background:#e9ecef;color:#495057;border-radius:8px;cursor:pointer;">3문장</button>
+                            <button type="button" class="cf-n-btn" data-n="4" onclick="_cfSetN(4)" style="padding:8px 14px;font-size:0.88rem;font-weight:700;border:2px solid #ced4da;background:#e9ecef;color:#495057;border-radius:8px;cursor:pointer;">4문장</button>
+                            <button type="button" class="cf-n-btn" data-n="5" onclick="_cfSetN(5)" style="padding:8px 14px;font-size:0.88rem;font-weight:700;border:2px solid #ced4da;background:#e9ecef;color:#495057;border-radius:8px;cursor:pointer;">5문장</button>
+                            <button type="button" class="cf-n-btn" data-n="6" onclick="_cfSetN(6)" style="padding:8px 14px;font-size:0.88rem;font-weight:700;border:2px solid #ced4da;background:#e9ecef;color:#495057;border-radius:8px;cursor:pointer;">6문장</button>
+                        </div>
                         <textarea id="cfScript" rows="14" oninput="_cfPersist()" placeholder="본문 대본 전체를 여기에 붙여넣으세요. 첫 문장부터 마지막 문장까지 한 문장도 빠짐없이 처리됩니다." style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;line-height:1.65;resize:vertical;"></textarea>
                         <div id="cfScriptStats" style="margin-top:6px;font-size:0.78rem;color:#888;"></div>
                     </div>
@@ -9096,7 +9105,21 @@ B. 영어 이미지 프롬프트:
 - [Context & Subject]: 문맥(시대/장소)과 묘사(인물/행동)를 결합. 인물의 의상 반드시 포함
 - [Visual Details]: 카메라 앵글, 배경 디테일 등`;
 
-        const CF_LS = { style: 'cf_style', intro: 'cf_intro', script: 'cf_script', instruction: 'cf_instruction' };
+        const CF_LS = { style: 'cf_style', intro: 'cf_intro', script: 'cf_script', instruction: 'cf_instruction', n: 'cf_n' };
+
+        // 본문 묶음: N문장 = 프롬프트 1개 (도입부는 줄바꿈 기준이라 별개)
+        let _cfN = 4;
+        function _cfSetN(n) {
+            _cfN = n;
+            try { localStorage.setItem(CF_LS.n, String(n)); } catch (e) {}
+            document.querySelectorAll('.cf-n-btn').forEach(b => {
+                const on = parseInt(b.dataset.n, 10) === n;
+                b.style.background = on ? '#0f7b5a' : '#e9ecef';
+                b.style.color = on ? '#fff' : '#495057';
+                b.style.borderColor = on ? '#0f7b5a' : '#ced4da';
+            });
+            _cfBuild();
+        }
 
         // 도입부: 줄바꿈 1개 = 프롬프트 1개 → 빈 줄 제외한 줄 수
         function _cfIntroLines(txt) {
@@ -9113,8 +9136,9 @@ B. 영어 이미지 프롬프트:
                 if (style && !style.value) style.value = localStorage.getItem(CF_LS.style) || '';
                 if (intro && !intro.value) intro.value = localStorage.getItem(CF_LS.intro) || '';
                 if (script && !script.value) script.value = localStorage.getItem(CF_LS.script) || '';
+                const savedN = parseInt(localStorage.getItem(CF_LS.n), 10);
                 _cfUpdateStats();
-                _cfBuild();
+                _cfSetN([3, 4, 5, 6].includes(savedN) ? savedN : 4); // 활성 버튼 표시 + _cfBuild 호출
             } catch (e) { console.error('[_cfInit]', e); }
         }
 
@@ -9183,7 +9207,12 @@ B. 영어 이미지 프롬프트:
             }
 
             parts.push(SEP + '[대본 — SCRIPT]\n════════════════════════════════════\n' +
-                (introLines.length ? '※ 대본은 지침의 기본 규칙(문장 단위)대로 처리하세요. 도입부 다음 번호부터 이어서 매깁니다.\n\n' : '') +
+                '★ 본문 묶음 규칙 (지침의 "각 문장 1개씩" 기본값보다 우선): 본문은 ' + _cfN + '문장씩 하나로 묶어 1개의 이미지 프롬프트로 만드세요. ' +
+                '즉 ' + _cfN + '문장 = 1프롬프트(=1장면)입니다. [한국어 번역]에는 묶은 ' + _cfN + '문장을 그대로 적고, ' +
+                '[영어 이미지 프롬프트]는 그 ' + _cfN + '문장 덩어리를 대표하는 한 장면으로 작성하세요. ' +
+                '마지막 묶음이 ' + _cfN + '문장이 안 되면 남은 문장끼리 묶습니다. ' +
+                (introLines.length ? '번호는 도입부 다음 번호부터 이어서 매깁니다.' : '') +
+                '\n\n' +
                 (script || '(대본 미입력 — 대본 칸을 채워주세요)'));
 
             const combined = parts.join('');
@@ -9216,7 +9245,7 @@ B. 영어 이미지 프롬프트:
                 if (st) { st.textContent = '⚠️ ' + missing.join(' · ') + ' 칸이 비어 있어요. (그래도 복사는 됩니다)'; st.style.color = '#d97706'; }
             } else if (st) {
                 const introN = _cfIntroLines(introEl ? introEl.value : '').length;
-                st.textContent = '✅ 합본을 복사했어요' + (introN ? ` (도입부 ${introN}컷 + 대본)` : '') + '. 다른 프로그램에 붙여넣으세요.';
+                st.textContent = '✅ 합본을 복사했어요' + (introN ? ` (도입부 ${introN}컷 + ` : ' (') + `본문 ${_cfN}문장 묶음). 다른 프로그램에 붙여넣으세요.`;
                 st.style.color = '#0f7b5a';
             }
             const orig = btn ? btn.textContent : '';
