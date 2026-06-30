@@ -111,7 +111,12 @@ def validate(scenes):
 
         # === 5. 대본 맥락: 한국 장면인데 Korean 미명시 ===
         korea_keywords = ["한국", "조선소", "서울", "부산", "거제", "울산", "통영", "제주", "전주", "효성", "삼성중공업", "현대중공업", "대우조선", "가스공사"]
-        is_korea_scene = any(kw in narration for kw in korea_keywords)
+        def _korea_hit(kw):
+            # '부산물(byproduct)'의 '부산'은 도시 부산이 아니므로 오탐 제외
+            if kw == "부산" and "부산물" in narration:
+                return False
+            return kw in narration
+        is_korea_scene = any(_korea_hit(kw) for kw in korea_keywords)
         if is_korea_scene and "Korean" not in nano and "한국" not in nano and "Korea" not in nano and stype == "ai":
             fails.append("{} [FAIL] 한국 장면인데 nano_prompt에 Korean/Korea 미명시".format(prefix))
 

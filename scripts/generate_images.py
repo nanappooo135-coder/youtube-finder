@@ -131,6 +131,7 @@ def main():
     parser.add_argument("--parallel", type=int, default=5, help="concurrent generations (default: 5)")
     parser.add_argument("--limit", type=int, default=0, help="max images to generate (0=all)")
     parser.add_argument("--scenes", default="", help="specific scene numbers to generate (comma-separated, e.g. 1,5,10)")
+    parser.add_argument("--approve", action="store_true", help="작가 승인: 전체생성 게이트를 연다(현재 scenes 해시로 _작가승인.flag 기록 후 종료). 생성은 안 함.")
     args = parser.parse_args()
 
     if args.style_file:
@@ -174,6 +175,20 @@ def main():
     data = json.loads(scenes_path.read_text(encoding="utf-8"))
     scenes = data if isinstance(data, list) else data.get("scenes", [])
 
+    # ===== 작가 승인 게이트 (전체생성 코드 차단) =====
+    # 클로드가 작가 OK 없이 멋대로 전체 배치를 돌려 크레딧을 태우는 사고를 코드로 막는다.
+    # 승인은 현재 scenes_classified.json 해시와 묶임 → 대본/JSON이 바뀌면 승인 자동 무효.
+    import hashlib
+    # 내용 기반 해시(파일 들여쓰기 무관) — CLI·스튜디오가 동일하게 재현 가능: sceneNo|nano_prompt 줄들의 sha256
+    _hash_blob = "".join("{}|{}\n".format(s.get("sceneNo"), s.get("nano_prompt") or "") for s in scenes)
+    _scenes_hash = hashlib.sha256(_hash_blob.encode("utf-8")).hexdigest()[:16]
+    _approve_flag = output_folder.parent / "_작가승인.flag"
+    if args.approve:
+        _approve_flag.write_text(_scenes_hash + "\n", encoding="utf-8")
+        print(f"[승인] 전체생성 승인 기록: {_approve_flag}")
+        print(f"[승인] scenes 해시: {_scenes_hash}  (이 JSON이 바뀌면 승인 무효)")
+        sys.exit(0)
+
     target_types = set(args.types.split(","))
     ai_scenes = []
     for s in scenes:
@@ -212,6 +227,26 @@ def main():
     if args.limit > 0:
         ai_scenes = ai_scenes[:args.limit]
     total = len(ai_scenes)
+
+    # ===== 미리보기/전체생성 하드 게이트 =====
+    # 작가 승인 없이는 프로젝트당 최대 3장(도입부 미리보기)까지만 허용. 4장째부터=전체배치는 승인 필수.
+    TEST_CAP = 3
+    _existing_on_disk = len(list(output_folder.glob("scene_*.png")))
+    _resulting = _existing_on_disk + total   # 이번 실행 후 프로젝트 이미지 수(근사)
+    if _resulting > TEST_CAP:
+        ok = False
+        if _approve_flag.exists():
+            saved = _approve_flag.read_text(encoding="utf-8").strip()
+            ok = (saved == _scenes_hash)
+        if not ok:
+            why = "승인 파일 없음" if not _approve_flag.exists() else "승인이 옛 scenes 기준(STALE) — 대본/프롬프트가 바뀜"
+            print(f"[차단] 이번 실행 후 이미지 {_resulting}장(>{TEST_CAP}) 요청 — 작가 승인이 없습니다 ({why}).")
+            print(f"[차단] 승인 전에는 미리보기 최대 {TEST_CAP}장만 허용:  --scenes 1,2,3  (또는 --limit {TEST_CAP})")
+            print( "[차단] 전체 생성은 작가 명시 승인 후 아래를 먼저 실행:")
+            print(f"[차단]   python {Path(__file__).name} {args.scenes_json} {args.output_folder} --approve")
+            print(f"[차단]   (현재 scenes 해시: {_scenes_hash})")
+            sys.exit(1)
+        print(f"[승인확인] 작가 승인 일치 ({_scenes_hash}) — 전체 {total}장 생성 진행")
 
     # Credit check before starting
     cost_per_image = 12 if args.resolution == "2K" else (5 if args.resolution == "1K" else 20)
