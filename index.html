@@ -5055,6 +5055,9 @@
                         </div>
                     </details>
 
+                    <!-- 예상 프롬프트 총개수 (실시간) -->
+                    <div id="cfTotal" style="display:none;margin:6px 0 12px;padding:12px 14px;background:#e7f9f1;border:2px solid #20c997;border-radius:10px;font-size:0.95rem;font-weight:700;color:#0f7b5a;text-align:center;line-height:1.5;"></div>
+
                     <button id="cfBuildBtn" class="search-btn" onclick="_cfCopy(this)" style="width:100%;font-size:1.05rem;padding:15px;background:#0f7b5a;border-color:#0f7b5a;">
                         📋 지침 + 그림체 + 도입부 + 대본 합쳐서 복사
                     </button>
@@ -9217,6 +9220,23 @@ B. 영어 이미지 프롬프트:
 
             const combined = parts.join('');
             outEl.value = combined;
+
+            // 예상 프롬프트 총개수 = 도입부 줄 수 + ceil(본문 문장수 / N)
+            const totalEl = document.getElementById('cfTotal');
+            if (totalEl) {
+                const introCount = introLines.length;
+                const bodySentences = script ? script.split(/[.!?\n]+/).map(s => s.trim()).filter(Boolean).length : 0;
+                const bodyPrompts = bodySentences ? Math.ceil(bodySentences / _cfN) : 0;
+                const total = introCount + bodyPrompts;
+                if (total > 0) {
+                    totalEl.style.display = '';
+                    totalEl.innerHTML = '🧮 예상 프롬프트 총 <span style="font-size:1.2rem;">' + total + '개</span>' +
+                        ' &nbsp;=&nbsp; 도입부 ' + introCount + '개 + 본문 ' + bodyPrompts + '개' +
+                        ' <span style="font-weight:400;font-size:0.8rem;">(본문 약 ' + bodySentences + '문장 ÷ ' + _cfN + '문장 묶음, 올림)</span>';
+                } else {
+                    totalEl.style.display = 'none';
+                }
+            }
             return combined;
         }
 
