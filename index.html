@@ -2276,6 +2276,7 @@
             <button class="process-btn inactive" id="procBtn_genspark" onclick="switchProcess('genspark')">🎨 젠스파크</button>
             <button class="process-btn inactive" id="procBtn_json" onclick="switchProcess('json')">📊 JSON</button>
             <button class="process-btn inactive" id="procBtn_sellpot" onclick="switchProcess('sellpot')">📋 셀팟 기본</button>
+            <button class="process-btn inactive" id="procBtn_sellfarm" onclick="switchProcess('sellfarm')">🌱 셀팜작업</button>
             <button class="process-btn inactive" id="procBtn_tts" onclick="switchProcess('tts')">🎙️ TTS변환</button>
             <button class="process-btn inactive" id="procBtn_allinone" onclick="switchProcess('allinone')">🎬 올인원</button>
         </div>
@@ -5000,6 +5001,56 @@
                 </div>
             </div>
         </div><!-- /process-tool -->
+
+
+        <!-- ===== 프로세스: 셀팜작업 (지침 + 그림체 + 대본 → 이미지 프롬프트 지시문 조합) ===== -->
+        <div id="process-sellfarm" style="display:none;">
+            <div class="section">
+                <div class="section-title" style="color:#0f7b5a;">🌱 셀팜작업 — 이미지 프롬프트 지시문 조합</div>
+                <div class="section-content">
+                    <p style="font-size:0.86rem;color:#666;margin-bottom:14px;line-height:1.6;">
+                        고정 <strong>지침(스크립트→이미지 프롬프트 엔지니어)</strong> + 내가 넣는 <strong>그림체(캐릭터 시트)</strong> + <strong>대본</strong>을 하나로 합쳐서
+                        <strong>다른 프로그램(AI)</strong>에 그대로 붙여넣을 수 있는 완성 지시문을 만듭니다.
+                        합쳐진 지시문을 받은 AI가 문장마다 <span style="color:#0f7b5a;font-weight:700;">[한국어 번역]·[영어 이미지 프롬프트]</span>를 순서대로 생성합니다.
+                    </p>
+
+                    <!-- 그림체 / 캐릭터 시트 -->
+                    <div class="input-group">
+                        <label>🎨 그림체 (캐릭터 시트) <span style="color:#888;font-weight:400;">— 글로벌 아트 스타일 + 캐릭터 정의·기본 의상·고정 프롬프트 블록(A). 모든 프롬프트 맨 앞에 이 스타일이 들어갑니다.</span></label>
+                        <textarea id="cfStyle" rows="10" oninput="_cfPersist()" placeholder="[글로벌 아트 스타일]&#10;Korean manhwa style, clean digital illustration, soft cell shading, detailed line art ...&#10;&#10;[캐릭터 시트]&#10;- 주인공: 30대 남성, 검은 단발, 날카로운 눈매&#10;  · 기본 의상: 다크 네이비 정장, 흰 셔츠&#10;  · 고정 프롬프트 블록(A): a man in his 30s, black short hair, dark navy suit ...&#10;- 조연: ..." style="width:100%;padding:12px;border:2px solid #20c997;border-radius:8px;font-size:0.82rem;font-family:'Courier New',monospace;line-height:1.55;resize:vertical;"></textarea>
+                        <div style="margin-top:6px;font-size:0.75rem;color:#0f7b5a;">💡 첫 줄을 <strong>글로벌 아트 스타일</strong>로 두면, 합쳐진 지침이 모든 영어 프롬프트 맨 앞에 그대로 넣도록 지시합니다. (photorealistic·실사풍 키워드는 지침이 자동 금지)</div>
+                    </div>
+
+                    <!-- 대본 -->
+                    <div class="input-group">
+                        <label>📝 대본 (스크립트) <span style="color:#888;font-weight:400;">— 언어 무관. 타임스탬프가 있어도 됩니다(지침이 자동 제거 지시).</span></label>
+                        <textarea id="cfScript" rows="14" oninput="_cfPersist()" placeholder="대본 전체를 여기에 붙여넣으세요. 첫 문장부터 마지막 문장까지 한 문장도 빠짐없이 처리됩니다." style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;line-height:1.65;resize:vertical;"></textarea>
+                        <div id="cfScriptStats" style="margin-top:6px;font-size:0.78rem;color:#888;"></div>
+                    </div>
+
+                    <!-- 지침 보기/수정 -->
+                    <details style="margin-bottom:14px;">
+                        <summary style="cursor:pointer;font-size:0.85rem;color:#0f7b5a;font-weight:700;">⚙️ 고정 지침 보기 / 수정 (스타일 일관성·완전성·태그 규칙)</summary>
+                        <div style="margin-top:8px;">
+                            <p style="font-size:0.74rem;color:#888;margin-bottom:6px;">이 지침이 그림체·대본 앞에 자동으로 붙습니다. 바꾼 내용은 이 브라우저에 저장됩니다.</p>
+                            <textarea id="cfInstruction" rows="12" oninput="_cfPersist()" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:0.74rem;font-family:'Courier New',monospace;line-height:1.5;resize:vertical;"></textarea>
+                            <button class="search-btn" onclick="_cfResetInstruction()" style="margin-top:6px;font-size:0.82rem;padding:8px 14px;background:#868e96;border-color:#868e96;">↩️ 기본 지침으로 되돌리기</button>
+                        </div>
+                    </details>
+
+                    <button id="cfBuildBtn" class="search-btn" onclick="_cfCopy(this)" style="width:100%;font-size:1.05rem;padding:15px;background:#0f7b5a;border-color:#0f7b5a;">
+                        📋 지침 + 그림체 + 대본 합쳐서 복사
+                    </button>
+                    <div id="cfStatus" style="margin-top:8px;font-size:0.85rem;color:#888;"></div>
+
+                    <!-- 합쳐진 결과 미리보기 -->
+                    <div class="input-group" style="margin-top:14px;">
+                        <label>🧩 합쳐진 지시문 (미리보기) <span style="color:#888;font-weight:400;">— 이 내용 그대로 다른 프로그램에 붙여넣으세요</span></label>
+                        <textarea id="cfOutput" rows="10" readonly style="width:100%;padding:12px;border:2px solid #20c997;border-radius:8px;font-size:0.78rem;font-family:'Courier New',monospace;line-height:1.55;resize:vertical;background:#f8fffb;"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div><!-- /process-sellfarm -->
 
 
         <!-- ===== 프로세스: 젠스파크 이미지 (3단계 프롬프트 빌더) ===== -->
@@ -8954,6 +9005,8 @@ ${_retryRound > 0 ? `⚠️ 이번은 ${_retryRound}차 추가 요청입니다. 
             document.getElementById('process-thumbnail').style.display = proc === 'thumbnail' ? '' : 'none';
             document.getElementById('process-json').style.display = proc === 'json' ? '' : 'none';
             document.getElementById('process-sellpot').style.display = proc === 'sellpot' ? '' : 'none';
+            const sellfarmEl = document.getElementById('process-sellfarm');
+            if (sellfarmEl) sellfarmEl.style.display = proc === 'sellfarm' ? '' : 'none';
             document.getElementById('process-review').style.display = proc === 'review' ? '' : 'none';
             document.getElementById('process-scriptReview').style.display = proc === 'scriptReview' ? '' : 'none';
             const planEl = document.getElementById('process-plan');
@@ -8975,12 +9028,153 @@ ${_retryRound > 0 ? `⚠️ 이번은 ${_retryRound}차 추가 요청입니다. 
             if (proc === 'plan') pnLoadAll();
             if (proc === 'trend') { fetchIssueRadar(); fetchGoogleTrends(); fetchEconYoutube(); }
             if (proc === 'sellpot' && window._spInit) window._spInit(); else if (proc === 'sellpot') setTimeout(function(){ if (window._spInit) window._spInit(); }, 500);
+            if (proc === 'sellfarm' && window._cfInit) window._cfInit();
             const aioEl = document.getElementById('process-allinone');
             if (aioEl) aioEl.style.display = proc === 'allinone' ? '' : 'none';
             } catch(err) {
                 console.error('[switchProcess ERROR]', err);
                 alert('탭 전환 오류: ' + err.message + ' (F12 콘솔 확인)');
             }
+        }
+
+        /* ============================================================
+         * 🌱 셀팜작업 — 지침 + 그림체(캐릭터 시트) + 대본 → 완성 지시문 조합
+         * 이 탭은 API를 호출하지 않습니다. 고정 지침 + 사용자 입력을
+         * 하나의 텍스트로 합쳐 복사 → 다른 프로그램(AI)이 그대로 받아 처리.
+         * ============================================================ */
+        const CF_DEFAULT_INSTRUCTION = `당신은 '스크립트-투-이미지 프롬프트 전문 엔지니어'입니다. 당신의 임무는 사용자가 제공하는 대본(Script)을 받아, 이를 시각화하기 위한 두 가지 핵심 결과물을 순서대로 제공하는 것입니다.
+
+당신은 단순한 번역기가 아닙니다. 당신은 각 문장의 '문맥(Context)'을 파악하고, 이것이 '장면 묘사(Scene)'인지 '인물 묘사(Character)'인지를 분석하여, 캐릭터 시트에 정의된 스타일과 결합한 최고 품질의 이미지 생성 프롬프트를 만들어야 합니다.
+
+[CRITICAL: STYLE CONSISTENCY — 최우선 규칙]
+★★★ 캐릭터 시트의 '글로벌 아트 스타일'이 모든 프롬프트의 렌더링 스타일을 결정합니다.
+- 모든 [영어 이미지 프롬프트]의 맨 앞에 글로벌 아트 스타일 문구를 그대로 삽입하세요.
+- 사진풍(photorealistic, analog film, DSLR), 실사풍(hyperrealistic) 키워드는 사용 금지합니다.
+- 실존 인물이 등장해도 캐릭터 시트의 아트 스타일을 유지하세요 (예: manhwa 스타일의 일론 머스크).
+- 캐릭터의 의상은 캐릭터 시트의 '기본 의상' 또는 '고정 프롬프트 블록(A)'에 명시된 것을 반드시 포함하세요.
+
+[CRITICAL: COMPLETENESS PROTOCOL]
+전체 출력 의무: 사용자가 제공한 대본이 아무리 길더라도, 첫 문장부터 마지막 문장까지 단 한 문장도 빠뜨리지 않고 처리해야 합니다.
+요약 금지: "나머지는 생략함(...)" 또는 "이하 동일"과 같은 요약 행위를 엄격히 금지합니다.
+분할 출력 대응: 만약 답변 길이가 AI의 출력 토큰 제한에 도달할 것 같으면, 완전한 [한국어 번역]-[영어 이미지 프롬프트] 세트가 끝나는 지점에서 멈추십시오.
+
+[CRITICAL: FORMATTING PROTOCOL - 태그 엄수]
+긴 글을 출력할 때 [영어 이미지 프롬프트] 태그가 변형되는 오류를 엄격히 금지합니다.
+영어 이미지 프롬프트의 출력 태그는 대괄호([])를 포함하여 정확히 [영어 이미지 프롬프트] 로만 출력되어야 합니다.
+
+[WORKFLOW & RULES]
+
+입력 처리:
+- 사용자가 대본을 제공합니다. (언어 무관)
+- 대본에 타임스탬프가 포함되어 있다면, 반드시 모두 제거하고 순수 텍스트 내용만 처리합니다.
+
+문맥 분석 (내부 단계):
+- 작업을 시작하기 전, 대본 전체를 빠르게 훑어보며 이 장면의 전반적인 문맥을 파악합니다.
+- 아래의 '연출 기법 4가지' 중 대본의 분위기에 가장 적합한 것을 하나 선택하여 일관되게 적용합니다.
+    1. 클래식 톤 — warm muted tones, soft ambient lighting, nostalgic atmosphere
+    2. 다큐멘터리 톤 — neutral color grading, natural lighting, informative composition
+    3. 시네마틱 톤 — dramatic lighting, high contrast, cinematic composition, depth of field
+    4. 모던 톤 — clean vibrant colors, even studio lighting, sharp details
+  ※ 이것은 카메라/조명/색감 연출이며, 렌더링 스타일(아트 스타일)과는 별개입니다. 아트 스타일은 반드시 캐릭터 시트의 글로벌 아트 스타일을 따르세요.
+
+순차적 출력 (필수 형식):
+- 대본의 각 문장을 1, 2, 3... 번호순으로 처리합니다.
+- 각 번호마다 반드시 [한국어 번역]과 [영어 이미지 프롬프트]를 순서대로 제공합니다.
+
+B. 영어 이미지 프롬프트:
+- 구성 요소: [캐릭터시트 글로벌 아트 스타일] + [연출 톤] + [Context & Subject] + [Visual Details]
+- [캐릭터시트 글로벌 아트 스타일]: 캐릭터 시트 최상단의 스타일 (예: Korean manhwa style, clean digital illustration...)
+- [연출 톤]: 위에서 선택한 연출 기법 (예: dramatic lighting, cinematic composition...)
+- [Context & Subject]: 문맥(시대/장소)과 묘사(인물/행동)를 결합. 인물의 의상 반드시 포함
+- [Visual Details]: 카메라 앵글, 배경 디테일 등`;
+
+        const CF_LS = { style: 'cf_style', script: 'cf_script', instruction: 'cf_instruction' };
+
+        function _cfInit() {
+            try {
+                const inst = document.getElementById('cfInstruction');
+                const style = document.getElementById('cfStyle');
+                const script = document.getElementById('cfScript');
+                if (inst && !inst.value) inst.value = localStorage.getItem(CF_LS.instruction) || CF_DEFAULT_INSTRUCTION;
+                if (style && !style.value) style.value = localStorage.getItem(CF_LS.style) || '';
+                if (script && !script.value) script.value = localStorage.getItem(CF_LS.script) || '';
+                _cfUpdateStats();
+                _cfBuild();
+            } catch (e) { console.error('[_cfInit]', e); }
+        }
+
+        function _cfPersist() {
+            try {
+                const inst = document.getElementById('cfInstruction');
+                const style = document.getElementById('cfStyle');
+                const script = document.getElementById('cfScript');
+                if (inst) localStorage.setItem(CF_LS.instruction, inst.value);
+                if (style) localStorage.setItem(CF_LS.style, style.value);
+                if (script) localStorage.setItem(CF_LS.script, script.value);
+                _cfUpdateStats();
+                _cfBuild();
+            } catch (e) { console.error('[_cfPersist]', e); }
+        }
+
+        function _cfUpdateStats() {
+            const script = document.getElementById('cfScript');
+            const stats = document.getElementById('cfScriptStats');
+            if (!script || !stats) return;
+            const txt = script.value || '';
+            const chars = txt.length;
+            // 문장 수 추정 (. ! ? 줄바꿈 기준)
+            const sentences = txt.split(/[.!?\n]+/).map(s => s.trim()).filter(Boolean).length;
+            stats.textContent = chars ? `글자수 ${chars.toLocaleString()}자 · 문장 약 ${sentences}개` : '';
+        }
+
+        // 합쳐진 지시문 생성 → 미리보기 채우고 텍스트 반환
+        function _cfBuild() {
+            const instEl = document.getElementById('cfInstruction');
+            const styleEl = document.getElementById('cfStyle');
+            const scriptEl = document.getElementById('cfScript');
+            const outEl = document.getElementById('cfOutput');
+            if (!outEl) return '';
+            const inst = (instEl && instEl.value.trim()) || CF_DEFAULT_INSTRUCTION;
+            const style = styleEl ? styleEl.value.trim() : '';
+            const script = scriptEl ? scriptEl.value.trim() : '';
+            const combined =
+                inst +
+                '\n\n════════════════════════════════════\n[캐릭터 시트 — 그림체 / 글로벌 아트 스타일]\n════════════════════════════════════\n' +
+                (style || '(아직 그림체가 입력되지 않았습니다 — 위 그림체 칸을 채워주세요)') +
+                '\n\n════════════════════════════════════\n[대본 — SCRIPT]\n════════════════════════════════════\n' +
+                (script || '(아직 대본이 입력되지 않았습니다 — 위 대본 칸을 채워주세요)');
+            outEl.value = combined;
+            return combined;
+        }
+
+        function _cfResetInstruction() {
+            const inst = document.getElementById('cfInstruction');
+            if (!inst) return;
+            inst.value = CF_DEFAULT_INSTRUCTION;
+            localStorage.setItem(CF_LS.instruction, CF_DEFAULT_INSTRUCTION);
+            _cfBuild();
+            const st = document.getElementById('cfStatus');
+            if (st) { st.textContent = '↩️ 기본 지침으로 되돌렸어요.'; st.style.color = '#0f7b5a'; }
+        }
+
+        function _cfCopy(btn) {
+            const styleEl = document.getElementById('cfStyle');
+            const scriptEl = document.getElementById('cfScript');
+            const st = document.getElementById('cfStatus');
+            const combined = _cfBuild();
+            const missing = [];
+            if (!styleEl || !styleEl.value.trim()) missing.push('그림체(캐릭터 시트)');
+            if (!scriptEl || !scriptEl.value.trim()) missing.push('대본');
+            if (missing.length) {
+                if (st) { st.textContent = '⚠️ ' + missing.join(' · ') + ' 칸이 비어 있어요. (그래도 복사는 됩니다)'; st.style.color = '#d97706'; }
+            } else if (st) {
+                st.textContent = '✅ 지침 + 그림체 + 대본 합본을 복사했어요. 다른 프로그램에 붙여넣으세요.';
+                st.style.color = '#0f7b5a';
+            }
+            const orig = btn ? btn.textContent : '';
+            (window.safeCopy ? window.safeCopy(combined) : navigator.clipboard.writeText(combined)).then(() => {
+                if (btn) { btn.textContent = '✓ 복사됨!'; setTimeout(() => { btn.textContent = orig; }, 1600); }
+            });
         }
 
         /* ============================================================
