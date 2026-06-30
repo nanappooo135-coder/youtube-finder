@@ -5009,9 +5009,10 @@
                 <div class="section-title" style="color:#0f7b5a;">🌱 셀팜작업 — 이미지 프롬프트 지시문 조합</div>
                 <div class="section-content">
                     <p style="font-size:0.86rem;color:#666;margin-bottom:14px;line-height:1.6;">
-                        고정 <strong>지침(스크립트→이미지 프롬프트 엔지니어)</strong> + 내가 넣는 <strong>그림체(캐릭터 시트)</strong> + <strong>대본</strong>을 하나로 합쳐서
+                        고정 <strong>지침(스크립트→이미지 프롬프트 엔지니어)</strong> + 내가 넣는 <strong>그림체(캐릭터 시트)</strong> + <strong>도입부</strong> + <strong>대본</strong>을 하나로 합쳐서
                         <strong>다른 프로그램(AI)</strong>에 그대로 붙여넣을 수 있는 완성 지시문을 만듭니다.
-                        합쳐진 지시문을 받은 AI가 문장마다 <span style="color:#0f7b5a;font-weight:700;">[한국어 번역]·[영어 이미지 프롬프트]</span>를 순서대로 생성합니다.
+                        받은 AI가 <span style="color:#0f7b5a;font-weight:700;">[한국어 번역]·[영어 이미지 프롬프트]</span>를 순서대로 생성합니다.
+                        <strong style="color:#0f7b5a;">도입부는 줄바꿈 1개 = 프롬프트 1개</strong>, 대본은 지침대로 처리됩니다.
                     </p>
 
                     <!-- 그림체 / 캐릭터 시트 -->
@@ -5021,10 +5022,17 @@
                         <div style="margin-top:6px;font-size:0.75rem;color:#0f7b5a;">💡 첫 줄을 <strong>글로벌 아트 스타일</strong>로 두면, 합쳐진 지침이 모든 영어 프롬프트 맨 앞에 그대로 넣도록 지시합니다. (photorealistic·실사풍 키워드는 지침이 자동 금지)</div>
                     </div>
 
+                    <!-- 도입부 (줄바꿈 1개 = 프롬프트 1개) -->
+                    <div class="input-group">
+                        <label>🎬 도입부 <span style="color:#888;font-weight:400;">— 줄바꿈(엔터) 1개 = 이미지 프롬프트 1개. 한 줄이 곧 한 장면이에요(문장으로 안 쪼갬). 대본보다 먼저 처리됩니다.</span></label>
+                        <textarea id="cfIntro" rows="6" oninput="_cfPersist()" placeholder="첫 후킹 한 줄 — 이 줄이 프롬프트 1번&#10;다음 한 줄 — 프롬프트 2번&#10;짧고 강한 임팩트 한 방 — 프롬프트 3번" style="width:100%;padding:12px;border:2px solid #20c997;border-radius:10px;font-size:0.9rem;line-height:1.65;resize:vertical;"></textarea>
+                        <div id="cfIntroStats" style="margin-top:6px;font-size:0.78rem;color:#0f7b5a;"></div>
+                    </div>
+
                     <!-- 대본 -->
                     <div class="input-group">
-                        <label>📝 대본 (스크립트) <span style="color:#888;font-weight:400;">— 언어 무관. 타임스탬프가 있어도 됩니다(지침이 자동 제거 지시).</span></label>
-                        <textarea id="cfScript" rows="14" oninput="_cfPersist()" placeholder="대본 전체를 여기에 붙여넣으세요. 첫 문장부터 마지막 문장까지 한 문장도 빠짐없이 처리됩니다." style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;line-height:1.65;resize:vertical;"></textarea>
+                        <label>📝 대본 (스크립트) <span style="color:#888;font-weight:400;">— 도입부 다음 본문. 언어 무관, 타임스탬프 있어도 됩니다(지침이 자동 제거 지시).</span></label>
+                        <textarea id="cfScript" rows="14" oninput="_cfPersist()" placeholder="본문 대본 전체를 여기에 붙여넣으세요. 첫 문장부터 마지막 문장까지 한 문장도 빠짐없이 처리됩니다." style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;line-height:1.65;resize:vertical;"></textarea>
                         <div id="cfScriptStats" style="margin-top:6px;font-size:0.78rem;color:#888;"></div>
                     </div>
 
@@ -5039,7 +5047,7 @@
                     </details>
 
                     <button id="cfBuildBtn" class="search-btn" onclick="_cfCopy(this)" style="width:100%;font-size:1.05rem;padding:15px;background:#0f7b5a;border-color:#0f7b5a;">
-                        📋 지침 + 그림체 + 대본 합쳐서 복사
+                        📋 지침 + 그림체 + 도입부 + 대본 합쳐서 복사
                     </button>
                     <div id="cfStatus" style="margin-top:8px;font-size:0.85rem;color:#888;"></div>
 
@@ -9088,15 +9096,22 @@ B. 영어 이미지 프롬프트:
 - [Context & Subject]: 문맥(시대/장소)과 묘사(인물/행동)를 결합. 인물의 의상 반드시 포함
 - [Visual Details]: 카메라 앵글, 배경 디테일 등`;
 
-        const CF_LS = { style: 'cf_style', script: 'cf_script', instruction: 'cf_instruction' };
+        const CF_LS = { style: 'cf_style', intro: 'cf_intro', script: 'cf_script', instruction: 'cf_instruction' };
+
+        // 도입부: 줄바꿈 1개 = 프롬프트 1개 → 빈 줄 제외한 줄 수
+        function _cfIntroLines(txt) {
+            return (txt || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+        }
 
         function _cfInit() {
             try {
                 const inst = document.getElementById('cfInstruction');
                 const style = document.getElementById('cfStyle');
+                const intro = document.getElementById('cfIntro');
                 const script = document.getElementById('cfScript');
                 if (inst && !inst.value) inst.value = localStorage.getItem(CF_LS.instruction) || CF_DEFAULT_INSTRUCTION;
                 if (style && !style.value) style.value = localStorage.getItem(CF_LS.style) || '';
+                if (intro && !intro.value) intro.value = localStorage.getItem(CF_LS.intro) || '';
                 if (script && !script.value) script.value = localStorage.getItem(CF_LS.script) || '';
                 _cfUpdateStats();
                 _cfBuild();
@@ -9107,9 +9122,11 @@ B. 영어 이미지 프롬프트:
             try {
                 const inst = document.getElementById('cfInstruction');
                 const style = document.getElementById('cfStyle');
+                const intro = document.getElementById('cfIntro');
                 const script = document.getElementById('cfScript');
                 if (inst) localStorage.setItem(CF_LS.instruction, inst.value);
                 if (style) localStorage.setItem(CF_LS.style, style.value);
+                if (intro) localStorage.setItem(CF_LS.intro, intro.value);
                 if (script) localStorage.setItem(CF_LS.script, script.value);
                 _cfUpdateStats();
                 _cfBuild();
@@ -9117,32 +9134,59 @@ B. 영어 이미지 프롬프트:
         }
 
         function _cfUpdateStats() {
+            // 도입부 통계 (줄바꿈 = 프롬프트)
+            const intro = document.getElementById('cfIntro');
+            const introStats = document.getElementById('cfIntroStats');
+            if (intro && introStats) {
+                const lines = _cfIntroLines(intro.value);
+                introStats.textContent = lines.length ? `도입부 ${lines.length}줄 = 프롬프트 ${lines.length}개` : '';
+            }
+            // 대본 통계
             const script = document.getElementById('cfScript');
             const stats = document.getElementById('cfScriptStats');
-            if (!script || !stats) return;
-            const txt = script.value || '';
-            const chars = txt.length;
-            // 문장 수 추정 (. ! ? 줄바꿈 기준)
-            const sentences = txt.split(/[.!?\n]+/).map(s => s.trim()).filter(Boolean).length;
-            stats.textContent = chars ? `글자수 ${chars.toLocaleString()}자 · 문장 약 ${sentences}개` : '';
+            if (script && stats) {
+                const txt = script.value || '';
+                const chars = txt.length;
+                const sentences = txt.split(/[.!?\n]+/).map(s => s.trim()).filter(Boolean).length;
+                stats.textContent = chars ? `글자수 ${chars.toLocaleString()}자 · 문장 약 ${sentences}개` : '';
+            }
         }
 
         // 합쳐진 지시문 생성 → 미리보기 채우고 텍스트 반환
         function _cfBuild() {
             const instEl = document.getElementById('cfInstruction');
             const styleEl = document.getElementById('cfStyle');
+            const introEl = document.getElementById('cfIntro');
             const scriptEl = document.getElementById('cfScript');
             const outEl = document.getElementById('cfOutput');
             if (!outEl) return '';
             const inst = (instEl && instEl.value.trim()) || CF_DEFAULT_INSTRUCTION;
             const style = styleEl ? styleEl.value.trim() : '';
+            const intro = introEl ? introEl.value.trim() : '';
             const script = scriptEl ? scriptEl.value.trim() : '';
-            const combined =
-                inst +
-                '\n\n════════════════════════════════════\n[캐릭터 시트 — 그림체 / 글로벌 아트 스타일]\n════════════════════════════════════\n' +
-                (style || '(아직 그림체가 입력되지 않았습니다 — 위 그림체 칸을 채워주세요)') +
-                '\n\n════════════════════════════════════\n[대본 — SCRIPT]\n════════════════════════════════════\n' +
-                (script || '(아직 대본이 입력되지 않았습니다 — 위 대본 칸을 채워주세요)');
+            const SEP = '\n\n════════════════════════════════════\n';
+            const parts = [inst];
+
+            parts.push(SEP + '[캐릭터 시트 — 그림체 / 글로벌 아트 스타일]\n════════════════════════════════════\n' +
+                (style || '(그림체 미입력 — 그림체 칸을 채워주세요)'));
+
+            // 처리 순서 안내 (도입부가 있을 때만)
+            const introLines = _cfIntroLines(intro);
+            if (introLines.length) {
+                parts.push(SEP + '[처리 순서]\n════════════════════════════════════\n' +
+                    '① 먼저 아래 [도입부]를 처리합니다. ② 그다음 [대본]을 처리합니다.');
+                parts.push(SEP + '[도입부 — INTRO]\n════════════════════════════════════\n' +
+                    '※ 도입부 규칙: 줄바꿈(엔터) 1개 = 이미지 프롬프트 1개입니다. 한 줄이 곧 한 장면이므로, ' +
+                    '문장 단위로 쪼개지 말고 빈 줄을 제외한 각 줄을 그대로 1, 2, 3... 번호순 개별 프롬프트로 처리하세요. ' +
+                    '(아래 도입부는 총 ' + introLines.length + '개 줄 = ' + introLines.length + '개 프롬프트)\n\n' +
+                    introLines.join('\n'));
+            }
+
+            parts.push(SEP + '[대본 — SCRIPT]\n════════════════════════════════════\n' +
+                (introLines.length ? '※ 대본은 지침의 기본 규칙(문장 단위)대로 처리하세요. 도입부 다음 번호부터 이어서 매깁니다.\n\n' : '') +
+                (script || '(대본 미입력 — 대본 칸을 채워주세요)'));
+
+            const combined = parts.join('');
             outEl.value = combined;
             return combined;
         }
@@ -9159,16 +9203,20 @@ B. 영어 이미지 프롬프트:
 
         function _cfCopy(btn) {
             const styleEl = document.getElementById('cfStyle');
+            const introEl = document.getElementById('cfIntro');
             const scriptEl = document.getElementById('cfScript');
             const st = document.getElementById('cfStatus');
             const combined = _cfBuild();
             const missing = [];
             if (!styleEl || !styleEl.value.trim()) missing.push('그림체(캐릭터 시트)');
-            if (!scriptEl || !scriptEl.value.trim()) missing.push('대본');
+            const introEmpty = !introEl || !introEl.value.trim();
+            const scriptEmpty = !scriptEl || !scriptEl.value.trim();
+            if (introEmpty && scriptEmpty) missing.push('도입부·대본(둘 다)');
             if (missing.length) {
                 if (st) { st.textContent = '⚠️ ' + missing.join(' · ') + ' 칸이 비어 있어요. (그래도 복사는 됩니다)'; st.style.color = '#d97706'; }
             } else if (st) {
-                st.textContent = '✅ 지침 + 그림체 + 대본 합본을 복사했어요. 다른 프로그램에 붙여넣으세요.';
+                const introN = _cfIntroLines(introEl ? introEl.value : '').length;
+                st.textContent = '✅ 합본을 복사했어요' + (introN ? ` (도입부 ${introN}컷 + 대본)` : '') + '. 다른 프로그램에 붙여넣으세요.';
                 st.style.color = '#0f7b5a';
             }
             const orig = btn ? btn.textContent : '';
