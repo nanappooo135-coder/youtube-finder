@@ -1489,252 +1489,54 @@
                         </div>
                     </div>
 
-                    <!-- Step 4: 감정톤 -->
+                    <!-- Step 4: 썸네일 문구 -->
                     <div class="tb-step">
-                        <div class="tb-step-label"><span class="step-num">4</span> 감정톤 <span style="font-weight:400;color:#aaa;font-size:0.8rem;">(최대 2개)</span></div>
-                        <div class="tb-options" id="tbEmotions">
-                            <button class="tb-opt selected" data-val="shock" onclick="toggleTbOpt(this,'tbEmotions',2)">
-                                <div class="opt-title">충격</div>
-                                <div class="opt-desc">놀라움, 과장</div>
-                            </button>
-                            <button class="tb-opt selected" data-val="curiosity" onclick="toggleTbOpt(this,'tbEmotions',2)">
-                                <div class="opt-title">궁금증</div>
-                                <div class="opt-desc">일부만 보여주기</div>
-                            </button>
-                            <button class="tb-opt" data-val="tension" onclick="toggleTbOpt(this,'tbEmotions',2)">
-                                <div class="opt-title">긴장감</div>
-                                <div class="opt-desc">위기, 균열</div>
-                            </button>
-                            <button class="tb-opt" data-val="trust" onclick="toggleTbOpt(this,'tbEmotions',2)">
-                                <div class="opt-title">신뢰</div>
-                                <div class="opt-desc">전문적, 깔끔</div>
-                            </button>
-                            <button class="tb-opt" data-val="warmth" onclick="toggleTbOpt(this,'tbEmotions',2)">
-                                <div class="opt-title">따뜻함</div>
-                                <div class="opt-desc">부드러운, 공감</div>
-                            </button>
-                            <button class="tb-opt" data-val="humor" onclick="toggleTbOpt(this,'tbEmotions',2)">
-                                <div class="opt-title">유머</div>
-                                <div class="opt-desc">재밌는, 코믹</div>
-                            </button>
+                        <div class="tb-step-label"><span class="step-num">4</span> 썸네일 문구 <span style="font-weight:400;color:#aaa;font-size:0.8rem;">(이미지에 이 한글이 그대로 박혀요)</span></div>
+                        <input type="text" id="tbText1" placeholder="줄1 — 큰 글씨 (예: 운하가 말랐다)" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.95rem;margin-bottom:6px;">
+                        <input type="text" id="tbText2" placeholder="줄2 — 보조 문구 (선택)" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;">
+                    </div>
+
+                    <!-- Step 5: 장수·품질 -->
+                    <div class="tb-step">
+                        <div class="tb-step-label"><span class="step-num">5</span> 생성 옵션</div>
+                        <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;">
+                            <div class="tb-options" id="tbCount" style="margin:0;">
+                                <button class="tb-opt" data-val="1" onclick="toggleTbOpt(this,'tbCount',1)"><div class="opt-title">1장</div></button>
+                                <button class="tb-opt selected" data-val="2" onclick="toggleTbOpt(this,'tbCount',1)"><div class="opt-title">2장</div></button>
+                                <button class="tb-opt" data-val="3" onclick="toggleTbOpt(this,'tbCount',1)"><div class="opt-title">3장</div></button>
+                            </div>
+                            <div class="tb-options" id="tbQuality" style="margin:0;">
+                                <button class="tb-opt selected" data-val="medium" onclick="toggleTbOpt(this,'tbQuality',1)"><div class="opt-title">보통 품질</div><div class="opt-desc">빠름·저렴</div></button>
+                                <button class="tb-opt" data-val="high" onclick="toggleTbOpt(this,'tbQuality',1)"><div class="opt-title">고급 품질</div><div class="opt-desc">더 정밀</div></button>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Step 5: 색감 -->
+                    <!-- Kie API 키 -->
                     <div class="tb-step">
-                        <div class="tb-step-label"><span class="step-num">5</span> 색감</div>
-                        <div class="tb-options" id="tbColor">
-                            <button class="tb-opt" data-val="bright" onclick="toggleTbOpt(this,'tbColor',1)">
-                                <div class="opt-title">밝은</div>
-                                <div class="opt-desc">생생한 컬러</div>
-                            </button>
-                            <button class="tb-opt selected" data-val="dark" onclick="toggleTbOpt(this,'tbColor',1)">
-                                <div class="opt-title">어두운</div>
-                                <div class="opt-desc">시네마틱, 그림자</div>
-                            </button>
-                            <button class="tb-opt" data-val="pastel" onclick="toggleTbOpt(this,'tbColor',1)">
-                                <div class="opt-title">파스텔</div>
-                                <div class="opt-desc">부드러운 톤</div>
-                            </button>
-                            <button class="tb-opt" data-val="neon" onclick="toggleTbOpt(this,'tbColor',1)">
-                                <div class="opt-title">네온</div>
-                                <div class="opt-desc">사이버펑크</div>
-                            </button>
+                        <div class="tb-step-label">🔑 Kie AI 키 <span id="tbKieStatus" style="font-weight:400;font-size:0.8rem;color:#aaa;"></span></div>
+                        <div style="display:flex;gap:8px;">
+                            <input type="password" id="tbKieKey" placeholder="Kie API 키 (한 번만 저장하면 돼요)" style="flex:1;padding:10px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.85rem;">
+                            <button class="btn-small btn-primary" onclick="saveKieKey()" style="padding:8px 16px;border-radius:8px;cursor:pointer;">저장</button>
                         </div>
-                    </div>
-
-                    <!-- Step 6: 카메라 앵글 -->
-                    <div class="tb-step">
-                        <div class="tb-step-label"><span class="step-num">6</span> 카메라 앵글</div>
-                        <div class="tb-options" id="tbAngle">
-                            <button class="tb-opt selected" data-val="eye" onclick="toggleTbOpt(this,'tbAngle',1)">
-                                <div class="opt-title">아이레벨</div>
-                                <div class="opt-desc">정면, 기본</div>
-                            </button>
-                            <button class="tb-opt" data-val="low" onclick="toggleTbOpt(this,'tbAngle',1)">
-                                <div class="opt-title">로우앵글</div>
-                                <div class="opt-desc">아래서 위로, 웅장</div>
-                            </button>
-                            <button class="tb-opt" data-val="high" onclick="toggleTbOpt(this,'tbAngle',1)">
-                                <div class="opt-title">하이앵글</div>
-                                <div class="opt-desc">위에서 아래로</div>
-                            </button>
-                            <button class="tb-opt" data-val="closeup" onclick="toggleTbOpt(this,'tbAngle',1)">
-                                <div class="opt-title">익스트림 클로즈업</div>
-                                <div class="opt-desc">얼굴/사물 극대</div>
-                            </button>
-                            <button class="tb-opt" data-val="wide" onclick="toggleTbOpt(this,'tbAngle',1)">
-                                <div class="opt-title">와이드</div>
-                                <div class="opt-desc">넓은 풍경, 스케일</div>
-                            </button>
-                            <button class="tb-opt" data-val="dutch" onclick="toggleTbOpt(this,'tbAngle',1)">
-                                <div class="opt-title">더치앵글</div>
-                                <div class="opt-desc">기울어진, 불안감</div>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Step 7: 핵심 컬러 -->
-                    <div class="tb-step">
-                        <div class="tb-step-label"><span class="step-num">7</span> 핵심 컬러 <span style="font-weight:400;color:#aaa;font-size:0.8rem;">(선택 — 이미지의 포인트 색상)</span></div>
-                        <div class="tb-options" id="tbAccent">
-                            <button class="tb-opt" data-val="none" onclick="toggleTbOpt(this,'tbAccent',1)">
-                                <div class="opt-title">자동</div>
-                                <div class="opt-desc">AI 판단</div>
-                            </button>
-                            <button class="tb-opt" data-val="red" onclick="toggleTbOpt(this,'tbAccent',1)" style="border-color:#ef4444;">
-                                <div class="opt-title" style="color:#ef4444;">빨강</div>
-                            </button>
-                            <button class="tb-opt selected" data-val="gold" onclick="toggleTbOpt(this,'tbAccent',1)" style="border-color:#d97706;">
-                                <div class="opt-title" style="color:#d97706;">금색</div>
-                            </button>
-                            <button class="tb-opt" data-val="blue" onclick="toggleTbOpt(this,'tbAccent',1)" style="border-color:#3b82f6;">
-                                <div class="opt-title" style="color:#3b82f6;">파랑</div>
-                            </button>
-                            <button class="tb-opt" data-val="green" onclick="toggleTbOpt(this,'tbAccent',1)" style="border-color:#22c55e;">
-                                <div class="opt-title" style="color:#22c55e;">초록</div>
-                            </button>
-                            <button class="tb-opt" data-val="white" onclick="toggleTbOpt(this,'tbAccent',1)" style="border-color:#aaa;">
-                                <div class="opt-title">흰색</div>
-                            </button>
-                            <button class="tb-opt" data-val="orange" onclick="toggleTbOpt(this,'tbAccent',1)" style="border-color:#f97316;">
-                                <div class="opt-title" style="color:#f97316;">주황</div>
-                            </button>
-                            <button class="tb-opt" data-val="purple" onclick="toggleTbOpt(this,'tbAccent',1)" style="border-color:#a855f7;">
-                                <div class="opt-title" style="color:#a855f7;">보라</div>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Step 8: 참고 스타일 -->
-                    <div class="tb-step">
-                        <div class="tb-step-label"><span class="step-num">8</span> 참고 스타일 <span style="font-weight:400;color:#aaa;font-size:0.8rem;">(선택)</span></div>
-                        <div class="tb-options" id="tbRefStyle">
-                            <button class="tb-opt" data-val="none" onclick="toggleTbOpt(this,'tbRefStyle',1)">
-                                <div class="opt-title">없음</div>
-                            </button>
-                            <button class="tb-opt selected" data-val="marvel" onclick="toggleTbOpt(this,'tbRefStyle',1)">
-                                <div class="opt-title">마블 포스터</div>
-                                <div class="opt-desc">히어로, 웅장</div>
-                            </button>
-                            <button class="tb-opt" data-val="nolan" onclick="toggleTbOpt(this,'tbRefStyle',1)">
-                                <div class="opt-title">놀란 영화</div>
-                                <div class="opt-desc">현실적, 무거운</div>
-                            </button>
-                            <button class="tb-opt" data-val="netflix-doc" onclick="toggleTbOpt(this,'tbRefStyle',1)">
-                                <div class="opt-title">넷플릭스 다큐</div>
-                                <div class="opt-desc">사실적, 몰입</div>
-                            </button>
-                            <button class="tb-opt" data-val="ghibli" onclick="toggleTbOpt(this,'tbRefStyle',1)">
-                                <div class="opt-title">지브리</div>
-                                <div class="opt-desc">따뜻한, 동화</div>
-                            </button>
-                            <button class="tb-opt" data-val="game" onclick="toggleTbOpt(this,'tbRefStyle',1)">
-                                <div class="opt-title">게임 아트</div>
-                                <div class="opt-desc">디테일, 판타지</div>
-                            </button>
-                            <button class="tb-opt" data-val="magazine" onclick="toggleTbOpt(this,'tbRefStyle',1)">
-                                <div class="opt-title">매거진 표지</div>
-                                <div class="opt-desc">세련된, 편집</div>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Step 9: 구도 -->
-                    <div class="tb-step">
-                        <div class="tb-step-label"><span class="step-num">9</span> 구도</div>
-                        <div class="tb-options" id="tbComposition">
-                            <button class="tb-opt selected" data-val="bottom-half" onclick="toggleTbOpt(this,'tbComposition',1)">
-                                <div class="opt-title">상단 집중</div>
-                                <div class="opt-desc">하단은 텍스트용 여백</div>
-                            </button>
-                            <button class="tb-opt" data-val="full" onclick="toggleTbOpt(this,'tbComposition',1)">
-                                <div class="opt-title">전체 채움</div>
-                                <div class="opt-desc">프레임 전체 이미지</div>
-                            </button>
-                            <button class="tb-opt" data-val="left-right" onclick="toggleTbOpt(this,'tbComposition',1)">
-                                <div class="opt-title">좌우 배치</div>
-                                <div class="opt-desc">한쪽 피사체 + 반대쪽 여백</div>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Step 10: 인물 표현 -->
-                    <div class="tb-step">
-                        <div class="tb-step-label"><span class="step-num">10</span> 인물 표현</div>
-                        <div class="tb-options" id="tbFace">
-                            <button class="tb-opt selected" data-val="exaggerated" onclick="toggleTbOpt(this,'tbFace',1)">
-                                <div class="opt-title">과장 표정</div>
-                                <div class="opt-desc">클로즈업, 큰 얼굴</div>
-                            </button>
-                            <button class="tb-opt" data-val="natural" onclick="toggleTbOpt(this,'tbFace',1)">
-                                <div class="opt-title">자연스러운</div>
-                                <div class="opt-desc">실제 비율</div>
-                            </button>
-                            <button class="tb-opt" data-val="silhouette" onclick="toggleTbOpt(this,'tbFace',1)">
-                                <div class="opt-title">실루엣</div>
-                                <div class="opt-desc">뒷모습, 역광</div>
-                            </button>
-                            <button class="tb-opt" data-val="minimize" onclick="toggleTbOpt(this,'tbFace',1)">
-                                <div class="opt-title">인물 최소화</div>
-                                <div class="opt-desc">오브젝트 중심</div>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Step 11: 아트 스타일 -->
-                    <div class="tb-step">
-                        <div class="tb-step-label"><span class="step-num">11</span> 아트 스타일</div>
-                        <div class="tb-options" id="tbStyle">
-                            <button class="tb-opt" data-val="photorealistic" onclick="toggleTbOpt(this,'tbStyle',1)">
-                                <div class="opt-title">실사</div>
-                                <div class="opt-desc">포토리얼리스틱</div>
-                            </button>
-                            <button class="tb-opt" data-val="hyperreal" onclick="toggleTbOpt(this,'tbStyle',1)">
-                                <div class="opt-title">초실사</div>
-                                <div class="opt-desc">AI느낌 제로, 극사실</div>
-                            </button>
-                            <button class="tb-opt selected" data-val="yeokseolnam" onclick="toggleTbOpt(this,'tbStyle',1)">
-                                <div class="opt-title">역썰남1</div>
-                                <div class="opt-desc">굵은선, 비비드, 극화풍</div>
-                            </button>
-                            <button class="tb-opt" data-val="yeokseolnam2" onclick="toggleTbOpt(this,'tbStyle',1)">
-                                <div class="opt-title">역썰남2</div>
-                                <div class="opt-desc">에디토리얼 일러스트, 정치풍자</div>
-                            </button>
-                            <button class="tb-opt" data-val="stickman" onclick="toggleTbOpt(this,'tbStyle',1)">
-                                <div class="opt-title">스틱맨 만화</div>
-                                <div class="opt-desc">심플 캐릭터, 코믹</div>
-                            </button>
-                            <button class="tb-opt" data-val="psych-cartoon" onclick="toggleTbOpt(this,'tbStyle',1)">
-                                <div class="opt-title">한눈에심리학</div>
-                                <div class="opt-desc">둥근 캐릭터, 따뜻한 교육풍</div>
-                            </button>
-                            <button class="tb-opt" data-val="anime" onclick="toggleTbOpt(this,'tbStyle',1)">
-                                <div class="opt-title">애니메</div>
-                                <div class="opt-desc">일러스트레이션</div>
-                            </button>
-                            <button class="tb-opt" data-val="3d-render" onclick="toggleTbOpt(this,'tbStyle',1)">
-                                <div class="opt-title">3D 렌더</div>
-                                <div class="opt-desc">입체적</div>
-                            </button>
-                        </div>
+                        <p style="font-size:0.75rem;color:#888;margin-top:4px;">유정스튜디오와 같은 Kie 계정 키. 이 브라우저에만 저장돼요. 이미지 1장 ≈ 보통 $0.03 · 고급 $0.06</p>
                     </div>
 
                     <!-- 생성 버튼 -->
-                    <button class="search-btn" onclick="generateTbPrompt()" style="margin-top:8px;">
-                        프롬프트 생성하기
+                    <button class="search-btn" id="tbGenBtn" onclick="generateAiThumbnails()" style="margin-top:8px;">
+                        🎨 AI 썸네일 생성 (레퍼런스 따라 + 한글 문구)
                     </button>
+                    <div id="tbGenMsg" style="margin-top:8px;font-size:0.85rem;color:#666;"></div>
                 </div>
             </div>
 
             <!-- 생성 결과 -->
             <div id="tbResult" style="display:none;">
                 <div class="section">
-                    <div class="section-title">생성된 프롬프트 (3가지 변형)</div>
+                    <div class="section-title">생성된 썸네일</div>
                     <div class="section-content">
-                        <div id="tbResultContent"></div>
-                        <p style="font-size:0.8rem;color:#888;margin-top:8px;">마음에 드는 프롬프트를 복사해서 젠스파크 AI에 붙여넣고 대화하면서 다듬으세요.</p>
+                        <div id="tbResultContent" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;"></div>
+                        <p style="font-size:0.8rem;color:#888;margin-top:8px;">마음에 드는 썸네일을 다운로드하세요. 문구·장면을 바꿔 다시 생성하면 다른 버전이 나와요.</p>
                     </div>
                 </div>
             </div>
@@ -4321,6 +4123,140 @@ Example format:
         }
 
         // 프롬프트 생성
+        // ===== 🎨 AI 썸네일 직접 생성 — Kie gpt-image-2 + 레퍼런스 image_input (검증 2026-07-03) =====
+        //  흐름: 레퍼런스(유튜브 썸네일/업로드/붙여넣기) → Kie 업로드 호스팅(웹 URL 직접은 403) →
+        //  createTask(gpt-image-2, image_input, 한글 문구 verbatim) → poll → 결과. 전부 브라우저에서(CORS 확인됨).
+        const KIE_KEY_LS = 'kie_api_key';
+        function kieThumbKey() { return (localStorage.getItem(KIE_KEY_LS) || '').trim(); }
+        function saveKieKey() {
+            const v = document.getElementById('tbKieKey').value.trim();
+            if (v) localStorage.setItem(KIE_KEY_LS, v);
+            updateKieStatus();
+        }
+        function updateKieStatus() {
+            const el = document.getElementById('tbKieStatus');
+            if (!el) return;
+            el.textContent = kieThumbKey() ? '✓ 저장됨' : '키가 없어요';
+            el.style.color = kieThumbKey() ? '#22c55e' : '#ef4444';
+        }
+        document.addEventListener('DOMContentLoaded', updateKieStatus);
+
+        async function kieUploadDataUrl(dataUrl, fileName) {
+            const r = await fetch('https://kieai.redpandaai.co/api/file-base64-upload', {
+                method: 'POST',
+                headers: {Authorization: 'Bearer ' + kieThumbKey(), 'Content-Type': 'application/json'},
+                body: JSON.stringify({base64Data: dataUrl, uploadPath: 'images/thumbref', fileName}),
+            });
+            const j = await r.json().catch(() => null);
+            return (j && j.data && (j.data.downloadUrl || j.data.url)) || null;
+        }
+        async function hostRefThumb(t, idx) {
+            try {
+                if (t.isUpload) return await kieUploadDataUrl(t.dataUrl, 'ref_' + Date.now() + '_' + idx + '.png');
+                // 유튜브 썸네일 — maxres 우선, 없으면 hq (i.ytimg.com CORS 허용 확인)
+                const quals = ['maxresdefault', 'hqdefault'];
+                for (let q = 0; q < quals.length; q++) {
+                    const r = await fetch('https://i.ytimg.com/vi/' + t.videoId + '/' + quals[q] + '.jpg');
+                    if (!r.ok) continue;
+                    const blob = await r.blob();
+                    if (blob.size < 5000) continue; // 회색 기본이미지 스킵
+                    const dataUrl = await new Promise((res) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.readAsDataURL(blob); });
+                    return await kieUploadDataUrl(dataUrl, 'ref_' + t.videoId + '_' + idx + '.jpg');
+                }
+            } catch (e) { /* 이 레퍼런스만 건너뜀 */ }
+            return null;
+        }
+        function buildThumbPrompt(topic, scene, line1, line2, hasRefs) {
+            // ★썸네일=레퍼런스 100% 규칙: 레퍼런스가 있으면 구도·색·톤·텍스트배치를 그대로 따르고 내 아이디어 섞지 않기
+            const ref = hasRefs
+                ? 'Follow the attached reference thumbnail(s) closely — same composition, same color mood, same text placement style, same dramatic tone. The reference is the single source of truth; do NOT invent a different style. '
+                : 'Ultra-clickable Korean YouTube thumbnail style: one dominant subject, dramatic lighting, high contrast. ';
+            const what = scene ? ('Scene: ' + scene + '. ') : (topic ? ('Topic: ' + topic + '. ') : '');
+            const txt = line2
+                ? ('The thumbnail text must read exactly "' + line1 + '" as the main line and "' + line2 + '" as a smaller second line - large bold Korean letters, thick dark outline, extremely readable even at small size. No other text.')
+                : ('The thumbnail text must read exactly "' + line1 + '" - large bold white Korean letters with thick dark outline, extremely readable even at small size. No other text.');
+            return 'Create a YouTube thumbnail. ' + ref + what + txt + ' 16:9, high contrast, no watermark, no channel logo.';
+        }
+        async function kieThumbCreate(prompt, refs, quality) {
+            const input = {prompt: prompt, aspect_ratio: '16:9', resolution: '1K', output_format: 'png', quality: quality};
+            if (refs.length) input.image_input = refs.slice(0, 5);
+            const r = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
+                method: 'POST',
+                headers: {Authorization: 'Bearer ' + kieThumbKey(), 'Content-Type': 'application/json'},
+                body: JSON.stringify({model: 'gpt-image-2-text-to-image', input: input}),
+            });
+            const j = await r.json();
+            if (j.code !== 200) throw new Error(j.msg || 'createTask 실패');
+            return j.data.taskId;
+        }
+        async function kieThumbPoll(taskId) {
+            for (let i = 0; i < 90; i++) {
+                await new Promise((r) => setTimeout(r, 4000));
+                const r = await fetch('https://api.kie.ai/api/v1/jobs/recordInfo?taskId=' + taskId, {
+                    headers: {Authorization: 'Bearer ' + kieThumbKey()},
+                });
+                const j = await r.json();
+                const st = j.data && j.data.state;
+                if (st === 'success') { const rj = JSON.parse(j.data.resultJson); return rj.resultUrls && rj.resultUrls[0]; }
+                if (st === 'fail') throw new Error((j.data && j.data.failMsg) || '생성 실패');
+            }
+            throw new Error('시간 초과');
+        }
+        async function downloadThumb(url, name) {
+            try {
+                const r = await fetch(url);
+                const blob = await r.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = name;
+                a.click();
+                URL.revokeObjectURL(a.href);
+            } catch (e) { window.open(url, '_blank'); } // CORS로 못 받으면 새 탭
+        }
+        async function generateAiThumbnails() {
+            const msg = document.getElementById('tbGenMsg');
+            const btn = document.getElementById('tbGenBtn');
+            const topic = document.getElementById('tbTopic').value.trim();
+            const scene = document.getElementById('tbScene').value.trim();
+            const line1 = document.getElementById('tbText1').value.trim();
+            const line2 = document.getElementById('tbText2').value.trim();
+            if (!kieThumbKey()) { alert('먼저 Kie API 키를 저장해주세요'); return; }
+            if (!line1) { alert('썸네일 문구 줄1을 입력해주세요 (이미지에 박히는 한글)'); return; }
+            if (!topic && !scene && !_tbRefThumbs.length) { alert('주제·장면 묘사·레퍼런스 중 하나는 필요해요'); return; }
+            const n = parseInt(getSelectedVals('tbCount')[0] || '2');
+            const quality = getSelectedVals('tbQuality')[0] || 'medium';
+            btn.disabled = true;
+            try {
+                // ① 레퍼런스 호스팅 (최대 5장)
+                let refs = [];
+                if (_tbRefThumbs.length) {
+                    msg.textContent = '레퍼런스 ' + Math.min(5, _tbRefThumbs.length) + '장 업로드 중…';
+                    refs = (await Promise.all(_tbRefThumbs.slice(0, 5).map((t, i) => hostRefThumb(t, i)))).filter(Boolean);
+                }
+                // ② 생성 (병렬)
+                const prompt = buildThumbPrompt(topic, scene, line1, line2, refs.length > 0);
+                msg.textContent = '썸네일 ' + n + '장 생성 중… (20~60초, ' + (quality === 'high' ? '고급' : '보통') + ' 품질)';
+                const tasks = [];
+                for (let i = 0; i < n; i++) tasks.push(kieThumbCreate(prompt, refs, quality).then(kieThumbPoll).catch((e) => ({error: e.message})));
+                const results = await Promise.all(tasks);
+                // ③ 결과 렌더
+                const ok = results.filter((r) => typeof r === 'string');
+                const fails = results.filter((r) => r && r.error);
+                document.getElementById('tbResult').style.display = 'block';
+                document.getElementById('tbResultContent').innerHTML = ok.map((u, i) =>
+                    '<div style="border:1px solid #e0e0e0;border-radius:10px;overflow:hidden;">' +
+                    '<img src="' + u + '" style="width:100%;display:block;aspect-ratio:16/9;object-fit:cover;">' +
+                    '<div style="display:flex;gap:6px;padding:8px;">' +
+                    '<button class="btn-small btn-primary" style="flex:1;padding:8px;border-radius:8px;cursor:pointer;" onclick="downloadThumb(\'' + u + '\',\'썸네일_' + (i + 1) + '.png\')">⬇ 다운로드</button>' +
+                    '<button class="btn-small" style="padding:8px 12px;border-radius:8px;cursor:pointer;border:1.5px solid #aaa;background:white;" onclick="window.open(\'' + u + '\',\'_blank\')">크게</button>' +
+                    '</div></div>').join('') || '<p style="color:#ef4444;">전부 실패했어요</p>';
+                msg.textContent = fails.length ? ('⚠ ' + ok.length + '장 성공 · ' + fails.length + '장 실패: ' + fails[0].error) : ('✅ ' + ok.length + '장 완성!');
+                document.getElementById('tbResult').scrollIntoView({behavior: 'smooth'});
+            } catch (e) {
+                msg.textContent = '⚠ ' + (e.message || '생성 실패');
+            } finally { btn.disabled = false; }
+        }
+
         async function generateTbPrompt() {
             const topic = document.getElementById('tbTopic').value.trim();
             const scene = document.getElementById('tbScene').value.trim();
