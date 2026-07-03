@@ -2948,6 +2948,12 @@
                                 <button class="tb-opt" data-val="#ffe400" onclick="toggleTbOpt(this,'tbColor2',1)" style="border-color:#e6c800;"><div class="opt-title" style="color:#c7a600;">노랑</div></button>
                                 <button class="tb-opt" data-val="#7dff7d" onclick="toggleTbOpt(this,'tbColor2',1)" style="border-color:#3ecf3e;"><div class="opt-title" style="color:#2aa52a;">연두</div></button>
                             </div>
+                            <span style="font-size:0.8rem;color:#888;">글자 크기</span>
+                            <div class="tb-options" id="tbTextSize" style="margin:0;">
+                                <button class="tb-opt" data-val="150" onclick="toggleTbOpt(this,'tbTextSize',1)"><div class="opt-title">크게</div></button>
+                                <button class="tb-opt selected" data-val="115" onclick="toggleTbOpt(this,'tbTextSize',1)"><div class="opt-title">보통</div></button>
+                                <button class="tb-opt" data-val="88" onclick="toggleTbOpt(this,'tbTextSize',1)"><div class="opt-title">작게</div></button>
+                            </div>
                             <span style="font-size:0.8rem;color:#888;">배경 띠</span>
                             <div class="tb-options" id="tbBand" style="margin:0;">
                                 <button class="tb-opt selected" data-val="band" onclick="toggleTbOpt(this,'tbBand',1)"><div class="opt-title">검정 띠</div></button>
@@ -20904,7 +20910,7 @@ Example format:
         }
         // ===== 글자 직접 입히기(캔버스 합성) — AI 글자 복불복(작고 색없고 뒤죽박죽) 근본 해결 =====
         //  AI는 글자 없는 그림만 만들고, 검은고딕(Black Han Sans) 진짜 폰트로 문구를 얹는다. 오타·깨짐 0%.
-        async function composeThumbText(imgUrl, line1, line2, c1, c2, band) {
+        async function composeThumbText(imgUrl, line1, line2, c1, c2, band, sizeCap) {
             try { await document.fonts.load('100px "Black Han Sans"'); } catch (e) {}
             // CORS 오염 방지 — fetch→blob→objectURL (실패 시 원본 그대로 폴백)
             let src = imgUrl;
@@ -20921,7 +20927,7 @@ Example format:
                 do { x.font = '700 ' + fs + 'px "Black Han Sans", "Malgun Gothic", sans-serif'; if (x.measureText(text).width <= maxW) break; fs -= 4; } while (fs > 40);
                 return fs;
             };
-            const fs1 = fit(line1, W * 0.94, 150);
+            const fs1 = fit(line1, W * 0.94, sizeCap || 115); // 상한을 사용자가 선택 — 문구 길이가 달라도 크기 들쭉날쭉 방지
             const fs2 = line2 ? fit(line2, W * 0.94, Math.round(fs1 * 0.62)) : 0;
             const gap = line2 ? Math.round(fs1 * 0.16) : 0;
             const pad = Math.round(fs1 * 0.22);
@@ -20999,7 +21005,8 @@ Example format:
                     const c1 = getSelectedVals('tbColor1')[0] || '#ffe400';
                     const c2 = getSelectedVals('tbColor2')[0] || '#ffffff';
                     const band = (getSelectedVals('tbBand')[0] || 'band') === 'band';
-                    finals = await Promise.all(ok.map(async (u) => (await composeThumbText(u, line1, line2, c1, c2, band)) || u));
+                    const sizeCap = parseInt(getSelectedVals('tbTextSize')[0] || '115');
+                    finals = await Promise.all(ok.map(async (u) => (await composeThumbText(u, line1, line2, c1, c2, band, sizeCap)) || u));
                     window._tbComposed = finals;
                 }
                 document.getElementById('tbResult').style.display = 'block';
