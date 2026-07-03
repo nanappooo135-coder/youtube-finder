@@ -2926,7 +2926,7 @@
 
                     <!-- Step 4: 썸네일 문구 -->
                     <div class="tb-step">
-                        <div class="tb-step-label"><span class="step-num">5</span> 썸네일 문구 <span style="font-weight:400;color:#aaa;font-size:0.8rem;">(이미지에 이 한글이 그대로 박혀요)</span></div>
+                        <div class="tb-step-label"><span class="step-num">5</span> 썸네일 문구 <span style="font-weight:400;color:#aaa;font-size:0.8rem;">(이미지에 이 한글이 그대로 박혀요 · [대괄호]로 감싼 단어만 강조색 — 예: 일본 [초비상])</span></div>
                         <input type="text" id="tbText1" placeholder="줄1 — 큰 글씨 (예: 운하가 말랐다)" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.95rem;margin-bottom:6px;">
                         <input type="text" id="tbText2" placeholder="줄2 — 보조 문구 (선택)" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;">
                         <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:8px;">
@@ -2992,6 +2992,7 @@
                     <button class="search-btn" id="tbGenBtn" onclick="generateAiThumbnails()" style="margin-top:8px;">
                         🎨 AI 썸네일 생성 (레퍼런스 따라 + 한글 문구)
                     </button>
+                    <button class="btn-small" onclick="reapplyThumbText()" style="width:100%;margin-top:6px;padding:10px;border-radius:8px;cursor:pointer;border:1.5px solid #4a90d9;color:#4a90d9;background:white;font-weight:700;">✍ 글자만 다시 입히기 (무료 — 문구·색·크기 수정 후 클릭)</button>
                     <div id="tbGenMsg" style="margin-top:8px;font-size:0.85rem;color:#666;"></div>
                 </div>
             </div>
@@ -20869,7 +20870,7 @@ Example format:
             } else if (chosen) {
                 ref = 'Art style: ' + chosen + ' Ultra-clickable Korean YouTube thumbnail: one dominant subject, dramatic lighting, high contrast. ';
             } else if (hasRefs) {
-                ref = 'FIRST, identify the MEDIUM of the attached reference thumbnail: is it a real PHOTOGRAPH/photo-composite, or an ILLUSTRATION? Your output MUST be the same medium — if the reference is photographic, produce a photorealistic photo-composite (real camera textures, NOT a drawing, NOT anime, NOT illustration); if it is an illustration, match that exact illustration style. This medium rule overrides everything else. The reference is a PROVEN viral YouTube thumbnail. Reproduce its WINNING FORMULA while making a clearly different picture. KEEP: the medium and art style as identified above, the composition skeleton (where the main subject sits and how much of the frame it fills, where the text block sits), the color strategy and contrast level, the emotional trigger and dramatic tone, the text styling language. ' + (scene ? 'CHANGE: replace the specific people, objects and background with the scene described below, and vary small details and angles. ' : 'KEEP the very same real people and subjects as the reference — the same recognizable faces and identities (do NOT swap them for different people) — but CHANGE their pose, camera angle, expression, background details and arrangement so it is a fresh picture. ') + 'Placed side by side with the reference, it must feel like the same winning formula but nobody could call it a copy. '
+                ref = 'FIRST, identify the MEDIUM of the attached reference thumbnail: is it a real PHOTOGRAPH/photo-composite, or an ILLUSTRATION? Your output MUST be the same medium — if the reference is photographic, produce a photorealistic photo-composite (real camera textures, NOT a drawing, NOT anime, NOT illustration); if it is an illustration, match that exact illustration style. This medium rule overrides everything else. The reference is a PROVEN viral YouTube thumbnail. Reproduce its WINNING FORMULA while making a clearly different picture. KEEP: the medium and art style as identified above, the composition skeleton (where the main subject sits and how much of the frame it fills, where the text block sits), the color strategy and contrast level, the emotional trigger and dramatic tone, the text styling language, and any SPLIT-SCREEN structure (if the reference divides the frame with a sharp straight or diagonal line into two image zones, reproduce that exact split layout with a crisp dividing edge). ' + (scene ? 'CHANGE: replace the specific people, objects and background with the scene described below, and vary small details and angles. ' : 'KEEP the very same real people and subjects as the reference — the same recognizable faces and identities (do NOT swap them for different people) — but CHANGE their pose, camera angle, expression, background details and arrangement so it is a fresh picture. ') + 'Placed side by side with the reference, it must feel like the same winning formula but nobody could call it a copy. '
             } else {
                 ref = 'Ultra-clickable Korean YouTube thumbnail style: one dominant subject, dramatic lighting, high contrast. ';
             }
@@ -20924,7 +20925,8 @@ Example format:
             // 글자 크기 자동 맞춤 — 줄1은 화면폭 94%까지 키움
             const fit = (text, maxW, startFs) => {
                 let fs = startFs;
-                do { x.font = '700 ' + fs + 'px "Black Han Sans", "Malgun Gothic", sans-serif'; if (x.measureText(text).width <= maxW) break; fs -= 4; } while (fs > 40);
+                const plain = text.replace(/[\[\]]/g, '');
+                do { x.font = '700 ' + fs + 'px "Black Han Sans", "Malgun Gothic", sans-serif'; if (x.measureText(plain).width <= maxW) break; fs -= 4; } while (fs > 40);
                 return fs;
             };
             const fs1 = fit(line1, W * 0.94, sizeCap || 115); // 상한을 사용자가 선택 — 문구 길이가 달라도 크기 들쭉날쭉 방지
@@ -20935,14 +20937,36 @@ Example format:
             const bandTop = H - blockH - Math.round(H * 0.025);
             if (band) { x.fillStyle = 'rgba(0,0,0,0.82)'; x.fillRect(0, bandTop, W, blockH); }
             x.textAlign = 'center'; x.textBaseline = 'alphabetic';
+            // [대괄호] 부분 색 강조 — "일본 [초비상]" → 초비상만 강조색. 레퍼런스들의 단어별 색 코딩 재현.
+            const parseRuns = (text, accent) => {
+                if (text.indexOf('[') < 0) return [{t: text, c: accent}]; // 대괄호 없으면 전체가 줄 색
+                const runs = [];
+                let rest = text;
+                while (rest.length) {
+                    const a = rest.indexOf('['), b = rest.indexOf(']', a + 1);
+                    if (a < 0 || b < 0) { runs.push({t: rest, c: '#ffffff'}); break; }
+                    if (a > 0) runs.push({t: rest.slice(0, a), c: '#ffffff'});
+                    runs.push({t: rest.slice(a + 1, b), c: accent});
+                    rest = rest.slice(b + 1);
+                }
+                return runs;
+            };
             const drawLine = (text, fs, color, baseY) => {
+                const runs = parseRuns(text, color);
                 x.font = '700 ' + fs + 'px "Black Han Sans", "Malgun Gothic", sans-serif';
                 x.lineJoin = 'round';
-                x.strokeStyle = '#000';
-                x.lineWidth = Math.max(6, fs * 0.13);
-                x.strokeText(text, W / 2, baseY);
-                x.fillStyle = color;
-                x.fillText(text, W / 2, baseY);
+                const total = runs.reduce((s, r) => s + x.measureText(r.t).width, 0);
+                let cx0 = W / 2 - total / 2;
+                x.textAlign = 'left';
+                for (const r of runs) {
+                    x.strokeStyle = '#000';
+                    x.lineWidth = Math.max(6, fs * 0.13);
+                    x.strokeText(r.t, cx0, baseY);
+                    x.fillStyle = r.c;
+                    x.fillText(r.t, cx0, baseY);
+                    cx0 += x.measureText(r.t).width;
+                }
+                x.textAlign = 'center';
             };
             const y1 = bandTop + pad + fs1 * 0.82;
             drawLine(line1, fs1, c1, y1);
@@ -20963,6 +20987,54 @@ Example format:
                 a.click();
                 URL.revokeObjectURL(a.href);
             } catch (e) { window.open(url, '_blank'); } // CORS로 못 받으면 새 탭
+        }
+        // 보관된 배경(window._tbBgs)에 현재 문구·색·크기·띠 설정으로 글자를 (다시) 입혀 결과 표시 — 생성비 0원
+        async function renderThumbResults(msg) {
+            const ok = window._tbBgs || [];
+            if (!ok.length) return;
+            const line1 = document.getElementById('tbText1').value.trim();
+            const line2 = document.getElementById('tbText2').value.trim();
+            window._tbComposed = [];
+            let finals = ok;
+            if ((getSelectedVals('tbTextMode')[0] || 'overlay') === 'overlay' && line1) {
+                if (msg) msg.textContent = '글자 입히는 중…';
+                const c1 = getSelectedVals('tbColor1')[0] || '#ffe400';
+                const c2 = getSelectedVals('tbColor2')[0] || '#ffffff';
+                const band = (getSelectedVals('tbBand')[0] || 'band') === 'band';
+                const sizeCap = parseInt(getSelectedVals('tbTextSize')[0] || '115');
+                finals = await Promise.all(ok.map(async (u) => (await composeThumbText(u, line1, line2, c1, c2, band, sizeCap)) || u));
+                window._tbComposed = finals;
+            }
+            document.getElementById('tbResult').style.display = 'block';
+            document.getElementById('tbResultContent').innerHTML = finals.map((u, i) =>
+                '<div style="border:1px solid #e0e0e0;border-radius:10px;overflow:hidden;">' +
+                '<img src="' + u + '" style="width:100%;display:block;aspect-ratio:16/9;object-fit:cover;">' +
+                '<div style="display:flex;gap:6px;padding:8px;">' +
+                '<button class="btn-small btn-primary" style="flex:1;padding:8px;border-radius:8px;cursor:pointer;" onclick="tbDl(' + i + ')">⬇ 다운로드</button>' +
+                '<button class="btn-small" style="padding:8px 12px;border-radius:8px;cursor:pointer;border:1.5px solid #aaa;background:white;" onclick="tbBig(' + i + ')">크게</button>' +
+                '</div></div>').join('') || '<p style="color:#ef4444;">전부 실패했어요</p>';
+        }
+        function tbFinalUrl(i) {
+            const comp = window._tbComposed || [];
+            return (comp[i] && String(comp[i]).indexOf('data:') === 0) ? comp[i] : (window._tbBgs || [])[i];
+        }
+        function tbDl(i) {
+            const u = tbFinalUrl(i);
+            if (!u) return;
+            const name = '썸네일_' + (i + 1) + '.png';
+            if (String(u).indexOf('data:') === 0) dlDataUrl(u, name); else downloadThumb(u, name);
+        }
+        function tbBig(i) {
+            const u = tbFinalUrl(i);
+            if (!u) return;
+            const w = window.open('', '_blank');
+            if (w) w.document.write('<img src="' + u + '" style="max-width:100%">');
+        }
+        async function reapplyThumbText() {
+            if (!(window._tbBgs || []).length) { alert('먼저 썸네일을 생성해주세요 — 그 배경에 글자만 바꿔 입힐 수 있어요'); return; }
+            const msg = document.getElementById('tbGenMsg');
+            await renderThumbResults(msg);
+            msg.textContent = '✅ 글자 다시 입힘 (생성비 0원 — 문구·색·크기 바꿔서 계속 재시도 가능)';
         }
         async function generateAiThumbnails() {
             const msg = document.getElementById('tbGenMsg');
@@ -20997,28 +21069,8 @@ Example format:
                 // ③ 결과 렌더
                 const ok = results.filter((r) => typeof r === 'string');
                 const fails = results.filter((r) => r && r.error);
-                // 글자 직접 모드 — 캔버스로 문구 합성(진짜 폰트). 실패(CORS 등)하면 원본으로 폴백
-                window._tbComposed = [];
-                let finals = ok;
-                if ((getSelectedVals('tbTextMode')[0] || 'overlay') === 'overlay') {
-                    msg.textContent = '글자 입히는 중…';
-                    const c1 = getSelectedVals('tbColor1')[0] || '#ffe400';
-                    const c2 = getSelectedVals('tbColor2')[0] || '#ffffff';
-                    const band = (getSelectedVals('tbBand')[0] || 'band') === 'band';
-                    const sizeCap = parseInt(getSelectedVals('tbTextSize')[0] || '115');
-                    finals = await Promise.all(ok.map(async (u) => (await composeThumbText(u, line1, line2, c1, c2, band, sizeCap)) || u));
-                    window._tbComposed = finals;
-                }
-                document.getElementById('tbResult').style.display = 'block';
-                document.getElementById('tbResultContent').innerHTML = finals.map((u, i) => {
-                    const isData = u.startsWith('data:');
-                    const dl = isData ? 'dlDataUrl(window._tbComposed[' + i + '],\'썸네일_' + (i + 1) + '.png\')' : 'downloadThumb(\'' + u + '\',\'썸네일_' + (i + 1) + '.png\')';
-                    return '<div style="border:1px solid #e0e0e0;border-radius:10px;overflow:hidden;">' +
-                    '<img src="' + u + '" style="width:100%;display:block;aspect-ratio:16/9;object-fit:cover;">' +
-                    '<div style="display:flex;gap:6px;padding:8px;">' +
-                    '<button class="btn-small btn-primary" style="flex:1;padding:8px;border-radius:8px;cursor:pointer;" onclick="' + dl + '">⬇ 다운로드</button>' +
-                    (isData ? '' : '<button class="btn-small" style="padding:8px 12px;border-radius:8px;cursor:pointer;border:1.5px solid #aaa;background:white;" onclick="window.open(\'' + u + '\',\'_blank\')">크게</button>') +
-                    '</div></div>'; }).join('') || '<p style="color:#ef4444;">전부 실패했어요</p>';
+                window._tbBgs = ok; // ★배경 보관 — 글자만 다시 입히기(무료 재작업)용
+                await renderThumbResults(msg);
                 msg.textContent = fails.length ? ('⚠ ' + ok.length + '장 성공 · ' + fails.length + '장 실패: ' + fails[0].error) : ('✅ ' + ok.length + '장 완성!');
                 document.getElementById('tbResult').scrollIntoView({behavior: 'smooth'});
             } catch (e) {
