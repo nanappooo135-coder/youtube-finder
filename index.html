@@ -2869,142 +2869,168 @@
 
         <!-- ===== 프로세스 2: 썸네일 작업 ===== -->
         <div id="process-thumbnail" style="display:none;">
+            <style>
+                /* 썸네일 탭 전용 정돈 스타일 — 기존 tb-opt/toggleTbOpt 로직 재사용, 모양만 통일 */
+                #process-thumbnail .tbx-card{background:#fff;border:1px solid #e8eaef;border-radius:14px;padding:18px 20px;margin-bottom:14px;box-shadow:0 1px 3px rgba(20,30,60,0.04);}
+                #process-thumbnail .tbx-head{display:flex;align-items:center;gap:10px;margin-bottom:4px;}
+                #process-thumbnail .tbx-num{width:22px;height:22px;border-radius:50%;background:#111827;color:#fff;font-size:0.75rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+                #process-thumbnail .tbx-t{font-weight:800;font-size:0.95rem;color:#111827;}
+                #process-thumbnail .tbx-hint{font-size:0.78rem;color:#8a93a3;margin:2px 0 12px 32px;line-height:1.5;}
+                #process-thumbnail .tbx-body{margin-left:32px;}
+                #process-thumbnail .tbx-input{width:100%;padding:11px 13px;border:1.5px solid #e2e5ea;border-radius:10px;font-size:0.9rem;box-sizing:border-box;}
+                #process-thumbnail .tbx-input:focus{outline:none;border-color:#6366f1;}
+                #process-thumbnail .tb-options{display:flex;flex-wrap:wrap;gap:6px;margin:0;}
+                #process-thumbnail .tb-opt{padding:7px 13px;border:1.5px solid #e2e5ea;border-radius:10px;background:#fff;cursor:pointer;transition:all .12s;text-align:center;}
+                #process-thumbnail .tb-opt .opt-title{font-size:0.83rem;font-weight:700;color:#374151;line-height:1.2;}
+                #process-thumbnail .tb-opt .opt-desc{font-size:0.68rem;color:#9aa3b2;margin-top:2px;line-height:1.25;}
+                #process-thumbnail .tb-opt:hover{border-color:#c7cbd4;}
+                #process-thumbnail .tb-opt.selected{background:#111827;border-color:#111827;}
+                #process-thumbnail .tb-opt.selected .opt-title{color:#fff;}
+                #process-thumbnail .tb-opt.selected .opt-desc{color:#b6bcc8;}
+                #process-thumbnail .tbx-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+                #process-thumbnail .tbx-lab{font-size:0.78rem;font-weight:700;color:#6b7280;width:52px;flex-shrink:0;}
+                #process-thumbnail .tbx-grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;}
+                @media (max-width:900px){#process-thumbnail .tbx-grid2{grid-template-columns:1fr;}}
+            </style>
 
-            <div class="section">
-                <div class="section-title">AI 썸네일 만들기</div>
-                <div class="section-content">
+            <!-- ① 내용 -->
+            <div class="tbx-card">
+                <div class="tbx-head"><div class="tbx-num">1</div><div class="tbx-t">무엇을 그릴까</div></div>
+                <div class="tbx-hint">실존 인물은 이름을 꼭 쓰세요 (예: "이재용 회장이 고민하는 모습") — 이름을 줘야 그 사람 얼굴로 그려요.</div>
+                <div class="tbx-body">
+                    <input type="text" id="tbTopic" class="tbx-input" placeholder="영상 주제 (예: 이란 경제가 무너진 진짜 이유)" style="margin-bottom:8px;">
+                    <textarea id="tbScene" rows="2" class="tbx-input" placeholder="장면 묘사 — 예: 이재용 회장이 턱을 괴고 고민, 뒤로 배터리 생산라인 (비우면 레퍼런스의 인물·소재 유지)" style="resize:vertical;"></textarea>
+                </div>
+            </div>
 
-                    <!-- Step 1: 주제 입력 -->
-                    <div class="tb-step">
-                        <div class="tb-step-label"><span class="step-num">1</span> 영상 주제</div>
-                        <input type="text" id="tbTopic" placeholder="예: 이란 경제가 무너진 진짜 이유" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.95rem;">
+            <!-- ② 레퍼런스 -->
+            <div class="tbx-card">
+                <div class="tbx-head"><div class="tbx-num">2</div><div class="tbx-t">레퍼런스 썸네일 <span style="font-weight:400;color:#9aa3b2;font-size:0.8rem;">(선택 — 화풍·구도의 기준)</span></div></div>
+                <div class="tbx-hint">크고 선명한 이미지일수록 잘 따라와요. 검색 탭에서 영상을 담으면 자동으로 들어와요.</div>
+                <div class="tbx-body">
+                    <div id="tbRefThumbs" class="tb-preview-row" style="margin-bottom:10px;"><span style="font-size:0.8rem;color:#aaa;padding:8px;">아직 없음</span></div>
+                    <div class="tbx-row" style="margin-bottom:12px;">
+                        <label style="cursor:pointer;">
+                            <input type="file" id="tbRefUpload" accept="image/*" multiple style="display:none;" onchange="uploadRefImages(event)">
+                            <div class="btn-small btn-primary" style="padding:8px 16px;font-size:0.85rem;border-radius:8px;cursor:pointer;">이미지 업로드</div>
+                        </label>
+                        <button class="btn-small btn-primary" onclick="pasteRefImage()" style="padding:8px 16px;font-size:0.85rem;border-radius:8px;cursor:pointer;background:#fd7e14;border-color:#fd7e14;">Ctrl+V 붙여넣기</button>
                     </div>
-
-                    <!-- Step 2: 장면 묘사 -->
-                    <div class="tb-step">
-                        <div class="tb-step-label"><span class="step-num">2</span> 원하는 장면 묘사 <span style="font-weight:400;color:#aaa;font-size:0.8rem;">(핵심!)</span></div>
-                        <textarea id="tbScene" rows="3" placeholder="예: 트럼프가 달러 지폐를 찢고 있고, 뒤로 월스트리트가 무너지는 장면&#10;예: 이란 국기 앞에 서 있는 군인, 뒤로 폐허가 된 도시&#10;예: 거대한 금괴 더미 위에 앉아있는 사업가" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;resize:vertical;"></textarea>
-                        <p style="font-size:0.8rem;color:#888;margin-top:4px;">레퍼런스가 "어떻게 그릴지"(화풍·구도)를, 이 칸이 "뭘 그릴지"(장면 내용)를 정해요. ★실존 인물은 여기에 이름을 꼭 쓰세요 (예: "이재용 회장이 고민하는 모습") — AI는 레퍼런스 속 얼굴이 누군지 못 알아봐서, 이름을 줘야 그 사람 얼굴로 그려요.</p>
-                    </div>
-
-                    <!-- Step 3: 레퍼런스 썸네일 (선택) -->
-                    <div class="tb-step">
-                        <div class="tb-step-label"><span class="step-num">3</span> 레퍼런스 썸네일 <span style="font-weight:400;color:#aaa;font-size:0.8rem;">(선택)</span></div>
-                        <div id="tbRefThumbs" class="tb-preview-row">
-                            <span style="font-size:0.8rem;color:#aaa;padding:8px;">아직 없음</span>
-                        </div>
-                        <div style="display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap;">
-                            <label style="cursor:pointer;">
-                                <input type="file" id="tbRefUpload" accept="image/*" multiple style="display:none;" onchange="uploadRefImages(event)">
-                                <div class="btn-small btn-primary" style="padding:8px 16px;font-size:0.85rem;border-radius:8px;cursor:pointer;">이미지 업로드</div>
-                            </label>
-                            <button class="btn-small btn-primary" onclick="pasteRefImage()" style="padding:8px 16px;font-size:0.85rem;border-radius:8px;cursor:pointer;background:#fd7e14;border-color:#fd7e14;">Ctrl+V 붙여넣기</button>
-                            <span style="font-size:0.8rem;color:#aaa;">캡쳐 후 Ctrl+V 또는 버튼 클릭</span>
-                        </div>
-                        <div class="tb-options" id="tbRefMode" style="margin-top:8px;">
-                            <button class="tb-opt" data-val="edit" onclick="toggleTbOpt(this,'tbRefMode',1)"><div class="opt-title">똑같이 (편집)</div><div class="opt-desc">레퍼런스에서 글자·소재만 교체 — 내 옛 썸네일 재활용용</div></button>
-                            <button class="tb-opt selected" data-val="inspire" onclick="toggleTbOpt(this,'tbRefMode',1)"><div class="opt-title">벤치마킹 (기본)</div><div class="opt-desc">터진 공식(구조·색·감정)은 유지, 그림은 다르게 — 비슷하되 베끼지 않음</div></button>
+                    <div class="tbx-row" style="margin-bottom:0;">
+                        <span class="tbx-lab">따라기</span>
+                        <div class="tb-options" id="tbRefMode">
+                            <button class="tb-opt selected" data-val="inspire" onclick="toggleTbOpt(this,'tbRefMode',1)"><div class="opt-title">벤치마킹 (기본)</div><div class="opt-desc">공식은 유지, 그림은 다르게</div></button>
+                            <button class="tb-opt" data-val="edit" onclick="toggleTbOpt(this,'tbRefMode',1)"><div class="opt-title">똑같이 (편집)</div><div class="opt-desc">글자·소재만 교체 — 내 옛 썸네일용</div></button>
                         </div>
                     </div>
+                </div>
+            </div>
 
-                    <!-- Step 4: 화풍 -->
-                    <div class="tb-step">
-                        <div class="tb-step-label"><span class="step-num">4</span> 화풍 <span style="font-weight:400;color:#aaa;font-size:0.8rem;">(자동=레퍼런스를 직접 편집해 최대한 똑같이. 화풍을 고르면 그 그림체로 다시 그림)</span></div>
-                        <div class="tb-options" id="tbArtStyle">
-                            <button class="tb-opt selected" data-val="auto" onclick="toggleTbOpt(this,'tbArtStyle',1)"><div class="opt-title">자동</div><div class="opt-desc">레퍼런스 따라·없으면 AI 판단</div></button>
-                            <button class="tb-opt" data-val="photorealistic" onclick="toggleTbOpt(this,'tbArtStyle',1)"><div class="opt-title">실사</div><div class="opt-desc">포토리얼</div></button>
-                            <button class="tb-opt" data-val="hyperreal" onclick="toggleTbOpt(this,'tbArtStyle',1)"><div class="opt-title">초실사</div><div class="opt-desc">AI느낌 제로</div></button>
-                            <button class="tb-opt" data-val="yeokseolnam" onclick="toggleTbOpt(this,'tbArtStyle',1)"><div class="opt-title">역썰남1</div><div class="opt-desc">굵은선·비비드 극화</div></button>
-                            <button class="tb-opt" data-val="yeokseolnam2" onclick="toggleTbOpt(this,'tbArtStyle',1)"><div class="opt-title">역썰남2</div><div class="opt-desc">정치풍자 일러스트</div></button>
-                            <button class="tb-opt" data-val="pujim" onclick="toggleTbOpt(this,'tbArtStyle',1)"><div class="opt-title">푸짐스타일</div><div class="opt-desc">다크 시네마틱 합성</div></button>
-                            <button class="tb-opt" data-val="stickman" onclick="toggleTbOpt(this,'tbArtStyle',1)"><div class="opt-title">스틱맨</div><div class="opt-desc">심플 코믹</div></button>
-                            <button class="tb-opt" data-val="psych-cartoon" onclick="toggleTbOpt(this,'tbArtStyle',1)"><div class="opt-title">한눈에심리학</div><div class="opt-desc">둥근 캐릭터 온화</div></button>
-                            <button class="tb-opt" data-val="anime" onclick="toggleTbOpt(this,'tbArtStyle',1)"><div class="opt-title">애니메</div><div class="opt-desc">셀셰이딩</div></button>
-                            <button class="tb-opt" data-val="3d-render" onclick="toggleTbOpt(this,'tbArtStyle',1)"><div class="opt-title">3D 렌더</div><div class="opt-desc">입체</div></button>
+            <!-- ③ 화풍 -->
+            <div class="tbx-card">
+                <div class="tbx-head"><div class="tbx-num">3</div><div class="tbx-t">화풍</div></div>
+                <div class="tbx-hint">자동 = 레퍼런스 그림체를 따라가요 (없으면 AI 판단). 직접 고르면 그 그림체로 그려요.</div>
+                <div class="tbx-body">
+                    <div class="tb-options" id="tbArtStyle">
+                        <button class="tb-opt selected" data-val="auto" onclick="toggleTbOpt(this,'tbArtStyle',1)"><div class="opt-title">✨ 자동</div></button>
+                        <button class="tb-opt" data-val="photorealistic" onclick="toggleTbOpt(this,'tbArtStyle',1)"><div class="opt-title">실사</div></button>
+                        <button class="tb-opt" data-val="hyperreal" onclick="toggleTbOpt(this,'tbArtStyle',1)"><div class="opt-title">초실사</div></button>
+                        <button class="tb-opt" data-val="yeokseolnam" onclick="toggleTbOpt(this,'tbArtStyle',1)"><div class="opt-title">역썰남1</div></button>
+                        <button class="tb-opt" data-val="yeokseolnam2" onclick="toggleTbOpt(this,'tbArtStyle',1)"><div class="opt-title">역썰남2</div></button>
+                        <button class="tb-opt" data-val="pujim" onclick="toggleTbOpt(this,'tbArtStyle',1)"><div class="opt-title">푸짐스타일</div></button>
+                        <button class="tb-opt" data-val="stickman" onclick="toggleTbOpt(this,'tbArtStyle',1)"><div class="opt-title">스틱맨</div></button>
+                        <button class="tb-opt" data-val="psych-cartoon" onclick="toggleTbOpt(this,'tbArtStyle',1)"><div class="opt-title">한눈에심리학</div></button>
+                        <button class="tb-opt" data-val="anime" onclick="toggleTbOpt(this,'tbArtStyle',1)"><div class="opt-title">애니메</div></button>
+                        <button class="tb-opt" data-val="3d-render" onclick="toggleTbOpt(this,'tbArtStyle',1)"><div class="opt-title">3D 렌더</div></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ④ 문구 -->
+            <div class="tbx-card">
+                <div class="tbx-head"><div class="tbx-num">4</div><div class="tbx-t">썸네일 문구</div></div>
+                <div class="tbx-hint">[대괄호]로 감싼 단어만 강조색으로 칠해져요 — 예: 한국 소식에 일본 [초비상]</div>
+                <div class="tbx-body">
+                    <input type="text" id="tbText1" class="tbx-input" placeholder="줄1 — 큰 글씨 (예: 세계 3번째 [국산화 성공])" style="margin-bottom:8px;">
+                    <input type="text" id="tbText2" class="tbx-input" placeholder="줄2 — 보조 문구 (선택)" style="margin-bottom:14px;">
+                    <div class="tbx-row">
+                        <span class="tbx-lab">방식</span>
+                        <div class="tb-options" id="tbTextMode">
+                            <button class="tb-opt selected" data-val="overlay" onclick="toggleTbOpt(this,'tbTextMode',1)"><div class="opt-title">글자 직접 입히기</div><div class="opt-desc">진짜 폰트 — 깨짐 0%</div></button>
+                            <button class="tb-opt" data-val="ai" onclick="toggleTbOpt(this,'tbTextMode',1)"><div class="opt-title">AI가 그리기</div><div class="opt-desc">그림과 한 몸, 복불복</div></button>
                         </div>
                     </div>
-
-                    <!-- Step 4: 썸네일 문구 -->
-                    <div class="tb-step">
-                        <div class="tb-step-label"><span class="step-num">5</span> 썸네일 문구 <span style="font-weight:400;color:#aaa;font-size:0.8rem;">(이미지에 이 한글이 그대로 박혀요 · [대괄호]로 감싼 단어만 강조색 — 예: 일본 [초비상])</span></div>
-                        <input type="text" id="tbText1" placeholder="줄1 — 큰 글씨 (예: 운하가 말랐다)" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.95rem;margin-bottom:6px;">
-                        <input type="text" id="tbText2" placeholder="줄2 — 보조 문구 (선택)" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;">
-                        <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:8px;">
-                            <div class="tb-options" id="tbTextMode" style="margin:0;">
-                                <button class="tb-opt selected" data-val="overlay" onclick="toggleTbOpt(this,'tbTextMode',1)"><div class="opt-title">글자 직접 입히기</div><div class="opt-desc">진짜 폰트 — 깨짐 0%·색 지정</div></button>
-                                <button class="tb-opt" data-val="ai" onclick="toggleTbOpt(this,'tbTextMode',1)"><div class="opt-title">AI가 그리기</div><div class="opt-desc">그림과 한 몸, 대신 복불복</div></button>
+                    <div id="tbTextOpts" class="tbx-grid2">
+                        <div class="tbx-row" style="margin:0;">
+                            <span class="tbx-lab">줄1 색</span>
+                            <div class="tb-options" id="tbColor1">
+                                <button class="tb-opt selected" data-val="#ffe400" onclick="toggleTbOpt(this,'tbColor1',1)"><div class="opt-title" style="color:#c7a600;">● 노랑</div></button>
+                                <button class="tb-opt" data-val="#ffffff" onclick="toggleTbOpt(this,'tbColor1',1)"><div class="opt-title">● 흰색</div></button>
+                                <button class="tb-opt" data-val="#ff2b2b" onclick="toggleTbOpt(this,'tbColor1',1)"><div class="opt-title" style="color:#e01f1f;">● 빨강</div></button>
                             </div>
                         </div>
-                        <div id="tbTextOpts" style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:6px;">
-                            <span style="font-size:0.8rem;color:#888;">줄1 색</span>
-                            <div class="tb-options" id="tbColor1" style="margin:0;">
-                                <button class="tb-opt selected" data-val="#ffe400" onclick="toggleTbOpt(this,'tbColor1',1)" style="border-color:#e6c800;"><div class="opt-title" style="color:#c7a600;">노랑</div></button>
-                                <button class="tb-opt" data-val="#ffffff" onclick="toggleTbOpt(this,'tbColor1',1)"><div class="opt-title">흰색</div></button>
-                                <button class="tb-opt" data-val="#ff2b2b" onclick="toggleTbOpt(this,'tbColor1',1)" style="border-color:#ff2b2b;"><div class="opt-title" style="color:#e01f1f;">빨강</div></button>
+                        <div class="tbx-row" style="margin:0;">
+                            <span class="tbx-lab">줄2 색</span>
+                            <div class="tb-options" id="tbColor2">
+                                <button class="tb-opt selected" data-val="#ffffff" onclick="toggleTbOpt(this,'tbColor2',1)"><div class="opt-title">● 흰색</div></button>
+                                <button class="tb-opt" data-val="#ffe400" onclick="toggleTbOpt(this,'tbColor2',1)"><div class="opt-title" style="color:#c7a600;">● 노랑</div></button>
+                                <button class="tb-opt" data-val="#7dff7d" onclick="toggleTbOpt(this,'tbColor2',1)"><div class="opt-title" style="color:#2aa52a;">● 연두</div></button>
                             </div>
-                            <span style="font-size:0.8rem;color:#888;">줄2 색</span>
-                            <div class="tb-options" id="tbColor2" style="margin:0;">
-                                <button class="tb-opt selected" data-val="#ffffff" onclick="toggleTbOpt(this,'tbColor2',1)"><div class="opt-title">흰색</div></button>
-                                <button class="tb-opt" data-val="#ffe400" onclick="toggleTbOpt(this,'tbColor2',1)" style="border-color:#e6c800;"><div class="opt-title" style="color:#c7a600;">노랑</div></button>
-                                <button class="tb-opt" data-val="#7dff7d" onclick="toggleTbOpt(this,'tbColor2',1)" style="border-color:#3ecf3e;"><div class="opt-title" style="color:#2aa52a;">연두</div></button>
-                            </div>
-                            <span style="font-size:0.8rem;color:#888;">글자 크기</span>
-                            <div class="tb-options" id="tbTextSize" style="margin:0;">
+                        </div>
+                        <div class="tbx-row" style="margin:0;">
+                            <span class="tbx-lab">크기</span>
+                            <div class="tb-options" id="tbTextSize">
                                 <button class="tb-opt" data-val="150" onclick="toggleTbOpt(this,'tbTextSize',1)"><div class="opt-title">크게</div></button>
                                 <button class="tb-opt selected" data-val="115" onclick="toggleTbOpt(this,'tbTextSize',1)"><div class="opt-title">보통</div></button>
                                 <button class="tb-opt" data-val="88" onclick="toggleTbOpt(this,'tbTextSize',1)"><div class="opt-title">작게</div></button>
                             </div>
-                            <span style="font-size:0.8rem;color:#888;">배경 띠</span>
-                            <div class="tb-options" id="tbBand" style="margin:0;">
+                        </div>
+                        <div class="tbx-row" style="margin:0;">
+                            <span class="tbx-lab">배경 띠</span>
+                            <div class="tb-options" id="tbBand">
                                 <button class="tb-opt selected" data-val="band" onclick="toggleTbOpt(this,'tbBand',1)"><div class="opt-title">검정 띠</div></button>
-                                <button class="tb-opt" data-val="none" onclick="toggleTbOpt(this,'tbBand',1)"><div class="opt-title">없음 (테두리만)</div></button>
+                                <button class="tb-opt" data-val="none" onclick="toggleTbOpt(this,'tbBand',1)"><div class="opt-title">없음</div></button>
                             </div>
                         </div>
                     </div>
-
-                    <!-- Step 5: 장수·품질 -->
-                    <div class="tb-step">
-                        <div class="tb-step-label"><span class="step-num">6</span> 생성 옵션</div>
-                        <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;">
-                            <div class="tb-options" id="tbCount" style="margin:0;">
-                                <button class="tb-opt" data-val="1" onclick="toggleTbOpt(this,'tbCount',1)"><div class="opt-title">1장</div></button>
-                                <button class="tb-opt selected" data-val="2" onclick="toggleTbOpt(this,'tbCount',1)"><div class="opt-title">2장</div></button>
-                                <button class="tb-opt" data-val="3" onclick="toggleTbOpt(this,'tbCount',1)"><div class="opt-title">3장</div></button>
-                            </div>
-                            <div class="tb-options" id="tbQuality" style="margin:0;">
-                                <button class="tb-opt selected" data-val="medium" onclick="toggleTbOpt(this,'tbQuality',1)"><div class="opt-title">보통 품질</div><div class="opt-desc">빠름·저렴</div></button>
-                                <button class="tb-opt" data-val="high" onclick="toggleTbOpt(this,'tbQuality',1)"><div class="opt-title">고급 품질</div><div class="opt-desc">더 정밀</div></button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Kie API 키 -->
-                    <div class="tb-step">
-                        <div class="tb-step-label">🔑 Kie AI 키 <span id="tbKieStatus" style="font-weight:400;font-size:0.8rem;color:#aaa;"></span></div>
-                        <div style="display:flex;gap:8px;">
-                            <input type="password" id="tbKieKey" placeholder="Kie API 키 (한 번만 저장하면 돼요)" style="flex:1;padding:10px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.85rem;">
-                            <button class="btn-small btn-primary" onclick="saveKieKey()" style="padding:8px 16px;border-radius:8px;cursor:pointer;">저장</button>
-                        </div>
-                        <p style="font-size:0.75rem;color:#888;margin-top:4px;">유정스튜디오와 같은 Kie 계정 키. 이 브라우저에만 저장돼요. 이미지 1장 ≈ 보통 $0.03 · 고급 $0.06</p>
-                    </div>
-
-                    <!-- 생성 버튼 -->
-                    <button class="search-btn" id="tbGenBtn" onclick="generateAiThumbnails()" style="margin-top:8px;">
-                        🎨 AI 썸네일 생성 (레퍼런스 따라 + 한글 문구)
-                    </button>
-                    <button class="btn-small" onclick="reapplyThumbText()" style="width:100%;margin-top:6px;padding:10px;border-radius:8px;cursor:pointer;border:1.5px solid #4a90d9;color:#4a90d9;background:white;font-weight:700;">✍ 글자만 다시 입히기 (무료 — 문구·색·크기 수정 후 클릭)</button>
-                    <div id="tbGenMsg" style="margin-top:8px;font-size:0.85rem;color:#666;"></div>
                 </div>
             </div>
 
-            <!-- 생성 결과 -->
-            <div id="tbResult" style="display:none;">
-                <div class="section">
-                    <div class="section-title">생성된 썸네일</div>
-                    <div class="section-content">
-                        <div id="tbResultContent" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;"></div>
-                        <p style="font-size:0.8rem;color:#888;margin-top:8px;">마음에 드는 썸네일을 다운로드하세요. 문구·장면을 바꿔 다시 생성하면 다른 버전이 나와요.</p>
+            <!-- ⑤ 생성 -->
+            <div class="tbx-card">
+                <div class="tbx-head"><div class="tbx-num">5</div><div class="tbx-t">생성</div></div>
+                <div class="tbx-hint">이미지 1장 ≈ 보통 $0.03 (약 45원) · 고급 $0.06 — 키는 이 브라우저에만 저장돼요.</div>
+                <div class="tbx-body">
+                    <div class="tbx-row">
+                        <span class="tbx-lab">장수</span>
+                        <div class="tb-options" id="tbCount">
+                            <button class="tb-opt" data-val="1" onclick="toggleTbOpt(this,'tbCount',1)"><div class="opt-title">1장</div></button>
+                            <button class="tb-opt selected" data-val="2" onclick="toggleTbOpt(this,'tbCount',1)"><div class="opt-title">2장</div></button>
+                            <button class="tb-opt" data-val="3" onclick="toggleTbOpt(this,'tbCount',1)"><div class="opt-title">3장</div></button>
+                        </div>
+                        <span class="tbx-lab" style="width:auto;margin-left:14px;">품질</span>
+                        <div class="tb-options" id="tbQuality">
+                            <button class="tb-opt selected" data-val="medium" onclick="toggleTbOpt(this,'tbQuality',1)"><div class="opt-title">보통</div></button>
+                            <button class="tb-opt" data-val="high" onclick="toggleTbOpt(this,'tbQuality',1)"><div class="opt-title">고급 (2K)</div></button>
+                        </div>
                     </div>
+                    <div class="tbx-row">
+                        <span class="tbx-lab">🔑 키</span>
+                        <input type="password" id="tbKieKey" class="tbx-input" placeholder="Kie API 키 (한 번만 저장)" style="flex:1;width:auto;">
+                        <button class="btn-small btn-primary" onclick="saveKieKey()" style="padding:9px 18px;border-radius:8px;cursor:pointer;">저장</button>
+                        <span id="tbKieStatus" style="font-size:0.8rem;"></span>
+                    </div>
+                    <button class="search-btn" id="tbGenBtn" onclick="generateAiThumbnails()" style="margin-top:4px;">🎨 AI 썸네일 생성</button>
+                    <button class="btn-small" onclick="reapplyThumbText()" style="width:100%;margin-top:8px;padding:11px;border-radius:10px;cursor:pointer;border:1.5px solid #4a90d9;color:#4a90d9;background:white;font-weight:700;">✍ 글자만 다시 입히기 <span style="font-weight:400;">(무료 — 문구·색·크기 바꾸고 클릭)</span></button>
+                    <div id="tbGenMsg" style="margin-top:10px;font-size:0.85rem;color:#666;"></div>
+                </div>
+            </div>
+
+            <!-- 결과 -->
+            <div id="tbResult" style="display:none;">
+                <div class="tbx-card">
+                    <div class="tbx-head"><div class="tbx-t">🖼 생성된 썸네일</div></div>
+                    <div style="margin-top:10px;"><div id="tbResultContent" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;"></div></div>
                 </div>
             </div>
 
