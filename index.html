@@ -6,6 +6,7 @@
     <title>뜨는 유튜브 채널 찾기</title>
     <!-- PWA 설정 -->
     <link rel="manifest" href="manifest.json">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&display=swap" rel="stylesheet">
     <meta name="theme-color" content="#7048e8">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -2928,6 +2929,31 @@
                         <div class="tb-step-label"><span class="step-num">5</span> 썸네일 문구 <span style="font-weight:400;color:#aaa;font-size:0.8rem;">(이미지에 이 한글이 그대로 박혀요)</span></div>
                         <input type="text" id="tbText1" placeholder="줄1 — 큰 글씨 (예: 운하가 말랐다)" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.95rem;margin-bottom:6px;">
                         <input type="text" id="tbText2" placeholder="줄2 — 보조 문구 (선택)" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;">
+                        <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:8px;">
+                            <div class="tb-options" id="tbTextMode" style="margin:0;">
+                                <button class="tb-opt selected" data-val="overlay" onclick="toggleTbOpt(this,'tbTextMode',1)"><div class="opt-title">글자 직접 입히기</div><div class="opt-desc">진짜 폰트 — 깨짐 0%·색 지정</div></button>
+                                <button class="tb-opt" data-val="ai" onclick="toggleTbOpt(this,'tbTextMode',1)"><div class="opt-title">AI가 그리기</div><div class="opt-desc">그림과 한 몸, 대신 복불복</div></button>
+                            </div>
+                        </div>
+                        <div id="tbTextOpts" style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:6px;">
+                            <span style="font-size:0.8rem;color:#888;">줄1 색</span>
+                            <div class="tb-options" id="tbColor1" style="margin:0;">
+                                <button class="tb-opt selected" data-val="#ffe400" onclick="toggleTbOpt(this,'tbColor1',1)" style="border-color:#e6c800;"><div class="opt-title" style="color:#c7a600;">노랑</div></button>
+                                <button class="tb-opt" data-val="#ffffff" onclick="toggleTbOpt(this,'tbColor1',1)"><div class="opt-title">흰색</div></button>
+                                <button class="tb-opt" data-val="#ff2b2b" onclick="toggleTbOpt(this,'tbColor1',1)" style="border-color:#ff2b2b;"><div class="opt-title" style="color:#e01f1f;">빨강</div></button>
+                            </div>
+                            <span style="font-size:0.8rem;color:#888;">줄2 색</span>
+                            <div class="tb-options" id="tbColor2" style="margin:0;">
+                                <button class="tb-opt selected" data-val="#ffffff" onclick="toggleTbOpt(this,'tbColor2',1)"><div class="opt-title">흰색</div></button>
+                                <button class="tb-opt" data-val="#ffe400" onclick="toggleTbOpt(this,'tbColor2',1)" style="border-color:#e6c800;"><div class="opt-title" style="color:#c7a600;">노랑</div></button>
+                                <button class="tb-opt" data-val="#7dff7d" onclick="toggleTbOpt(this,'tbColor2',1)" style="border-color:#3ecf3e;"><div class="opt-title" style="color:#2aa52a;">연두</div></button>
+                            </div>
+                            <span style="font-size:0.8rem;color:#888;">배경 띠</span>
+                            <div class="tb-options" id="tbBand" style="margin:0;">
+                                <button class="tb-opt selected" data-val="band" onclick="toggleTbOpt(this,'tbBand',1)"><div class="opt-title">검정 띠</div></button>
+                                <button class="tb-opt" data-val="none" onclick="toggleTbOpt(this,'tbBand',1)"><div class="opt-title">없음 (테두리만)</div></button>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Step 5: 장수·품질 -->
@@ -20824,9 +20850,12 @@ Example format:
             if (!chosen && hasRefs && refMode === 'edit') {
                 // ★i2i 편집 모드 — 레퍼런스 이미지를 직접 고쳐 만듦(스타일 추종 최대). vacode 사이트와 동일 방식(검증 2026-07-03).
                 const subj = scene ? ('Change the subject to: ' + scene + '. ') : (topic ? ('Adapt the subject to this topic: ' + topic + '. ') : '');
-                const t = line2
+                const tm = getSelectedVals('tbTextMode') ? (getSelectedVals('tbTextMode')[0] || 'overlay') : 'overlay';
+                const t = tm === 'overlay'
+                    ? 'Remove ALL existing text completely and keep that area clean — do not add any new text, letters or typography anywhere (a headline will be added later).'
+                    : (line2
                     ? ('Replace all existing text: the text must now read exactly "' + line1 + '" as the main line and "' + line2 + '" as a smaller second line, in the same lettering style and position as the original text.')
-                    : ('Replace all existing text: the text must now read exactly "' + line1 + '", in the same lettering style and position as the original text.');
+                    : ('Replace all existing text: the text must now read exactly "' + line1 + '", in the same lettering style and position as the original text.'));
                 return 'Keep the exact art style of this thumbnail, its composition, color mood and text placement. ' + subj + t + ' Letters must be CLEAN and CRISP: perfectly solid fill, smooth sharp edges - never distressed or cracked. No other text, no watermark.';
             }
             if (chosen && hasRefs) {
@@ -20840,9 +20869,12 @@ Example format:
             }
             const what = scene ? ('Scene: ' + scene + '. ') : (topic ? ('Topic: ' + topic + '. ') : '');
             const txtSpec = 'TEXT SIZE AND STYLE ARE CRITICAL: the headline is a HUGE dominant graphic element — the main line spans nearly the FULL WIDTH of the frame across the lower third, each character is ultra-bold and taller than 1/6 of the frame height. Color: one vivid high-contrast color (bright yellow, or pure white)' + (hasRefs ? ' — match the reference text color scheme and placement' : '') + ', with a thick black outline or black band behind. Letters CLEAN and CRISP: solid fill, smooth sharp edges — never small, never faded, never scattered, never distressed. Text perfectly horizontal, neatly aligned like professional Korean YouTube typography. No other text anywhere.';
-            const txt = line2
+            const textMode = getSelectedVals('tbTextMode')[0] || 'overlay';
+            const txt = textMode === 'overlay'
+                ? 'Do NOT render any text, letters, typography, captions or logos anywhere in the image — completely text-free. Compose the main subjects in the UPPER 60% of the frame and keep the lower third visually simple and darker (a headline will be added there later).'
+                : (line2
                 ? ('The thumbnail text must read exactly "' + line1 + '" as the huge main line, and "' + line2 + '" as a second line below it at about 60% of the main size. ' + txtSpec)
-                : ('The thumbnail text must read exactly "' + line1 + '" as the huge main line. ' + txtSpec);
+                : ('The thumbnail text must read exactly "' + line1 + '" as the huge main line. ' + txtSpec));
             return 'Create a YouTube thumbnail. ' + ref + what + txt + ' 16:9, high contrast, no watermark, no channel logo.';
         }
         async function kieThumbCreate(prompt, refs, quality, model) {
@@ -20869,6 +20901,51 @@ Example format:
                 if (st === 'fail') throw new Error((j.data && j.data.failMsg) || '생성 실패');
             }
             throw new Error('시간 초과');
+        }
+        // ===== 글자 직접 입히기(캔버스 합성) — AI 글자 복불복(작고 색없고 뒤죽박죽) 근본 해결 =====
+        //  AI는 글자 없는 그림만 만들고, 검은고딕(Black Han Sans) 진짜 폰트로 문구를 얹는다. 오타·깨짐 0%.
+        async function composeThumbText(imgUrl, line1, line2, c1, c2, band) {
+            try { await document.fonts.load('100px "Black Han Sans"'); } catch (e) {}
+            // CORS 오염 방지 — fetch→blob→objectURL (실패 시 원본 그대로 폴백)
+            let src = imgUrl;
+            try { const b = await (await fetch(imgUrl)).blob(); src = URL.createObjectURL(b); } catch (e) { return null; }
+            const img = await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = src; });
+            const W = 1280, H = 720;
+            const c = document.createElement('canvas'); c.width = W; c.height = H;
+            const x = c.getContext('2d');
+            const s = Math.max(W / img.width, H / img.height);
+            x.drawImage(img, (W - img.width * s) / 2, (H - img.height * s) / 2, img.width * s, img.height * s);
+            // 글자 크기 자동 맞춤 — 줄1은 화면폭 94%까지 키움
+            const fit = (text, maxW, startFs) => {
+                let fs = startFs;
+                do { x.font = '700 ' + fs + 'px "Black Han Sans", "Malgun Gothic", sans-serif'; if (x.measureText(text).width <= maxW) break; fs -= 4; } while (fs > 40);
+                return fs;
+            };
+            const fs1 = fit(line1, W * 0.94, 150);
+            const fs2 = line2 ? fit(line2, W * 0.94, Math.round(fs1 * 0.62)) : 0;
+            const gap = line2 ? Math.round(fs1 * 0.16) : 0;
+            const pad = Math.round(fs1 * 0.22);
+            const blockH = fs1 + (line2 ? gap + fs2 : 0) + pad * 2;
+            const bandTop = H - blockH - Math.round(H * 0.025);
+            if (band) { x.fillStyle = 'rgba(0,0,0,0.82)'; x.fillRect(0, bandTop, W, blockH); }
+            x.textAlign = 'center'; x.textBaseline = 'alphabetic';
+            const drawLine = (text, fs, color, baseY) => {
+                x.font = '700 ' + fs + 'px "Black Han Sans", "Malgun Gothic", sans-serif';
+                x.lineJoin = 'round';
+                x.strokeStyle = '#000';
+                x.lineWidth = Math.max(6, fs * 0.13);
+                x.strokeText(text, W / 2, baseY);
+                x.fillStyle = color;
+                x.fillText(text, W / 2, baseY);
+            };
+            const y1 = bandTop + pad + fs1 * 0.82;
+            drawLine(line1, fs1, c1, y1);
+            if (line2) drawLine(line2, fs2, c2, y1 + gap + fs2 * 0.95);
+            try { URL.revokeObjectURL(src); } catch (e) {}
+            return c.toDataURL('image/png');
+        }
+        function dlDataUrl(dataUrl, name) {
+            const a = document.createElement('a'); a.href = dataUrl; a.download = name; a.click();
         }
         async function downloadThumb(url, name) {
             try {
@@ -20914,14 +20991,27 @@ Example format:
                 // ③ 결과 렌더
                 const ok = results.filter((r) => typeof r === 'string');
                 const fails = results.filter((r) => r && r.error);
+                // 글자 직접 모드 — 캔버스로 문구 합성(진짜 폰트). 실패(CORS 등)하면 원본으로 폴백
+                window._tbComposed = [];
+                let finals = ok;
+                if ((getSelectedVals('tbTextMode')[0] || 'overlay') === 'overlay') {
+                    msg.textContent = '글자 입히는 중…';
+                    const c1 = getSelectedVals('tbColor1')[0] || '#ffe400';
+                    const c2 = getSelectedVals('tbColor2')[0] || '#ffffff';
+                    const band = (getSelectedVals('tbBand')[0] || 'band') === 'band';
+                    finals = await Promise.all(ok.map(async (u) => (await composeThumbText(u, line1, line2, c1, c2, band)) || u));
+                    window._tbComposed = finals;
+                }
                 document.getElementById('tbResult').style.display = 'block';
-                document.getElementById('tbResultContent').innerHTML = ok.map((u, i) =>
-                    '<div style="border:1px solid #e0e0e0;border-radius:10px;overflow:hidden;">' +
+                document.getElementById('tbResultContent').innerHTML = finals.map((u, i) => {
+                    const isData = u.startsWith('data:');
+                    const dl = isData ? 'dlDataUrl(window._tbComposed[' + i + '],\'썸네일_' + (i + 1) + '.png\')' : 'downloadThumb(\'' + u + '\',\'썸네일_' + (i + 1) + '.png\')';
+                    return '<div style="border:1px solid #e0e0e0;border-radius:10px;overflow:hidden;">' +
                     '<img src="' + u + '" style="width:100%;display:block;aspect-ratio:16/9;object-fit:cover;">' +
                     '<div style="display:flex;gap:6px;padding:8px;">' +
-                    '<button class="btn-small btn-primary" style="flex:1;padding:8px;border-radius:8px;cursor:pointer;" onclick="downloadThumb(\'' + u + '\',\'썸네일_' + (i + 1) + '.png\')">⬇ 다운로드</button>' +
-                    '<button class="btn-small" style="padding:8px 12px;border-radius:8px;cursor:pointer;border:1.5px solid #aaa;background:white;" onclick="window.open(\'' + u + '\',\'_blank\')">크게</button>' +
-                    '</div></div>').join('') || '<p style="color:#ef4444;">전부 실패했어요</p>';
+                    '<button class="btn-small btn-primary" style="flex:1;padding:8px;border-radius:8px;cursor:pointer;" onclick="' + dl + '">⬇ 다운로드</button>' +
+                    (isData ? '' : '<button class="btn-small" style="padding:8px 12px;border-radius:8px;cursor:pointer;border:1.5px solid #aaa;background:white;" onclick="window.open(\'' + u + '\',\'_blank\')">크게</button>') +
+                    '</div></div>'; }).join('') || '<p style="color:#ef4444;">전부 실패했어요</p>';
                 msg.textContent = fails.length ? ('⚠ ' + ok.length + '장 성공 · ' + fails.length + '장 실패: ' + fails[0].error) : ('✅ ' + ok.length + '장 완성!');
                 document.getElementById('tbResult').scrollIntoView({behavior: 'smooth'});
             } catch (e) {
