@@ -2904,7 +2904,7 @@
 
                     <!-- Step 4: 화풍 -->
                     <div class="tb-step">
-                        <div class="tb-step-label"><span class="step-num">4</span> 화풍 <span style="font-weight:400;color:#aaa;font-size:0.8rem;">(기본: 레퍼런스 그림체 따라가기)</span></div>
+                        <div class="tb-step-label"><span class="step-num">4</span> 화풍 <span style="font-weight:400;color:#aaa;font-size:0.8rem;">(자동=레퍼런스를 직접 편집해 최대한 똑같이. 화풍을 고르면 그 그림체로 다시 그림)</span></div>
                         <div class="tb-options" id="tbArtStyle">
                             <button class="tb-opt selected" data-val="auto" onclick="toggleTbOpt(this,'tbArtStyle',1)"><div class="opt-title">자동</div><div class="opt-desc">레퍼런스 따라·없으면 AI 판단</div></button>
                             <button class="tb-opt" data-val="photorealistic" onclick="toggleTbOpt(this,'tbArtStyle',1)"><div class="opt-title">실사</div><div class="opt-desc">포토리얼</div></button>
@@ -20817,6 +20817,14 @@ Example format:
             // ★화풍 우선순위: 사용자가 고르면 그 화풍 > 레퍼런스 그림체 > AI 자동
             const chosen = TB_ART_STYLES[styleKey];
             let ref;
+            if (!chosen && hasRefs) {
+                // ★i2i 편집 모드 — 레퍼런스 이미지를 직접 고쳐 만듦(스타일 추종 최대). vacode 사이트와 동일 방식(검증 2026-07-03).
+                const subj = scene ? ('Change the subject to: ' + scene + '. ') : (topic ? ('Adapt the subject to this topic: ' + topic + '. ') : '');
+                const t = line2
+                    ? ('Replace all existing text: the text must now read exactly "' + line1 + '" as the main line and "' + line2 + '" as a smaller second line, in the same lettering style and position as the original text.')
+                    : ('Replace all existing text: the text must now read exactly "' + line1 + '", in the same lettering style and position as the original text.');
+                return 'Keep this exact thumbnail's art style, composition, color mood and text placement. ' + subj + t + ' Letters must be CLEAN and CRISP: perfectly solid fill, smooth sharp edges - never distressed or cracked. No other text, no watermark.';
+            }
             if (chosen && hasRefs) {
                 ref = 'Art style: ' + chosen + ' Follow the attached reference thumbnail(s) for composition, color mood, text placement and dramatic tone — but render in the art style specified above. ';
             } else if (chosen) {
@@ -20832,13 +20840,13 @@ Example format:
                 : ('The thumbnail text must read exactly "' + line1 + '" - large bold white Korean letters with thick dark outline, extremely readable even at small size. Letters must be CLEAN and CRISP: perfectly solid fill, smooth sharp edges, professional typography quality - never distressed, grunge, cracked or textured letters. No other text.');
             return 'Create a YouTube thumbnail. ' + ref + what + txt + ' 16:9, high contrast, no watermark, no channel logo.';
         }
-        async function kieThumbCreate(prompt, refs, quality) {
+        async function kieThumbCreate(prompt, refs, quality, model) {
             const input = {prompt: prompt, aspect_ratio: '16:9', resolution: quality === 'high' ? '2K' : '1K', output_format: 'png', quality: quality}; // 고급=2K(글자 가장자리 정밀)
             if (refs.length) input.image_input = refs.slice(0, 5);
             const r = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
                 method: 'POST',
                 headers: {Authorization: 'Bearer ' + kieThumbKey(), 'Content-Type': 'application/json'},
-                body: JSON.stringify({model: 'gpt-image-2-text-to-image', input: input}),
+                body: JSON.stringify({model: model || 'gpt-image-2-text-to-image', input: input}),
             });
             const j = await r.json();
             if (j.code !== 200) throw new Error(j.msg || 'createTask 실패');
@@ -20891,9 +20899,11 @@ Example format:
                 // ② 생성 (병렬)
                 const styleKey = getSelectedVals('tbArtStyle')[0] || 'auto';
                 const prompt = buildThumbPrompt(topic, scene, line1, line2, refs.length > 0, styleKey);
+                // 화풍=자동 + 레퍼런스 있음 → i2i(레퍼런스 편집, 최대 추종) / 화풍 선택·레퍼런스 없음 → t2i
+                const model = (styleKey === 'auto' && refs.length) ? 'gpt-image-2-image-to-image' : 'gpt-image-2-text-to-image';
                 msg.textContent = '썸네일 ' + n + '장 생성 중… (20~60초, ' + (quality === 'high' ? '고급' : '보통') + ' 품질)';
                 const tasks = [];
-                for (let i = 0; i < n; i++) tasks.push(kieThumbCreate(prompt, refs, quality).then(kieThumbPoll).catch((e) => ({error: e.message})));
+                for (let i = 0; i < n; i++) tasks.push(kieThumbCreate(prompt, refs, quality, model).then(kieThumbPoll).catch((e) => ({error: e.message})));
                 const results = await Promise.all(tasks);
                 // ③ 결과 렌더
                 const ok = results.filter((r) => typeof r === 'string');
