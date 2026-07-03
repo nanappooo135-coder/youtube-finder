@@ -20797,12 +20797,12 @@ Example format:
                 : 'Ultra-clickable Korean YouTube thumbnail style: one dominant subject, dramatic lighting, high contrast. ';
             const what = scene ? ('Scene: ' + scene + '. ') : (topic ? ('Topic: ' + topic + '. ') : '');
             const txt = line2
-                ? ('The thumbnail text must read exactly "' + line1 + '" as the main line and "' + line2 + '" as a smaller second line - large bold Korean letters, thick dark outline, extremely readable even at small size. No other text.')
-                : ('The thumbnail text must read exactly "' + line1 + '" - large bold white Korean letters with thick dark outline, extremely readable even at small size. No other text.');
+                ? ('The thumbnail text must read exactly "' + line1 + '" as the main line and "' + line2 + '" as a smaller second line - large bold Korean letters, thick dark outline, extremely readable even at small size. Letters must be CLEAN and CRISP: perfectly solid fill, smooth sharp edges, professional typography quality - never distressed, grunge, cracked or textured letters. No other text.')
+                : ('The thumbnail text must read exactly "' + line1 + '" - large bold white Korean letters with thick dark outline, extremely readable even at small size. Letters must be CLEAN and CRISP: perfectly solid fill, smooth sharp edges, professional typography quality - never distressed, grunge, cracked or textured letters. No other text.');
             return 'Create a YouTube thumbnail. ' + ref + what + txt + ' 16:9, high contrast, no watermark, no channel logo.';
         }
         async function kieThumbCreate(prompt, refs, quality) {
-            const input = {prompt: prompt, aspect_ratio: '16:9', resolution: '1K', output_format: 'png', quality: quality};
+            const input = {prompt: prompt, aspect_ratio: '16:9', resolution: quality === 'high' ? '2K' : '1K', output_format: 'png', quality: quality}; // 고급=2K(글자 가장자리 정밀)
             if (refs.length) input.image_input = refs.slice(0, 5);
             const r = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
                 method: 'POST',
