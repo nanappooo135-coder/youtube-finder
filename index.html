@@ -21070,7 +21070,8 @@ Example format:
             const line1 = document.getElementById('tbText1').value.trim();
             const line2 = document.getElementById('tbText2').value.trim();
             if (!kieThumbKey()) { alert('먼저 Kie API 키를 저장해주세요'); return; }
-            if (!line1) { alert('썸네일 문구 줄1을 입력해주세요 (이미지에 박히는 한글)'); return; }
+            // 글자 직접 모드는 문구 없이 배경만 생성 가능(나중에 '글자만 다시 입히기'로 후작업) — AI가 그리기만 문구 필수
+            if (!line1 && (getSelectedVals('tbTextMode')[0] || 'overlay') === 'ai') { alert('AI가 그리기 모드는 문구 줄1이 필요해요'); return; }
             if (!topic && !scene && !_tbRefThumbs.length) { alert('주제·장면 묘사·레퍼런스 중 하나는 필요해요'); return; }
             const n = parseInt(getSelectedVals('tbCount')[0] || '2');
             const quality = getSelectedVals('tbQuality')[0] || 'medium';
