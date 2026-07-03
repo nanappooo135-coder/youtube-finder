@@ -20882,14 +20882,14 @@ Example format:
             let ref;
             if (!chosen && hasRefs && refMode === 'edit') {
                 // ★i2i 편집 모드 — 레퍼런스 이미지를 직접 고쳐 만듦(스타일 추종 최대). vacode 사이트와 동일 방식(검증 2026-07-03).
-                const subj = scene ? ('Change the subject to: ' + scene + '. ') : (topic ? ('Adapt the subject to this topic: ' + topic + '. ') : '');
+                const subj = scene ? ('Change ONLY this: ' + scene + '. ') : (topic ? ('Adapt the subject to this topic: ' + topic + '. ') : '');
                 const tm = getSelectedVals('tbTextMode') ? (getSelectedVals('tbTextMode')[0] || 'overlay') : 'overlay';
                 const t = tm === 'overlay'
                     ? 'Remove ALL existing text completely and keep that area clean — do not add any new text, letters or typography anywhere (a headline will be added later).'
                     : (line2
                     ? ('Replace all existing text: the text must now read exactly "' + line1 + '" as the main line and "' + line2 + '" as a smaller second line, in the same lettering style and position as the original text.')
                     : ('Replace all existing text: the text must now read exactly "' + line1 + '", in the same lettering style and position as the original text.'));
-                return 'Keep the exact art style of this thumbnail, its composition, color mood and text placement. ' + subj + t + ' Letters must be CLEAN and CRISP: perfectly solid fill, smooth sharp edges - never distressed or cracked. No other text, no watermark.';
+                return 'This is an EDIT of the given image, not a new picture. PRESERVE EVERYTHING from the original exactly — same composition, same background, same objects, same people and poses, same colors, same lighting, same art style. ' + subj + t + ' Apart from what is explicitly instructed, change NOTHING. Letters must be CLEAN and CRISP: perfectly solid fill, smooth sharp edges - never distressed or cracked. No watermark.';
             }
             if (chosen && hasRefs) {
                 ref = 'Art style: ' + chosen + ' Follow the attached reference thumbnail(s) for composition, color mood, text placement and dramatic tone — but render in the art style specified above. ';
