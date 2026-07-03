@@ -20839,9 +20839,10 @@ Example format:
                 ref = 'Ultra-clickable Korean YouTube thumbnail style: one dominant subject, dramatic lighting, high contrast. ';
             }
             const what = scene ? ('Scene: ' + scene + '. ') : (topic ? ('Topic: ' + topic + '. ') : '');
+            const txtSpec = 'TEXT SIZE AND STYLE ARE CRITICAL: the headline is a HUGE dominant graphic element — the main line spans nearly the FULL WIDTH of the frame across the lower third, each character is ultra-bold and taller than 1/6 of the frame height. Color: one vivid high-contrast color (bright yellow, or pure white)' + (hasRefs ? ' — match the reference text color scheme and placement' : '') + ', with a thick black outline or black band behind. Letters CLEAN and CRISP: solid fill, smooth sharp edges — never small, never faded, never scattered, never distressed. Text perfectly horizontal, neatly aligned like professional Korean YouTube typography. No other text anywhere.';
             const txt = line2
-                ? ('The thumbnail text must read exactly "' + line1 + '" as the main line and "' + line2 + '" as a smaller second line - large bold Korean letters, thick dark outline, extremely readable even at small size. Letters must be CLEAN and CRISP: perfectly solid fill, smooth sharp edges, professional typography quality - never distressed, grunge, cracked or textured letters. No other text.')
-                : ('The thumbnail text must read exactly "' + line1 + '" - large bold white Korean letters with thick dark outline, extremely readable even at small size. Letters must be CLEAN and CRISP: perfectly solid fill, smooth sharp edges, professional typography quality - never distressed, grunge, cracked or textured letters. No other text.');
+                ? ('The thumbnail text must read exactly "' + line1 + '" as the huge main line, and "' + line2 + '" as a second line below it at about 60% of the main size. ' + txtSpec)
+                : ('The thumbnail text must read exactly "' + line1 + '" as the huge main line. ' + txtSpec);
             return 'Create a YouTube thumbnail. ' + ref + what + txt + ' 16:9, high contrast, no watermark, no channel logo.';
         }
         async function kieThumbCreate(prompt, refs, quality, model) {
