@@ -2870,7 +2870,7 @@
         <div id="process-thumbnail" style="display:none;">
 
             <div class="section">
-                <div class="section-title">썸네일 프롬프트 만들기</div>
+                <div class="section-title">AI 썸네일 만들기</div>
                 <div class="section-content">
 
                     <!-- Step 1: 주제 입력 -->
@@ -2883,13 +2883,7 @@
                     <div class="tb-step">
                         <div class="tb-step-label"><span class="step-num">2</span> 원하는 장면 묘사 <span style="font-weight:400;color:#aaa;font-size:0.8rem;">(핵심!)</span></div>
                         <textarea id="tbScene" rows="3" placeholder="예: 트럼프가 달러 지폐를 찢고 있고, 뒤로 월스트리트가 무너지는 장면&#10;예: 이란 국기 앞에 서 있는 군인, 뒤로 폐허가 된 도시&#10;예: 거대한 금괴 더미 위에 앉아있는 사업가" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;resize:vertical;"></textarea>
-                        <div style="display:flex;gap:8px;margin-top:6px;align-items:center;">
-                            <button class="btn-small btn-primary" id="tbAiSuggestBtn" onclick="aiSuggestScene()" style="padding:8px 16px;font-size:0.85rem;border-radius:8px;cursor:pointer;white-space:nowrap;">AI 이미지 구상</button>
-                            <button class="btn-small" onclick="aiSuggestScene()" style="padding:8px 12px;font-size:0.85rem;border-radius:8px;cursor:pointer;border:1.5px solid #fd7e14;color:#fd7e14;background:white;">+ 5개 더 구상</button>
-                            <button class="btn-small" onclick="document.getElementById('tbAiSuggestions').innerHTML=''" style="padding:8px 12px;font-size:0.85rem;border-radius:8px;cursor:pointer;border:1.5px solid #aaa;color:#aaa;background:white;">초기화</button>
-                        </div>
-                        <p style="font-size:0.8rem;color:#888;margin-top:4px;">레퍼런스 썸네일이 많을수록 더 정확한 구상이 나와요. + 버튼으로 계속 추가 가능.</p>
-                        <div id="tbAiSuggestions" style="margin-top:8px;"></div>
+                        <p style="font-size:0.8rem;color:#888;margin-top:4px;">레퍼런스가 "어떻게 그릴지"(화풍·구도)를, 이 칸이 "뭘 그릴지"(장면 내용)를 정해요.</p>
                     </div>
 
                     <!-- Step 3: 레퍼런스 썸네일 (선택) -->
