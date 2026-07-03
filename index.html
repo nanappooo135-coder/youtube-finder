@@ -2900,6 +2900,10 @@
                             <button class="btn-small btn-primary" onclick="pasteRefImage()" style="padding:8px 16px;font-size:0.85rem;border-radius:8px;cursor:pointer;background:#fd7e14;border-color:#fd7e14;">Ctrl+V 붙여넣기</button>
                             <span style="font-size:0.8rem;color:#aaa;">캡쳐 후 Ctrl+V 또는 버튼 클릭</span>
                         </div>
+                        <div class="tb-options" id="tbRefMode" style="margin-top:8px;">
+                            <button class="tb-opt" data-val="edit" onclick="toggleTbOpt(this,'tbRefMode',1)"><div class="opt-title">똑같이 (편집)</div><div class="opt-desc">레퍼런스에서 글자·소재만 교체 — 내 옛 썸네일 재활용용</div></button>
+                            <button class="tb-opt selected" data-val="inspire" onclick="toggleTbOpt(this,'tbRefMode',1)"><div class="opt-title">느낌만 (참고)</div><div class="opt-desc">분위기·구도만 가져와 새 그림 — 남의 썸네일 벤치마킹용</div></button>
+                        </div>
                     </div>
 
                     <!-- Step 4: 화풍 -->
@@ -20813,11 +20817,11 @@ Example format:
             anime: 'Vibrant anime-style illustration with bold outlines and cel-shaded lighting.',
             '3d-render': 'High-quality 3D rendered illustration with polished surfaces and dramatic lighting.',
         };
-        function buildThumbPrompt(topic, scene, line1, line2, hasRefs, styleKey) {
+        function buildThumbPrompt(topic, scene, line1, line2, hasRefs, styleKey, refMode) {
             // ★화풍 우선순위: 사용자가 고르면 그 화풍 > 레퍼런스 그림체 > AI 자동
             const chosen = TB_ART_STYLES[styleKey];
             let ref;
-            if (!chosen && hasRefs) {
+            if (!chosen && hasRefs && refMode === 'edit') {
                 // ★i2i 편집 모드 — 레퍼런스 이미지를 직접 고쳐 만듦(스타일 추종 최대). vacode 사이트와 동일 방식(검증 2026-07-03).
                 const subj = scene ? ('Change the subject to: ' + scene + '. ') : (topic ? ('Adapt the subject to this topic: ' + topic + '. ') : '');
                 const t = line2
@@ -20898,9 +20902,10 @@ Example format:
                 }
                 // ② 생성 (병렬)
                 const styleKey = getSelectedVals('tbArtStyle')[0] || 'auto';
-                const prompt = buildThumbPrompt(topic, scene, line1, line2, refs.length > 0, styleKey);
-                // 화풍=자동 + 레퍼런스 있음 → i2i(레퍼런스 편집, 최대 추종) / 화풍 선택·레퍼런스 없음 → t2i
-                const model = (styleKey === 'auto' && refs.length) ? 'gpt-image-2-image-to-image' : 'gpt-image-2-text-to-image';
+                const prompt = buildThumbPrompt(topic, scene, line1, line2, refs.length > 0, styleKey, getSelectedVals('tbRefMode')[0] || 'inspire');
+                // 레퍼런스 추종 강도: 똑같이(edit)=i2i 편집 / 느낌만(inspire)=t2i 참고. 화풍 선택·레퍼런스 없음은 항상 t2i.
+                const refMode = getSelectedVals('tbRefMode')[0] || 'inspire';
+                const model = (styleKey === 'auto' && refs.length && refMode === 'edit') ? 'gpt-image-2-image-to-image' : 'gpt-image-2-text-to-image';
                 msg.textContent = '썸네일 ' + n + '장 생성 중… (20~60초, ' + (quality === 'high' ? '고급' : '보통') + ' 품질)';
                 const tasks = [];
                 for (let i = 0; i < n; i++) tasks.push(kieThumbCreate(prompt, refs, quality, model).then(kieThumbPoll).catch((e) => ({error: e.message})));
