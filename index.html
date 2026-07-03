@@ -2902,16 +2902,33 @@
                         </div>
                     </div>
 
+                    <!-- Step 4: 화풍 -->
+                    <div class="tb-step">
+                        <div class="tb-step-label"><span class="step-num">4</span> 화풍 <span style="font-weight:400;color:#aaa;font-size:0.8rem;">(기본: 레퍼런스 그림체 따라가기)</span></div>
+                        <div class="tb-options" id="tbArtStyle">
+                            <button class="tb-opt selected" data-val="auto" onclick="toggleTbOpt(this,'tbArtStyle',1)"><div class="opt-title">자동</div><div class="opt-desc">레퍼런스 따라·없으면 AI 판단</div></button>
+                            <button class="tb-opt" data-val="photorealistic" onclick="toggleTbOpt(this,'tbArtStyle',1)"><div class="opt-title">실사</div><div class="opt-desc">포토리얼</div></button>
+                            <button class="tb-opt" data-val="hyperreal" onclick="toggleTbOpt(this,'tbArtStyle',1)"><div class="opt-title">초실사</div><div class="opt-desc">AI느낌 제로</div></button>
+                            <button class="tb-opt" data-val="yeokseolnam" onclick="toggleTbOpt(this,'tbArtStyle',1)"><div class="opt-title">역썰남1</div><div class="opt-desc">굵은선·비비드 극화</div></button>
+                            <button class="tb-opt" data-val="yeokseolnam2" onclick="toggleTbOpt(this,'tbArtStyle',1)"><div class="opt-title">역썰남2</div><div class="opt-desc">정치풍자 일러스트</div></button>
+                            <button class="tb-opt" data-val="pujim" onclick="toggleTbOpt(this,'tbArtStyle',1)"><div class="opt-title">푸짐스타일</div><div class="opt-desc">다크 시네마틱 합성</div></button>
+                            <button class="tb-opt" data-val="stickman" onclick="toggleTbOpt(this,'tbArtStyle',1)"><div class="opt-title">스틱맨</div><div class="opt-desc">심플 코믹</div></button>
+                            <button class="tb-opt" data-val="psych-cartoon" onclick="toggleTbOpt(this,'tbArtStyle',1)"><div class="opt-title">한눈에심리학</div><div class="opt-desc">둥근 캐릭터 온화</div></button>
+                            <button class="tb-opt" data-val="anime" onclick="toggleTbOpt(this,'tbArtStyle',1)"><div class="opt-title">애니메</div><div class="opt-desc">셀셰이딩</div></button>
+                            <button class="tb-opt" data-val="3d-render" onclick="toggleTbOpt(this,'tbArtStyle',1)"><div class="opt-title">3D 렌더</div><div class="opt-desc">입체</div></button>
+                        </div>
+                    </div>
+
                     <!-- Step 4: 썸네일 문구 -->
                     <div class="tb-step">
-                        <div class="tb-step-label"><span class="step-num">4</span> 썸네일 문구 <span style="font-weight:400;color:#aaa;font-size:0.8rem;">(이미지에 이 한글이 그대로 박혀요)</span></div>
+                        <div class="tb-step-label"><span class="step-num">5</span> 썸네일 문구 <span style="font-weight:400;color:#aaa;font-size:0.8rem;">(이미지에 이 한글이 그대로 박혀요)</span></div>
                         <input type="text" id="tbText1" placeholder="줄1 — 큰 글씨 (예: 운하가 말랐다)" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.95rem;margin-bottom:6px;">
                         <input type="text" id="tbText2" placeholder="줄2 — 보조 문구 (선택)" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.9rem;">
                     </div>
 
                     <!-- Step 5: 장수·품질 -->
                     <div class="tb-step">
-                        <div class="tb-step-label"><span class="step-num">5</span> 생성 옵션</div>
+                        <div class="tb-step-label"><span class="step-num">6</span> 생성 옵션</div>
                         <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;">
                             <div class="tb-options" id="tbCount" style="margin:0;">
                                 <button class="tb-opt" data-val="1" onclick="toggleTbOpt(this,'tbCount',1)"><div class="opt-title">1장</div></button>
@@ -20784,11 +20801,31 @@ Example format:
             } catch (e) { /* 이 레퍼런스만 건너뜀 */ }
             return null;
         }
-        function buildThumbPrompt(topic, scene, line1, line2, hasRefs) {
-            // ★썸네일=레퍼런스 100% 규칙: 레퍼런스가 있으면 구도·색·톤·텍스트배치를 그대로 따르고 내 아이디어 섞지 않기
-            const ref = hasRefs
-                ? 'Follow the attached reference thumbnail(s) closely — same ART STYLE above all (if the reference is a comic/illustration, render everything including people in that exact illustration style, NOT photorealistic; if photographic, stay photographic), same composition, same color mood, same text placement style, same dramatic tone. The reference is the single source of truth; do NOT invent a different style. '
-                : 'Ultra-clickable Korean YouTube thumbnail style: one dominant subject, dramatic lighting, high contrast. ';
+        // 화풍 정의 — 구 프롬프트 탭의 검증된 스타일 문구 재사용
+        const TB_ART_STYLES = {
+            photorealistic: 'Photorealistic cinematic photograph, DSLR camera quality.',
+            hyperreal: 'Ultra-hyper-realistic photograph indistinguishable from a real camera shot. Shot on Canon EOS R5 with 85mm lens, shallow depth of field, natural film grain, real skin texture, authentic natural lighting, no AI artifacts, no plastic skin.',
+            yeokseolnam: 'Bold dramatic digital illustration in Korean YouTube history channel style. Thick confident ink outlines, hyper-saturated vivid colors, painterly brushwork, dramatic cinematic lighting with strong rim light. Expressive characters with slightly exaggerated proportions — western graphic novel meets Korean manhwa. High contrast, epic historical drama feel.',
+            yeokseolnam2: 'Editorial political cartoon illustration with rough pen strokes and ink-watercolor texture. Detailed caricature portraits of real figures — 70% realistic, 30% exaggerated expressions. Bold saturated flag-palette colors against dark grey-brown tones. Newspaper editorial art style with dramatic crosshatching.',
+            pujim: 'Dark cinematic photo composite style, movie poster aesthetic. Deep navy-black base with dramatic dual color grading — warm red-orange vs cool blue-navy. Flags or symbolic imagery as semi-transparent overlays, gritty smoke textures, real-person photo cutouts with colored rim lighting. News magazine cover drama, high contrast.',
+            stickman: 'Fun cartoon illustration where every person is a cute minimalist stickman — round head, dot eyes, simple line limbs, no realistic facial features. Detailed colorful backgrounds, clean bold outlines, flat vibrant colors, playful comic energy.',
+            'psych-cartoon': 'Warm soft educational cartoon illustration. Characters with round simple faces, small dot eyes, oversized heads, soft warm pastel palette, thin clean outlines, gentle webtoon mood.',
+            anime: 'Vibrant anime-style illustration with bold outlines and cel-shaded lighting.',
+            '3d-render': 'High-quality 3D rendered illustration with polished surfaces and dramatic lighting.',
+        };
+        function buildThumbPrompt(topic, scene, line1, line2, hasRefs, styleKey) {
+            // ★화풍 우선순위: 사용자가 고르면 그 화풍 > 레퍼런스 그림체 > AI 자동
+            const chosen = TB_ART_STYLES[styleKey];
+            let ref;
+            if (chosen && hasRefs) {
+                ref = 'Art style: ' + chosen + ' Follow the attached reference thumbnail(s) for composition, color mood, text placement and dramatic tone — but render in the art style specified above. ';
+            } else if (chosen) {
+                ref = 'Art style: ' + chosen + ' Ultra-clickable Korean YouTube thumbnail: one dominant subject, dramatic lighting, high contrast. ';
+            } else if (hasRefs) {
+                ref = 'Follow the attached reference thumbnail(s) closely — same ART STYLE above all (if the reference is a comic/illustration, render everything including people in that exact illustration style, NOT photorealistic; if photographic, stay photographic), same composition, same color mood, same text placement style, same dramatic tone. The reference is the single source of truth; do NOT invent a different style. '
+            } else {
+                ref = 'Ultra-clickable Korean YouTube thumbnail style: one dominant subject, dramatic lighting, high contrast. ';
+            }
             const what = scene ? ('Scene: ' + scene + '. ') : (topic ? ('Topic: ' + topic + '. ') : '');
             const txt = line2
                 ? ('The thumbnail text must read exactly "' + line1 + '" as the main line and "' + line2 + '" as a smaller second line - large bold Korean letters, thick dark outline, extremely readable even at small size. Letters must be CLEAN and CRISP: perfectly solid fill, smooth sharp edges, professional typography quality - never distressed, grunge, cracked or textured letters. No other text.')
@@ -20852,7 +20889,8 @@ Example format:
                     refs = (await Promise.all(_tbRefThumbs.slice(0, 5).map((t, i) => hostRefThumb(t, i)))).filter(Boolean);
                 }
                 // ② 생성 (병렬)
-                const prompt = buildThumbPrompt(topic, scene, line1, line2, refs.length > 0);
+                const styleKey = getSelectedVals('tbArtStyle')[0] || 'auto';
+                const prompt = buildThumbPrompt(topic, scene, line1, line2, refs.length > 0, styleKey);
                 msg.textContent = '썸네일 ' + n + '장 생성 중… (20~60초, ' + (quality === 'high' ? '고급' : '보통') + ' 품질)';
                 const tasks = [];
                 for (let i = 0; i < n; i++) tasks.push(kieThumbCreate(prompt, refs, quality).then(kieThumbPoll).catch((e) => ({error: e.message})));
