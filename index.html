@@ -3088,13 +3088,13 @@
                                 <button class="tb-opt" data-val="#7dff7d" onclick="toggleTbOpt(this,'tbColor2',1);tbLivePreview()"><div class="opt-title" style="color:#2aa52a;">● 연두</div></button>
                             </div>
                         </div>
-                        <div class="tbx-row" style="margin:0;">
+                        <div class="tbx-row" style="margin:0;grid-column:1 / -1;">
                             <span class="tbx-lab">크기</span>
-                            <div class="tb-options" id="tbTextSize">
-                                <button class="tb-opt" data-val="150" onclick="toggleTbOpt(this,'tbTextSize',1);tbLivePreview()"><div class="opt-title">크게</div></button>
-                                <button class="tb-opt selected" data-val="115" onclick="toggleTbOpt(this,'tbTextSize',1);tbLivePreview()"><div class="opt-title">보통</div></button>
-                                <button class="tb-opt" data-val="88" onclick="toggleTbOpt(this,'tbTextSize',1);tbLivePreview()"><div class="opt-title">작게</div></button>
-                            </div>
+                            <input type="range" id="tbSizeRange" min="45" max="185" value="115" style="flex:1;" oninput="tbLivePreview()">
+                            <span class="tbx-lab" style="width:auto;">자간</span>
+                            <input type="range" id="tbLetterSp" min="-6" max="24" value="0" style="flex:1;" oninput="tbLivePreview()">
+                            <span class="tbx-lab" style="width:auto;">줄간격</span>
+                            <input type="range" id="tbLineGap" min="0" max="60" value="18" style="flex:1;" oninput="tbLivePreview()">
                         </div>
                         <div class="tbx-row" style="margin:0;">
                             <span class="tbx-lab">배경 띠</span>
@@ -3117,6 +3117,9 @@
                                 <button class="tb-opt selected" data-val="center" onclick="toggleTbOpt(this,'tbTextAlign',1);tbLivePreview()"><div class="opt-title">가운데</div></button>
                                 <button class="tb-opt" data-val="left" onclick="toggleTbOpt(this,'tbTextAlign',1);tbLivePreview()"><div class="opt-title">왼쪽</div></button>
                             </div>
+                        </div>
+                        <div class="tbx-row" style="margin:0;grid-column:1 / -1;">
+                            <span style="font-size:0.78rem;color:#6b7280;">🖱 <b>미리보기에서 글자를 드래그</b>하면 아무 위치로나 옮겨져요. <button class="btn-small" style="padding:2px 10px;border-radius:6px;cursor:pointer;border:1px solid #d0d4da;background:#fff;font-size:0.75rem;" onclick="window._tbLayoutXY=null;tbLivePreview()">위치 초기화</button></span>
                         </div>
                         <div class="tbx-row" style="margin:0;">
                             <span class="tbx-lab">여백</span>
@@ -21091,14 +21094,23 @@ Example format:
                 do { x.font = FW + ' ' + fs + 'px "' + FONT + '", "Malgun Gothic", sans-serif'; if (x.measureText(plain).width <= maxW) break; fs -= 4; } while (fs > 40);
                 return fs;
             };
+            const lay0 = layout || {};
+            if (lay0.letterSp) { try { x.letterSpacing = lay0.letterSp + 'px'; } catch (e) {} } // 자간(Chrome 지원)
             const fs1 = fit(line1, W * 0.94, sizeCap || 115); // 상한을 사용자가 선택 — 문구 길이가 달라도 크기 들쭉날쭉 방지
             const fs2 = line2 ? fit(line2, W * 0.94, Math.round(fs1 * 0.62)) : 0;
-            const gap = line2 ? Math.round(fs1 * 0.16) : 0;
+            const gap = line2 ? (lay0.lineGap != null ? Math.round(lay0.lineGap) : Math.round(fs1 * 0.16)) : 0;
             const pad = Math.round(fs1 * 0.22);
             const blockH = fs1 + (line2 ? gap + fs2 : 0) + pad * 2;
             const lay = layout || {};
             const mgnPx = Math.round(H * (parseFloat(lay.margin) || 0.05));
-            const bandTop = lay.pos === 'top' ? mgnPx : lay.pos === 'middle' ? Math.round((H - blockH) / 2) : (H - blockH - mgnPx);
+            // 자유 좌표(드래그) 우선 — 없으면 위치 프리셋
+            let bandTop;
+            if (lay.xy && typeof lay.xy.y === 'number') {
+                bandTop = Math.round(Math.max(0, Math.min(1 - blockH / H, lay.xy.y)) * H);
+            } else {
+                bandTop = lay.pos === 'top' ? mgnPx : lay.pos === 'middle' ? Math.round((H - blockH) / 2) : (H - blockH - mgnPx);
+            }
+            const cxBase = (lay.xy && typeof lay.xy.x === 'number') ? Math.max(0.08, Math.min(0.92, lay.xy.x)) * W : W / 2;
             if (band) { x.fillStyle = 'rgba(0,0,0,0.82)'; x.fillRect(0, bandTop, W, blockH); }
             x.textAlign = 'center'; x.textBaseline = 'alphabetic';
             // [대괄호] 부분 색 강조 — "일본 [초비상]" → 초비상만 강조색. 레퍼런스들의 단어별 색 코딩 재현.
@@ -21120,7 +21132,7 @@ Example format:
                 x.font = FW + ' ' + fs + 'px "' + FONT + '", "Malgun Gothic", sans-serif';
                 x.lineJoin = 'round';
                 const total = runs.reduce((s, r) => s + x.measureText(r.t).width, 0);
-                let cx0 = (lay.align === 'left') ? W * 0.05 : (W / 2 - total / 2);
+                let cx0 = (lay.align === 'left' && !(lay.xy && typeof lay.xy.x === 'number')) ? W * 0.05 : (cxBase - total / 2);
                 x.textAlign = 'left';
                 for (const r of runs) {
                     x.strokeStyle = '#000';
@@ -21170,12 +21182,15 @@ Example format:
                 const c1 = getSelectedVals('tbColor1')[0] || '#ffe400';
                 const c2 = getSelectedVals('tbColor2')[0] || '#ffffff';
                 const band = (getSelectedVals('tbBand')[0] || 'band') === 'band';
-                const sizeCap = parseInt(getSelectedVals('tbTextSize')[0] || '115');
+                const sizeCap = parseInt((document.getElementById('tbSizeRange') || {}).value || '115');
                 const font = getSelectedVals('tbFont')[0] || 'Black Han Sans';
                 const layout = {
                     pos: getSelectedVals('tbTextPos')[0] || 'bottom',
                     align: getSelectedVals('tbTextAlign')[0] || 'center',
                     margin: getSelectedVals('tbTextMargin')[0] || '0.05',
+                    letterSp: parseInt((document.getElementById('tbLetterSp') || {}).value || '0'),
+                    lineGap: parseInt((document.getElementById('tbLineGap') || {}).value || '18'),
+                    xy: window._tbLayoutXY || null, // 드래그로 정한 자유 좌표 {x,y} (0~1)
                 };
                 finals = await Promise.all(ok.map((u) => composeThumbText(u, line1, line2, c1, c2, band, sizeCap, font, layout).then((r) => r || u).catch(() => u)));
                 window._tbComposed = finals;
@@ -21194,6 +21209,29 @@ Example format:
                 '<button class="btn-small btn-primary" style="flex:1;padding:8px;border-radius:8px;cursor:pointer;" onclick="tbDl(' + i + ')">⬇ 다운로드</button>' +
                 '<button class="btn-small" style="padding:8px 12px;border-radius:8px;cursor:pointer;border:1.5px solid #aaa;background:white;" onclick="tbBig(' + i + ')">크게</button>' +
                 '</div></div>').join('') || '<p style="color:#ef4444;">전부 실패했어요</p>';
+            tbAttachDrag(); // 미리보기 글자 드래그 이동
+        }
+        // 미리보기 이미지에서 글자 블록을 드래그해 자유 배치 — 미리캔버스식
+        function tbAttachDrag() {
+            document.querySelectorAll('#tbResultContent img').forEach((im) => {
+                if (im._tbDragWired) return;
+                im._tbDragWired = true;
+                im.style.cursor = 'move';
+                im.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    const rect = im.getBoundingClientRect();
+                    const move = (ev) => {
+                        const fx = (ev.clientX - rect.left) / rect.width;
+                        const fy = (ev.clientY - rect.top) / rect.height;
+                        window._tbLayoutXY = {x: Math.max(0, Math.min(1, fx)), y: Math.max(0, Math.min(1, fy - 0.07))}; // 커서를 블록 상단 살짝 위로
+                        tbLivePreview();
+                    };
+                    const up = () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); };
+                    document.addEventListener('mousemove', move);
+                    document.addEventListener('mouseup', up);
+                    move(e);
+                });
+            });
         }
         function tbFinalUrl(i) {
             const comp = window._tbComposed || [];
