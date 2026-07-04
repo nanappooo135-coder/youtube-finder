@@ -1,5 +1,5 @@
-// YouTube Finder PWA Service Worker
-const CACHE_NAME = 'yt-finder-v102';
+﻿// YouTube Finder PWA Service Worker
+const CACHE_NAME = 'yt-finder-v103';
 const CORE_ASSETS = [
     './',
     './index.html',
@@ -8,7 +8,7 @@ const CORE_ASSETS = [
     './icon-512.png'
 ];
 
-// 설치 — 핵심 파일 캐시
+// ?ㅼ튂 ???듭떖 ?뚯씪 罹먯떆
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME)
@@ -18,7 +18,7 @@ self.addEventListener('install', (event) => {
     );
 });
 
-// 활성화 — 이전 캐시 정리
+// ?쒖꽦?????댁쟾 罹먯떆 ?뺣━
 self.addEventListener('activate', (event) => {
     event.waitUntil(
         caches.keys().then((keys) =>
@@ -29,18 +29,17 @@ self.addEventListener('activate', (event) => {
     );
 });
 
-// 요청 처리 — Network First + Cache Fallback
-// 외부 API 호출(news.json, gemini, kie 등)은 캐시 안 함
-self.addEventListener('fetch', (event) => {
+// ?붿껌 泥섎━ ??Network First + Cache Fallback
+// ?몃? API ?몄텧(news.json, gemini, kie ??? 罹먯떆 ????self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
 
-    // GET 요청만 처리
+    // GET ?붿껌留?泥섎━
     if (event.request.method !== 'GET') return;
 
-    // API 호출은 패스 (Gemini, Kie, etc)
+    // API ?몄텧? ?⑥뒪 (Gemini, Kie, etc)
     if (url.origin !== self.location.origin) return;
 
-    // 동적 데이터(news.json, channels.json) 항상 fresh — 기기 간 동기화 위해 캐시 금지
+    // ?숈쟻 ?곗씠??news.json, channels.json) ??긽 fresh ??湲곌린 媛??숆린???꾪빐 罹먯떆 湲덉?
     if (url.pathname.endsWith('/news.json') || url.pathname.endsWith('/channels.json')) {
         event.respondWith(
             fetch(event.request).catch(() => caches.match(event.request))
@@ -48,7 +47,7 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // 정적 자원 — Network First, 실패 시 Cache
+    // ?뺤쟻 ?먯썝 ??Network First, ?ㅽ뙣 ??Cache
     event.respondWith(
         fetch(event.request)
             .then((res) => {
