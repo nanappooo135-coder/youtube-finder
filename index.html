@@ -2976,8 +2976,50 @@
             </div>
 
             <!-- ④ 문구 -->
+            <!-- ⑤ 생성 -->
             <div class="tbx-card" data-step="4">
-                <div class="tbx-head"><div class="tbx-num">4</div><div class="tbx-t">썸네일 문구</div></div>
+                <div class="tbx-head"><div class="tbx-num">4</div><div class="tbx-t">생성</div></div>
+                <div class="tbx-hint">이미지 1장 ≈ 보통 $0.03 (약 45원) · 고급 $0.06 — 키는 이 브라우저에만 저장돼요.</div>
+                <div class="tbx-body">
+                    <div class="tbx-row">
+                        <span class="tbx-lab">장수</span>
+                        <div class="tb-options" id="tbCount">
+                            <button class="tb-opt" data-val="1" onclick="toggleTbOpt(this,'tbCount',1)"><div class="opt-title">1장</div></button>
+                            <button class="tb-opt selected" data-val="2" onclick="toggleTbOpt(this,'tbCount',1)"><div class="opt-title">2장</div></button>
+                            <button class="tb-opt" data-val="3" onclick="toggleTbOpt(this,'tbCount',1)"><div class="opt-title">3장</div></button>
+                        </div>
+                        <span class="tbx-lab" style="width:auto;margin-left:14px;">품질</span>
+                        <div class="tb-options" id="tbQuality">
+                            <button class="tb-opt selected" data-val="medium" onclick="toggleTbOpt(this,'tbQuality',1)"><div class="opt-title">보통</div></button>
+                            <button class="tb-opt" data-val="high" onclick="toggleTbOpt(this,'tbQuality',1)"><div class="opt-title">고급 (2K)</div></button>
+                        </div>
+                    </div>
+                    <div class="tbx-row">
+                        <span class="tbx-lab">🔑 키</span>
+                        <input type="password" id="tbKieKey" class="tbx-input" placeholder="Kie API 키 (한 번만 저장)" style="flex:1;width:auto;">
+                        <button class="btn-small btn-primary" onclick="saveKieKey()" style="padding:9px 18px;border-radius:8px;cursor:pointer;">저장</button>
+                        <span id="tbKieStatus" style="font-size:0.8rem;"></span>
+                    </div>
+                    <button class="search-btn" id="tbGenBtn" onclick="generateAiThumbnails()" style="margin-top:4px;">🎨 AI 썸네일 생성</button>
+                    
+                    <div id="tbGenMsg" style="margin-top:10px;font-size:0.85rem;color:#666;"></div>
+                </div>
+            </div>
+
+            </div><!-- /tbx-left -->
+
+            <!-- 오른쪽: 미리보기 패널 (스크롤 따라다님) -->
+            <div class="tbx-right">
+                <div id="tbResult" class="tbx-card">
+                    <div class="tbx-head"><div class="tbx-t">🖼 썸네일 미리보기</div></div>
+                    <div class="tbx-hint" style="margin-left:0;">문구·색·글꼴을 바꾸면 여기서 바로 바뀌어요.</div>
+                    <div id="tbResultContent" style="display:grid;grid-template-columns:1fr;gap:12px;">
+                        <div style="border:1.5px dashed #d9dde4;border-radius:10px;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;color:#9aa3b2;font-size:0.85rem;text-align:center;line-height:1.6;">아직 생성 전이에요<br>왼쪽에서 설정하고 [AI 썸네일 생성]</div>
+                    </div>
+                </div>
+
+                <div class="tbx-card" data-step="5">
+                <div class="tbx-head"><div class="tbx-num">5</div><div class="tbx-t">글자 입히기 <span style="font-weight:400;color:#9aa3b2;font-size:0.8rem;">(후작업 — 무료·실시간)</span></div></div>
                 <div class="tbx-hint">[대괄호]로 감싼 단어만 강조색으로 칠해져요 — 예: 한국 소식에 일본 [초비상]</div>
                 <div class="tbx-body">
                     <input type="text" id="tbText1" class="tbx-input" oninput="tbLivePreview()" placeholder="줄1 — 큰 글씨 (예: 세계 3번째 [국산화 성공])" style="margin-bottom:8px;">
@@ -3040,50 +3082,9 @@
                             </div>
                         </div>
                     </div>
+                <button class="btn-small" onclick="reapplyThumbText()" style="width:100%;margin-top:8px;padding:11px;border-radius:10px;cursor:pointer;border:1.5px solid #4a90d9;color:#4a90d9;background:white;font-weight:700;">✍ 글자만 다시 입히기 <span style="font-weight:400;">(무료 · 문구·색·글꼴을 바꾸면 즉시 미리보기돼요)</span></button>
                 </div>
             </div>
-
-            <!-- ⑤ 생성 -->
-            <div class="tbx-card" data-step="5">
-                <div class="tbx-head"><div class="tbx-num">5</div><div class="tbx-t">생성</div></div>
-                <div class="tbx-hint">이미지 1장 ≈ 보통 $0.03 (약 45원) · 고급 $0.06 — 키는 이 브라우저에만 저장돼요.</div>
-                <div class="tbx-body">
-                    <div class="tbx-row">
-                        <span class="tbx-lab">장수</span>
-                        <div class="tb-options" id="tbCount">
-                            <button class="tb-opt" data-val="1" onclick="toggleTbOpt(this,'tbCount',1)"><div class="opt-title">1장</div></button>
-                            <button class="tb-opt selected" data-val="2" onclick="toggleTbOpt(this,'tbCount',1)"><div class="opt-title">2장</div></button>
-                            <button class="tb-opt" data-val="3" onclick="toggleTbOpt(this,'tbCount',1)"><div class="opt-title">3장</div></button>
-                        </div>
-                        <span class="tbx-lab" style="width:auto;margin-left:14px;">품질</span>
-                        <div class="tb-options" id="tbQuality">
-                            <button class="tb-opt selected" data-val="medium" onclick="toggleTbOpt(this,'tbQuality',1)"><div class="opt-title">보통</div></button>
-                            <button class="tb-opt" data-val="high" onclick="toggleTbOpt(this,'tbQuality',1)"><div class="opt-title">고급 (2K)</div></button>
-                        </div>
-                    </div>
-                    <div class="tbx-row">
-                        <span class="tbx-lab">🔑 키</span>
-                        <input type="password" id="tbKieKey" class="tbx-input" placeholder="Kie API 키 (한 번만 저장)" style="flex:1;width:auto;">
-                        <button class="btn-small btn-primary" onclick="saveKieKey()" style="padding:9px 18px;border-radius:8px;cursor:pointer;">저장</button>
-                        <span id="tbKieStatus" style="font-size:0.8rem;"></span>
-                    </div>
-                    <button class="search-btn" id="tbGenBtn" onclick="generateAiThumbnails()" style="margin-top:4px;">🎨 AI 썸네일 생성</button>
-                    <button class="btn-small" onclick="reapplyThumbText()" style="width:100%;margin-top:8px;padding:11px;border-radius:10px;cursor:pointer;border:1.5px solid #4a90d9;color:#4a90d9;background:white;font-weight:700;">✍ 글자만 다시 입히기 <span style="font-weight:400;">(무료 · 문구·색·글꼴을 바꾸면 즉시 미리보기돼요)</span></button>
-                    <div id="tbGenMsg" style="margin-top:10px;font-size:0.85rem;color:#666;"></div>
-                </div>
-            </div>
-
-            </div><!-- /tbx-left -->
-
-            <!-- 오른쪽: 미리보기 패널 (스크롤 따라다님) -->
-            <div class="tbx-right">
-                <div id="tbResult" class="tbx-card" style="margin-bottom:0;">
-                    <div class="tbx-head"><div class="tbx-t">🖼 썸네일 미리보기</div></div>
-                    <div class="tbx-hint" style="margin-left:0;">문구·색·글꼴을 바꾸면 여기서 바로 바뀌어요.</div>
-                    <div id="tbResultContent" style="display:grid;grid-template-columns:1fr;gap:12px;">
-                        <div style="border:1.5px dashed #d9dde4;border-radius:10px;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;color:#9aa3b2;font-size:0.85rem;text-align:center;line-height:1.6;">아직 생성 전이에요<br>왼쪽에서 설정하고 [AI 썸네일 생성]</div>
-                    </div>
-                </div>
             </div>
         </div><!-- /tbx-wrap -->
 
