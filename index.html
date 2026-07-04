@@ -23325,7 +23325,7 @@ Example format:
             switch (sortKey) {
                 case 'views-desc':   sorted.sort((a, b) => b.viewCount - a.viewCount); break;
                 case 'views-asc':    sorted.sort((a, b) => a.viewCount - b.viewCount); break;
-                case 'efficiency':   sorted.sort((a, b) => b.efficiency - a.efficiency); break;
+                case 'efficiency':   sorted.sort((a, b) => _effVal(b) - _effVal(a)); break;
                 case 'latest':       sorted.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt)); break;
                 case 'match':        sorted.sort((a, b) => {
                     if (b.matchScore !== a.matchScore) return b.matchScore - a.matchScore;
@@ -23337,6 +23337,10 @@ Example format:
             store.renderer(containerId, sorted, sortKey);
         }
 
+        // 효율 99 = '구독자 비공개' 센티널 — 효율순에서 맨 아래로 (진짜 떡상만 위로)
+        function _effVal(item) {
+            return (item.efficiency === 99 || !item.subscriberCount) ? -1 : item.efficiency;
+        }
         function buildSortBar(containerId, activeSort, hasMatch) {
             const sorts = [
                 { key: 'views-desc', label: '조회수 높은순' },
@@ -24007,8 +24011,10 @@ Example format:
         }
 
         function displayMatchResults(containerId, results) {
-            _resultStore[containerId] = { results, currentSort: 'match', renderer: renderMatchResults };
-            renderMatchResults(containerId, results, 'match');
+            // 기본 정렬 = 효율순 — 구독자 대비 조회수 터진 영상(먹잇감)이 최우선 타겟
+            const byEff = [...results].sort((a, b) => _effVal(b) - _effVal(a));
+            _resultStore[containerId] = { results: byEff, currentSort: 'efficiency', renderer: renderMatchResults };
+            renderMatchResults(containerId, byEff, 'efficiency');
             // 트렌드 키워드 섹션 자동 노출 (검색 결과 있을 때)
             if (containerId === 'benchResults' && results.length >= 5) {
                 const tk = document.getElementById('trendKeywordSection');
