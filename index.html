@@ -3110,7 +3110,8 @@
                         <div class="tbx-row" style="margin:0;">
                             <span class="tbx-lab">배경 띠</span>
                             <div class="tb-options" id="tbBand">
-                                <button class="tb-opt selected" data-val="band" onclick="toggleTbOpt(this,'tbBand',1);tbLivePreview()"><div class="opt-title">검정 띠</div></button>
+                                <button class="tb-opt selected" data-val="grad" onclick="toggleTbOpt(this,'tbBand',1);tbLivePreview()"><div class="opt-title">그라데이션</div><div class="opt-desc">자연스럽게 스며듦</div></button>
+                                <button class="tb-opt" data-val="band" onclick="toggleTbOpt(this,'tbBand',1);tbLivePreview()"><div class="opt-title">검정 띠</div></button>
                                 <button class="tb-opt" data-val="none" onclick="toggleTbOpt(this,'tbBand',1);tbLivePreview()"><div class="opt-title">없음</div></button>
                             </div>
                         </div>
@@ -21127,7 +21128,22 @@ Example format:
                 bandTop = lay.pos === 'top' ? mgnPx : lay.pos === 'middle' ? Math.round((H - blockH) / 2) : (H - blockH - mgnPx);
             }
             const cxBase = (lay.xy && typeof lay.xy.x === 'number') ? Math.max(0.08, Math.min(0.92, lay.xy.x)) * W : W / 2;
-            if (band) { x.fillStyle = 'rgba(0,0,0,0.82)'; x.fillRect(0, bandTop, W, blockH); }
+            window._tbTextRect = {y0: bandTop / H, y1: (bandTop + blockH) / H}; // 드래그 잡기 영역
+            if (band === 'grad') {
+                // 자연 그라데이션 — 위는 투명하게 스며들고 글자 구간은 충분히 어둡게. 하단 배치면 바닥까지 이어짐.
+                const fadeTop = Math.max(0, bandTop - Math.round(blockH * 0.7));
+                const nearBottom = bandTop + blockH > H * 0.82;
+                const gradBottom = nearBottom ? H : Math.min(H, bandTop + blockH + Math.round(blockH * 0.5));
+                const g = x.createLinearGradient(0, fadeTop, 0, gradBottom);
+                g.addColorStop(0, 'rgba(0,0,0,0)');
+                g.addColorStop(Math.max(0.01, (bandTop - fadeTop) / (gradBottom - fadeTop)), 'rgba(0,0,0,0.62)');
+                g.addColorStop(1, nearBottom ? 'rgba(0,0,0,0.85)' : 'rgba(0,0,0,0)');
+                x.fillStyle = g;
+                x.fillRect(0, fadeTop, W, gradBottom - fadeTop);
+            } else if (band === 'band' || band === true) {
+                x.fillStyle = 'rgba(0,0,0,0.82)';
+                x.fillRect(0, bandTop, W, blockH);
+            }
             x.textAlign = 'center'; x.textBaseline = 'alphabetic';
             // [대괄호] 부분 색 강조 — "일본 [초비상]" → 초비상만 강조색. 레퍼런스들의 단어별 색 코딩 재현.
             const parseRuns = (text, accent) => {
@@ -21197,7 +21213,7 @@ Example format:
                 if (msg) msg.textContent = '글자 입히는 중…';
                 const c1 = getSelectedVals('tbColor1')[0] || '#ffe400';
                 const c2 = getSelectedVals('tbColor2')[0] || '#ffffff';
-                const band = (getSelectedVals('tbBand')[0] || 'band') === 'band';
+                const band = getSelectedVals('tbBand')[0] || 'grad'; // 'grad' | 'band' | 'none'
                 const sizeCap = parseInt((document.getElementById('tbSizeRange') || {}).value || '115');
                 const font = getSelectedVals('tbFont')[0] || 'Black Han Sans';
                 const layout = {
@@ -21231,25 +21247,39 @@ Example format:
                 '</div></div>').join('') || '<p style="color:#ef4444;">전부 실패했어요</p>';
             tbAttachDrag(); // 미리보기 글자 드래그 이동
         }
-        // 미리보기 이미지에서 글자 블록을 드래그해 자유 배치 — 미리캔버스식
+        // 미리보기에서 글자 블록을 '잡아서' 끌기 — 블록 위에서만 드래그 시작(순간이동 없음), 상대 이동
         function tbAttachDrag() {
             document.querySelectorAll('#tbResultContent img').forEach((im) => {
                 if (im._tbDragWired) return;
                 im._tbDragWired = true;
-                im.style.cursor = 'move';
+                const inBlock = (ev) => {
+                    const r = im.getBoundingClientRect();
+                    const fy = (ev.clientY - r.top) / r.height;
+                    const tr = window._tbTextRect;
+                    return tr && fy >= tr.y0 - 0.03 && fy <= tr.y1 + 0.03;
+                };
+                im.addEventListener('mousemove', (ev) => { if (!im._tbDragging) im.style.cursor = inBlock(ev) ? 'grab' : 'default'; });
                 im.addEventListener('mousedown', (e) => {
+                    if (!inBlock(e)) return; // 글자 블록을 잡았을 때만
                     e.preventDefault();
+                    im._tbDragging = true;
+                    im.style.cursor = 'grabbing';
                     const rect = im.getBoundingClientRect();
+                    const tr = window._tbTextRect || {y0: 0.8};
+                    const startFx = (e.clientX - rect.left) / rect.width;
+                    const startFy = (e.clientY - rect.top) / rect.height;
+                    const curX = (window._tbLayoutXY && typeof window._tbLayoutXY.x === 'number') ? window._tbLayoutXY.x : 0.5;
+                    const dx = startFx - curX;      // 잡은 지점과 블록 중심의 간격 유지
+                    const dy = startFy - tr.y0;     // 잡은 지점과 블록 상단의 간격 유지
                     const move = (ev) => {
                         const fx = (ev.clientX - rect.left) / rect.width;
                         const fy = (ev.clientY - rect.top) / rect.height;
-                        window._tbLayoutXY = {x: Math.max(0, Math.min(1, fx)), y: Math.max(0, Math.min(1, fy - 0.07))}; // 커서를 블록 상단 살짝 위로
+                        window._tbLayoutXY = {x: Math.max(0, Math.min(1, fx - dx)), y: Math.max(0, Math.min(1, fy - dy))};
                         tbLivePreview();
                     };
-                    const up = () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); };
+                    const up = () => { im._tbDragging = false; im.style.cursor = 'grab'; document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); };
                     document.addEventListener('mousemove', move);
                     document.addEventListener('mouseup', up);
-                    move(e);
                 });
             });
         }
