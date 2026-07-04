@@ -24196,9 +24196,15 @@ ${titles}`;
                     ? `<span class="stat-badge" style="background:#fd7e14;color:white">매칭도 높음</span>`
                     : `<span class="stat-badge">참고용</span>`;
 
-                // 구독자 대비 조회수 성과 판정
+                // 성과 판정 — 정렬 기준에 맞춰 등급 표시 (급상승순=속도 등급, 그 외=효율 등급)
                 let perfBadge;
-                if (item.efficiency === 99 || item.subscriberCount === 0) {
+                if (activeSort === 'velocity') {
+                    const v = _velVal(item);
+                    if (v >= 10000)     perfBadge = `<span class="stat-badge" style="background:#ff4444;color:white;font-weight:700">🔥 대박 상승</span>`;
+                    else if (v >= 3000) perfBadge = `<span class="stat-badge" style="background:#fd7e14;color:white;font-weight:700">상승 중</span>`;
+                    else if (v >= 500)  perfBadge = `<span class="stat-badge" style="background:#28a745;color:white">보통</span>`;
+                    else                perfBadge = `<span class="stat-badge" style="background:#adb5bd;color:white">잠잠</span>`;
+                } else if (item.efficiency === 99 || item.subscriberCount === 0) {
                     perfBadge = `<span class="stat-badge" style="background:#6c757d;color:white">구독자 비공개</span>`;
                 } else if (item.efficiency >= 2.0) {
                     perfBadge = `<span class="stat-badge" style="background:#ff4444;color:white;font-weight:700">대박</span>`;
