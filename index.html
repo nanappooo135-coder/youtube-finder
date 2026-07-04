@@ -23993,6 +23993,66 @@ Example format:
             window._benchDefaultSort = null;
         }
 
+        // ═══ 🆕 신규 마킹 — 스캔 스냅샷(본 videoId 집합)과 대조 ═══
+        const SEEN_KEY = 'bench_seen_videos';
+        function _markNewVideos(results) {
+            let seen = {};
+            try { seen = JSON.parse(localStorage.getItem(SEEN_KEY) || '{}'); } catch (e) {}
+            const baseline = Object.keys(seen).length === 0; // 첫 스캔은 기준점만 잡음 (전부 NEW 방지)
+            const now = Date.now();
+            for (const r of results) {
+                r._isNew = !baseline && !seen[r.videoId];
+                seen[r.videoId] = seen[r.videoId] || now;
+            }
+            // 60일 지난 기록은 정리 (저장소 비대 방지)
+            const cutoff = now - 60 * 86400000;
+            for (const k in seen) { if (seen[k] < cutoff) delete seen[k]; }
+            try { localStorage.setItem(SEEN_KEY, JSON.stringify(seen)); } catch (e) {}
+        }
+
+        // ═══ 먹잇감 상태 (제작함/검토중/패스) ═══
+        const VSTATUS_KEY = 'video_status';
+        function _loadVStatus() { try { return JSON.parse(localStorage.getItem(VSTATUS_KEY) || '{}'); } catch (e) { return {}; } }
+        function setVideoStatus(videoId, status, btn) {
+            const s = _loadVStatus();
+            if (s[videoId] === status) delete s[videoId]; else s[videoId] = status; // 같은 버튼 다시 누르면 해제
+            localStorage.setItem(VSTATUS_KEY, JSON.stringify(s));
+            const card = btn.closest('.card');
+            if (card) { const fresh = _matchCardHtml(_findResultItem(videoId) || {}, (_resultStore['benchResults'] || {}).currentSort); card.outerHTML = fresh; }
+        }
+        function _findResultItem(videoId) {
+            for (const cid in _resultStore) {
+                const hit = ((_resultStore[cid] || {}).results || []).find(r => r.videoId === videoId);
+                if (hit) return hit;
+            }
+            return null;
+        }
+
+        // ═══ 결과 필터 (전체/신규만/검토중만) — 패스는 기본 숨김 ═══
+        window._benchFilter = 'all';
+        function setBenchFilter(containerId, mode, btn) {
+            window._benchFilter = mode;
+            document.querySelectorAll('#' + containerId + ' .bf-btn').forEach(b => b.classList.toggle('active', b === btn));
+            const store = _resultStore[containerId];
+            if (store) store.renderer(containerId, store.results, store.currentSort);
+        }
+        function _applyBenchFilter(results) {
+            const st = _loadVStatus();
+            let out = results.filter(r => window._benchFilter === 'showpass' || st[r.videoId] !== 'pass');
+            if (window._benchFilter === 'new') out = out.filter(r => r._isNew);
+            else if (window._benchFilter === 'review') out = out.filter(r => st[r.videoId] === 'review');
+            return out;
+        }
+
+        // ═══ ⑤ 대본 파이프라인 다리 — 작업 시작 명령 복사 ═══
+        function copyPipelineCmd(videoId, btn) {
+            const cmd = '\uC774\uC81C\uBAA9\uD3B8 \uC791\uC5C5 \uC2DC\uC791 https://www.youtube.com/watch?v=' + videoId;
+            navigator.clipboard.writeText(cmd.replace('\uC774\uC81C\uBAA9\uD3B8', '\u25CB\u25CB\uD3B8')).then(() => {
+                const t = btn.textContent; btn.textContent = '\u2705 \uBCF5\uC0AC\uB428';
+                setTimeout(() => { btn.textContent = t; }, 1500);
+            });
+        }
+
         function displayMatchResults(containerId, results) {
             // 기본 정렬 = 효율순 (급상승 버튼으로 온 경우 = 시간당 조회수순)
             const mode = window._benchDefaultSort === 'velocity' ? 'velocity' : 'efficiency';
@@ -24238,14 +24298,16 @@ ${titles}`;
             const fmt = n => n >= 100000000 ? (n / 100000000).toFixed(1) + '억' : n >= 10000 ? (n / 10000).toFixed(1) + '만' : n.toLocaleString();
             let html = `<div style="background:#fff;border:1.5px solid #a7f3d0;border-radius:12px;padding:14px 16px;margin:10px 0;">
             <div style="font-weight:800;margin-bottom:4px;color:#065f46;">📊 주제 트렌드 — 여러 채널이 따라 만드는 주제 순 (결과 ${data.length}개 기준)</div>
-            <p style="font-size:0.76rem;color:#888;margin:0 0 8px;">🔥 = 채널 3개 이상 제작(검증된 트렌드). 채널수 많고 평균 효율 높은 주제 = 지금 만들면 터질 확률 높음.</p>
+            <p style="font-size:0.76rem;color:#888;margin:0 0 8px;">💎 <b>선점 기회</b> = 채널 2~4개만 만들었는데 평균 효율 1.5배+ (검증됐는데 아직 안 붐빔) · ⚠️ = 채널 12개+ 레드오션 · 🔥 = 채널 3개+ 제작 중.</p>
             <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
             <tr style="background:#f0fdf4;color:#065f46;"><th style="padding:7px 8px;text-align:left;">주제</th><th style="padding:7px;">영상</th><th style="padding:7px;">채널</th><th style="padding:7px;">합계 조회수</th><th style="padding:7px;">평균 효율</th><th style="padding:7px 8px;text-align:left;">대표 영상 (최다 조회)</th></tr>`;
             for (const [k, a] of rows) {
                 const hotCh = a.channels.size >= 3;
                 const avgEff = a.effN ? (a.effSum / a.effN) : 0;
-                html += `<tr style="border-bottom:1px solid #eef2f0;${hotCh ? 'background:#fffbeb;' : ''}">
-                    <td style="padding:7px 8px;font-weight:700;">${hotCh ? '🔥 ' : ''}${k}</td>
+                const ocean = (a.channels.size >= 2 && a.channels.size <= 4 && avgEff >= 1.5) ? '💎'
+                            : (a.channels.size >= 12) ? '⚠️' : '';
+                html += `<tr style="border-bottom:1px solid #eef2f0;${ocean === '💎' ? 'background:#eff6ff;' : hotCh ? 'background:#fffbeb;' : ''}">
+                    <td style="padding:7px 8px;font-weight:700;">${ocean ? ocean + ' ' : hotCh ? '🔥 ' : ''}${k}</td>
                     <td style="padding:7px;text-align:center;">${a.videos.size}</td>
                     <td style="padding:7px;text-align:center;font-weight:${hotCh ? '800' : '400'};">${a.channels.size}</td>
                     <td style="padding:7px;text-align:center;">${fmt(a.views)}</td>
@@ -24264,14 +24326,23 @@ ${titles}`;
                 el.innerHTML = '<div class="results-header">조건에 맞는 영상이 없어요. 키워드나 기간을 조정해보세요.</div>';
                 return;
             }
-            let html = `<div class="results-header success">${results.length}개 영상을 찾았어요!
+            const filtered = _applyBenchFilter(results);
+            const nNew = results.filter(r => r._isNew).length;
+            const stAll = _loadVStatus();
+            const nReview = results.filter(r => stAll[r.videoId] === 'review').length;
+            let html = `<div class="results-header success">${filtered.length}개 영상${window._benchFilter !== 'all' ? ` (전체 ${results.length}개 중)` : '을 찾았어요!'}
                 <button onclick="analyzeTopicTrends('${containerId}')" style="float:right;padding:5px 14px;background:#0ca678;color:#fff;border:none;border-radius:8px;font-size:0.82rem;cursor:pointer;font-weight:700;">📊 주제 트렌드</button></div>`;
             html += `<div id="${containerId}_topics"></div>`;
+            html += `<div class="sort-bar" style="margin-bottom:2px;"><span class="sort-label">보기</span>
+                <button class="sort-btn bf-btn ${window._benchFilter === 'all' ? 'active' : ''}" onclick="setBenchFilter('${containerId}','all',this)">전체</button>
+                <button class="sort-btn bf-btn ${window._benchFilter === 'new' ? 'active' : ''}" onclick="setBenchFilter('${containerId}','new',this)">🆕 신규만 (${nNew})</button>
+                <button class="sort-btn bf-btn ${window._benchFilter === 'review' ? 'active' : ''}" onclick="setBenchFilter('${containerId}','review',this)">🔍 검토중 (${nReview})</button>
+                <button class="sort-btn bf-btn ${window._benchFilter === 'showpass' ? 'active' : ''}" onclick="setBenchFilter('${containerId}','showpass',this)">패스 포함</button></div>`;
             html += buildSortBar(containerId, activeSort, true);
-            const first = results.slice(0, 120);
+            const first = filtered.slice(0, 120);
             html += `<div id="${containerId}_cards">` + first.map(it => _matchCardHtml(it, activeSort)).join('') + `</div>`;
-            if (results.length > 120) {
-                html += `<button id="${containerId}_more" onclick="loadMoreMatch('${containerId}')" style="width:100%;padding:13px;margin:6px 0 12px;background:#f1f3f5;border:1.5px solid #d0d4da;border-radius:10px;font-size:0.95rem;font-weight:700;color:#374151;cursor:pointer;">더 보기 (${(results.length - 120).toLocaleString()}개 남음)</button>`;
+            if (filtered.length > 120) {
+                html += `<button id="${containerId}_more" onclick="loadMoreMatch('${containerId}')" style="width:100%;padding:13px;margin:6px 0 12px;background:#f1f3f5;border:1.5px solid #d0d4da;border-radius:10px;font-size:0.95rem;font-weight:700;color:#374151;cursor:pointer;">더 보기 (${(filtered.length - 120).toLocaleString()}개 남음)</button>`;
             }
             el.innerHTML = html;
         }
@@ -24282,10 +24353,11 @@ ${titles}`;
             const cards = document.getElementById(containerId + '_cards');
             const btn = document.getElementById(containerId + '_more');
             if (!store || !cards) return;
+            const filtered = _applyBenchFilter(store.results);
             const cur = cards.children.length;
-            const next = store.results.slice(cur, cur + 300);
+            const next = filtered.slice(cur, cur + 300);
             cards.insertAdjacentHTML('beforeend', next.map(it => _matchCardHtml(it, store.currentSort)).join(''));
-            const remain = store.results.length - cards.children.length;
+            const remain = filtered.length - cards.children.length;
             if (btn) {
                 if (remain > 0) btn.textContent = `더 보기 (${remain.toLocaleString()}개 남음)`;
                 else btn.remove();
@@ -24318,8 +24390,12 @@ ${titles}`;
             }
 
             const isBookmarked = _isBookmarked(item.videoId);
+            const vst = _loadVStatus()[item.videoId] || '';
+            const newBadge = item._isNew ? `<span class="stat-badge" style="background:#7048e8;color:white;font-weight:800">🆕 NEW</span>` : '';
+            const stBtn = (key, label) => `<button onclick="setVideoStatus('${item.videoId}','${key}',this)" style="padding:3px 10px;border-radius:6px;border:1.2px solid ${vst === key ? '#111827' : '#d0d4da'};background:${vst === key ? '#111827' : '#fff'};color:${vst === key ? '#fff' : '#4b5563'};font-size:0.74rem;font-weight:700;cursor:pointer;">${label}</button>`;
+            const cardStyle = vst === 'made' ? 'opacity:0.45;' : vst === 'pass' ? 'opacity:0.35;' : '';
             return `
-                <div class="card">
+                <div class="card" style="${cardStyle}">
                     <div class="card-inner">
                         <div class="card-thumbnail" data-vid="${item.videoId}" data-title="${escapeHtml(item.title)}" data-ch="${escapeHtml(item.channelTitle)}" onclick="openThumbFromCard(this)">
                             <img src="${item.thumbnail}" alt="${escapeHtml(item.title)}" loading="lazy" decoding="async">
@@ -24337,6 +24413,7 @@ ${titles}`;
                                 </a>
                             </div>
                             <div class="card-stats">
+                                ${newBadge}
                                 ${perfBadge}
                                 ${_velBadge(item)}
                                 ${matchBadge}
@@ -24344,7 +24421,10 @@ ${titles}`;
                                 <span class="stat-badge">구독자 ${item.subscriberCount > 0 ? formatNumber(item.subscriberCount) : '비공개'}</span>
                                 <span class="stat-badge highlight">효율 ${item.efficiency === 99 ? '-' : item.efficiency.toFixed(1) + '배'}</span>
                             </div>
-                            <div class="card-date">${formatDate(item.publishedAt)}</div>
+                            <div class="card-date" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">${formatDate(item.publishedAt)}
+                                <span style="margin-left:6px;">${stBtn('made', vst === 'made' ? '🎬 제작함 ✓' : '🎬 제작함')}${stBtn('review', vst === 'review' ? ' 🔍 검토중 ✓' : ' 🔍 검토중')}${stBtn('pass', vst === 'pass' ? ' ✖ 패스 ✓' : ' ✖ 패스')}</span>
+                                <button onclick="copyPipelineCmd('${item.videoId}',this)" title="유정 대본 파이프라인 명령 복사" style="padding:3px 10px;border-radius:6px;border:1.2px solid #4a90d9;background:#fff;color:#4a90d9;font-size:0.74rem;font-weight:700;cursor:pointer;">📋 대본 명령 복사</button>
+                            </div>
                         </div>
                     </div>
                 </div>`;
@@ -25239,6 +25319,13 @@ ${titles}`;
                 });
                 progBar.style.width = '100%'; loadText.textContent = '완료!';
 
+                // 🚫 할당량 소진으로 0개면 '조건 안 맞음'이 아니라 소진 안내 + 빈 캐시 저장 금지
+                if (results.length === 0 && typeof _exhaustedKeys !== 'undefined' && _exhaustedKeys.size >= loadApiKeys().filter(Boolean).length) {
+                    showError('benchResults', '🚫 오늘 YouTube API 할당량을 모두 소진했어요. 매일 오후 4~5시(태평양 자정)에 초기화됩니다. 다른 Google 계정에서 발급한 키를 추가하면 바로 더 쓸 수 있어요 (API 키 설정).');
+                    usageEl.textContent = 'API 할당량 소진 — 결과 없음 (캐시 저장 안 함)';
+                    return;
+                }
+                _markNewVideos(results); // 🆕 지난 스캔에 없던 영상 표시
                 saveBenchCache(results, [query1, query2, query3, query4, query5].filter(Boolean));
                 displayMatchResults('benchResults', results);
 
