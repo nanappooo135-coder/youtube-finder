@@ -24405,10 +24405,14 @@ ${titles}`;
                                 localStorage.setItem(key, repoStr);
                                 overwriteCount += chData[type].length;
                             }
-                        } else if (existing.length === 0 && chData[type].length > 0) {
-                            // PAT 있음: 비어있을 때만 채움
-                            localStorage.setItem(key, JSON.stringify(chData[type]));
-                            loadedCount += chData[type].length;
+                        } else if (chData[type].length > 0) {
+                            // PAT 있음: 로컬 우선 + repo에만 있는 채널은 병합 (외부에서 repo에 직접 추가한 것 반영)
+                            const localIds = new Set(existing.map(c => c.id));
+                            const merged = existing.concat(chData[type].filter(c => c.id && !localIds.has(c.id)));
+                            if (merged.length !== existing.length) {
+                                localStorage.setItem(key, JSON.stringify(merged));
+                                loadedCount += merged.length - existing.length;
+                            }
                         }
                     }
                 }
