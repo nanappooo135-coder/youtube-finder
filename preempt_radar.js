@@ -37,6 +37,7 @@
 
     var PR_CSS = ''
         + '.pr-item{display:flex;align-items:flex-start;gap:10px;padding:12px;border:1px solid #eee;border-radius:10px;margin-bottom:8px;background:white;transition:all .2s;}'
+        + '.pr-thumb{width:150px;height:84px;border-radius:6px;flex-shrink:0;object-fit:cover;cursor:pointer;background:#f1f3f5;}'
         + '.pr-item:hover{border-color:#1971c2;box-shadow:0 2px 8px rgba(25,113,194,.12);}'
         + '.pr-badge{flex-shrink:0;padding:4px 10px;border-radius:8px;font-size:0.8rem;font-weight:800;white-space:nowrap;}'
         + '.pr-hot{background:#ffe3e3;color:#c92a2a;}'
@@ -65,8 +66,8 @@
         + '        <option value="48">최근 48시간</option>'
         + '      </select>'
         + '      <select id="prTopic" onchange="prApplyFilters()" style="padding:6px 10px;border:1px solid #e0e0e0;border-radius:6px;font-size:0.8rem;">'
-        + '        <option value="all" selected>전체 뉴스</option>'
-        + '        <option value="econ">경제 냄새만</option>'
+        + '        <option value="econ" selected>경제 냄새만</option>'
+        + '        <option value="all">전체 뉴스</option>'
         + '      </select>'
         + '      <label style="font-size:0.8rem;color:#555;display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" id="prNoShorts" checked onchange="prApplyFilters()">쇼츠 제외</label>'
         + '      <button id="prScanBtn" onclick="runPreemptRadar()" style="padding:6px 16px;background:#1971c2;color:white;border:none;border-radius:8px;font-size:0.85rem;font-weight:700;cursor:pointer;">🎯 스캔</button>'
@@ -97,6 +98,23 @@
         var t = String(title || '');
         for (var i = 0; i < ECON_HINTS.length; i++) {
             if (t.indexOf(ECON_HINTS[i]) !== -1) return true;
+        }
+        return false;
+    }
+
+    // 연예·스포츠 상시 차단 (전체 모드에서도) — 경제 채널 소재 아님
+    var BLOCK_HINTS = ['야구', '축구', '농구', '배구', '골프', '테니스', '수영', '육상', 'KBO', 'MLB', 'NBA', 'EPL', 'UFC',
+        '올림픽', '월드컵', '챔피언스리그', 'K리그', '프로야구', '국가대표팀', '하이라이트', '선발라인업', '감독 선임',
+        '손흥민', '이강인', '김민재', '김하성', '경기 결과', '결승전', '준결승',
+        'H.L', '홈런', '이닝', '역전승', '끝내기', '결승골', '득점', '연승', '연패 탈출',
+        '아이돌', '컴백', '뮤직비디오', '뮤비', 'MV', '신곡', '음원', '콘서트', '팬미팅', '팬덤',
+        '드라마', '예능', '배우', '여배우', '걸그룹', '보이그룹', '열애', '결별', '전 연인',
+        '영화 개봉', '시사회', 'OST', '시청률', '넷플릭스 공개'];
+
+    function prIsBlocked(title) {
+        var t = String(title || '');
+        for (var i = 0; i < BLOCK_HINTS.length; i++) {
+            if (t.indexOf(BLOCK_HINTS[i]) !== -1) return true;
         }
         return false;
     }
@@ -235,6 +253,7 @@
         var items = payload.videos.filter(function (v) {
             if (v.duration >= 3 * 3600) return false; // 라이브 특보/재방송 스트림 제외 (클립만)
             if (noShorts && v.duration < 60) return false;
+            if (prIsBlocked(v.title)) return false; // 연예·스포츠는 모드 무관 상시 제외
             if (econOnly && !prIsEcon(v.title)) return false;
             return true;
         });
@@ -247,9 +266,9 @@
                 var videoUrl = 'https://www.youtube.com/watch?v=' + v.id;
                 var ago = formatRelativeTime(new Date(v.publishedAt).getTime());
                 return '<div class="pr-item" data-vid="' + v.id + '">'
-                    + prVphBadge(v.vph)
+                    + '<img class="pr-thumb" src="' + (v.thumb || '') + '" loading="lazy" onclick="window.open(\'' + videoUrl + '\',\'_blank\')" alt="">'
                     + '<div style="flex:1;min-width:0;">'
-                    + '<div class="pr-title" onclick="window.open(\'' + videoUrl + '\',\'_blank\')">' + v.title + '</div>'
+                    + '<div class="pr-title" onclick="window.open(\'' + videoUrl + '\',\'_blank\')">' + prVphBadge(v.vph) + ' ' + v.title + '</div>'
                     + '<div class="pr-meta">' + v.channelTitle + ' · 조회 ' + formatViewCount(v.viewCount) + ' · ' + ago + ' · ' + formatDuration(v.duration) + '</div>'
                     + '<div class="pr-comp-slot" style="margin-top:6px;">'
                     + '<button class="pr-check-btn" onclick="prCheckLongform(this, \'' + v.id + '\')">🔍 경쟁 확인 — 빈 바다인가? (101u)</button>'
