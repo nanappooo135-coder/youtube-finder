@@ -21072,7 +21072,9 @@ Example format:
         }
         // ===== 글자 직접 입히기(캔버스 합성) — AI 글자 복불복(작고 색없고 뒤죽박죽) 근본 해결 =====
         //  AI는 글자 없는 그림만 만들고, 검은고딕(Black Han Sans) 진짜 폰트로 문구를 얹는다. 오타·깨짐 0%.
+        const _tbImgCache = {}; // 배경 디코딩 캐시 — 실시간 편집 때 재다운로드 방지
         async function composeThumbText(imgUrl, line1, line2, c1, c2, band, sizeCap, font, layout) {
+            if (_tbImgCache[imgUrl]) return composeThumbTextWithImg(_tbImgCache[imgUrl], line1, line2, c1, c2, band, sizeCap, font, layout);
             const FONT = font || 'Black Han Sans';
             const FW = (FONT === 'Black Han Sans' || FONT === 'Do Hyeon' || FONT === 'Jua') ? '700' : '400'; // 눈누 CDN 폰트=파일 자체가 볼드
             try { await document.fonts.load(FW + ' 100px "' + FONT + '"'); } catch (e) {}
@@ -21099,6 +21101,12 @@ Example format:
                     im.src = viaBlob ? src : imgUrl;
                 });
             } catch (e) { window._tbLastErr = (window._tbLastErr ? window._tbLastErr + ' / ' : '') + (e.message || '이미지 로드 실패'); return null; }
+            _tbImgCache[imgUrl] = img;
+            return composeThumbTextWithImg(img, line1, line2, c1, c2, band, sizeCap, font, layout);
+        }
+        async function composeThumbTextWithImg(img, line1, line2, c1, c2, band, sizeCap, font, layout) {
+            const FONT = font || 'Black Han Sans';
+            const FW = (FONT === 'Black Han Sans' || FONT === 'Do Hyeon' || FONT === 'Jua') ? '700' : '400';
             const W = 1280, H = 720;
             const c = document.createElement('canvas'); c.width = W; c.height = H;
             const x = c.getContext('2d');
@@ -21301,7 +21309,7 @@ Example format:
                     const k = 1 + (ev.clientY - startY) / 160; // 아래로 끌면 커짐
                     document.getElementById('tbSizeRange').value = Math.max(45, Math.min(185, Math.round(s1 * k)));
                     document.getElementById('tbSize2Range').value = Math.max(30, Math.min(150, Math.round(s2 * k)));
-                    tbLivePreview();
+                    tbLivePreviewFast();
                 };
                 const up = () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); };
                 document.addEventListener('mousemove', move);
@@ -21379,9 +21387,9 @@ Example format:
                         const fx = (ev.clientX - rect.left) / rect.width;
                         const fy = (ev.clientY - rect.top) / rect.height;
                         window._tbLayoutXY = {x: Math.max(0, Math.min(1, fx - dx)), y: Math.max(0, Math.min(1, fy - dy))};
-                        tbLivePreview();
+                        tbLivePreviewFast();
                     };
-                    const up = () => { im._tbDragging = false; im.style.cursor = 'grab'; document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); };
+                    const up = () => { im._tbDragging = false; im.style.cursor = 'grab'; document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); tbCapture(); };
                     document.addEventListener('mousemove', move);
                     document.addEventListener('mouseup', up);
                 });
@@ -21476,6 +21484,16 @@ Example format:
         function tbLivePreview() {
             clearTimeout(window._tbLp);
             window._tbLp = setTimeout(() => { tbCapture(); renderThumbResults(null); }, 250);
+        }
+        // 드래그·핸들 전용 즉시 미리보기 — 대기 없이 프레임 단위(진행 중이면 스킵)
+        function tbLivePreviewFast() {
+            if (window._tbFastBusy) { window._tbFastAgain = true; return; }
+            window._tbFastBusy = true;
+            requestAnimationFrame(async () => {
+                try { await renderThumbResults(null); } catch (e) {}
+                window._tbFastBusy = false;
+                if (window._tbFastAgain) { window._tbFastAgain = false; tbLivePreviewFast(); }
+            });
         }
         // 레퍼런스 썸네일을 Gemini 비전으로 분석 — 구도·인물·로고·사물·색·글자·감정을 글로 추출해
         //  프롬프트에 박는다(이미지 힌트보다 글 지시가 구속력 강함 — 벤치마킹 흔들림 해결).
