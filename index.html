@@ -24721,13 +24721,20 @@ ${titles}`;
             // 업로드 플레이리스트 ID = UC... → UU...
             const playlistId = 'UU' + channelId.substring(2);
             try {
-                const data = await fetchYouTubeAPI('playlistItems', {
-                    key: apiKey,
-                    part: 'snippet,contentDetails',
-                    playlistId,
-                    maxResults: 50
-                });
-                return (data.items || [])
+                // 기간 내 영상은 전부 수집 — 페이지당 50개(1유닛), 기간 밖 영상 만나면 중단 (업로드목록=최신순)
+                let items = [];
+                let pageToken = null;
+                for (let page = 0; page < Math.ceil(maxItems / 50); page++) {
+                    const params = { key: apiKey, part: 'snippet,contentDetails', playlistId, maxResults: 50 };
+                    if (pageToken) params.pageToken = pageToken;
+                    const data = await fetchYouTubeAPI('playlistItems', params);
+                    const got = data.items || [];
+                    items.push(...got);
+                    pageToken = data.nextPageToken;
+                    const oldest = got.length ? new Date(got[got.length - 1].contentDetails?.videoPublishedAt || got[got.length - 1].snippet?.publishedAt || 0) : null;
+                    if (!pageToken || !oldest || oldest < publishedAfterDate) break; // 기간 밖 도달 → 더 안 감
+                }
+                return items
                     .filter(item => {
                         const pub = new Date(item.contentDetails?.videoPublishedAt || item.snippet?.publishedAt || 0);
                         return pub >= publishedAfterDate;
@@ -25029,8 +25036,8 @@ ${titles}`;
                 if (krChannels.length > 0) {
                     progBar.style.width = '40%';
                     loadText.textContent = `등록 채널 ${krChannels.length}개 수집 중... (채널당 1 유닛)`;
-                    // 기간이 길수록 채널당 더 많이 수집
-                    const perChannel = period >= 180 ? 30 : period >= 90 ? 20 : 10;
+                    // 기간 내 영상은 채널당 사실상 전부 수집 (업로드목록 1페이지=50개=1유닛, 기간 길면 2페이지)
+                    const perChannel = period >= 90 ? 100 : 50;
                     const plResults = await Promise.all(
                         krChannels.map(c => fetchChannelVideosViaPlaylist(c.id, c.title, publishedAfter, perChannel))
                     );
@@ -25047,7 +25054,7 @@ ${titles}`;
                 });
                 const validRegistered = dedupe(registeredItems);
                 const validSearch = dedupe(allItems);
-                const validItems = [...validRegistered, ...validSearch].slice(0, 500);
+                const validItems = [...validRegistered, ...validSearch].slice(0, 3000);
 
                 // 유효한 YouTube 영상 ID만 필터 (11자, 영숫자+_-)
                 const validVideoId = id => /^[a-zA-Z0-9_-]{11}$/.test(id);
