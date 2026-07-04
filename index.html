@@ -3033,7 +3033,7 @@
                 <div class="tbx-left">
                     <div id="tbResult" class="tbx-card">
                     <div class="tbx-head"><div class="tbx-t">🖼 썸네일 미리보기</div></div>
-                    <div class="tbx-hint" style="margin-left:0;">문구·색·글꼴을 바꾸면 여기서 바로 바뀌어요.</div>
+                    <div class="tbx-hint" style="margin-left:0;">✏️ 글자 더블클릭=바로 수정 · 잡아끌기=이동 · 파란 점 드래그=크기 · 단어 선택+색 클릭=부분 색칠</div>
                     <div id="tbResultContent" style="display:grid;grid-template-columns:1fr;gap:12px;">
                         <div style="border:1.5px dashed #d9dde4;border-radius:10px;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;color:#9aa3b2;font-size:0.85rem;text-align:center;line-height:1.6;">아직 생성 전이에요<br>왼쪽에서 설정하고 [AI 썸네일 생성]</div>
                     </div>
@@ -21180,6 +21180,10 @@ Example format:
                 x.textAlign = 'center';
             };
             const y1 = bandTop + pad + fs1 * 0.82;
+            window._tbLineRects = [
+                {line: 1, y0: (bandTop + pad) / H, y1: (bandTop + pad + fs1) / H, fs: fs1},
+                line2 ? {line: 2, y0: (bandTop + pad + fs1 + gap) / H, y1: (bandTop + pad + fs1 + gap + fs2) / H, fs: fs2} : null,
+            ].filter(Boolean);
             drawLine(line1, fs1, c1, y1);
             if (line2) drawLine(line2, fs2, c2, y1 + gap + fs2 * 0.95);
             try { URL.revokeObjectURL(src); } catch (e) {}
@@ -21243,12 +21247,83 @@ Example format:
             if (mySeq !== window._tbRenderSeq) return; // 더 새 요청이 이미 돌고 있음
             document.getElementById('tbResultContent').innerHTML = finals.map((u, i) =>
                 '<div style="border:1px solid #e0e0e0;border-radius:10px;overflow:hidden;">' +
+                (i === 0 ? '<div id="tbEditWrap" style="position:relative;">' : '<div style="position:relative;">') +
                 '<img src="' + u + '" style="width:100%;display:block;aspect-ratio:16/9;object-fit:cover;">' +
+                '</div>' +
                 '<div style="display:flex;gap:6px;padding:8px;">' +
                 '<button class="btn-small btn-primary" style="flex:1;padding:8px;border-radius:8px;cursor:pointer;" onclick="tbDl(' + i + ')">⬇ 다운로드</button>' +
                 '<button class="btn-small" style="padding:8px 12px;border-radius:8px;cursor:pointer;border:1.5px solid #aaa;background:white;" onclick="tbBig(' + i + ')">크게</button>' +
                 '</div></div>').join('') || '<p style="color:#ef4444;">전부 실패했어요</p>';
             tbAttachDrag(); // 미리보기 글자 드래그 이동
+            tbAttachInlineEdit(); // 더블클릭 직접 수정 + 크기 핸들
+        }
+        // ═══ 미리캔버스식 인라인 편집 — 더블클릭=그 자리 수정, 핸들 드래그=크기 ═══
+        function tbAttachInlineEdit() {
+            const wrap = document.getElementById('tbEditWrap');
+            if (!wrap || wrap._tbWired) return;
+            wrap._tbWired = true;
+            const im = wrap.querySelector('img');
+            // 더블클릭 → 해당 줄 위에 입력창
+            im.addEventListener('dblclick', (e) => {
+                const r = im.getBoundingClientRect();
+                const fy = (e.clientY - r.top) / r.height;
+                const lines = window._tbLineRects || [];
+                let hit = null;
+                for (const L of lines) { if (fy >= L.y0 - 0.02 && fy <= L.y1 + 0.02) { hit = L; break; } }
+                if (!hit) return;
+                tbOpenInline(wrap, im, hit);
+            });
+            // 크기 핸들 — 블록 우하단 원형, 위/아래 드래그로 확대·축소
+            const h = document.createElement('div');
+            h.id = 'tbSizeHandle';
+            h.style.cssText = 'position:absolute;width:16px;height:16px;border-radius:50%;background:#3b82f6;border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.4);cursor:nwse-resize;z-index:5;';
+            wrap.appendChild(h);
+            const place = () => {
+                const tr = window._tbTextRect;
+                if (!tr) { h.style.display = 'none'; return; }
+                h.style.display = 'block';
+                h.style.right = '5%';
+                h.style.top = 'calc(' + (tr.y1 * 100) + '% - 8px)';
+            };
+            place();
+            wrap._tbPlaceHandle = place;
+            h.addEventListener('mousedown', (e) => {
+                e.preventDefault(); e.stopPropagation();
+                const startY = e.clientY;
+                const s1 = parseInt(document.getElementById('tbSizeRange').value || '115');
+                const s2 = parseInt(document.getElementById('tbSize2Range').value || '70');
+                const move = (ev) => {
+                    const k = 1 + (ev.clientY - startY) / 160; // 아래로 끌면 커짐
+                    document.getElementById('tbSizeRange').value = Math.max(45, Math.min(185, Math.round(s1 * k)));
+                    document.getElementById('tbSize2Range').value = Math.max(30, Math.min(150, Math.round(s2 * k)));
+                    tbLivePreview();
+                };
+                const up = () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); };
+                document.addEventListener('mousemove', move);
+                document.addEventListener('mouseup', up);
+            });
+        }
+        function tbOpenInline(wrap, im, L) {
+            const old = document.getElementById('tbInlineEdit');
+            if (old) old.remove();
+            const target = L.line === 1 ? 'tbText1' : 'tbText2';
+            const r = im.getBoundingClientRect();
+            const inp = document.createElement('input');
+            inp.id = 'tbInlineEdit';
+            inp.dataset.target = target;
+            inp.value = document.getElementById(target).value;
+            const fpx = Math.max(18, L.fs * (r.height / 720) * 0.72);
+            // ★body에 fixed로 부착 — 실시간 재렌더가 미리보기 HTML을 갈아끼워도 입력창은 살아남는다
+            inp.style.cssText = 'position:fixed;z-index:9999;left:' + (r.left + r.width * 0.02) + 'px;width:' + (r.width * 0.96) + 'px;top:' + (r.top + r.height * L.y0 - 2) + 'px;height:' + (r.height * (L.y1 - L.y0) + 8) + 'px;font-size:' + fpx + 'px;font-weight:800;text-align:center;background:rgba(255,255,255,0.95);border:2px solid #3b82f6;border-radius:8px;box-sizing:border-box;box-shadow:0 4px 16px rgba(0,0,0,0.25);';
+            document.body.appendChild(inp);
+            inp.focus();
+            inp.addEventListener('input', () => {
+                document.getElementById(target).value = inp.value;
+                tbLivePreview();
+            });
+            const close = () => { if (inp.parentNode) inp.remove(); };
+            inp.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === 'Escape') close(); });
+            inp.addEventListener('blur', () => setTimeout(close, 150)); // 색 버튼 클릭 여유
         }
         // 미리보기에서 글자 블록을 '잡아서' 끌기 — 블록 위에서만 드래그 시작(순간이동 없음), 상대 이동
         function tbAttachDrag() {
@@ -21309,6 +21384,8 @@ Example format:
             window._tbSelTarget = null;
             if (ae && (ae.id === 'tbText1' || ae.id === 'tbText2') && ae.selectionEnd > ae.selectionStart) {
                 window._tbSelTarget = {id: ae.id, s: ae.selectionStart, e: ae.selectionEnd};
+            } else if (ae && ae.id === 'tbInlineEdit' && ae.selectionEnd > ae.selectionStart) {
+                window._tbSelTarget = {id: ae.dataset.target, s: ae.selectionStart, e: ae.selectionEnd, inline: true};
             }
         }
         function tbColorClick(btn, group) {
@@ -21318,6 +21395,8 @@ Example format:
                 const el = document.getElementById(t.id);
                 const v = el.value;
                 el.value = v.slice(0, t.s) + '[' + hex + '|' + v.slice(t.s, t.e) + ']' + v.slice(t.e);
+                const inline = document.getElementById('tbInlineEdit');
+                if (inline && t.inline) inline.value = el.value; // 인라인 편집창도 동기화
                 window._tbSelTarget = null;
                 tbLivePreview();
                 return; // 줄 전체 색은 안 바꿈 — 선택 단어만
