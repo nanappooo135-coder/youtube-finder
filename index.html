@@ -24268,64 +24268,86 @@ ${titles}`;
                 <button onclick="analyzeTopicTrends('${containerId}')" style="float:right;padding:5px 14px;background:#0ca678;color:#fff;border:none;border-radius:8px;font-size:0.82rem;cursor:pointer;font-weight:700;">📊 주제 트렌드</button></div>`;
             html += `<div id="${containerId}_topics"></div>`;
             html += buildSortBar(containerId, activeSort, true);
-            results.forEach(item => {
-                const matchBadge = item.matchScore >= 8
-                    ? `<span class="stat-badge highlight">매칭도 최상</span>`
-                    : item.matchScore >= 5
-                    ? `<span class="stat-badge" style="background:#fd7e14;color:white">매칭도 높음</span>`
-                    : `<span class="stat-badge">참고용</span>`;
-
-                // 성과 판정 — 정렬 기준에 맞춰 등급 표시 (급상승순=속도 등급, 그 외=효율 등급)
-                let perfBadge;
-                if (activeSort === 'velocity') {
-                    const v = _velVal(item);
-                    if (v >= 10000)     perfBadge = `<span class="stat-badge" style="background:#ff4444;color:white;font-weight:700">🔥 대박 상승</span>`;
-                    else if (v >= 3000) perfBadge = `<span class="stat-badge" style="background:#fd7e14;color:white;font-weight:700">상승 중</span>`;
-                    else if (v >= 500)  perfBadge = `<span class="stat-badge" style="background:#28a745;color:white">보통</span>`;
-                    else                perfBadge = `<span class="stat-badge" style="background:#adb5bd;color:white">잠잠</span>`;
-                } else if (item.efficiency === 99 || item.subscriberCount === 0) {
-                    perfBadge = `<span class="stat-badge" style="background:#6c757d;color:white">구독자 비공개</span>`;
-                } else if (item.efficiency >= 2.0) {
-                    perfBadge = `<span class="stat-badge" style="background:#ff4444;color:white;font-weight:700">대박</span>`;
-                } else if (item.efficiency >= 0.5) {
-                    perfBadge = `<span class="stat-badge" style="background:#28a745;color:white">보통</span>`;
-                } else {
-                    perfBadge = `<span class="stat-badge" style="background:#adb5bd;color:white">실패</span>`;
-                }
-
-                const isBookmarked = _isBookmarked(item.videoId);
-                html += `
-                    <div class="card">
-                        <div class="card-inner">
-                            <div class="card-thumbnail" data-vid="${item.videoId}" data-title="${escapeHtml(item.title)}" data-ch="${escapeHtml(item.channelTitle)}" onclick="openThumbFromCard(this)">
-                                <img src="${item.thumbnail}" alt="${escapeHtml(item.title)}">
-                            </div>
-                            <div class="card-content">
-                                <div class="card-title">
-                                    <a href="https://www.youtube.com/watch?v=${item.videoId}" target="_blank">
-                                        ${escapeHtml(item.title)}
-                                    </a>
-                                    <button onclick="toggleBookmark('${item.videoId}', this)" data-vid="${item.videoId}" title="북마크" style="margin-left:8px;background:none;border:none;cursor:pointer;font-size:1.2rem;vertical-align:middle;">${isBookmarked ? '⭐' : '☆'}</button>
-                                </div>
-                                <div class="card-channel">
-                                    <a href="https://www.youtube.com/channel/${item.channelId}" target="_blank">
-                                        ${escapeHtml(item.channelTitle)}
-                                    </a>
-                                </div>
-                                <div class="card-stats">
-                                    ${perfBadge}
-                                    ${_velBadge(item)}
-                                    ${matchBadge}
-                                    <span class="stat-badge">조회수 ${formatNumber(item.viewCount)}</span>
-                                    <span class="stat-badge">구독자 ${item.subscriberCount > 0 ? formatNumber(item.subscriberCount) : '비공개'}</span>
-                                    <span class="stat-badge highlight">효율 ${item.efficiency === 99 ? '-' : item.efficiency.toFixed(1) + '배'}</span>
-                                </div>
-                                <div class="card-date">${formatDate(item.publishedAt)}</div>
-                            </div>
-                        </div>
-                    </div>`;
-            });
+            const first = results.slice(0, 120);
+            html += `<div id="${containerId}_cards">` + first.map(it => _matchCardHtml(it, activeSort)).join('') + `</div>`;
+            if (results.length > 120) {
+                html += `<button id="${containerId}_more" onclick="loadMoreMatch('${containerId}')" style="width:100%;padding:13px;margin:6px 0 12px;background:#f1f3f5;border:1.5px solid #d0d4da;border-radius:10px;font-size:0.95rem;font-weight:700;color:#374151;cursor:pointer;">더 보기 (${(results.length - 120).toLocaleString()}개 남음)</button>`;
+            }
             el.innerHTML = html;
+        }
+
+        // 결과가 수천 개일 때 전량 DOM 렌더 = 스크롤 버벅임 → 120개 먼저, 이후 300개씩 append
+        function loadMoreMatch(containerId) {
+            const store = _resultStore[containerId];
+            const cards = document.getElementById(containerId + '_cards');
+            const btn = document.getElementById(containerId + '_more');
+            if (!store || !cards) return;
+            const cur = cards.children.length;
+            const next = store.results.slice(cur, cur + 300);
+            cards.insertAdjacentHTML('beforeend', next.map(it => _matchCardHtml(it, store.currentSort)).join(''));
+            const remain = store.results.length - cards.children.length;
+            if (btn) {
+                if (remain > 0) btn.textContent = `더 보기 (${remain.toLocaleString()}개 남음)`;
+                else btn.remove();
+            }
+        }
+
+        function _matchCardHtml(item, activeSort) {
+            const matchBadge = item.matchScore >= 8
+                ? `<span class="stat-badge highlight">매칭도 최상</span>`
+                : item.matchScore >= 5
+                ? `<span class="stat-badge" style="background:#fd7e14;color:white">매칭도 높음</span>`
+                : `<span class="stat-badge">참고용</span>`;
+
+            // 성과 판정 — 정렬 기준에 맞춰 등급 표시 (급상승순=속도 등급, 그 외=효율 등급)
+            let perfBadge;
+            if (activeSort === 'velocity') {
+                const v = _velVal(item);
+                if (v >= 10000)     perfBadge = `<span class="stat-badge" style="background:#ff4444;color:white;font-weight:700">🔥 대박 상승</span>`;
+                else if (v >= 3000) perfBadge = `<span class="stat-badge" style="background:#fd7e14;color:white;font-weight:700">상승 중</span>`;
+                else if (v >= 500)  perfBadge = `<span class="stat-badge" style="background:#28a745;color:white">보통</span>`;
+                else                perfBadge = `<span class="stat-badge" style="background:#adb5bd;color:white">잠잠</span>`;
+            } else if (item.efficiency === 99 || item.subscriberCount === 0) {
+                perfBadge = `<span class="stat-badge" style="background:#6c757d;color:white">구독자 비공개</span>`;
+            } else if (item.efficiency >= 2.0) {
+                perfBadge = `<span class="stat-badge" style="background:#ff4444;color:white;font-weight:700">대박</span>`;
+            } else if (item.efficiency >= 0.5) {
+                perfBadge = `<span class="stat-badge" style="background:#28a745;color:white">보통</span>`;
+            } else {
+                perfBadge = `<span class="stat-badge" style="background:#adb5bd;color:white">실패</span>`;
+            }
+
+            const isBookmarked = _isBookmarked(item.videoId);
+            return `
+                <div class="card">
+                    <div class="card-inner">
+                        <div class="card-thumbnail" data-vid="${item.videoId}" data-title="${escapeHtml(item.title)}" data-ch="${escapeHtml(item.channelTitle)}" onclick="openThumbFromCard(this)">
+                            <img src="${item.thumbnail}" alt="${escapeHtml(item.title)}" loading="lazy" decoding="async">
+                        </div>
+                        <div class="card-content">
+                            <div class="card-title">
+                                <a href="https://www.youtube.com/watch?v=${item.videoId}" target="_blank">
+                                    ${escapeHtml(item.title)}
+                                </a>
+                                <button onclick="toggleBookmark('${item.videoId}', this)" data-vid="${item.videoId}" title="북마크" style="margin-left:8px;background:none;border:none;cursor:pointer;font-size:1.2rem;vertical-align:middle;">${isBookmarked ? '⭐' : '☆'}</button>
+                            </div>
+                            <div class="card-channel">
+                                <a href="https://www.youtube.com/channel/${item.channelId}" target="_blank">
+                                    ${escapeHtml(item.channelTitle)}
+                                </a>
+                            </div>
+                            <div class="card-stats">
+                                ${perfBadge}
+                                ${_velBadge(item)}
+                                ${matchBadge}
+                                <span class="stat-badge">조회수 ${formatNumber(item.viewCount)}</span>
+                                <span class="stat-badge">구독자 ${item.subscriberCount > 0 ? formatNumber(item.subscriberCount) : '비공개'}</span>
+                                <span class="stat-badge highlight">효율 ${item.efficiency === 99 ? '-' : item.efficiency.toFixed(1) + '배'}</span>
+                            </div>
+                            <div class="card-date">${formatDate(item.publishedAt)}</div>
+                        </div>
+                    </div>
+                </div>`;
         }
 
         // ===========================
