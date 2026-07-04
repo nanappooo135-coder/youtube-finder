@@ -25626,12 +25626,14 @@ ${titles}`;
         // Firebase 클라우드 동기화
         // ===========================
         const FIREBASE_DB = 'https://finder-30aa6-default-rtdb.firebaseio.com';
+        // ★채널 목록(bench_*)은 GitHub channels.json이 진실원 — Firebase와 이중 동기화하면
+        //   서로 덮어쓰기 싸움 → 무한 새로고침 루프(폰 깜빡임). 클라우드에선 제외.
         const SYNC_KEYS = [
             'current_channel',
-            'my_channel_profile', 'bench_kr_channels', 'bench_foreign_channels',
-            '역사_channel_profile', '역사_bench_kr', '역사_bench_foreign',
-            'jp_channel_profile', 'jp_bench_kr', 'jp_bench_foreign',
-            '심리학_channel_profile', '심리학_bench_kr', '심리학_bench_foreign',
+            'my_channel_profile',
+            '역사_channel_profile',
+            'jp_channel_profile',
+            '심리학_channel_profile',
             'youtube_api_keys', 'active_api_key_idx',
             'gemini_api_key',
             'folders',
@@ -25680,6 +25682,7 @@ ${titles}`;
                 let changed = false;
                 let count = 0;
                 Object.entries(data).forEach(([k, v]) => {
+                    if (!SYNC_KEYS.includes(k)) return; // 클라우드에 남은 옛 키(채널 목록 등) 무시
                     count++;
                     if (localStorage.getItem(k) !== v) {
                         _origSetItem(k, v); // 오버라이드 우회 → cloudSave 재귀 예약 방지
@@ -25733,10 +25736,13 @@ ${titles}`;
             }
         }
 
-        // 페이지 로드 시 클라우드에서 동기화
+        // 페이지 로드 시 클라우드에서 동기화 — 새로고침은 세션당 1회만 (무한루프 안전망)
         (async function initCloudSync() {
             const changed = await cloudLoad();
-            if (changed) location.reload();
+            if (changed && !sessionStorage.getItem('cloud_reloaded')) {
+                sessionStorage.setItem('cloud_reloaded', '1');
+                location.reload();
+            }
         })();
 
         // localStorage 변경 감지 → 자동 클라우드 저장
