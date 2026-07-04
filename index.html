@@ -25036,8 +25036,9 @@ ${titles}`;
                 if (krChannels.length > 0) {
                     progBar.style.width = '40%';
                     loadText.textContent = `등록 채널 ${krChannels.length}개 수집 중... (채널당 1 유닛)`;
-                    // 기간 내 영상은 채널당 사실상 전부 수집 (업로드목록 1페이지=50개=1유닛, 기간 길면 2페이지)
-                    const perChannel = period >= 90 ? 100 : 50;
+                    // 기간 내 영상은 채널당 전부 수집 — 페이지는 기간 밖 도달 시 자동 중단되므로 상한은 안전망일 뿐
+                    // (쇼츠 다작 채널은 롱폼이 최신 50개 밖으로 밀림: 삼프로·신사임당 누락 사례 → 상한 500)
+                    const perChannel = 500;
                     const plResults = await Promise.all(
                         krChannels.map(c => fetchChannelVideosViaPlaylist(c.id, c.title, publishedAfter, perChannel))
                     );
@@ -25054,7 +25055,7 @@ ${titles}`;
                 });
                 const validRegistered = dedupe(registeredItems);
                 const validSearch = dedupe(allItems);
-                const validItems = [...validRegistered, ...validSearch].slice(0, 3000);
+                const validItems = [...validRegistered, ...validSearch].slice(0, 20000); // 채널 551개×기간내 전부 수용 (통계조회 1유닛/50개)
 
                 // 유효한 YouTube 영상 ID만 필터 (11자, 영숫자+_-)
                 const validVideoId = id => /^[a-zA-Z0-9_-]{11}$/.test(id);
