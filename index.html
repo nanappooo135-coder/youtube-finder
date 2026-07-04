@@ -21163,7 +21163,8 @@ Example format:
                     '항목당 1줄, 군더더기 없이.',
                     {images: [img], maxTokens: 2048});
                 const ta = document.getElementById('tbRefAnalysis');
-                ta.value = (out || '').trim();
+                const txt = (out && typeof out === 'object' && out.text) ? out.text : String(out || '');
+                ta.value = txt.trim();
                 ta.style.display = 'block';
                 msgEl.textContent = '✅ 분석 완료 — 내용 수정 가능, 생성 시 자동 반영돼요';
             } catch (e) { msgEl.textContent = '⚠ ' + (e.message || '분석 실패'); }
