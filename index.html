@@ -4809,46 +4809,6 @@
                 </div>
             </div>
 
-            <!-- 실시간 경제 유튜브 (경제 채널 특화) -->
-            <div class="section">
-                <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
-                    📺 실시간 경제 유튜브
-                    <div style="display:flex;gap:6px;">
-                        <select id="econYtCategory" onchange="fetchEconYoutube(true)" style="padding:6px 10px;border:1px solid #e0e0e0;border-radius:6px;font-size:0.8rem;">
-                            <option value="econ">📊 경제 전반</option>
-                            <option value="stock">💹 주식/증시</option>
-                            <option value="real">🏢 부동산</option>
-                            <option value="global">🌍 글로벌 경제</option>
-                            <option value="policy">🏛️ 금융정책</option>
-                            <option value="crypto">🪙 암호화폐</option>
-                        </select>
-                        <select id="econYtPeriod" onchange="fetchEconYoutube(true)" style="padding:6px 10px;border:1px solid #e0e0e0;border-radius:6px;font-size:0.8rem;">
-                            <option value="1">최근 24시간</option>
-                            <option value="3" selected>최근 3일</option>
-                            <option value="7">최근 7일</option>
-                        </select>
-                        <select id="econYtSort" onchange="fetchEconYoutube(true)" style="padding:6px 10px;border:1px solid #e0e0e0;border-radius:6px;font-size:0.8rem;">
-                            <option value="viewCount" selected>조회수</option>
-                            <option value="date">최신순</option>
-                            <option value="relevance">관련도</option>
-                        </select>
-                        <button onclick="fetchEconYoutube(true)" style="padding:6px 16px;background:#dc3545;color:white;border:none;border-radius:8px;font-size:0.85rem;cursor:pointer;">새로고침</button>
-                    </div>
-                </div>
-                <div class="section-content">
-                    <p style="font-size:0.85rem;color:#888;margin-bottom:12px;">
-                        경쟁 채널들이 <b>지금</b> 뭘 올리는지 확인 → 핫한 주제 캐치. <b>영상 클릭</b>은 유튜브 이동, <b>채널명 클릭</b>은 해당 채널 이동.
-                    </p>
-                    <div id="econYtLoading" style="display:none;text-align:center;padding:20px;color:#888;">
-                        <div class="trend-spinner"></div>
-                        불러오는 중...
-                    </div>
-                    <div id="econYtError" style="display:none;padding:16px;background:#fff5f5;border:1px solid #ffe0e0;border-radius:10px;color:#dc3545;font-size:0.9rem;line-height:1.6;"></div>
-                    <div id="econYtList"></div>
-                    <p id="econYtTime" style="font-size:0.8rem;color:#aaa;margin-top:8px;text-align:right;"></p>
-                </div>
-            </div>
-
             <div class="section">
                 <div class="section-title">🔗 트렌드 사이트 바로가기</div>
                 <div class="section-content">
@@ -8980,7 +8940,7 @@ ${_retryRound > 0 ? `⚠️ 이번은 ${_retryRound}차 추가 요청입니다. 
             if (proc === 'review') checkFcServer('rvServerStatus');
             if (proc === 'scriptReview') { srLoadAll(); claudeUnifiedLoad(); }
             if (proc === 'plan') pnLoadAll();
-            if (proc === 'trend') { fetchIssueRadar(); fetchEconYoutube(); }
+            if (proc === 'trend') { fetchIssueRadar(); }
             if (proc === 'sellpot' && window._spInit) window._spInit(); else if (proc === 'sellpot') setTimeout(function(){ if (window._spInit) window._spInit(); }, 500);
             if (proc === 'sellfarm' && window._cfInit) window._cfInit();
             const aioEl = document.getElementById('process-allinone');
@@ -32196,191 +32156,6 @@ ${commentText.slice(0, 12000)}`;
         }
 
         // ===========================
-        // 실시간 경제 유튜브 (YouTube Data API 기반)
-        // ===========================
-        const ECON_YT_CATEGORIES = {
-            econ:   { name: '경제 전반', query: '경제뉴스 OR 한국경제 OR 경제전망 OR 경제분석' },
-            stock:  { name: '주식/증시', query: '주식투자 OR 증시분석 OR 코스피 OR 코스닥 OR 주식시장' },
-            real:   { name: '부동산',   query: '부동산 OR 아파트가격 OR 집값 OR 전세 OR 분양' },
-            global: { name: '글로벌',   query: '미국경제 OR 연준 OR FOMC OR 달러환율 OR 중국경제 OR 일본경제' },
-            policy: { name: '금융정책', query: '한국은행 OR 기준금리 OR 통화정책 OR 금융위원회' },
-            crypto: { name: '암호화폐', query: '비트코인 OR 이더리움 OR 암호화폐 OR 가상화폐 OR 알트코인' }
-        };
-
-        // 경제 영상이 아닌 걸로 확실한 키워드 (제목에 있으면 제외)
-        const ECON_YT_BLOCK_KEYWORDS = [
-            '하이라이트', '중계', '실시간 중계',
-            'KBO', 'MLB', 'NBA', 'EPL', 'UFC', '프로야구', '프로축구', '프로농구',
-            '야구', '축구', '농구', '배구', '골프', '테니스',
-            '삼성 vs', '한화 vs', '롯데 vs', 'LG vs', '두산 vs', 'KIA vs', '키움 vs', 'NC vs', 'SSG vs', 'KT vs',
-            ' vs 삼성', ' vs 한화', ' vs 롯데', ' vs LG', ' vs 두산', ' vs KIA', ' vs 키움', ' vs NC', ' vs SSG',
-            'SPORTS', 'Sports',
-            '드라마', '예능', '뮤비', '뮤직비디오', 'MV',
-            '게임플레이', '공략'
-        ];
-
-        function isEconomicVideo(video) {
-            const title = (video.title || '').toLowerCase();
-            const channel = (video.channelTitle || '').toLowerCase();
-            const combined = title + ' ' + channel;
-            // 차단 키워드가 제목/채널명에 있으면 경제 영상 아님
-            for (const kw of ECON_YT_BLOCK_KEYWORDS) {
-                if (combined.includes(kw.toLowerCase())) return false;
-            }
-            return true;
-        }
-
-        let _econYtCache = {};
-        let _econYtCacheTime = {};
-        const ECON_YT_CACHE_TTL = 30 * 60 * 1000; // 30분 캐시 (API 절약)
-
-        async function fetchEconYoutube(forceRefresh = false) {
-            const catEl = document.getElementById('econYtCategory');
-            const perEl = document.getElementById('econYtPeriod');
-            const sortEl = document.getElementById('econYtSort');
-            if (!catEl) return;
-
-            const cat = catEl.value;
-            const period = perEl.value;
-            const sort = sortEl.value;
-            const cacheKey = cat + '|' + period + '|' + sort;
-
-            if (!forceRefresh && _econYtCache[cacheKey] && (Date.now() - (_econYtCacheTime[cacheKey] || 0)) < ECON_YT_CACHE_TTL) {
-                renderEconYoutube(_econYtCache[cacheKey]);
-                return;
-            }
-
-            const loadingEl = document.getElementById('econYtLoading');
-            const errorEl = document.getElementById('econYtError');
-            const listEl = document.getElementById('econYtList');
-            const timeEl = document.getElementById('econYtTime');
-
-            loadingEl.style.display = '';
-            errorEl.style.display = 'none';
-            listEl.innerHTML = '';
-            timeEl.textContent = '';
-
-            // YouTube API 키 확인
-            const loadKeysFn = typeof loadApiKeys === 'function' ? loadApiKeys : null;
-            const allKeys = loadKeysFn ? loadKeysFn().filter(Boolean) : [];
-            if (!allKeys.length) {
-                loadingEl.style.display = 'none';
-                errorEl.style.display = '';
-                errorEl.innerHTML = 'YouTube API 키가 없어요. 주제찾기 탭의 API 키 설정에서 먼저 등록해주세요.';
-                return;
-            }
-
-            const category = ECON_YT_CATEGORIES[cat];
-            const publishedAfter = new Date(Date.now() - parseInt(period) * 24 * 60 * 60 * 1000).toISOString();
-
-            // 할당량 초과 시 다음 키로 자동 전환 helper
-            function isQuotaError(msg) {
-                return /quota|exceed|exceeded|usage limit|rate limit/i.test(msg || '');
-            }
-
-            async function tryApiCall(url) {
-                let lastErr = null;
-                for (let i = 0; i < allKeys.length; i++) {
-                    const activeIdx = getActiveKeyIdx();
-                    const key = allKeys[activeIdx] || allKeys[0];
-                    try {
-                        const res = await fetch(url + '&key=' + key);
-                        if (res.ok) return await res.json();
-                        const err = await res.json().catch(() => ({}));
-                        const msg = err.error?.message || 'HTTP ' + res.status;
-                        lastErr = new Error(msg);
-                        if (isQuotaError(msg) && typeof switchApiKey === 'function') {
-                            // 다음 키로 전환 시도
-                            if (!switchApiKey()) break; // 모든 키 소진
-                            continue; // 다음 반복에서 새 키 사용
-                        }
-                        throw lastErr;
-                    } catch(e) {
-                        lastErr = e;
-                        if (isQuotaError(e.message) && typeof switchApiKey === 'function') {
-                            if (!switchApiKey()) break;
-                            continue;
-                        }
-                        throw e;
-                    }
-                }
-                throw lastErr || new Error('모든 API 키 소진');
-            }
-
-            try {
-                // 1. search.list (100 units, 가장 비쌈)
-                const searchUrlBase = 'https://www.googleapis.com/youtube/v3/search?' + new URLSearchParams({
-                    part: 'snippet',
-                    q: category.query,
-                    type: 'video',
-                    regionCode: 'KR',
-                    relevanceLanguage: 'ko',
-                    order: sort,
-                    publishedAfter: publishedAfter,
-                    maxResults: '50'
-                });
-
-                const searchData = await tryApiCall(searchUrlBase);
-                const videoIds = (searchData.items || []).map(it => it.id?.videoId).filter(Boolean);
-                if (!videoIds.length) {
-                    loadingEl.style.display = 'none';
-                    errorEl.style.display = '';
-                    errorEl.innerHTML = '해당 기간에 올라온 영상이 없어요. 기간을 늘려보세요.';
-                    return;
-                }
-
-                // 2. videos.list (1 unit, 저렴)
-                const videosUrlBase = 'https://www.googleapis.com/youtube/v3/videos?' + new URLSearchParams({
-                    part: 'snippet,statistics,contentDetails',
-                    id: videoIds.join(',')
-                });
-                const videosData = await tryApiCall(videosUrlBase);
-
-                const videos = (videosData.items || []).map(v => {
-                    const duration = parseIsoDuration(v.contentDetails?.duration);
-                    return {
-                        id: v.id,
-                        title: v.snippet.title,
-                        channelId: v.snippet.channelId,
-                        channelTitle: v.snippet.channelTitle,
-                        thumb: v.snippet.thumbnails?.medium?.url || v.snippet.thumbnails?.default?.url,
-                        publishedAt: v.snippet.publishedAt,
-                        viewCount: parseInt(v.statistics?.viewCount || '0'),
-                        likeCount: parseInt(v.statistics?.likeCount || '0'),
-                        duration: duration
-                    };
-                });
-
-                // Shorts 제외 (60초 이하) + 비경제 영상 제외 (스포츠/엔터 등)
-                const filtered = videos
-                    .filter(v => v.duration > 60)
-                    .filter(v => isEconomicVideo(v))
-                    .slice(0, 25);
-
-                loadingEl.style.display = 'none';
-
-                if (!filtered.length) {
-                    errorEl.style.display = '';
-                    errorEl.innerHTML = '필터링 후 남은 경제 영상이 없어요. 기간을 늘리거나 다른 카테고리를 선택해보세요.';
-                    return;
-                }
-
-                _econYtCache[cacheKey] = filtered;
-                _econYtCacheTime[cacheKey] = Date.now();
-                renderEconYoutube(filtered);
-            } catch (e) {
-                loadingEl.style.display = 'none';
-                errorEl.style.display = '';
-                if (/quota|exceed/i.test(e.message)) {
-                    errorEl.innerHTML = '⚠️ 모든 YouTube API 키 할당량 초과 (일일 10,000 units).<br>'
-                        + '<small>내일 초기화돼요. 빨리 쓰고 싶으면 <a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="color:#dc3545;font-weight:700;">새 API 키 발급</a> 후 주제찾기 탭에서 추가하세요.<br>'
-                        + '💡 search API는 1회당 100 units 먹어서 하루 100번 정도만 가능. 캐시(30분) 덕에 같은 조건 재조회는 API 소비 없음.</small>';
-                } else {
-                    errorEl.innerHTML = '유튜브 API 오류: ' + e.message;
-                }
-            }
-        }
-
         function parseIsoDuration(iso) {
             if (!iso) return 0;
             const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
@@ -32400,35 +32175,6 @@ ${commentText.slice(0, 12000)}`;
             if (n >= 10000) return (n / 10000).toFixed(n >= 100000 ? 0 : 1) + '만';
             if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
             return n.toLocaleString();
-        }
-
-        function renderEconYoutube(videos) {
-            const listEl = document.getElementById('econYtList');
-            const timeEl = document.getElementById('econYtTime');
-
-            if (!videos.length) {
-                listEl.innerHTML = '<p style="color:#888;text-align:center;padding:20px;">영상이 없습니다.</p>';
-                return;
-            }
-
-            listEl.innerHTML = videos.map(v => {
-                const pubAgo = formatRelativeTime(new Date(v.publishedAt).getTime());
-                const views = formatViewCount(v.viewCount);
-                const dur = formatDuration(v.duration);
-                const videoUrl = 'https://www.youtube.com/watch?v=' + v.id;
-                const channelUrl = 'https://www.youtube.com/channel/' + v.channelId;
-                const safeTitle = v.title.replace(/"/g, '&quot;');
-                return '<div class="econ-yt-item">'
-                    + '<img class="econ-yt-thumb" src="' + v.thumb + '" onclick="window.open(\'' + videoUrl + '\',\'_blank\')" alt="">'
-                    + '<div class="econ-yt-info">'
-                    + '<div class="econ-yt-title" onclick="window.open(\'' + videoUrl + '\',\'_blank\')" title="' + safeTitle + '">' + v.title + '</div>'
-                    + '<div class="econ-yt-channel" onclick="window.open(\'' + channelUrl + '\',\'_blank\')">' + v.channelTitle + '</div>'
-                    + '<div class="econ-yt-meta"><span class="econ-yt-views">조회수 ' + views + '</span> · ' + pubAgo + ' · ' + dur + '</div>'
-                    + '</div></div>';
-            }).join('');
-
-            const now = new Date();
-            timeEl.textContent = '마지막 업데이트: ' + now.getHours() + '시 ' + String(now.getMinutes()).padStart(2,'0') + '분 (10분 캐시, Shorts 제외)';
         }
 
         // ========== (Legacy - News fallback, 사용 안 함) ==========
@@ -33741,6 +33487,6 @@ ${commentText.slice(0, 12000)}`;
         } catch(e) { alert('JSON 파싱 에러: ' + e.message); }
     }
     </script>
-<script src="preempt_radar.js?v=5"></script>
+<script src="preempt_radar.js?v=6"></script>
 </body>
 </html>

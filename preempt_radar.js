@@ -615,13 +615,40 @@
     var STATE_KEY = 'trend_accordion_state';
 
     var ACC_CSS = ''
-        + '#process-trend .section{border:1px solid #ececec;border-radius:14px;background:#fff;box-shadow:0 1px 5px rgba(0,0,0,.05);margin-bottom:12px;overflow:hidden;}'
-        + '#process-trend .section-title{cursor:pointer;user-select:none;padding:14px 16px;margin:0;font-size:1rem;}'
+        + '#process-trend .section{border:1px solid #ececec;border-radius:14px;background:#fff;box-shadow:0 1px 5px rgba(0,0,0,.05);margin-bottom:14px;overflow:hidden;}'
+        + '#process-trend .section-title{cursor:pointer;user-select:none;padding:18px 20px;margin:0;}'
         + '#process-trend .section-title:hover{background:#fafafa;}'
-        + '#process-trend .acc-chev{display:inline-block;margin-right:8px;color:#adb5bd;font-size:0.8rem;transition:transform .18s;transform:rotate(90deg);}'
+        + '#process-trend .acc-chev{display:inline-block;margin-right:10px;color:#adb5bd;font-size:0.95rem;transition:transform .18s;transform:rotate(90deg);}'
         + '#process-trend .acc-closed .acc-chev{transform:rotate(0deg);}'
         + '#process-trend .acc-closed > *:not(.section-title){display:none !important;}'
-        + '#process-trend .section-content{padding:4px 16px 16px;}';
+        + '#process-trend .section-content{padding:4px 20px 20px;}'
+        // ── 큼직한 글씨 (시안성) — 인라인 스타일보다 우선하도록 !important ──
+        + '#process-trend .section-title{font-size:1.3rem !important;font-weight:800 !important;}'
+        + '#process-trend .section-title span{font-size:inherit !important;}'
+        + '#process-trend .section-title span span{font-size:0.95rem !important;}' // (뉴스채널 14곳) 부제
+        + '#process-trend .section-content p{font-size:1rem !important;line-height:1.7 !important;}'
+        + '#process-trend select{font-size:1rem !important;padding:9px 12px !important;border-radius:8px !important;}'
+        + '#process-trend .section-title button{font-size:1.05rem !important;padding:10px 22px !important;border-radius:10px !important;}'
+        + '#process-trend .section-title label{font-size:0.95rem !important;}'
+        + '#process-trend input[type=text]{font-size:1.1rem !important;padding:13px 15px !important;}'
+        + '#process-trend .pr-item{padding:14px !important;gap:14px !important;}'
+        + '#process-trend .pr-thumb{width:210px !important;height:118px !important;border-radius:8px !important;}'
+        + '#process-trend .pr-title{font-size:1.18rem !important;line-height:1.45 !important;}'
+        + '#process-trend .pr-meta{font-size:1rem !important;margin-top:6px !important;}'
+        + '#process-trend .pr-badge{font-size:1rem !important;padding:5px 13px !important;border-radius:9px !important;}'
+        + '#process-trend .pr-comp{font-size:0.98rem !important;padding:8px 10px !important;}'
+        + '#process-trend .pr-check-btn{font-size:0.95rem !important;padding:7px 14px !important;}'
+        + '#process-trend #egChips button{font-size:0.95rem !important;padding:7px 16px !important;}'
+        + '#process-trend #svList span{font-size:1.08rem !important;}'
+        + '#process-trend #svList button{font-size:0.9rem !important;}'
+        + '#process-trend #prStatus,#process-trend #egStatus,#process-trend #svStatus{font-size:1rem !important;}'
+        + '#process-trend #prTime,#process-trend #egTime{font-size:0.9rem !important;}'
+        + '#process-trend #prError,#process-trend #egError,#process-trend #svError{font-size:1rem !important;}'
+        + '#process-trend .econ-news-item{padding:10px 12px !important;}'
+        + '#process-trend .econ-news-title{font-size:1.08rem !important;line-height:1.5 !important;}'
+        + '#process-trend .econ-news-source,#process-trend .econ-news-time{font-size:0.92rem !important;}'
+        + '#process-trend .econ-news-article-link{font-size:0.92rem !important;}'
+        + '#process-trend .trend-link-card{font-size:1.05rem !important;padding:16px !important;}';
 
     function keyOf(sec, idx) {
         return sec.id || 'idx_' + idx;
