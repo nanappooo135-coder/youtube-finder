@@ -3103,6 +3103,29 @@
                                 <button class="tb-opt" data-val="none" onclick="toggleTbOpt(this,'tbBand',1);tbLivePreview()"><div class="opt-title">없음</div></button>
                             </div>
                         </div>
+                        <div class="tbx-row" style="margin:0;">
+                            <span class="tbx-lab">위치</span>
+                            <div class="tb-options" id="tbTextPos">
+                                <button class="tb-opt selected" data-val="bottom" onclick="toggleTbOpt(this,'tbTextPos',1);tbLivePreview()"><div class="opt-title">하단</div></button>
+                                <button class="tb-opt" data-val="middle" onclick="toggleTbOpt(this,'tbTextPos',1);tbLivePreview()"><div class="opt-title">중앙</div></button>
+                                <button class="tb-opt" data-val="top" onclick="toggleTbOpt(this,'tbTextPos',1);tbLivePreview()"><div class="opt-title">상단</div></button>
+                            </div>
+                        </div>
+                        <div class="tbx-row" style="margin:0;">
+                            <span class="tbx-lab">정렬</span>
+                            <div class="tb-options" id="tbTextAlign">
+                                <button class="tb-opt selected" data-val="center" onclick="toggleTbOpt(this,'tbTextAlign',1);tbLivePreview()"><div class="opt-title">가운데</div></button>
+                                <button class="tb-opt" data-val="left" onclick="toggleTbOpt(this,'tbTextAlign',1);tbLivePreview()"><div class="opt-title">왼쪽</div></button>
+                            </div>
+                        </div>
+                        <div class="tbx-row" style="margin:0;">
+                            <span class="tbx-lab">여백</span>
+                            <div class="tb-options" id="tbTextMargin">
+                                <button class="tb-opt" data-val="0.015" onclick="toggleTbOpt(this,'tbTextMargin',1);tbLivePreview()"><div class="opt-title">붙임</div></button>
+                                <button class="tb-opt selected" data-val="0.05" onclick="toggleTbOpt(this,'tbTextMargin',1);tbLivePreview()"><div class="opt-title">보통</div></button>
+                                <button class="tb-opt" data-val="0.11" onclick="toggleTbOpt(this,'tbTextMargin',1);tbLivePreview()"><div class="opt-title">넓게</div></button>
+                            </div>
+                        </div>
                     </div>
                 <div id="tbEditMsg" style="font-size:0.8rem;color:#8a93a3;margin:4px 0 6px;"></div>
                 <button class="btn-small" onclick="reapplyThumbText()" style="width:100%;margin-top:8px;padding:11px;border-radius:10px;cursor:pointer;border:1.5px solid #4a90d9;color:#4a90d9;background:white;font-weight:700;">✍ 글자만 다시 입히기 <span style="font-weight:400;">(무료 · 문구·색·글꼴을 바꾸면 즉시 미리보기돼요)</span></button>
@@ -20998,7 +21021,7 @@ Example format:
                 ? ('The thumbnail text must read exactly "' + line1 + '" as the huge main line, and "' + line2 + '" as a second line below it at about 60% of the main size. ' + txtSpec)
                 : ('The thumbnail text must read exactly "' + line1 + '" as the huge main line. ' + txtSpec));
             // ★썸네일 화질 상시 규칙(작가 벤치 비교 피드백): 채도·대비 쨍하게 + 이야기 소품 — 뿌옇고 밋밋한 그림 차단
-            const punch = 'VIVID PUNCHY COLORS: strong saturated color contrast between zones (warm vs cool), one bold accent color highlighting the key object, deep blacks and bright highlights — NEVER washed-out, hazy, foggy or low-saturation. Crisp sharp details. Where it helps tell the story at a glance, include readable visual props with short clear ENGLISH labels (stamped boxes, warning stamps, signs — e.g. FAULTY stamp, MADE IN KOREA box). ';
+            const punch = 'VIVID PUNCHY COLORS: strong saturated color contrast between zones (warm vs cool), one bold accent color highlighting the key object, deep blacks and bright highlights — NEVER washed-out, hazy, foggy or low-saturation. Crisp sharp details. If the composition has two zones or a split, BLEND the boundary naturally with a soft gradational transition (smoke, dust, light falloff) — never a hard straight divider line, never a colored stripe between zones. Where it helps tell the story at a glance, include readable visual props with short clear ENGLISH labels (stamped boxes, warning stamps, signs — e.g. FAULTY stamp, MADE IN KOREA box). ';
             return 'Create a YouTube thumbnail. ' + ref + anaClause + what + punch + txt + ' 16:9, no watermark, no channel logo.';
         }
         async function kieThumbCreate(prompt, refs, res, model) {
@@ -21029,7 +21052,7 @@ Example format:
         }
         // ===== 글자 직접 입히기(캔버스 합성) — AI 글자 복불복(작고 색없고 뒤죽박죽) 근본 해결 =====
         //  AI는 글자 없는 그림만 만들고, 검은고딕(Black Han Sans) 진짜 폰트로 문구를 얹는다. 오타·깨짐 0%.
-        async function composeThumbText(imgUrl, line1, line2, c1, c2, band, sizeCap, font) {
+        async function composeThumbText(imgUrl, line1, line2, c1, c2, band, sizeCap, font, layout) {
             const FONT = font || 'Black Han Sans';
             const FW = (FONT === 'Black Han Sans' || FONT === 'Do Hyeon' || FONT === 'Jua') ? '700' : '400'; // 눈누 CDN 폰트=파일 자체가 볼드
             try { await document.fonts.load(FW + ' 100px "' + FONT + '"'); } catch (e) {}
@@ -21037,7 +21060,15 @@ Example format:
             window._tbLastErr = '';
             let src = imgUrl, viaBlob = true;
             try { const b = await (await fetch(imgUrl)).blob(); src = URL.createObjectURL(b); }
-            catch (e) { viaBlob = false; window._tbLastErr = 'fetch 실패: ' + (e.message || e); }
+            catch (e1) {
+                // 결과 호스트가 CORS를 막으면(나노바나나 등) 공개 이미지 프록시로 우회 — weserv는 ACAO:* 보장
+                try {
+                    const prox = 'https://images.weserv.nl/?url=' + encodeURIComponent(imgUrl);
+                    const b2 = await (await fetch(prox)).blob();
+                    if (b2.size < 2000) throw new Error('프록시 응답 이상');
+                    src = URL.createObjectURL(b2);
+                } catch (e2) { viaBlob = false; window._tbLastErr = 'fetch 실패: ' + (e1.message || e1) + ' / 프록시도 실패: ' + (e2.message || e2); }
+            }
             let img;
             try {
                 img = await new Promise((res, rej) => {
@@ -21065,7 +21096,9 @@ Example format:
             const gap = line2 ? Math.round(fs1 * 0.16) : 0;
             const pad = Math.round(fs1 * 0.22);
             const blockH = fs1 + (line2 ? gap + fs2 : 0) + pad * 2;
-            const bandTop = H - blockH - Math.round(H * 0.025);
+            const lay = layout || {};
+            const mgnPx = Math.round(H * (parseFloat(lay.margin) || 0.05));
+            const bandTop = lay.pos === 'top' ? mgnPx : lay.pos === 'middle' ? Math.round((H - blockH) / 2) : (H - blockH - mgnPx);
             if (band) { x.fillStyle = 'rgba(0,0,0,0.82)'; x.fillRect(0, bandTop, W, blockH); }
             x.textAlign = 'center'; x.textBaseline = 'alphabetic';
             // [대괄호] 부분 색 강조 — "일본 [초비상]" → 초비상만 강조색. 레퍼런스들의 단어별 색 코딩 재현.
@@ -21087,7 +21120,7 @@ Example format:
                 x.font = FW + ' ' + fs + 'px "' + FONT + '", "Malgun Gothic", sans-serif';
                 x.lineJoin = 'round';
                 const total = runs.reduce((s, r) => s + x.measureText(r.t).width, 0);
-                let cx0 = W / 2 - total / 2;
+                let cx0 = (lay.align === 'left') ? W * 0.05 : (W / 2 - total / 2);
                 x.textAlign = 'left';
                 for (const r of runs) {
                     x.strokeStyle = '#000';
@@ -21139,7 +21172,12 @@ Example format:
                 const band = (getSelectedVals('tbBand')[0] || 'band') === 'band';
                 const sizeCap = parseInt(getSelectedVals('tbTextSize')[0] || '115');
                 const font = getSelectedVals('tbFont')[0] || 'Black Han Sans';
-                finals = await Promise.all(ok.map((u) => composeThumbText(u, line1, line2, c1, c2, band, sizeCap, font).then((r) => r || u).catch(() => u)));
+                const layout = {
+                    pos: getSelectedVals('tbTextPos')[0] || 'bottom',
+                    align: getSelectedVals('tbTextAlign')[0] || 'center',
+                    margin: getSelectedVals('tbTextMargin')[0] || '0.05',
+                };
+                finals = await Promise.all(ok.map((u) => composeThumbText(u, line1, line2, c1, c2, band, sizeCap, font, layout).then((r) => r || u).catch(() => u)));
                 window._tbComposed = finals;
                 const okN = finals.filter((f) => String(f).indexOf('data:') === 0).length;
                 const em = document.getElementById('tbEditMsg');
