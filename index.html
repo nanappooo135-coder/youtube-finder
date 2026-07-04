@@ -2985,9 +2985,10 @@
                         <label style="cursor:pointer;padding:6px 12px;border:1px dashed #7c3aed;border-radius:8px;color:#7c3aed;font-size:0.85rem;font-weight:700;">👤 인물 얼굴 사진 (선택)
                             <input type="file" id="tbFaceInput" accept="image/*" style="display:none;" onchange="tbFacePick(this)">
                         </label>
+                        <button onclick="tbFacePaste()" style="padding:6px 12px;background:#7c3aed;color:white;border:none;border-radius:8px;font-size:0.85rem;font-weight:700;cursor:pointer;">📋 붙여넣기</button>
                         <img id="tbFacePreview" src="" alt="" style="display:none;height:44px;border-radius:6px;border:2px solid #7c3aed;">
                         <button id="tbFaceClear" onclick="tbFaceClear()" style="display:none;padding:4px 10px;background:#f1f3f5;border:1px solid #dee2e6;border-radius:6px;font-size:0.78rem;cursor:pointer;">✕ 제거</button>
-                        <span style="font-size:0.78rem;color:#888;">실존 인물이면 <b>최근</b> 사진 1장 — "이 얼굴 그대로" 지시가 자동으로 붙어요 (나노바나나2 전용)</span>
+                        <span style="font-size:0.78rem;color:#888;">캡쳐(Win+Shift+S)·우클릭 이미지 복사 후 📋 클릭. 실존 인물이면 <b>최근</b> 사진 — "이 얼굴 그대로" 지시 자동 (나노바나나2 전용)</span>
                     </div>
                 </div>
             </div>
@@ -20901,18 +20902,38 @@ Example format:
         // ★👤 인물 얼굴 슬롯 — 실존 인물의 "최근" 사진 1장으로 얼굴 동일성 유지.
         //  (2026-07-05 정몽규 실증: 이름·정밀묘사로는 '닮은 배우'가 한계, 실사 image_input+얼굴유지 지시가 정답. 나노바나나2 전용 — GPT는 정책상 얼굴 교체)
         window._tbFaceThumb = null;
+        function _tbFaceSet(dataUrl) {
+            window._tbFaceThumb = {dataUrl};
+            const p = document.getElementById('tbFacePreview');
+            p.src = dataUrl; p.style.display = '';
+            document.getElementById('tbFaceClear').style.display = '';
+        }
         function tbFacePick(input) {
             const f = input.files && input.files[0];
             if (!f) return;
             const fr = new FileReader();
-            fr.onload = () => {
-                window._tbFaceThumb = {dataUrl: fr.result};
-                const p = document.getElementById('tbFacePreview');
-                p.src = fr.result; p.style.display = '';
-                document.getElementById('tbFaceClear').style.display = '';
-            };
+            fr.onload = () => _tbFaceSet(fr.result);
             fr.readAsDataURL(f);
             input.value = '';
+        }
+        // 📋 캡쳐/복사한 이미지를 클립보드에서 바로 — Win+Shift+S 캡쳐나 우클릭 '이미지 복사' 후 클릭
+        async function tbFacePaste() {
+            try {
+                const items = await navigator.clipboard.read();
+                for (const it of items) {
+                    const type = (it.types || []).find((t) => t.startsWith('image/'));
+                    if (type) {
+                        const blob = await it.getType(type);
+                        const fr = new FileReader();
+                        fr.onload = () => _tbFaceSet(fr.result);
+                        fr.readAsDataURL(blob);
+                        return;
+                    }
+                }
+                alert('클립보드에 이미지가 없어요. 사진을 캡쳐(Win+Shift+S)하거나 우클릭 → 이미지 복사한 뒤 다시 눌러주세요.');
+            } catch (e) {
+                alert('클립보드 읽기 권한이 필요해요 — 브라우저가 물으면 "허용"을 눌러주세요. 계속 안 되면 옆의 업로드 버튼을 쓰세요.');
+            }
         }
         function tbFaceClear() {
             window._tbFaceThumb = null;
