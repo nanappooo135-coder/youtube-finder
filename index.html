@@ -2981,6 +2981,14 @@
                 <div class="tbx-body">
                     <input type="text" id="tbTopic" class="tbx-input" placeholder="영상 주제 (예: 이란 경제가 무너진 진짜 이유)" style="margin-bottom:8px;">
                     <textarea id="tbScene" rows="2" class="tbx-input" placeholder="장면 묘사 — 예: 이재용 회장이 턱을 괴고 고민, 뒤로 배터리 생산라인 (비우면 레퍼런스의 인물·소재 유지)" style="resize:vertical;"></textarea>
+                    <div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap;">
+                        <label style="cursor:pointer;padding:6px 12px;border:1px dashed #7c3aed;border-radius:8px;color:#7c3aed;font-size:0.85rem;font-weight:700;">👤 인물 얼굴 사진 (선택)
+                            <input type="file" id="tbFaceInput" accept="image/*" style="display:none;" onchange="tbFacePick(this)">
+                        </label>
+                        <img id="tbFacePreview" src="" alt="" style="display:none;height:44px;border-radius:6px;border:2px solid #7c3aed;">
+                        <button id="tbFaceClear" onclick="tbFaceClear()" style="display:none;padding:4px 10px;background:#f1f3f5;border:1px solid #dee2e6;border-radius:6px;font-size:0.78rem;cursor:pointer;">✕ 제거</button>
+                        <span style="font-size:0.78rem;color:#888;">실존 인물이면 <b>최근</b> 사진 1장 — "이 얼굴 그대로" 지시가 자동으로 붙어요 (나노바나나2 전용)</span>
+                    </div>
                 </div>
             </div>
 
@@ -20889,6 +20897,28 @@ Example format:
         }
         document.addEventListener('DOMContentLoaded', updateKieStatus);
 
+        // ★👤 인물 얼굴 슬롯 — 실존 인물의 "최근" 사진 1장으로 얼굴 동일성 유지.
+        //  (2026-07-05 정몽규 실증: 이름·정밀묘사로는 '닮은 배우'가 한계, 실사 image_input+얼굴유지 지시가 정답. 나노바나나2 전용 — GPT는 정책상 얼굴 교체)
+        window._tbFaceThumb = null;
+        function tbFacePick(input) {
+            const f = input.files && input.files[0];
+            if (!f) return;
+            const fr = new FileReader();
+            fr.onload = () => {
+                window._tbFaceThumb = {dataUrl: fr.result};
+                const p = document.getElementById('tbFacePreview');
+                p.src = fr.result; p.style.display = '';
+                document.getElementById('tbFaceClear').style.display = '';
+            };
+            fr.readAsDataURL(f);
+            input.value = '';
+        }
+        function tbFaceClear() {
+            window._tbFaceThumb = null;
+            document.getElementById('tbFacePreview').style.display = 'none';
+            document.getElementById('tbFaceClear').style.display = 'none';
+        }
+
         async function kieUploadDataUrl(dataUrl, fileName) {
             const r = await fetch('https://kieai.redpandaai.co/api/file-base64-upload', {
                 method: 'POST',
@@ -21525,7 +21555,7 @@ Example format:
             if (!kieThumbKey()) { alert('먼저 Kie API 키를 저장해주세요'); return; }
             // 글자 직접 모드는 문구 없이 배경만 생성 가능(나중에 '글자만 다시 입히기'로 후작업) — AI가 그리기만 문구 필수
             if (!line1 && (getSelectedVals('tbTextMode')[0] || 'overlay') === 'ai') { alert('AI가 그리기 모드는 문구 줄1이 필요해요'); return; }
-            if (!topic && !scene && !_tbRefThumbs.length) { alert('주제·장면 묘사·레퍼런스 중 하나는 필요해요'); return; }
+            if (!topic && !scene && !_tbRefThumbs.length && !window._tbFaceThumb) { alert('주제·장면 묘사·레퍼런스·인물 사진 중 하나는 필요해요'); return; }
             const n = parseInt(getSelectedVals('tbCount')[0] || '2');
             let res = getSelectedVals('tbRes')[0] || '2K';
             if ((getSelectedVals('tbModel')[0] || 'nano') === 'nano') res = '2K'; // 나노는 2K 고정(작가 지정)
@@ -21556,10 +21586,25 @@ Example format:
                 }
                 // ② 생성 (병렬)
                 const styleKey = getSelectedVals('tbArtStyle')[0] || 'auto';
-                const prompt = buildThumbPrompt(topic, scene, line1, line2, refs.length > 0, styleKey, getSelectedVals('tbRefMode')[0] || 'loose');
+                let prompt = buildThumbPrompt(topic, scene, line1, line2, refs.length > 0, styleKey, getSelectedVals('tbRefMode')[0] || 'loose');
                 // 레퍼런스 추종 강도: 똑같이(edit)=i2i 편집 / 느낌만(inspire)=t2i 참고. 화풍 선택·레퍼런스 없음은 항상 t2i.
                 const refMode = getSelectedVals('tbRefMode')[0] || 'loose';
-                const base = getSelectedVals('tbModel')[0] || 'nano';
+                let base = getSelectedVals('tbModel')[0] || 'nano';
+                // ★👤 인물 얼굴 슬롯 처리 — 얼굴 사진을 첫 번째 image_input으로 + 얼굴유지 지시 자동 삽입 (2026-07-05 실증)
+                if (window._tbFaceThumb) {
+                    if (refMode === 'edit' && _tbRefThumbs.length) { alert('👤 인물 얼굴 슬롯은 "똑같이(편집)" 모드와 같이 못 써요 — 따라하기를 "느낌만/비슷하게"로 바꿔주세요.'); btn.disabled = false; return; }
+                    if (base !== 'nano') {
+                        if (!confirm('👤 인물 얼굴 유지는 나노바나나2에서만 작동해요 (GPT-2는 정책상 얼굴을 바꿔버림). 나노바나나2로 바꿔서 생성할까요?')) { btn.disabled = false; return; }
+                        base = 'nano'; res = '2K';
+                    }
+                    msg.textContent = '인물 사진 업로드 중…';
+                    const faceUrl = await kieUploadDataUrl(window._tbFaceThumb.dataUrl, 'face_' + Date.now() + '.png');
+                    if (faceUrl) {
+                        prompt = 'IDENTITY LOCK: the FIRST attached image is a real photo of the exact person who must appear in the thumbnail. Reproduce EXACTLY the same face - same facial structure, same eyes, same nose and mouth, same hairstyle and hair color as in that photo. Never swap or alter the identity; only pose, expression, clothing and scene may follow the instructions below. '
+                            + (refs.length ? 'The OTHER attached image(s) are style references only - never copy faces from them. ' : '') + prompt;
+                        refs = [faceUrl].concat(refs);
+                    }
+                }
                 // 나노바나나2=저렴한 기본(배경용 충분·레퍼런스 image_input 지원). GPT는 편집 모드에서 i2i 전용 모델 사용.
                 const model = base === 'nano'
                     ? 'nano-banana-2'
