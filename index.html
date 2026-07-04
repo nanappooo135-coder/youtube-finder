@@ -3142,6 +3142,11 @@
                             </div>
                         </div>
                     </div>
+                <div class="tbx-row" style="margin:6px 0 2px;">
+                    <button class="btn-small" onclick="tbUndo()" style="padding:6px 14px;border-radius:8px;cursor:pointer;border:1.5px solid #d0d4da;background:#fff;font-weight:700;">↶ 되돌리기</button>
+                    <button class="btn-small" onclick="tbRedo()" style="padding:6px 14px;border-radius:8px;cursor:pointer;border:1.5px solid #d0d4da;background:#fff;font-weight:700;">↷ 다시하기</button>
+                    <span style="font-size:0.72rem;color:#9aa3b2;">Ctrl+Z / Ctrl+Y</span>
+                </div>
                 <div id="tbEditMsg" style="font-size:0.8rem;color:#8a93a3;margin:4px 0 6px;"></div>
                 <button class="btn-small" onclick="reapplyThumbText()" style="width:100%;margin-top:8px;padding:11px;border-radius:10px;cursor:pointer;border:1.5px solid #4a90d9;color:#4a90d9;background:white;font-weight:700;">✍ 글자만 다시 입히기 <span style="font-weight:400;">(무료 · 문구·색·글꼴을 바꾸면 즉시 미리보기돼요)</span></button>
                 </div>
@@ -21400,6 +21405,49 @@ Example format:
         }
         // ★실시간 미리보기 — 문구·색·글꼴·크기·띠를 바꾸는 즉시 결과에 반영(0.25초 디바운스, 생성비 0)
         // 미리캔버스식 단어별 색 — 입력칸에서 단어를 선택한 채 색 버튼 클릭 → [#색|단어] 마크업 삽입
+        // ═══ 되돌리기/다시하기 — 글자·색·크기·위치·보정 전체 상태 히스토리 ═══
+        const _tbHist = {stack: [], idx: -1, applying: false};
+        const _TB_CHIP_GROUPS = ['tbFont', 'tbColor1', 'tbColor2', 'tbBand', 'tbTextPos', 'tbTextAlign', 'tbTextMargin', 'tbTextMode'];
+        const _TB_SLIDERS = ['tbSizeRange', 'tbSize2Range', 'tbLetterSp', 'tbLineGap', 'tbBright', 'tbSat', 'tbContrast'];
+        function tbSnapshot() {
+            const s = {t1: (document.getElementById('tbText1') || {}).value || '', t2: (document.getElementById('tbText2') || {}).value || '', chips: {}, sl: {}, xy: window._tbLayoutXY || null};
+            for (const g of _TB_CHIP_GROUPS) s.chips[g] = (getSelectedVals(g) || [])[0] || null;
+            for (const id of _TB_SLIDERS) { const el = document.getElementById(id); if (el) s.sl[id] = el.value; }
+            return JSON.stringify(s);
+        }
+        function tbCapture() {
+            if (_tbHist.applying) return;
+            const s = tbSnapshot();
+            if (_tbHist.stack[_tbHist.idx] === s) return;
+            _tbHist.stack.splice(_tbHist.idx + 1);
+            _tbHist.stack.push(s);
+            if (_tbHist.stack.length > 60) _tbHist.stack.shift();
+            _tbHist.idx = _tbHist.stack.length - 1;
+        }
+        function tbApply(json) {
+            _tbHist.applying = true;
+            try {
+                const s = JSON.parse(json);
+                document.getElementById('tbText1').value = s.t1;
+                document.getElementById('tbText2').value = s.t2;
+                for (const g of _TB_CHIP_GROUPS) {
+                    if (!s.chips[g]) continue;
+                    document.querySelectorAll('#' + g + ' .tb-opt').forEach((b) => b.classList.toggle('selected', b.dataset.val === s.chips[g]));
+                }
+                for (const id of _TB_SLIDERS) { const el = document.getElementById(id); if (el && s.sl[id] != null) el.value = s.sl[id]; }
+                window._tbLayoutXY = s.xy || null;
+            } catch (e) {}
+            _tbHist.applying = false;
+            renderThumbResults(null);
+        }
+        function tbUndo() { if (_tbHist.idx > 0) { _tbHist.idx--; tbApply(_tbHist.stack[_tbHist.idx]); } }
+        function tbRedo() { if (_tbHist.idx < _tbHist.stack.length - 1) { _tbHist.idx++; tbApply(_tbHist.stack[_tbHist.idx]); } }
+        document.addEventListener('keydown', (e) => {
+            const tabOn = document.getElementById('procBtn_thumbnail') && !document.getElementById('procBtn_thumbnail').classList.contains('inactive');
+            if (!tabOn || !(e.ctrlKey || e.metaKey)) return;
+            if (e.key === 'z' || e.key === 'Z') { e.preventDefault(); tbUndo(); }
+            if (e.key === 'y' || e.key === 'Y') { e.preventDefault(); tbRedo(); }
+        });
         function tbColorDown() {
             const ae = document.activeElement;
             window._tbSelTarget = null;
@@ -21427,7 +21475,7 @@ Example format:
         }
         function tbLivePreview() {
             clearTimeout(window._tbLp);
-            window._tbLp = setTimeout(() => { renderThumbResults(null); }, 250);
+            window._tbLp = setTimeout(() => { tbCapture(); renderThumbResults(null); }, 250);
         }
         // 레퍼런스 썸네일을 Gemini 비전으로 분석 — 구도·인물·로고·사물·색·글자·감정을 글로 추출해
         //  프롬프트에 박는다(이미지 힌트보다 글 지시가 구속력 강함 — 벤치마킹 흔들림 해결).
