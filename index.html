@@ -2883,7 +2883,12 @@
                 /* 썸네일 탭 전용 정돈 스타일 — 기존 tb-opt/toggleTbOpt 로직 재사용, 모양만 통일 */
                 #process-thumbnail .tbx-card{background:#fff;border:1px solid #e8eaef;border-radius:14px;padding:18px 20px;margin-bottom:14px;box-shadow:0 1px 3px rgba(20,30,60,0.04);}
                 #process-thumbnail .tbx-head{display:flex;align-items:center;gap:10px;margin-bottom:4px;}
-                #process-thumbnail .tbx-num{width:22px;height:22px;border-radius:50%;background:#111827;color:#fff;font-size:0.75rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+                #process-thumbnail .tbx-num{width:24px;height:24px;border-radius:8px;color:#fff;font-size:0.8rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+                #process-thumbnail .tbx-card[data-step="1"]{border-left:4px solid #ef4444;} #process-thumbnail .tbx-card[data-step="1"] .tbx-num{background:#ef4444;}
+                #process-thumbnail .tbx-card[data-step="2"]{border-left:4px solid #f97316;} #process-thumbnail .tbx-card[data-step="2"] .tbx-num{background:#f97316;}
+                #process-thumbnail .tbx-card[data-step="3"]{border-left:4px solid #8b5cf6;} #process-thumbnail .tbx-card[data-step="3"] .tbx-num{background:#8b5cf6;}
+                #process-thumbnail .tbx-card[data-step="4"]{border-left:4px solid #3b82f6;} #process-thumbnail .tbx-card[data-step="4"] .tbx-num{background:#3b82f6;}
+                #process-thumbnail .tbx-card[data-step="5"]{border-left:4px solid #22c55e;} #process-thumbnail .tbx-card[data-step="5"] .tbx-num{background:#22c55e;}
                 #process-thumbnail .tbx-t{font-weight:800;font-size:0.95rem;color:#111827;}
                 #process-thumbnail .tbx-hint{font-size:0.78rem;color:#8a93a3;margin:2px 0 12px 32px;line-height:1.5;}
                 #process-thumbnail .tbx-body{margin-left:32px;}
@@ -2900,11 +2905,17 @@
                 #process-thumbnail .tbx-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
                 #process-thumbnail .tbx-lab{font-size:0.78rem;font-weight:700;color:#6b7280;width:52px;flex-shrink:0;}
                 #process-thumbnail .tbx-grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;}
+                #process-thumbnail .tbx-wrap{display:flex;gap:16px;align-items:flex-start;}
+                #process-thumbnail .tbx-left{flex:1;min-width:0;}
+                #process-thumbnail .tbx-right{width:440px;flex-shrink:0;position:sticky;top:10px;max-height:calc(100vh - 20px);overflow-y:auto;}
+                @media (max-width:1150px){#process-thumbnail .tbx-wrap{flex-direction:column;}#process-thumbnail .tbx-right{width:100%;position:static;max-height:none;}}
                 @media (max-width:900px){#process-thumbnail .tbx-grid2{grid-template-columns:1fr;}}
             </style>
 
+            <div class="tbx-wrap">
+            <div class="tbx-left">
             <!-- ① 내용 -->
-            <div class="tbx-card">
+            <div class="tbx-card" data-step="1">
                 <div class="tbx-head"><div class="tbx-num">1</div><div class="tbx-t">무엇을 그릴까</div></div>
                 <div class="tbx-hint">실존 인물은 이름을 꼭 쓰세요 (예: "이재용 회장이 고민하는 모습") — 이름을 줘야 그 사람 얼굴로 그려요.</div>
                 <div class="tbx-body">
@@ -2914,22 +2925,24 @@
             </div>
 
             <!-- ② 레퍼런스 -->
-            <div class="tbx-card">
+            <div class="tbx-card" data-step="2">
                 <div class="tbx-head"><div class="tbx-num">2</div><div class="tbx-t">레퍼런스 썸네일 <span style="font-weight:400;color:#9aa3b2;font-size:0.8rem;">(선택 — 화풍·구도의 기준)</span></div></div>
                 <div class="tbx-hint">크고 선명한 이미지일수록 잘 따라와요. 검색 탭에서 영상을 담으면 자동으로 들어와요.</div>
                 <div class="tbx-body">
                     <div id="tbRefThumbs" class="tb-preview-row" style="margin-bottom:10px;"><span style="font-size:0.8rem;color:#aaa;padding:8px;">아직 없음</span></div>
-                    <div class="tbx-row" style="margin-bottom:12px;">
+                    <div class="tbx-row" style="margin-bottom:10px;">
+                        <span class="tbx-lab">넣기</span>
                         <label style="cursor:pointer;">
                             <input type="file" id="tbRefUpload" accept="image/*" multiple style="display:none;" onchange="uploadRefImages(event)">
-                            <div class="btn-small btn-primary" style="padding:8px 16px;font-size:0.85rem;border-radius:8px;cursor:pointer;">이미지 업로드</div>
+                            <div class="btn-small btn-primary" style="padding:8px 14px;font-size:0.83rem;border-radius:8px;cursor:pointer;">업로드</div>
                         </label>
-                        <button class="btn-small btn-primary" onclick="pasteRefImage()" style="padding:8px 16px;font-size:0.85rem;border-radius:8px;cursor:pointer;background:#fd7e14;border-color:#fd7e14;">Ctrl+V 붙여넣기</button>
-                        <input type="text" id="tbRefUrl" class="tbx-input" placeholder="또는 유튜브 주소 붙여넣기 → 엔터 (썸네일 자동 추출)" style="flex:1;min-width:240px;width:auto;" onkeydown="if(event.key==='Enter')addRefFromUrl()">
+                        <button class="btn-small btn-primary" onclick="pasteRefImage()" style="padding:8px 14px;font-size:0.83rem;border-radius:8px;cursor:pointer;background:#fd7e14;border-color:#fd7e14;">Ctrl+V</button>
+                        <input type="text" id="tbRefUrl" class="tbx-input" placeholder="유튜브 주소 → 엔터" style="flex:1;min-width:180px;width:auto;padding:8px 12px;" onkeydown="if(event.key==='Enter')addRefFromUrl()">
                     </div>
-                    <div class="tbx-row" style="margin-bottom:12px;">
-                        <button class="btn-small" onclick="analyzeRefThumbs()" style="padding:8px 16px;font-size:0.85rem;border-radius:8px;cursor:pointer;border:1.5px solid #8b5cf6;color:#8b5cf6;background:white;font-weight:700;">🔍 레퍼런스 분석 (Gemini 무료)</button>
-                        <span id="tbAnaMsg" style="font-size:0.8rem;color:#8a93a3;"></span>
+                    <div class="tbx-row" style="margin-bottom:10px;">
+                        <span class="tbx-lab">분석</span>
+                        <button class="btn-small" onclick="analyzeRefThumbs()" style="padding:8px 14px;font-size:0.83rem;border-radius:8px;cursor:pointer;border:1.5px solid #8b5cf6;color:#8b5cf6;background:white;font-weight:700;">🔍 레퍼런스 분석 (무료)</button>
+                        <span id="tbAnaMsg" style="font-size:0.78rem;color:#8a93a3;"></span>
                     </div>
                     <textarea id="tbRefAnalysis" rows="4" class="tbx-input" placeholder="분석 버튼을 누르면 레퍼런스의 공식(구도·인물·로고·사물·색·글자·감정)이 여기 정리돼요 — 수정 가능, 생성 시 자동 반영" style="resize:vertical;margin-bottom:12px;display:none;"></textarea>
                     <div class="tbx-row" style="margin-bottom:0;">
@@ -2943,7 +2956,7 @@
             </div>
 
             <!-- ③ 화풍 -->
-            <div class="tbx-card">
+            <div class="tbx-card" data-step="3">
                 <div class="tbx-head"><div class="tbx-num">3</div><div class="tbx-t">화풍</div></div>
                 <div class="tbx-hint">자동 = 레퍼런스 그림체를 따라가요 (없으면 AI 판단). 직접 고르면 그 그림체로 그려요.</div>
                 <div class="tbx-body">
@@ -2963,7 +2976,7 @@
             </div>
 
             <!-- ④ 문구 -->
-            <div class="tbx-card">
+            <div class="tbx-card" data-step="4">
                 <div class="tbx-head"><div class="tbx-num">4</div><div class="tbx-t">썸네일 문구</div></div>
                 <div class="tbx-hint">[대괄호]로 감싼 단어만 강조색으로 칠해져요 — 예: 한국 소식에 일본 [초비상]</div>
                 <div class="tbx-body">
@@ -3031,7 +3044,7 @@
             </div>
 
             <!-- ⑤ 생성 -->
-            <div class="tbx-card">
+            <div class="tbx-card" data-step="5">
                 <div class="tbx-head"><div class="tbx-num">5</div><div class="tbx-t">생성</div></div>
                 <div class="tbx-hint">이미지 1장 ≈ 보통 $0.03 (약 45원) · 고급 $0.06 — 키는 이 브라우저에만 저장돼요.</div>
                 <div class="tbx-body">
@@ -3060,13 +3073,19 @@
                 </div>
             </div>
 
-            <!-- 결과 -->
-            <div id="tbResult" style="display:none;">
-                <div class="tbx-card">
-                    <div class="tbx-head"><div class="tbx-t">🖼 생성된 썸네일</div></div>
-                    <div style="margin-top:10px;"><div id="tbResultContent" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;"></div></div>
+            </div><!-- /tbx-left -->
+
+            <!-- 오른쪽: 미리보기 패널 (스크롤 따라다님) -->
+            <div class="tbx-right">
+                <div id="tbResult" class="tbx-card" style="margin-bottom:0;">
+                    <div class="tbx-head"><div class="tbx-t">🖼 썸네일 미리보기</div></div>
+                    <div class="tbx-hint" style="margin-left:0;">문구·색·글꼴을 바꾸면 여기서 바로 바뀌어요.</div>
+                    <div id="tbResultContent" style="display:grid;grid-template-columns:1fr;gap:12px;">
+                        <div style="border:1.5px dashed #d9dde4;border-radius:10px;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;color:#9aa3b2;font-size:0.85rem;text-align:center;line-height:1.6;">아직 생성 전이에요<br>왼쪽에서 설정하고 [AI 썸네일 생성]</div>
+                    </div>
                 </div>
             </div>
+        </div><!-- /tbx-wrap -->
 
         </div><!-- /process-thumbnail -->
 
@@ -21076,7 +21095,6 @@ Example format:
                 window._tbComposed = finals;
             }
             if (mySeq !== window._tbRenderSeq) return; // 더 새 요청이 이미 돌고 있음
-            document.getElementById('tbResult').style.display = 'block';
             document.getElementById('tbResultContent').innerHTML = finals.map((u, i) =>
                 '<div style="border:1px solid #e0e0e0;border-radius:10px;overflow:hidden;">' +
                 '<img src="' + u + '" style="width:100%;display:block;aspect-ratio:16/9;object-fit:cover;">' +
@@ -21205,7 +21223,6 @@ Example format:
                 try { localStorage.setItem('tb_last_bgs', JSON.stringify(ok)); } catch (e) {} // 새로고침 생존
                 await renderThumbResults(msg);
                 msg.textContent = fails.length ? ('⚠ ' + ok.length + '장 성공 · ' + fails.length + '장 실패: ' + fails[0].error) : ('✅ ' + ok.length + '장 완성!');
-                document.getElementById('tbResult').scrollIntoView({behavior: 'smooth'});
             } catch (e) {
                 msg.textContent = '⚠ ' + (e.message || '생성 실패');
             } finally { btn.disabled = false; }
