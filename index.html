@@ -2906,6 +2906,8 @@
                 #process-thumbnail .tbx-lab{font-size:0.78rem;font-weight:700;color:#6b7280;width:52px;flex-shrink:0;}
                 #process-thumbnail .tbx-grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;}
                 #process-thumbnail .tbx-wrap{display:flex;gap:16px;align-items:flex-start;}
+                #process-thumbnail .tbm-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 14px;align-items:start;}
+                @media (max-width:1000px){#process-thumbnail .tbm-grid{grid-template-columns:1fr;}}
                 #process-thumbnail .tbx-left{flex:1;min-width:0;}
                 #process-thumbnail .tbx-right{width:440px;flex-shrink:0;position:sticky;top:10px;max-height:calc(100vh - 20px);overflow-y:auto;}
                 @media (max-width:1150px){#process-thumbnail .tbx-wrap{flex-direction:column;}#process-thumbnail .tbx-right{width:100%;position:static;max-height:none;}}
@@ -2917,7 +2919,7 @@
             <button id="tbSubBtnEdit" class="tbx-subbtn" onclick="tbSwitchSub('edit')" style="padding:10px 22px;border-radius:12px;border:1.5px solid #e2e5ea;cursor:pointer;font-weight:800;font-size:0.92rem;background:#fff;color:#6b7280;">✍ 2단계 · 글자 후작업</button>
         </div>
 
-        <div id="tbSubMake" style="max-width:980px;">
+        <div id="tbSubMake" style="max-width:1500px;">
         <!-- ① 내용 -->
             <div class="tbx-card" data-step="1">
                 <div class="tbx-head"><div class="tbx-num">1</div><div class="tbx-t">무엇을 그릴까</div></div>
@@ -2929,6 +2931,8 @@
             </div>
 
             <!-- ② 레퍼런스 -->
+            <div class="tbm-grid">
+            <div>
             <div class="tbx-card" data-step="2">
                 <div class="tbx-head"><div class="tbx-num">2</div><div class="tbx-t">레퍼런스 썸네일 <span style="font-weight:400;color:#9aa3b2;font-size:0.8rem;">(선택 — 화풍·구도의 기준)</span></div></div>
                 <div class="tbx-hint">크고 선명한 이미지일수록 잘 따라와요. 검색 탭에서 영상을 담으면 자동으로 들어와요.</div>
@@ -2960,6 +2964,8 @@
             </div>
 
             <!-- ③ 화풍 -->
+            </div>
+            <div>
             <div class="tbx-card" data-step="3">
                 <div class="tbx-head"><div class="tbx-num">3</div><div class="tbx-t">화풍</div></div>
                 <div class="tbx-hint">자동 = 레퍼런스 그림체를 따라가요 (없으면 AI 판단). 직접 고르면 그 그림체로 그려요.</div>
@@ -3009,6 +3015,8 @@
                     <div id="tbGenMsg" style="margin-top:10px;font-size:0.85rem;color:#666;"></div>
                 </div>
             </div>
+            </div>
+        </div>
         </div>
 
         <div id="tbSubEdit" style="display:none;">
