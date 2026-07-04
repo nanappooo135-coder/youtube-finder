@@ -1492,11 +1492,6 @@
             border-color: #dc3545;
             box-shadow: 0 2px 8px rgba(220,53,69,0.12);
         }
-        .ff-badge { display:inline-block; padding:2px 8px; border-radius:6px; font-size:0.78rem; font-weight:800; }
-        .ff-hot { background:#ffe3e3; color:#c92a2a; }
-        .ff-warm { background:#fff3e0; color:#e8590c; }
-        .ff-mid { background:#e6f7ee; color:#0ca678; }
-        .ff-cold { background:#f1f3f5; color:#868e96; }
         .econ-yt-thumb {
             width: 160px;
             height: 90px;
@@ -4781,45 +4776,6 @@
 
         <!-- ===== 프로세스: 실시간 트렌드 ===== -->
         <div id="process-trend" style="display:none;">
-
-            <!-- 🐟 어군탐지기: 벤치마크 채널 떡상 스캐너 -->
-            <div class="section">
-                <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
-                    <span>🐟 어군탐지기 — 떡상 영상 스캔 <span id="ffChannelCount" style="font-size:0.78rem;font-weight:400;color:#888;"></span></span>
-                    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
-                        <select id="ffPeriod" style="padding:6px 10px;border:1px solid #e0e0e0;border-radius:6px;font-size:0.8rem;">
-                            <option value="3">최근 3일</option>
-                            <option value="7" selected>최근 7일</option>
-                            <option value="14">최근 14일</option>
-                        </select>
-                        <select id="ffMinRatio" onchange="ffApplyFilters()" style="padding:6px 10px;border:1px solid #e0e0e0;border-radius:6px;font-size:0.8rem;">
-                            <option value="0">배율 전체</option>
-                            <option value="0.7" selected>0.7배 이상</option>
-                            <option value="1.5">1.5배 이상</option>
-                            <option value="3">3배 이상</option>
-                        </select>
-                        <select id="ffMinViews" onchange="ffApplyFilters()" style="padding:6px 10px;border:1px solid #e0e0e0;border-radius:6px;font-size:0.8rem;">
-                            <option value="0">조회수 전체</option>
-                            <option value="10000" selected>1만 이상</option>
-                            <option value="50000">5만 이상</option>
-                            <option value="100000">10만 이상</option>
-                        </select>
-                        <label style="font-size:0.8rem;color:#555;display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" id="ffLongform" checked onchange="ffApplyFilters()">롱폼만</label>
-                        <button id="ffScanBtn" onclick="runFishFinder()" style="padding:6px 16px;background:#0ca678;color:white;border:none;border-radius:8px;font-size:0.85rem;font-weight:700;cursor:pointer;">🐟 스캔</button>
-                    </div>
-                </div>
-                <div class="section-content">
-                    <p style="font-size:0.85rem;color:#888;margin-bottom:12px;">
-                        등록된 벤치마크 채널 <b>전체의 최근 영상</b>을 훑어 <b>구독자 대비 조회수가 튄 영상(떡상)</b>만 골라냅니다.
-                        남의 채널이 먼저 검증해준 소재 = 물고기가 몰린 곳. <b>배율 = 조회수 ÷ 구독자</b>, 1배를 넘으면 알고리즘을 탄 겁니다.
-                        스캔 1회 ≈ API 260 units(하루 30회 이상 가능) · 배율/조회수/롱폼 필터는 재스캔 없이 즉시 적용.
-                    </p>
-                    <div id="ffStatus" style="font-size:0.85rem;color:#0ca678;font-weight:600;margin-bottom:8px;"></div>
-                    <div id="ffError" style="display:none;padding:16px;background:#fff5f5;border:1px solid #ffe0e0;border-radius:10px;color:#dc3545;font-size:0.9rem;line-height:1.6;margin-bottom:8px;"></div>
-                    <div id="ffList"></div>
-                    <p id="ffTime" style="font-size:0.8rem;color:#aaa;margin-top:8px;text-align:right;"></p>
-                </div>
-            </div>
 
             <!-- 실시간 경제 뉴스 이슈 레이더 (Naver News Search API) -->
             <div class="section">
@@ -9024,7 +8980,7 @@ ${_retryRound > 0 ? `⚠️ 이번은 ${_retryRound}차 추가 요청입니다. 
             if (proc === 'review') checkFcServer('rvServerStatus');
             if (proc === 'scriptReview') { srLoadAll(); claudeUnifiedLoad(); }
             if (proc === 'plan') pnLoadAll();
-            if (proc === 'trend') { fetchIssueRadar(); fetchEconYoutube(); fishFinderInit(); }
+            if (proc === 'trend') { fetchIssueRadar(); fetchEconYoutube(); }
             if (proc === 'sellpot' && window._spInit) window._spInit(); else if (proc === 'sellpot') setTimeout(function(){ if (window._spInit) window._spInit(); }, 500);
             if (proc === 'sellfarm' && window._cfInit) window._cfInit();
             const aioEl = document.getElementById('process-allinone');
@@ -31812,204 +31768,6 @@ ${commentText.slice(0, 12000)}`;
 
     <script>
         // ===========================
-        // 🐟 어군탐지기 (벤치마크 채널 떡상 스캐너)
-        // ===========================
-        // 등록 채널 전체의 최근 업로드를 uploads 재생목록(채널당 1 unit)으로 스캔 —
-        // search.list(100 units)보다 압도적으로 저렴. 243채널 ≈ 260 units/회.
-        const FF_CACHE_TTL = 30 * 60 * 1000;
-
-        function _ffCacheKey() { return 'ff_cache_' + currentChannel; }
-
-        function _ffGetChannels() {
-            const cfg = ch();
-            const kr = JSON.parse(localStorage.getItem(cfg.krBenchKey) || '[]');
-            const fo = JSON.parse(localStorage.getItem(cfg.foreignBenchKey) || '[]');
-            const seen = new Set();
-            return kr.concat(fo).filter(c => {
-                if (!c || !c.id || !/^UC[A-Za-z0-9_-]{22}$/.test(c.id) || seen.has(c.id)) return false;
-                seen.add(c.id);
-                return true;
-            });
-        }
-
-        function fishFinderInit() {
-            const cntEl = document.getElementById('ffChannelCount');
-            if (cntEl) cntEl.textContent = '(' + _ffGetChannels().length + '개 채널)';
-            try {
-                const c = JSON.parse(localStorage.getItem(_ffCacheKey()) || 'null');
-                if (c && c.videos && c.videos.length) _ffRenderFiltered(c.videos, c.time, c.days);
-            } catch (e) {}
-        }
-
-        function ffApplyFilters() {
-            try {
-                const c = JSON.parse(localStorage.getItem(_ffCacheKey()) || 'null');
-                if (c && c.videos) _ffRenderFiltered(c.videos, c.time, c.days);
-            } catch (e) {}
-        }
-
-        async function _ffPool(items, worker, size) {
-            let idx = 0;
-            async function next() {
-                while (idx < items.length) {
-                    const i = idx++;
-                    try { await worker(items[i], i); } catch (e) { console.warn('[FishFinder]', e.message); }
-                }
-            }
-            await Promise.all(Array.from({ length: Math.min(size, items.length) }, next));
-        }
-
-        async function runFishFinder() {
-            const btn = document.getElementById('ffScanBtn');
-            const statusEl = document.getElementById('ffStatus');
-            const errorEl = document.getElementById('ffError');
-            const listEl = document.getElementById('ffList');
-            errorEl.style.display = 'none';
-
-            const chans = _ffGetChannels();
-            if (!chans.length) {
-                errorEl.style.display = '';
-                errorEl.innerHTML = '등록된 벤치마크 채널이 없어요. <b>주제찾기 탭 → 벤치마크 채널</b>에서 채널을 먼저 등록해주세요.';
-                return;
-            }
-            const allKeys = (typeof loadApiKeys === 'function' ? loadApiKeys() : []).filter(Boolean);
-            if (!allKeys.length) {
-                errorEl.style.display = '';
-                errorEl.innerHTML = 'YouTube API 키가 없어요. 주제찾기 탭의 API 키 설정에서 먼저 등록해주세요.';
-                return;
-            }
-
-            const days = parseInt(document.getElementById('ffPeriod').value);
-            const cutoff = Date.now() - days * 86400000;
-
-            btn.disabled = true; btn.textContent = '스캔 중...';
-            listEl.innerHTML = '';
-            statusEl.textContent = '채널 정보 로드 중... (0/' + chans.length + ')';
-
-            try {
-                // 1) 구독자 수 (channels.list 배치 50개씩 = 배치당 1 unit)
-                const subsMap = {};
-                for (let i = 0; i < chans.length; i += 50) {
-                    const data = await fetchYouTubeAPI('channels', {
-                        part: 'statistics',
-                        id: chans.slice(i, i + 50).map(c => c.id).join(','),
-                        maxResults: 50
-                    });
-                    (data.items || []).forEach(it => {
-                        subsMap[it.id] = parseInt(it.statistics?.subscriberCount || '0');
-                    });
-                    statusEl.textContent = '채널 정보 로드 중... (' + Math.min(i + 50, chans.length) + '/' + chans.length + ')';
-                }
-
-                // 2) 채널별 최근 업로드 (uploads 재생목록, 채널당 1 unit, 동시 8개)
-                let done = 0;
-                const candIds = [];
-                await _ffPool(chans, async (c) => {
-                    const data = await fetchYouTubeAPI('playlistItems', {
-                        part: 'contentDetails',
-                        playlistId: 'UU' + c.id.slice(2),
-                        maxResults: 50
-                    });
-                    (data.items || []).forEach(it => {
-                        const vid = it.contentDetails?.videoId;
-                        const pub = it.contentDetails?.videoPublishedAt;
-                        if (vid && pub && new Date(pub).getTime() >= cutoff) candIds.push(vid);
-                    });
-                    done++;
-                    statusEl.textContent = '채널 스캔 중... (' + done + '/' + chans.length + ') · 후보 ' + candIds.length + '개';
-                }, 8);
-
-                if (!candIds.length) {
-                    statusEl.textContent = '';
-                    listEl.innerHTML = '<p style="color:#888;text-align:center;padding:20px;">기간 내 새 영상이 없어요. 기간을 늘려보세요.</p>';
-                    return;
-                }
-
-                // 3) 영상 상세 (videos.list 배치 50개씩)
-                const videos = [];
-                for (let i = 0; i < candIds.length; i += 50) {
-                    const data = await fetchYouTubeAPI('videos', {
-                        part: 'snippet,statistics,contentDetails',
-                        id: candIds.slice(i, i + 50).join(',')
-                    });
-                    (data.items || []).forEach(v => {
-                        const subs = subsMap[v.snippet.channelId] || 0;
-                        const views = parseInt(v.statistics?.viewCount || '0');
-                        videos.push({
-                            id: v.id,
-                            title: v.snippet.title,
-                            channelId: v.snippet.channelId,
-                            channelTitle: v.snippet.channelTitle,
-                            thumb: v.snippet.thumbnails?.medium?.url || v.snippet.thumbnails?.default?.url || '',
-                            publishedAt: v.snippet.publishedAt,
-                            viewCount: views,
-                            subs: subs,
-                            duration: parseIsoDuration(v.contentDetails?.duration),
-                            ratio: subs > 0 ? views / subs : 0
-                        });
-                    });
-                    statusEl.textContent = '영상 분석 중... (' + Math.min(i + 50, candIds.length) + '/' + candIds.length + ')';
-                }
-
-                // localStorage 용량 보호: 배율순 상위 800개만 캐시
-                videos.sort((a, b) => b.ratio - a.ratio);
-                const payload = { time: Date.now(), days: days, videos: videos.slice(0, 800) };
-                try { localStorage.setItem(_ffCacheKey(), JSON.stringify(payload)); } catch (e) {}
-                statusEl.textContent = '';
-                _ffRenderFiltered(payload.videos, payload.time, days);
-            } catch (e) {
-                statusEl.textContent = '';
-                errorEl.style.display = '';
-                errorEl.innerHTML = '스캔 오류: ' + e.message;
-            } finally {
-                btn.disabled = false; btn.textContent = '🐟 스캔';
-            }
-        }
-
-        function _ffRenderFiltered(videos, time, days) {
-            const listEl = document.getElementById('ffList');
-            const timeEl = document.getElementById('ffTime');
-            if (!listEl) return;
-            const minRatio = parseFloat(document.getElementById('ffMinRatio').value || '0');
-            const minViews = parseInt(document.getElementById('ffMinViews').value || '0');
-            const longOnly = document.getElementById('ffLongform').checked;
-            let list = videos.filter(v =>
-                v.viewCount >= minViews &&
-                (!longOnly || v.duration >= 180) &&
-                (minRatio === 0 || v.ratio >= minRatio));
-            list.sort((a, b) => b.ratio - a.ratio);
-            const total = list.length;
-            list = list.slice(0, 60);
-            if (!list.length) {
-                listEl.innerHTML = '<p style="color:#888;text-align:center;padding:20px;">조건에 맞는 영상이 없어요. 필터를 낮추거나 기간을 늘려 다시 스캔해보세요.</p>';
-            } else {
-                listEl.innerHTML = list.map(v => {
-                    const videoUrl = 'https://www.youtube.com/watch?v=' + v.id;
-                    const channelUrl = 'https://www.youtube.com/channel/' + v.channelId;
-                    const safeTitle = (v.title || '').replace(/"/g, '&quot;');
-                    const pubAgo = formatRelativeTime(new Date(v.publishedAt).getTime());
-                    const subsStr = v.subs > 0 ? '구독 ' + formatViewCount(v.subs) : '구독자 비공개';
-                    let cls = 'ff-cold', icon = '';
-                    if (v.ratio >= 3) { cls = 'ff-hot'; icon = '🔥 '; }
-                    else if (v.ratio >= 1.5) { cls = 'ff-warm'; }
-                    else if (v.ratio >= 0.7) { cls = 'ff-mid'; }
-                    const badge = v.subs > 0 ? '<span class="ff-badge ' + cls + '">' + icon + v.ratio.toFixed(1) + '배</span> ' : '';
-                    return '<div class="econ-yt-item">'
-                        + '<img class="econ-yt-thumb" src="' + v.thumb + '" loading="lazy" onclick="window.open(\'' + videoUrl + '\',\'_blank\')" alt="">'
-                        + '<div class="econ-yt-info">'
-                        + '<div class="econ-yt-title" onclick="window.open(\'' + videoUrl + '\',\'_blank\')" title="' + safeTitle + '">' + v.title + '</div>'
-                        + '<div class="econ-yt-channel" onclick="window.open(\'' + channelUrl + '\',\'_blank\')">' + v.channelTitle + ' <span style="color:#aaa;font-weight:400;">· ' + subsStr + '</span></div>'
-                        + '<div class="econ-yt-meta">' + badge + '<span class="econ-yt-views">조회수 ' + formatViewCount(v.viewCount) + '</span> · ' + pubAgo + ' · ' + formatDuration(v.duration) + '</div>'
-                        + '</div></div>';
-                }).join('');
-            }
-            if (timeEl && time) {
-                const d = new Date(time);
-                const stale = (Date.now() - time) > FF_CACHE_TTL ? ' · 오래된 결과 — 재스캔 권장' : '';
-                timeEl.textContent = '스캔: ' + d.getHours() + '시 ' + String(d.getMinutes()).padStart(2, '0') + '분 · 최근 ' + (days || '?') + '일 · 표시 ' + list.length + '/' + total + '개 (배율순)' + stale;
-            }
-        }
-
         // ===========================
         // 경제 이슈 레이더 (Naver News Search API)
         // ===========================
@@ -33789,6 +33547,6 @@ ${commentText.slice(0, 12000)}`;
         } catch(e) { alert('JSON 파싱 에러: ' + e.message); }
     }
     </script>
-<script src="preempt_radar.js?v=2"></script>
+<script src="preempt_radar.js?v=3"></script>
 </body>
 </html>

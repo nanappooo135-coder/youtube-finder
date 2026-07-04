@@ -75,7 +75,7 @@
         + '  <div class="section-content">'
         + '    <p style="font-size:0.85rem;color:#888;margin-bottom:12px;">'
         + '      뉴스 채널 14곳의 최근 클립을 <b>시속(조회수÷경과시간)</b> 순으로 정렬 — 지금 대중이 몰려가는 이슈의 실측값입니다.'
-        + '      뉴스 클립은 뜨는데 스토리텔링 롱폼이 없으면 그게 특종. 관심 항목만 <b>🔍 롱폼 확인</b>을 눌러 빈 바다인지 개별 확인하세요(확인 1건 ≈ 101 units).'
+        + '      뉴스 클립은 뜨는데 <b>일반 유튜버의 2분+ 영상</b>(뉴스채널 제외)이 없으면 그게 특종. 관심 항목만 <b>🔍 경쟁 확인</b>을 눌러 빈 바다인지 개별 확인하세요(확인 1건 ≈ 101 units).'
         + '      전체 스캔은 ≈ 30 units라 수시로 돌려도 부담 없음 · 결과 15분 캐시.'
         + '    </p>'
         + '    <div id="prStatus" style="font-size:0.85rem;color:#1971c2;font-weight:600;margin-bottom:8px;"></div>'
@@ -252,7 +252,7 @@
                     + '<div class="pr-title" onclick="window.open(\'' + videoUrl + '\',\'_blank\')">' + v.title + '</div>'
                     + '<div class="pr-meta">' + v.channelTitle + ' · 조회 ' + formatViewCount(v.viewCount) + ' · ' + ago + ' · ' + formatDuration(v.duration) + '</div>'
                     + '<div class="pr-comp-slot" style="margin-top:6px;">'
-                    + '<button class="pr-check-btn" onclick="prCheckLongform(this, \'' + v.id + '\')">🔍 롱폼 확인 — 빈 바다인가? (101u)</button>'
+                    + '<button class="pr-check-btn" onclick="prCheckLongform(this, \'' + v.id + '\')">🔍 경쟁 확인 — 빈 바다인가? (101u)</button>'
                     + '</div>'
                     + '</div></div>';
             }).join('');
@@ -285,11 +285,15 @@
             var ids = (sr.items || []).map(function (it) { return it.id && it.id.videoId; })
                 .filter(function (id) { return id && id !== videoId; });
             var longforms = [];
+            var newsIds = {};
+            NEWS_CHANNELS.forEach(function (c) { newsIds[c.id] = true; });
             if (ids.length) {
                 var vr = await fetchYouTubeAPI('videos', { part: 'snippet,statistics,contentDetails', id: ids.join(',') });
                 (vr.items || []).forEach(function (x) {
                     var dur = parseIsoDuration(x.contentDetails && x.contentDetails.duration);
-                    if (dur >= 480 && prRelevant(qTokens, x.snippet.title)) { // 8분+ = 스토리텔링 롱폼
+                    // 경쟁 = 뉴스채널이 아닌 일반 유튜버의 2분+ 영상 (뉴스 클립끼리는 경쟁 아님)
+                    var isNews = newsIds[x.snippet.channelId] || /뉴스|news/i.test(x.snippet.channelTitle || '');
+                    if (dur >= 120 && !isNews && prRelevant(qTokens, x.snippet.title)) {
                         longforms.push({
                             id: x.id, title: x.snippet.title,
                             channelTitle: x.snippet.channelTitle,
@@ -301,9 +305,9 @@
             longforms.sort(function (a, b) { return b.views - a.views; });
             var n = longforms.length;
             var badge, note;
-            if (n <= 1) { badge = '<span class="pr-badge pr-empty">🟢 빈 바다 — 롱폼 ' + n + '개</span>'; note = '지금 만들면 선발주자입니다'; }
-            else if (n <= 4) { badge = '<span class="pr-badge pr-race">🟡 경쟁 시작 — 롱폼 ' + n + '개</span>'; note = '서두르면 승산 있음'; }
-            else { badge = '<span class="pr-badge pr-red">🔴 레드오션 — 롱폼 ' + n + '개+</span>'; note = '곁가지 각도를 찾으세요'; }
+            if (n <= 1) { badge = '<span class="pr-badge pr-empty">🟢 빈 바다 — 경쟁영상 ' + n + '개</span>'; note = '지금 만들면 선발주자입니다'; }
+            else if (n <= 4) { badge = '<span class="pr-badge pr-race">🟡 경쟁 시작 — 경쟁영상 ' + n + '개</span>'; note = '서두르면 승산 있음'; }
+            else { badge = '<span class="pr-badge pr-red">🔴 레드오션 — 경쟁영상 ' + n + '개+</span>'; note = '곁가지 각도를 찾으세요'; }
             var ytUrl = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(q) + '&sp=CAISAhAB';
             var compHtml = '';
             if (longforms[0]) {
@@ -314,7 +318,7 @@
                 + ' · <a href="' + ytUrl + '" target="_blank" style="color:#1971c2;">유튜브 확인 →</a></span>' + compHtml;
         } catch (e) {
             btnEl.disabled = false;
-            btnEl.textContent = '🔍 롱폼 확인 — 재시도 (' + e.message.slice(0, 30) + ')';
+            btnEl.textContent = '🔍 경쟁 확인 — 재시도 (' + e.message.slice(0, 30) + ')';
         }
     };
 
