@@ -2912,9 +2912,13 @@
                 @media (max-width:900px){#process-thumbnail .tbx-grid2{grid-template-columns:1fr;}}
             </style>
 
-            <div class="tbx-wrap">
-            <div class="tbx-left">
-            <!-- ① 내용 -->
+            <div class="tbx-subtabs" style="display:flex;gap:8px;margin-bottom:14px;">
+            <button id="tbSubBtnMake" class="tbx-subbtn" onclick="tbSwitchSub('make')" style="padding:10px 22px;border-radius:12px;border:none;cursor:pointer;font-weight:800;font-size:0.92rem;background:#111827;color:#fff;">🎨 1단계 · 이미지 만들기</button>
+            <button id="tbSubBtnEdit" class="tbx-subbtn" onclick="tbSwitchSub('edit')" style="padding:10px 22px;border-radius:12px;border:1.5px solid #e2e5ea;cursor:pointer;font-weight:800;font-size:0.92rem;background:#fff;color:#6b7280;">✍ 2단계 · 글자 후작업</button>
+        </div>
+
+        <div id="tbSubMake" style="max-width:980px;">
+        <!-- ① 내용 -->
             <div class="tbx-card" data-step="1">
                 <div class="tbx-head"><div class="tbx-num">1</div><div class="tbx-t">무엇을 그릴까</div></div>
                 <div class="tbx-hint">실존 인물은 이름을 꼭 쓰세요 (예: "이재용 회장이 고민하는 모습") — 이름을 줘야 그 사람 얼굴로 그려요.</div>
@@ -3005,20 +3009,21 @@
                     <div id="tbGenMsg" style="margin-top:10px;font-size:0.85rem;color:#666;"></div>
                 </div>
             </div>
+        </div>
 
-            </div><!-- /tbx-left -->
-
-            <!-- 오른쪽: 미리보기 패널 (스크롤 따라다님) -->
-            <div class="tbx-right">
-                <div id="tbResult" class="tbx-card">
+        <div id="tbSubEdit" style="display:none;">
+            <div class="tbx-wrap">
+                <div class="tbx-left">
+                    <div id="tbResult" class="tbx-card">
                     <div class="tbx-head"><div class="tbx-t">🖼 썸네일 미리보기</div></div>
                     <div class="tbx-hint" style="margin-left:0;">문구·색·글꼴을 바꾸면 여기서 바로 바뀌어요.</div>
                     <div id="tbResultContent" style="display:grid;grid-template-columns:1fr;gap:12px;">
                         <div style="border:1.5px dashed #d9dde4;border-radius:10px;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;color:#9aa3b2;font-size:0.85rem;text-align:center;line-height:1.6;">아직 생성 전이에요<br>왼쪽에서 설정하고 [AI 썸네일 생성]</div>
                     </div>
                 </div>
-
-                <div class="tbx-card" data-step="5">
+                </div>
+                <div class="tbx-right" style="width:400px;">
+                    <div class="tbx-card" data-step="5">
                 <div class="tbx-head"><div class="tbx-num">5</div><div class="tbx-t">글자 입히기 <span style="font-weight:400;color:#9aa3b2;font-size:0.8rem;">(후작업 — 무료·실시간)</span></div></div>
                 <div class="tbx-hint">[대괄호]로 감싼 단어만 강조색으로 칠해져요 — 예: 한국 소식에 일본 [초비상]</div>
                 <div class="tbx-body">
@@ -3085,8 +3090,9 @@
                 <button class="btn-small" onclick="reapplyThumbText()" style="width:100%;margin-top:8px;padding:11px;border-radius:10px;cursor:pointer;border:1.5px solid #4a90d9;color:#4a90d9;background:white;font-weight:700;">✍ 글자만 다시 입히기 <span style="font-weight:400;">(무료 · 문구·색·글꼴을 바꾸면 즉시 미리보기돼요)</span></button>
                 </div>
             </div>
+                </div>
             </div>
-        </div><!-- /tbx-wrap -->
+        </div>
 
         </div><!-- /process-thumbnail -->
 
@@ -21177,6 +21183,14 @@ Example format:
             addThumbRef(m[1], '유튜브 썸네일');
             el.value = '';
         }
+        function tbSwitchSub(which) {
+            document.getElementById('tbSubMake').style.display = which === 'make' ? 'block' : 'none';
+            document.getElementById('tbSubEdit').style.display = which === 'edit' ? 'block' : 'none';
+            const on = 'padding:10px 22px;border-radius:12px;border:none;cursor:pointer;font-weight:800;font-size:0.92rem;background:#111827;color:#fff;';
+            const off = 'padding:10px 22px;border-radius:12px;border:1.5px solid #e2e5ea;cursor:pointer;font-weight:800;font-size:0.92rem;background:#fff;color:#6b7280;';
+            document.getElementById('tbSubBtnMake').style.cssText = which === 'make' ? on : off;
+            document.getElementById('tbSubBtnEdit').style.cssText = which === 'edit' ? on : off;
+        }
         async function reapplyThumbText() {
             if (!(window._tbBgs || []).length) {
                 try { window._tbBgs = JSON.parse(localStorage.getItem('tb_last_bgs') || '[]'); } catch (e) { window._tbBgs = []; }
@@ -21225,6 +21239,7 @@ Example format:
                 try { localStorage.setItem('tb_last_bgs', JSON.stringify(ok)); } catch (e) {} // 새로고침 생존
                 await renderThumbResults(msg);
                 msg.textContent = fails.length ? ('⚠ ' + ok.length + '장 성공 · ' + fails.length + '장 실패: ' + fails[0].error) : ('✅ ' + ok.length + '장 완성!');
+                if (ok.length) tbSwitchSub('edit'); // 이미지가 나왔으면 후작업 탭으로 자동 이동
             } catch (e) {
                 msg.textContent = '⚠ ' + (e.message || '생성 실패');
             } finally { btn.disabled = false; }
