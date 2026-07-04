@@ -3033,17 +3033,18 @@
                 <div class="tbx-head"><div class="tbx-num">3</div><div class="tbx-t">화풍</div></div>
                 <div class="tbx-hint">자동 = 레퍼런스 그림체를 따라가요 (없으면 AI 판단). 직접 고르면 그 그림체로 그려요.</div>
                 <div class="tbx-body">
-                    <div class="tb-options" id="tbArtStyle">
-                        <button class="tb-opt selected" data-val="auto" onclick="toggleTbOpt(this,'tbArtStyle',1)"><div class="opt-title">✨ 자동</div></button>
-                        <button class="tb-opt" data-val="photorealistic" onclick="toggleTbOpt(this,'tbArtStyle',1)"><div class="opt-title">실사</div></button>
-                        <button class="tb-opt" data-val="hyperreal" onclick="toggleTbOpt(this,'tbArtStyle',1)"><div class="opt-title">초실사</div></button>
-                        <button class="tb-opt" data-val="yeokseolnam" onclick="toggleTbOpt(this,'tbArtStyle',1)"><div class="opt-title">역썰남1</div></button>
-                        <button class="tb-opt" data-val="yeokseolnam2" onclick="toggleTbOpt(this,'tbArtStyle',1)"><div class="opt-title">역썰남2</div></button>
-                        <button class="tb-opt" data-val="pujim" onclick="toggleTbOpt(this,'tbArtStyle',1)"><div class="opt-title">푸짐스타일</div></button>
-                        <button class="tb-opt" data-val="stickman" onclick="toggleTbOpt(this,'tbArtStyle',1)"><div class="opt-title">스틱맨</div></button>
-                        <button class="tb-opt" data-val="psych-cartoon" onclick="toggleTbOpt(this,'tbArtStyle',1)"><div class="opt-title">한눈에심리학</div></button>
-                        <button class="tb-opt" data-val="anime" onclick="toggleTbOpt(this,'tbArtStyle',1)"><div class="opt-title">애니메</div></button>
-                        <button class="tb-opt" data-val="3d-render" onclick="toggleTbOpt(this,'tbArtStyle',1)"><div class="opt-title">3D 렌더</div></button>
+                    <!-- 화풍 예시: 같은 장면(무너지는 빌딩 앞 정장 인물)을 화풍별로 생성한 실제 샘플 (assets/style-samples/, 2026-07-05) -->
+                    <div class="tb-options" id="tbArtStyle" style="display:flex;flex-wrap:wrap;gap:8px;">
+                        <button class="tb-opt selected" data-val="auto" onclick="toggleTbOpt(this,'tbArtStyle',1)" style="width:128px;"><div style="width:118px;height:64px;border-radius:6px;background:linear-gradient(135deg,#eef2ff,#e0e7ff);display:flex;align-items:center;justify-content:center;font-size:0.72rem;color:#6366f1;margin:0 auto 4px;">레퍼런스 따라감</div><div class="opt-title">✨ 자동</div></button>
+                        <button class="tb-opt" data-val="photorealistic" onclick="toggleTbOpt(this,'tbArtStyle',1)" style="width:128px;"><img src="assets/style-samples/photorealistic.jpg" loading="lazy" style="width:118px;height:64px;object-fit:cover;border-radius:6px;display:block;margin:0 auto 4px;"><div class="opt-title">실사</div></button>
+                        <button class="tb-opt" data-val="hyperreal" onclick="toggleTbOpt(this,'tbArtStyle',1)" style="width:128px;"><img src="assets/style-samples/hyperreal.jpg" loading="lazy" style="width:118px;height:64px;object-fit:cover;border-radius:6px;display:block;margin:0 auto 4px;"><div class="opt-title">초실사</div></button>
+                        <button class="tb-opt" data-val="yeokseolnam" onclick="toggleTbOpt(this,'tbArtStyle',1)" style="width:128px;"><img src="assets/style-samples/yeokseolnam.jpg" loading="lazy" style="width:118px;height:64px;object-fit:cover;border-radius:6px;display:block;margin:0 auto 4px;"><div class="opt-title">역썰남1</div></button>
+                        <button class="tb-opt" data-val="yeokseolnam2" onclick="toggleTbOpt(this,'tbArtStyle',1)" style="width:128px;"><img src="assets/style-samples/yeokseolnam2.jpg" loading="lazy" style="width:118px;height:64px;object-fit:cover;border-radius:6px;display:block;margin:0 auto 4px;"><div class="opt-title">역썰남2</div></button>
+                        <button class="tb-opt" data-val="pujim" onclick="toggleTbOpt(this,'tbArtStyle',1)" style="width:128px;"><img src="assets/style-samples/pujim.jpg" loading="lazy" style="width:118px;height:64px;object-fit:cover;border-radius:6px;display:block;margin:0 auto 4px;"><div class="opt-title">푸짐스타일</div></button>
+                        <button class="tb-opt" data-val="stickman" onclick="toggleTbOpt(this,'tbArtStyle',1)" style="width:128px;"><img src="assets/style-samples/stickman.jpg" loading="lazy" style="width:118px;height:64px;object-fit:cover;border-radius:6px;display:block;margin:0 auto 4px;"><div class="opt-title">스틱맨</div></button>
+                        <button class="tb-opt" data-val="psych-cartoon" onclick="toggleTbOpt(this,'tbArtStyle',1)" style="width:128px;"><img src="assets/style-samples/psych-cartoon.jpg" loading="lazy" style="width:118px;height:64px;object-fit:cover;border-radius:6px;display:block;margin:0 auto 4px;"><div class="opt-title">한눈에심리학</div></button>
+                        <button class="tb-opt" data-val="anime" onclick="toggleTbOpt(this,'tbArtStyle',1)" style="width:128px;"><img src="assets/style-samples/anime.jpg" loading="lazy" style="width:118px;height:64px;object-fit:cover;border-radius:6px;display:block;margin:0 auto 4px;"><div class="opt-title">애니메</div></button>
+                        <button class="tb-opt" data-val="3d-render" onclick="toggleTbOpt(this,'tbArtStyle',1)" style="width:128px;"><img src="assets/style-samples/3d-render.jpg" loading="lazy" style="width:118px;height:64px;object-fit:cover;border-radius:6px;display:block;margin:0 auto 4px;"><div class="opt-title">3D 렌더</div></button>
                     </div>
                 </div>
             </div>
