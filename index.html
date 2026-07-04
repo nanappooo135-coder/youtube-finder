@@ -21024,7 +21024,9 @@ Example format:
             // CORS 오염 방지 — fetch→blob→objectURL (실패 시 원본 그대로 폴백)
             let src = imgUrl;
             try { const b = await (await fetch(imgUrl)).blob(); src = URL.createObjectURL(b); } catch (e) { return null; }
-            const img = await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = src; });
+            let img;
+            try { img = await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = src; }); }
+            catch (e) { return null; }
             const W = 1280, H = 720;
             const c = document.createElement('canvas'); c.width = W; c.height = H;
             const x = c.getContext('2d');
@@ -21115,8 +21117,10 @@ Example format:
                 const band = (getSelectedVals('tbBand')[0] || 'band') === 'band';
                 const sizeCap = parseInt(getSelectedVals('tbTextSize')[0] || '115');
                 const font = getSelectedVals('tbFont')[0] || 'Black Han Sans';
-                finals = await Promise.all(ok.map(async (u) => (await composeThumbText(u, line1, line2, c1, c2, band, sizeCap, font)) || u));
+                finals = await Promise.all(ok.map((u) => composeThumbText(u, line1, line2, c1, c2, band, sizeCap, font).then((r) => r || u).catch(() => u)));
                 window._tbComposed = finals;
+                const okN = finals.filter((f) => String(f).indexOf('data:') === 0).length;
+                if (msg && okN < finals.length) msg.textContent = '⚠ ' + okN + '/' + finals.length + '장만 글자 입힘 (이미지 로드 실패분은 원본 표시)';
             }
             if (mySeq !== window._tbRenderSeq) return; // 더 새 요청이 이미 돌고 있음
             document.getElementById('tbResultContent').innerHTML = finals.map((u, i) =>
