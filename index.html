@@ -6,7 +6,7 @@
     <title>뜨는 유튜브 채널 찾기</title>
     <!-- PWA 설정 -->
     <link rel="manifest" href="manifest.json">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Do+Hyeon&family=Jua&family=Gothic+A1:wght@900&family=Nanum+Gothic:wght@800&display=swap" rel="stylesheet">
     <meta name="theme-color" content="#7048e8">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -2951,8 +2951,8 @@
                 <div class="tbx-head"><div class="tbx-num">4</div><div class="tbx-t">썸네일 문구</div></div>
                 <div class="tbx-hint">[대괄호]로 감싼 단어만 강조색으로 칠해져요 — 예: 한국 소식에 일본 [초비상]</div>
                 <div class="tbx-body">
-                    <input type="text" id="tbText1" class="tbx-input" placeholder="줄1 — 큰 글씨 (예: 세계 3번째 [국산화 성공])" style="margin-bottom:8px;">
-                    <input type="text" id="tbText2" class="tbx-input" placeholder="줄2 — 보조 문구 (선택)" style="margin-bottom:14px;">
+                    <input type="text" id="tbText1" class="tbx-input" oninput="tbLivePreview()" placeholder="줄1 — 큰 글씨 (예: 세계 3번째 [국산화 성공])" style="margin-bottom:8px;">
+                    <input type="text" id="tbText2" class="tbx-input" oninput="tbLivePreview()" placeholder="줄2 — 보조 문구 (선택)" style="margin-bottom:14px;">
                     <div class="tbx-row">
                         <span class="tbx-lab">방식</span>
                         <div class="tb-options" id="tbTextMode">
@@ -2961,35 +2961,49 @@
                         </div>
                     </div>
                     <div id="tbTextOpts" class="tbx-grid2">
+                        <div class="tbx-row" style="margin:0;grid-column:1 / -1;">
+                            <span class="tbx-lab">글꼴</span>
+                            <div class="tb-options" id="tbFont">
+                                <button class="tb-opt selected" data-val="Black Han Sans" onclick="toggleTbOpt(this,'tbFont',1);tbLivePreview()"><div class="opt-title" style="font-family:'Black Han Sans';">검은고딕</div></button>
+                                <button class="tb-opt" data-val="Do Hyeon" onclick="toggleTbOpt(this,'tbFont',1);tbLivePreview()"><div class="opt-title" style="font-family:'Do Hyeon';">도현체</div></button>
+                                <button class="tb-opt" data-val="Jua" onclick="toggleTbOpt(this,'tbFont',1);tbLivePreview()"><div class="opt-title" style="font-family:'Jua';">주아체</div></button>
+                                <button class="tb-opt" data-val="Gothic A1" onclick="toggleTbOpt(this,'tbFont',1);tbLivePreview()"><div class="opt-title" style="font-family:'Gothic A1';font-weight:900;">고딕A1</div></button>
+                                <button class="tb-opt" data-val="Nanum Gothic" onclick="toggleTbOpt(this,'tbFont',1);tbLivePreview()"><div class="opt-title" style="font-family:'Nanum Gothic';font-weight:800;">나눔고딕</div></button>
+                            </div>
+                        </div>
                         <div class="tbx-row" style="margin:0;">
                             <span class="tbx-lab">줄1 색</span>
                             <div class="tb-options" id="tbColor1">
-                                <button class="tb-opt selected" data-val="#ffe400" onclick="toggleTbOpt(this,'tbColor1',1)"><div class="opt-title" style="color:#c7a600;">● 노랑</div></button>
-                                <button class="tb-opt" data-val="#ffffff" onclick="toggleTbOpt(this,'tbColor1',1)"><div class="opt-title">● 흰색</div></button>
-                                <button class="tb-opt" data-val="#ff2b2b" onclick="toggleTbOpt(this,'tbColor1',1)"><div class="opt-title" style="color:#e01f1f;">● 빨강</div></button>
+                                <button class="tb-opt selected" data-val="#ffe400" onclick="toggleTbOpt(this,'tbColor1',1);tbLivePreview()"><div class="opt-title" style="color:#c7a600;">● 노랑</div></button>
+                                <button class="tb-opt" data-val="#ffffff" onclick="toggleTbOpt(this,'tbColor1',1);tbLivePreview()"><div class="opt-title">● 흰색</div></button>
+                                <button class="tb-opt" data-val="#ff2b2b" onclick="toggleTbOpt(this,'tbColor1',1);tbLivePreview()"><div class="opt-title" style="color:#e01f1f;">● 빨강</div></button>
+                                <button class="tb-opt" data-val="#ff9d00" onclick="toggleTbOpt(this,'tbColor1',1);tbLivePreview()"><div class="opt-title" style="color:#e08a00;">● 주황</div></button>
+                                <button class="tb-opt" data-val="#7dff7d" onclick="toggleTbOpt(this,'tbColor1',1);tbLivePreview()"><div class="opt-title" style="color:#2aa52a;">● 연두</div></button>
                             </div>
                         </div>
                         <div class="tbx-row" style="margin:0;">
                             <span class="tbx-lab">줄2 색</span>
                             <div class="tb-options" id="tbColor2">
-                                <button class="tb-opt selected" data-val="#ffffff" onclick="toggleTbOpt(this,'tbColor2',1)"><div class="opt-title">● 흰색</div></button>
-                                <button class="tb-opt" data-val="#ffe400" onclick="toggleTbOpt(this,'tbColor2',1)"><div class="opt-title" style="color:#c7a600;">● 노랑</div></button>
-                                <button class="tb-opt" data-val="#7dff7d" onclick="toggleTbOpt(this,'tbColor2',1)"><div class="opt-title" style="color:#2aa52a;">● 연두</div></button>
+                                <button class="tb-opt selected" data-val="#ffffff" onclick="toggleTbOpt(this,'tbColor2',1);tbLivePreview()"><div class="opt-title">● 흰색</div></button>
+                                <button class="tb-opt" data-val="#ffe400" onclick="toggleTbOpt(this,'tbColor2',1);tbLivePreview()"><div class="opt-title" style="color:#c7a600;">● 노랑</div></button>
+                                <button class="tb-opt" data-val="#ff2b2b" onclick="toggleTbOpt(this,'tbColor2',1);tbLivePreview()"><div class="opt-title" style="color:#e01f1f;">● 빨강</div></button>
+                                <button class="tb-opt" data-val="#ff9d00" onclick="toggleTbOpt(this,'tbColor2',1);tbLivePreview()"><div class="opt-title" style="color:#e08a00;">● 주황</div></button>
+                                <button class="tb-opt" data-val="#7dff7d" onclick="toggleTbOpt(this,'tbColor2',1);tbLivePreview()"><div class="opt-title" style="color:#2aa52a;">● 연두</div></button>
                             </div>
                         </div>
                         <div class="tbx-row" style="margin:0;">
                             <span class="tbx-lab">크기</span>
                             <div class="tb-options" id="tbTextSize">
-                                <button class="tb-opt" data-val="150" onclick="toggleTbOpt(this,'tbTextSize',1)"><div class="opt-title">크게</div></button>
-                                <button class="tb-opt selected" data-val="115" onclick="toggleTbOpt(this,'tbTextSize',1)"><div class="opt-title">보통</div></button>
-                                <button class="tb-opt" data-val="88" onclick="toggleTbOpt(this,'tbTextSize',1)"><div class="opt-title">작게</div></button>
+                                <button class="tb-opt" data-val="150" onclick="toggleTbOpt(this,'tbTextSize',1);tbLivePreview()"><div class="opt-title">크게</div></button>
+                                <button class="tb-opt selected" data-val="115" onclick="toggleTbOpt(this,'tbTextSize',1);tbLivePreview()"><div class="opt-title">보통</div></button>
+                                <button class="tb-opt" data-val="88" onclick="toggleTbOpt(this,'tbTextSize',1);tbLivePreview()"><div class="opt-title">작게</div></button>
                             </div>
                         </div>
                         <div class="tbx-row" style="margin:0;">
                             <span class="tbx-lab">배경 띠</span>
                             <div class="tb-options" id="tbBand">
-                                <button class="tb-opt selected" data-val="band" onclick="toggleTbOpt(this,'tbBand',1)"><div class="opt-title">검정 띠</div></button>
-                                <button class="tb-opt" data-val="none" onclick="toggleTbOpt(this,'tbBand',1)"><div class="opt-title">없음</div></button>
+                                <button class="tb-opt selected" data-val="band" onclick="toggleTbOpt(this,'tbBand',1);tbLivePreview()"><div class="opt-title">검정 띠</div></button>
+                                <button class="tb-opt" data-val="none" onclick="toggleTbOpt(this,'tbBand',1);tbLivePreview()"><div class="opt-title">없음</div></button>
                             </div>
                         </div>
                     </div>
@@ -3021,7 +3035,7 @@
                         <span id="tbKieStatus" style="font-size:0.8rem;"></span>
                     </div>
                     <button class="search-btn" id="tbGenBtn" onclick="generateAiThumbnails()" style="margin-top:4px;">🎨 AI 썸네일 생성</button>
-                    <button class="btn-small" onclick="reapplyThumbText()" style="width:100%;margin-top:8px;padding:11px;border-radius:10px;cursor:pointer;border:1.5px solid #4a90d9;color:#4a90d9;background:white;font-weight:700;">✍ 글자만 다시 입히기 <span style="font-weight:400;">(무료 — 문구·색·크기 바꾸고 클릭)</span></button>
+                    <button class="btn-small" onclick="reapplyThumbText()" style="width:100%;margin-top:8px;padding:11px;border-radius:10px;cursor:pointer;border:1.5px solid #4a90d9;color:#4a90d9;background:white;font-weight:700;">✍ 글자만 다시 입히기 <span style="font-weight:400;">(무료 · 문구·색·글꼴을 바꾸면 즉시 미리보기돼요)</span></button>
                     <div id="tbGenMsg" style="margin-top:10px;font-size:0.85rem;color:#666;"></div>
                 </div>
             </div>
@@ -20937,8 +20951,10 @@ Example format:
         }
         // ===== 글자 직접 입히기(캔버스 합성) — AI 글자 복불복(작고 색없고 뒤죽박죽) 근본 해결 =====
         //  AI는 글자 없는 그림만 만들고, 검은고딕(Black Han Sans) 진짜 폰트로 문구를 얹는다. 오타·깨짐 0%.
-        async function composeThumbText(imgUrl, line1, line2, c1, c2, band, sizeCap) {
-            try { await document.fonts.load('100px "Black Han Sans"'); } catch (e) {}
+        async function composeThumbText(imgUrl, line1, line2, c1, c2, band, sizeCap, font) {
+            const FONT = font || 'Black Han Sans';
+            const FW = (FONT === 'Gothic A1') ? '900' : (FONT === 'Nanum Gothic') ? '800' : '700';
+            try { await document.fonts.load(FW + ' 100px "' + FONT + '"'); } catch (e) {}
             // CORS 오염 방지 — fetch→blob→objectURL (실패 시 원본 그대로 폴백)
             let src = imgUrl;
             try { const b = await (await fetch(imgUrl)).blob(); src = URL.createObjectURL(b); } catch (e) { return null; }
@@ -20952,7 +20968,7 @@ Example format:
             const fit = (text, maxW, startFs) => {
                 let fs = startFs;
                 const plain = text.replace(/[\[\]]/g, '');
-                do { x.font = '700 ' + fs + 'px "Black Han Sans", "Malgun Gothic", sans-serif'; if (x.measureText(plain).width <= maxW) break; fs -= 4; } while (fs > 40);
+                do { x.font = FW + ' ' + fs + 'px "' + FONT + '", "Malgun Gothic", sans-serif'; if (x.measureText(plain).width <= maxW) break; fs -= 4; } while (fs > 40);
                 return fs;
             };
             const fs1 = fit(line1, W * 0.94, sizeCap || 115); // 상한을 사용자가 선택 — 문구 길이가 달라도 크기 들쭉날쭉 방지
@@ -20979,7 +20995,7 @@ Example format:
             };
             const drawLine = (text, fs, color, baseY) => {
                 const runs = parseRuns(text, color);
-                x.font = '700 ' + fs + 'px "Black Han Sans", "Malgun Gothic", sans-serif';
+                x.font = FW + ' ' + fs + 'px "' + FONT + '", "Malgun Gothic", sans-serif';
                 x.lineJoin = 'round';
                 const total = runs.reduce((s, r) => s + x.measureText(r.t).width, 0);
                 let cx0 = W / 2 - total / 2;
@@ -21016,8 +21032,12 @@ Example format:
         }
         // 보관된 배경(window._tbBgs)에 현재 문구·색·크기·띠 설정으로 글자를 (다시) 입혀 결과 표시 — 생성비 0원
         async function renderThumbResults(msg) {
+            if (!(window._tbBgs || []).length) {
+                try { window._tbBgs = JSON.parse(localStorage.getItem('tb_last_bgs') || '[]'); } catch (e) { window._tbBgs = []; }
+            }
             const ok = window._tbBgs || [];
             if (!ok.length) return;
+            const mySeq = (window._tbRenderSeq = (window._tbRenderSeq || 0) + 1); // 연타 시 마지막 것만 반영
             const line1 = document.getElementById('tbText1').value.trim();
             const line2 = document.getElementById('tbText2').value.trim();
             window._tbComposed = [];
@@ -21028,9 +21048,11 @@ Example format:
                 const c2 = getSelectedVals('tbColor2')[0] || '#ffffff';
                 const band = (getSelectedVals('tbBand')[0] || 'band') === 'band';
                 const sizeCap = parseInt(getSelectedVals('tbTextSize')[0] || '115');
-                finals = await Promise.all(ok.map(async (u) => (await composeThumbText(u, line1, line2, c1, c2, band, sizeCap)) || u));
+                const font = getSelectedVals('tbFont')[0] || 'Black Han Sans';
+                finals = await Promise.all(ok.map(async (u) => (await composeThumbText(u, line1, line2, c1, c2, band, sizeCap, font)) || u));
                 window._tbComposed = finals;
             }
+            if (mySeq !== window._tbRenderSeq) return; // 더 새 요청이 이미 돌고 있음
             document.getElementById('tbResult').style.display = 'block';
             document.getElementById('tbResultContent').innerHTML = finals.map((u, i) =>
                 '<div style="border:1px solid #e0e0e0;border-radius:10px;overflow:hidden;">' +
@@ -21055,6 +21077,11 @@ Example format:
             if (!u) return;
             const w = window.open('', '_blank');
             if (w) w.document.write('<img src="' + u + '" style="max-width:100%">');
+        }
+        // ★실시간 미리보기 — 문구·색·글꼴·크기·띠를 바꾸는 즉시 결과에 반영(0.25초 디바운스, 생성비 0)
+        function tbLivePreview() {
+            clearTimeout(window._tbLp);
+            window._tbLp = setTimeout(() => { renderThumbResults(null); }, 250);
         }
         async function reapplyThumbText() {
             if (!(window._tbBgs || []).length) {
