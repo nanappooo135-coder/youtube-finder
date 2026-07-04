@@ -24181,13 +24181,92 @@ ${titles}`;
             });
         }
 
+        // ===== 📊 주제 트렌드 집계 — 어떤 주제를 몇 채널이 만들고 얼마나 터지는지 (즉시·무료) =====
+        const _TOPIC_STOP = new Set(['이유','결국','지금','진짜','충격','충격적','영상','유튜브','결말','상황','시작','사람','사람들','모든','최초','오늘','최근','현재','정말','완전','대체','도대체','이렇게','그리고','하지만','합니다','입니다','있는','없는','하는','되는','무슨','어떤','때문','발생','공개','논란','근황','반응','해야','한다','했다','속보','긴급','경악','이거','저거','그거','제일','가장','바로','아직','이미','다시','계속','모두','전부','절대','결론','이야기','순간','방법','이렇게나','드디어','결정','선언','경우','실제','실화','현실','수준','정도','뭐냐','뭐길래','왜','것','수','더','그','이','저','못','안','및','vs','이제','만에','역대급','단독','라이브','방송','전체보기','총정리','무조건','반드시','여러분','우리','당신','하반기','상반기','오전','오후','전격','사상','한번','이번','다음','생방송']);
+        function _topicTokens(title) {
+            const clean = (title || '').replace(/\[[^\]]*\]|\([^)]*\)|["'…·|~!?%↑↓→،“”‘’]/g, ' ').replace(/\s+/g, ' ');
+            const toks = [];
+            for (let w of clean.split(' ')) {
+                w = w.trim().replace(/[.,]+$/, '');
+                if (w.length >= 3) w = w.replace(/(에서|에게|으로|까지|부터|이라|라는|하며|하고|의|는|은|이|가|를|을|도|로|에|와|과|만)$/, '');
+                if (w.length < 2 || _TOPIC_STOP.has(w) || /^\d+$/.test(w)) continue;
+                if (/(니다|세요|네요|어요|아요|하죠|이다|한다)$/.test(w)) continue; // 서술어는 주제가 아님
+                toks.push(w);
+            }
+            return toks;
+        }
+        function analyzeTopicTrends(containerId) {
+            const store = _resultStore[containerId];
+            const data = (store && store.results) || [];
+            const out = document.getElementById(containerId + '_topics');
+            if (!data.length || !out) return;
+            if (out.innerHTML) { out.innerHTML = ''; return; } // 토글
+            const agg = {};
+            const bump = (key, item) => {
+                const a = agg[key] || (agg[key] = { videos: new Set(), channels: new Set(), views: 0, effSum: 0, effN: 0, top: null });
+                if (a.videos.has(item.videoId)) return;
+                a.videos.add(item.videoId);
+                a.channels.add(item.channelId);
+                a.views += item.viewCount || 0;
+                if (item.efficiency !== 99 && item.subscriberCount > 0) { a.effSum += item.efficiency; a.effN++; }
+                if (!a.top || (item.viewCount || 0) > a.top.v) a.top = { v: item.viewCount || 0, title: item.title, videoId: item.videoId };
+            };
+            for (const item of data) {
+                const toks = _topicTokens(item.title);
+                const seen = new Set();
+                for (let i = 0; i < toks.length; i++) {
+                    if (!seen.has(toks[i])) { seen.add(toks[i]); bump(toks[i], item); }
+                    if (i + 1 < toks.length) {
+                        const bg = toks[i] + ' ' + toks[i + 1];
+                        if (!seen.has(bg)) { seen.add(bg); bump(bg, item); }
+                    }
+                }
+            }
+            let rows = Object.entries(agg).filter(([k, a]) => a.videos.size >= 2);
+            const absorbed = new Set();
+            for (const [bk, ba] of rows) {
+                if (!bk.includes(' ') || ba.videos.size < 3) continue;
+                for (const w of bk.split(' ')) {
+                    const wa = agg[w];
+                    if (wa && ba.videos.size >= wa.videos.size * 0.8) absorbed.add(w);
+                }
+            }
+            rows = rows.filter(([k]) => !absorbed.has(k));
+            rows.sort((x, y) => (y[1].channels.size - x[1].channels.size) || (y[1].views - x[1].views));
+            rows = rows.slice(0, 18);
+            if (!rows.length) { out.innerHTML = '<p style="color:#888;padding:8px;">집계할 공통 주제가 없어요.</p>'; return; }
+            const fmt = n => n >= 100000000 ? (n / 100000000).toFixed(1) + '억' : n >= 10000 ? (n / 10000).toFixed(1) + '만' : n.toLocaleString();
+            let html = `<div style="background:#fff;border:1.5px solid #a7f3d0;border-radius:12px;padding:14px 16px;margin:10px 0;">
+            <div style="font-weight:800;margin-bottom:4px;color:#065f46;">📊 주제 트렌드 — 여러 채널이 따라 만드는 주제 순 (결과 ${data.length}개 기준)</div>
+            <p style="font-size:0.76rem;color:#888;margin:0 0 8px;">🔥 = 채널 3개 이상 제작(검증된 트렌드). 채널수 많고 평균 효율 높은 주제 = 지금 만들면 터질 확률 높음.</p>
+            <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
+            <tr style="background:#f0fdf4;color:#065f46;"><th style="padding:7px 8px;text-align:left;">주제</th><th style="padding:7px;">영상</th><th style="padding:7px;">채널</th><th style="padding:7px;">합계 조회수</th><th style="padding:7px;">평균 효율</th><th style="padding:7px 8px;text-align:left;">대표 영상 (최다 조회)</th></tr>`;
+            for (const [k, a] of rows) {
+                const hotCh = a.channels.size >= 3;
+                const avgEff = a.effN ? (a.effSum / a.effN) : 0;
+                html += `<tr style="border-bottom:1px solid #eef2f0;${hotCh ? 'background:#fffbeb;' : ''}">
+                    <td style="padding:7px 8px;font-weight:700;">${hotCh ? '🔥 ' : ''}${k}</td>
+                    <td style="padding:7px;text-align:center;">${a.videos.size}</td>
+                    <td style="padding:7px;text-align:center;font-weight:${hotCh ? '800' : '400'};">${a.channels.size}</td>
+                    <td style="padding:7px;text-align:center;">${fmt(a.views)}</td>
+                    <td style="padding:7px;text-align:center;">${avgEff ? avgEff.toFixed(1) + '배' : '-'}</td>
+                    <td style="padding:7px 8px;"><a href="https://youtube.com/watch?v=${a.top.videoId}" target="_blank" style="color:#0066cc;text-decoration:none;">${(a.top.title || '').slice(0, 42)}${(a.top.title || '').length > 42 ? '…' : ''}</a> <span style="color:#888;">(${fmt(a.top.v)})</span></td>
+                </tr>`;
+            }
+            html += `</table></div></div>`;
+            out.innerHTML = html;
+            out.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
         function renderMatchResults(containerId, results, activeSort) {
             const el = document.getElementById(containerId);
             if (results.length === 0) {
                 el.innerHTML = '<div class="results-header">조건에 맞는 영상이 없어요. 키워드나 기간을 조정해보세요.</div>';
                 return;
             }
-            let html = `<div class="results-header success">${results.length}개 영상을 찾았어요!</div>`;
+            let html = `<div class="results-header success">${results.length}개 영상을 찾았어요!
+                <button onclick="analyzeTopicTrends('${containerId}')" style="float:right;padding:5px 14px;background:#0ca678;color:#fff;border:none;border-radius:8px;font-size:0.82rem;cursor:pointer;font-weight:700;">📊 주제 트렌드</button></div>`;
+            html += `<div id="${containerId}_topics"></div>`;
             html += buildSortBar(containerId, activeSort, true);
             results.forEach(item => {
                 const matchBadge = item.matchScore >= 8
