@@ -379,3 +379,289 @@
         setup();
     }
 })();
+
+
+// ============================================================
+// 🧭 검증된 동선 (에버그린 재활용) — 뉴스 조용한 날의 안전 타율
+// ============================================================
+// 오래됐지만(6개월+) 큰 조회수가 검증된 주제 = 시청 수요가 시간을 타지 않는 소재.
+// search.list(publishedBefore) 1회 ≈ 102 units.
+(function () {
+    'use strict';
+
+    var EG_HTML = ''
+        + '<div class="section" id="egSection">'
+        + '  <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">'
+        + '    <span>🧭 검증된 동선 — 에버그린 재활용</span>'
+        + '    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">'
+        + '      <select id="egAge" style="padding:6px 10px;border:1px solid #e0e0e0;border-radius:6px;font-size:0.8rem;">'
+        + '        <option value="6" selected>6개월+ 지난 것</option>'
+        + '        <option value="12">1년+ 지난 것</option>'
+        + '        <option value="24">2년+ 지난 것</option>'
+        + '      </select>'
+        + '      <select id="egMinViews" style="padding:6px 10px;border:1px solid #e0e0e0;border-radius:6px;font-size:0.8rem;">'
+        + '        <option value="100000">10만뷰+</option>'
+        + '        <option value="500000" selected>50만뷰+</option>'
+        + '        <option value="1000000">100만뷰+</option>'
+        + '      </select>'
+        + '      <button id="egSearchBtn" onclick="runEvergreen()" style="padding:6px 16px;background:#5f3dc4;color:white;border:none;border-radius:8px;font-size:0.85rem;font-weight:700;cursor:pointer;">🧭 발굴</button>'
+        + '    </div>'
+        + '  </div>'
+        + '  <div class="section-content">'
+        + '    <p style="font-size:0.85rem;color:#888;margin-bottom:10px;">'
+        + '      오래됐지만 크게 터진 <b>검증된 주제</b>를 찾아 재해석 기회를 봅니다 — 뉴스가 조용한 날의 안전 타율. 발굴 1회 ≈ 102 units.'
+        + '    </p>'
+        + '    <div style="display:flex;gap:8px;margin-bottom:8px;">'
+        + '      <input type="text" id="egKeyword" placeholder="소재 키워드 (예: 몰락, 파산, 반도체 전쟁)" style="flex:1;padding:10px 12px;border:1px solid #e0e0e0;border-radius:8px;font-size:0.9rem;" onkeydown="if(event.key===&quot;Enter&quot;)runEvergreen()">'
+        + '    </div>'
+        + '    <div id="egChips" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;"></div>'
+        + '    <div id="egStatus" style="font-size:0.85rem;color:#5f3dc4;font-weight:600;margin-bottom:8px;"></div>'
+        + '    <div id="egError" style="display:none;padding:14px;background:#fff5f5;border:1px solid #ffe0e0;border-radius:10px;color:#dc3545;font-size:0.9rem;margin-bottom:8px;"></div>'
+        + '    <div id="egList"></div>'
+        + '    <p id="egTime" style="font-size:0.8rem;color:#aaa;margin-top:8px;text-align:right;"></p>'
+        + '  </div>'
+        + '</div>';
+
+    var EG_CHIPS = ['기업 몰락', '파산', '반도체 전쟁', '부동산 붕괴', '환율 위기', '재벌 비화', '국민연금', '은행 부실', '일본 경제', '중국 경제'];
+
+    window.runEvergreen = async function () {
+        var btn = document.getElementById('egSearchBtn');
+        var statusEl = document.getElementById('egStatus');
+        var errorEl = document.getElementById('egError');
+        var listEl = document.getElementById('egList');
+        var timeEl = document.getElementById('egTime');
+        errorEl.style.display = 'none';
+
+        var kw = (document.getElementById('egKeyword').value || '').trim();
+        if (!kw) { errorEl.style.display = ''; errorEl.textContent = '소재 키워드를 입력하거나 아래 칩을 눌러주세요.'; return; }
+        var allKeys = (typeof loadApiKeys === 'function' ? loadApiKeys() : []).filter(Boolean);
+        if (!allKeys.length) { errorEl.style.display = ''; errorEl.textContent = 'YouTube API 키가 없어요. 주제찾기 탭에서 먼저 등록해주세요.'; return; }
+
+        var ageMonths = parseInt(document.getElementById('egAge').value);
+        var minViews = parseInt(document.getElementById('egMinViews').value);
+        var before = new Date(); before.setMonth(before.getMonth() - ageMonths);
+
+        btn.disabled = true; btn.textContent = '발굴 중...';
+        listEl.innerHTML = '';
+        statusEl.textContent = '오래된 대박 영상 검색 중...';
+        try {
+            var sr = await fetchYouTubeAPI('search', {
+                part: 'snippet', q: kw, type: 'video',
+                regionCode: 'KR', relevanceLanguage: 'ko',
+                publishedBefore: before.toISOString(),
+                order: 'viewCount', maxResults: 50
+            });
+            var ids = (sr.items || []).map(function (it) { return it.id && it.id.videoId; }).filter(Boolean);
+            if (!ids.length) { statusEl.textContent = ''; listEl.innerHTML = '<p style="color:#888;text-align:center;padding:20px;">결과가 없어요. 키워드를 바꿔보세요.</p>'; return; }
+
+            statusEl.textContent = '통계 수집 중...';
+            var vr = await fetchYouTubeAPI('videos', { part: 'snippet,statistics,contentDetails', id: ids.join(',') });
+            var vids = [];
+            var chIds = {};
+            (vr.items || []).forEach(function (v) {
+                var views = parseInt((v.statistics || {}).viewCount || '0');
+                var dur = parseIsoDuration(v.contentDetails && v.contentDetails.duration);
+                var isNews = /뉴스|news/i.test(v.snippet.channelTitle || '');
+                if (views >= minViews && dur >= 180 && dur < 3 * 3600 && !isNews) {
+                    chIds[v.snippet.channelId] = true;
+                    vids.push({
+                        id: v.id, title: v.snippet.title,
+                        channelId: v.snippet.channelId, channelTitle: v.snippet.channelTitle,
+                        thumb: (v.snippet.thumbnails || {}).medium ? v.snippet.thumbnails.medium.url : '',
+                        publishedAt: v.snippet.publishedAt, viewCount: views, duration: dur
+                    });
+                }
+            });
+            var subs = {};
+            var chList = Object.keys(chIds);
+            if (chList.length) {
+                var cr = await fetchYouTubeAPI('channels', { part: 'statistics', id: chList.slice(0, 50).join(',') });
+                (cr.items || []).forEach(function (c) { subs[c.id] = parseInt((c.statistics || {}).subscriberCount || '0'); });
+            }
+            vids.forEach(function (v) { v.subs = subs[v.channelId] || 0; v.eff = v.subs > 0 ? v.viewCount / v.subs : 0; });
+            vids.sort(function (a, b) { return b.viewCount - a.viewCount; });
+
+            statusEl.textContent = '';
+            if (!vids.length) {
+                listEl.innerHTML = '<p style="color:#888;text-align:center;padding:20px;">조건(조회수·롱폼·뉴스 제외)에 맞는 영상이 없어요. 조회수 기준을 낮춰보세요.</p>';
+            } else {
+                listEl.innerHTML = vids.map(function (v) {
+                    var url = 'https://www.youtube.com/watch?v=' + v.id;
+                    var age = formatRelativeTime(new Date(v.publishedAt).getTime());
+                    var effBadge = v.eff >= 1 ? '<span class="pr-badge pr-empty">효율 ' + v.eff.toFixed(1) + '배</span> ' : '';
+                    return '<div class="pr-item">'
+                        + '<img class="pr-thumb" src="' + v.thumb + '" loading="lazy" onclick="window.open(&quot;' + url + '&quot;,&quot;_blank&quot;)" alt="">'
+                        + '<div style="flex:1;min-width:0;">'
+                        + '<div class="pr-title" onclick="window.open(&quot;' + url + '&quot;,&quot;_blank&quot;)">' + v.title + '</div>'
+                        + '<div class="pr-meta">' + v.channelTitle + (v.subs ? ' (구독 ' + formatViewCount(v.subs) + ')' : '') + ' · <b style="color:#5f3dc4;">조회 ' + formatViewCount(v.viewCount) + '</b> · ' + age + ' · ' + formatDuration(v.duration) + '</div>'
+                        + '<div style="margin-top:4px;">' + effBadge + '<span style="font-size:0.78rem;color:#888;">오래됐지만 검증된 주제 — 최신 데이터·새 각도로 재해석</span></div>'
+                        + '</div></div>';
+                }).join('');
+            }
+            timeEl.textContent = '"' + kw + '" · ' + ageMonths + '개월+ 전 · ' + formatViewCount(minViews) + '뷰+ · ' + vids.length + '건 (조회수순, 뉴스채널 제외)';
+        } catch (e) {
+            statusEl.textContent = '';
+            errorEl.style.display = ''; errorEl.textContent = '발굴 오류: ' + e.message;
+        } finally {
+            btn.disabled = false; btn.textContent = '🧭 발굴';
+        }
+    };
+
+    function setup() {
+        var anchor = document.getElementById('prSection');
+        if (!anchor || document.getElementById('egSection')) return;
+        anchor.insertAdjacentHTML('afterend', EG_HTML);
+        var chips = document.getElementById('egChips');
+        chips.innerHTML = EG_CHIPS.map(function (c) {
+            return '<button onclick="document.getElementById(&quot;egKeyword&quot;).value=&quot;' + c + '&quot;;runEvergreen()" style="padding:5px 12px;background:#f3f0ff;color:#5f3dc4;border:1px solid #e5dbff;border-radius:20px;font-size:0.8rem;font-weight:600;cursor:pointer;">' + c + '</button>';
+        }).join('');
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { setTimeout(setup, 0); });
+    else setTimeout(setup, 0);
+})();
+
+// ============================================================
+// ♻️ 시그니처 변형 양산 — 터진 제목 1개 → 패턴 10개 (Gemini)
+// ============================================================
+(function () {
+    'use strict';
+
+    var SV_HTML = ''
+        + '<div class="section" id="svSection">'
+        + '  <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">'
+        + '    <span>♻️ 제목 변형 양산 — 터진 제목 1개 → 10개</span>'
+        + '    <button id="svBtn" onclick="runVariants()" style="padding:6px 16px;background:#e8590c;color:white;border:none;border-radius:8px;font-size:0.85rem;font-weight:700;cursor:pointer;">♻️ 10개 생성</button>'
+        + '  </div>'
+        + '  <div class="section-content">'
+        + '    <p style="font-size:0.85rem;color:#888;margin-bottom:10px;">'
+        + '      잘 터진 제목의 <b>패턴(구조·후킹 장치)</b>을 분석해 같은 공식으로 10개를 뽑습니다 — 같은 소재 각도 연타 기획용. Gemini 키 사용(기존 설정 재활용).'
+        + '    </p>'
+        + '    <input type="text" id="svTitle" placeholder="기준 제목 (예: 손대는 사업마다 무너졌다 — 정몽규가 거쳐간 기업들의 최후)" style="width:100%;padding:10px 12px;border:1px solid #e0e0e0;border-radius:8px;font-size:0.9rem;margin-bottom:8px;box-sizing:border-box;">'
+        + '    <input type="text" id="svTopic" placeholder="(선택) 새 소재 키워드 — 넣으면 5개는 이 소재로 변형 (예: 홍명보, 포르쉐)" style="width:100%;padding:10px 12px;border:1px solid #e0e0e0;border-radius:8px;font-size:0.9rem;margin-bottom:8px;box-sizing:border-box;" onkeydown="if(event.key===&quot;Enter&quot;)runVariants()">'
+        + '    <div id="svStatus" style="font-size:0.85rem;color:#e8590c;font-weight:600;margin-bottom:8px;"></div>'
+        + '    <div id="svError" style="display:none;padding:14px;background:#fff5f5;border:1px solid #ffe0e0;border-radius:10px;color:#dc3545;font-size:0.9rem;margin-bottom:8px;"></div>'
+        + '    <div id="svPattern" style="display:none;padding:10px 12px;background:#fff9f5;border:1px solid #ffe8d9;border-radius:8px;font-size:0.85rem;color:#c05621;margin-bottom:8px;"></div>'
+        + '    <div id="svList"></div>'
+        + '  </div>'
+        + '</div>';
+
+    window.runVariants = async function () {
+        var btn = document.getElementById('svBtn');
+        var statusEl = document.getElementById('svStatus');
+        var errorEl = document.getElementById('svError');
+        var listEl = document.getElementById('svList');
+        var patEl = document.getElementById('svPattern');
+        errorEl.style.display = 'none'; patEl.style.display = 'none';
+
+        var title = (document.getElementById('svTitle').value || '').trim();
+        var topic = (document.getElementById('svTopic').value || '').trim();
+        if (!title) { errorEl.style.display = ''; errorEl.textContent = '기준 제목을 입력해주세요.'; return; }
+        if (typeof callGemini !== 'function' || typeof getGeminiKey !== 'function' || !getGeminiKey()) {
+            errorEl.style.display = ''; errorEl.innerHTML = 'Gemini API 키가 없어요. <b>주제찾기 탭의 Gemini 키 설정</b>에서 먼저 등록해주세요.';
+            return;
+        }
+
+        btn.disabled = true; btn.textContent = '생성 중...';
+        listEl.innerHTML = ''; statusEl.textContent = '패턴 분석 + 변형 생성 중... (10~20초)';
+        try {
+            var mix = topic
+                ? '5개는 원래 소재의 다른 각도, 5개는 새 소재 "' + topic + '"에 같은 패턴 적용'
+                : '6개는 원래 소재의 다른 각도, 4개는 인접 소재로 확장';
+            var prompt = '당신은 40~60대 대상 한국 경제 유튜브 채널의 20년차 카피라이터입니다.\n'
+                + '기준 제목: "' + title + '"\n\n'
+                + '작업:\n'
+                + '1) 이 제목이 클릭을 부르는 패턴을 한 줄로 분석 (구조·후킹 장치·숫자/실명 배치).\n'
+                + '2) 같은 패턴으로 제목 10개 생성 — ' + mix + '.\n'
+                + '규칙: 40자 이내, 숫자·실명 우선, 물음표 남발 금지, 내용이 감당 못 할 낚시 금지, 몰락·반전·은폐 앵글 우선.\n'
+                + '출력은 반드시 아래 JSON만:\n'
+                + '{"pattern": "패턴 분석 한 줄", "titles": ["제목1", "...", "제목10"]}';
+            var res = await callGemini(prompt, { temperature: 0.8 });
+            var text = typeof res === 'string' ? res : JSON.stringify(res);
+            var m = text.match(/\{[\s\S]*\}/);
+            if (!m) throw new Error('AI 응답 파싱 실패 — 다시 시도해주세요');
+            var data = JSON.parse(m[0]);
+            statusEl.textContent = '';
+            if (data.pattern) { patEl.style.display = ''; patEl.innerHTML = '<b>패턴:</b> ' + data.pattern; }
+            listEl.innerHTML = (data.titles || []).map(function (t, i) {
+                var safe = String(t).replace(/"/g, '&quot;');
+                return '<div style="display:flex;align-items:center;gap:8px;padding:9px 12px;border:1px solid #eee;border-radius:8px;margin-bottom:6px;background:white;">'
+                    + '<span style="color:#aaa;font-size:0.8rem;font-weight:700;flex-shrink:0;">' + (i + 1) + '</span>'
+                    + '<span style="flex:1;font-size:0.92rem;font-weight:600;">' + t + '</span>'
+                    + '<button data-title="' + safe + '" onclick="navigator.clipboard.writeText(this.dataset.title);this.textContent=&quot;✓ 복사됨&quot;;var b=this;setTimeout(function(){b.textContent=&quot;복사&quot;},1200)" style="padding:4px 12px;background:#f1f3f5;border:1px solid #dee2e6;border-radius:6px;font-size:0.78rem;cursor:pointer;flex-shrink:0;">복사</button>'
+                    + '</div>';
+            }).join('');
+        } catch (e) {
+            statusEl.textContent = '';
+            errorEl.style.display = ''; errorEl.textContent = '생성 오류: ' + e.message;
+        } finally {
+            btn.disabled = false; btn.textContent = '♻️ 10개 생성';
+        }
+    };
+
+    function setup() {
+        var anchor = document.getElementById('egSection') || document.getElementById('prSection');
+        if (!anchor || document.getElementById('svSection')) return;
+        anchor.insertAdjacentHTML('afterend', SV_HTML);
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { setTimeout(setup, 10); });
+    else setTimeout(setup, 10);
+})();
+
+// ============================================================
+// 🪗 트렌드 탭 아코디언 — 섹션 접기/펴기로 한눈에 (UI 정리)
+// ============================================================
+(function () {
+    'use strict';
+    var STATE_KEY = 'trend_accordion_state';
+
+    var ACC_CSS = ''
+        + '#process-trend .section{border:1px solid #ececec;border-radius:14px;background:#fff;box-shadow:0 1px 5px rgba(0,0,0,.05);margin-bottom:12px;overflow:hidden;}'
+        + '#process-trend .section-title{cursor:pointer;user-select:none;padding:14px 16px;margin:0;font-size:1rem;}'
+        + '#process-trend .section-title:hover{background:#fafafa;}'
+        + '#process-trend .acc-chev{display:inline-block;margin-right:8px;color:#adb5bd;font-size:0.8rem;transition:transform .18s;transform:rotate(90deg);}'
+        + '#process-trend .acc-closed .acc-chev{transform:rotate(0deg);}'
+        + '#process-trend .acc-closed > *:not(.section-title){display:none !important;}'
+        + '#process-trend .section-content{padding:4px 16px 16px;}';
+
+    function keyOf(sec, idx) {
+        return sec.id || 'idx_' + idx;
+    }
+
+    function initAccordion() {
+        var host = document.getElementById('process-trend');
+        if (!host || host._accInit) return;
+        host._accInit = true;
+        var style = document.createElement('style');
+        style.textContent = ACC_CSS;
+        document.head.appendChild(style);
+
+        var state = {};
+        try { state = JSON.parse(localStorage.getItem(STATE_KEY) || '{}'); } catch (e) {}
+
+        var sections = host.querySelectorAll('.section');
+        sections.forEach(function (sec, idx) {
+            var title = sec.querySelector('.section-title');
+            if (!title || title._accBound) return;
+            title._accBound = true;
+            var chev = document.createElement('span');
+            chev.className = 'acc-chev';
+            chev.textContent = '▶';
+            title.insertBefore(chev, title.firstChild);
+            var k = keyOf(sec, idx);
+            // 기본: 선점 레이더만 열림. 저장된 상태가 있으면 그걸 따름.
+            var open = (k in state) ? !!state[k] : (sec.id === 'prSection');
+            if (!open) sec.classList.add('acc-closed');
+            title.addEventListener('click', function (e) {
+                if (e.target.closest('button, select, input, label, a')) return;
+                sec.classList.toggle('acc-closed');
+                state[k] = !sec.classList.contains('acc-closed');
+                try { localStorage.setItem(STATE_KEY, JSON.stringify(state)); } catch (e2) {}
+            });
+        });
+    }
+
+    // 다른 IIFE들의 섹션 주입(setTimeout 0/10) 이후에 실행
+    function boot() { setTimeout(initAccordion, 80); }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+    else boot();
+})();
