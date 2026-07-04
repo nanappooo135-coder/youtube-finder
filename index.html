@@ -3104,6 +3104,7 @@
                             </div>
                         </div>
                     </div>
+                <div id="tbEditMsg" style="font-size:0.8rem;color:#8a93a3;margin:4px 0 6px;"></div>
                 <button class="btn-small" onclick="reapplyThumbText()" style="width:100%;margin-top:8px;padding:11px;border-radius:10px;cursor:pointer;border:1.5px solid #4a90d9;color:#4a90d9;background:white;font-weight:700;">✍ 글자만 다시 입히기 <span style="font-weight:400;">(무료 · 문구·색·글꼴을 바꾸면 즉시 미리보기돼요)</span></button>
                 </div>
             </div>
@@ -21025,12 +21026,21 @@ Example format:
             const FONT = font || 'Black Han Sans';
             const FW = (FONT === 'Black Han Sans' || FONT === 'Do Hyeon' || FONT === 'Jua') ? '700' : '400'; // 눈누 CDN 폰트=파일 자체가 볼드
             try { await document.fonts.load(FW + ' 100px "' + FONT + '"'); } catch (e) {}
-            // CORS 오염 방지 — fetch→blob→objectURL (실패 시 원본 그대로 폴백)
-            let src = imgUrl;
-            try { const b = await (await fetch(imgUrl)).blob(); src = URL.createObjectURL(b); } catch (e) { return null; }
+            // CORS 오염 방지 — ①fetch→blob→objectURL ②실패 시 crossOrigin 이미지 직접 로드(2차)
+            window._tbLastErr = '';
+            let src = imgUrl, viaBlob = true;
+            try { const b = await (await fetch(imgUrl)).blob(); src = URL.createObjectURL(b); }
+            catch (e) { viaBlob = false; window._tbLastErr = 'fetch 실패: ' + (e.message || e); }
             let img;
-            try { img = await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = src; }); }
-            catch (e) { return null; }
+            try {
+                img = await new Promise((res, rej) => {
+                    const im = new Image();
+                    if (!viaBlob) im.crossOrigin = 'anonymous'; // fetch 막혀도 CORS 허용 호스트면 이 경로로 그려짐
+                    im.onload = () => res(im);
+                    im.onerror = () => rej(new Error('이미지 로드 실패'));
+                    im.src = viaBlob ? src : imgUrl;
+                });
+            } catch (e) { window._tbLastErr = (window._tbLastErr ? window._tbLastErr + ' / ' : '') + (e.message || '이미지 로드 실패'); return null; }
             const W = 1280, H = 720;
             const c = document.createElement('canvas'); c.width = W; c.height = H;
             const x = c.getContext('2d');
@@ -21086,7 +21096,8 @@ Example format:
             drawLine(line1, fs1, c1, y1);
             if (line2) drawLine(line2, fs2, c2, y1 + gap + fs2 * 0.95);
             try { URL.revokeObjectURL(src); } catch (e) {}
-            return c.toDataURL('image/png');
+            try { return c.toDataURL('image/png'); }
+            catch (e) { window._tbLastErr = '캔버스 보안 차단(taint): ' + (e.message || e); return null; }
         }
         function dlDataUrl(dataUrl, name) {
             const a = document.createElement('a'); a.href = dataUrl; a.download = name; a.click();
@@ -21124,7 +21135,11 @@ Example format:
                 finals = await Promise.all(ok.map((u) => composeThumbText(u, line1, line2, c1, c2, band, sizeCap, font).then((r) => r || u).catch(() => u)));
                 window._tbComposed = finals;
                 const okN = finals.filter((f) => String(f).indexOf('data:') === 0).length;
-                if (msg && okN < finals.length) msg.textContent = '⚠ ' + okN + '/' + finals.length + '장만 글자 입힘 (이미지 로드 실패분은 원본 표시)';
+                const em = document.getElementById('tbEditMsg');
+                if (em) em.textContent = okN === finals.length
+                    ? '✅ ' + okN + '장 글자 입힘'
+                    : '⚠ ' + okN + '/' + finals.length + '장만 입힘 — ' + (window._tbLastErr || '원인 미상');
+                if (msg && okN < finals.length) msg.textContent = '⚠ ' + okN + '/' + finals.length + '장만 글자 입힘';
             }
             if (mySeq !== window._tbRenderSeq) return; // 더 새 요청이 이미 돌고 있음
             document.getElementById('tbResultContent').innerHTML = finals.map((u, i) =>
