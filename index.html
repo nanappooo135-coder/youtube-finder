@@ -2927,6 +2927,11 @@
                         <button class="btn-small btn-primary" onclick="pasteRefImage()" style="padding:8px 16px;font-size:0.85rem;border-radius:8px;cursor:pointer;background:#fd7e14;border-color:#fd7e14;">Ctrl+V 붙여넣기</button>
                         <input type="text" id="tbRefUrl" class="tbx-input" placeholder="또는 유튜브 주소 붙여넣기 → 엔터 (썸네일 자동 추출)" style="flex:1;min-width:240px;width:auto;" onkeydown="if(event.key==='Enter')addRefFromUrl()">
                     </div>
+                    <div class="tbx-row" style="margin-bottom:12px;">
+                        <button class="btn-small" onclick="analyzeRefThumbs()" style="padding:8px 16px;font-size:0.85rem;border-radius:8px;cursor:pointer;border:1.5px solid #8b5cf6;color:#8b5cf6;background:white;font-weight:700;">🔍 레퍼런스 분석 (Gemini 무료)</button>
+                        <span id="tbAnaMsg" style="font-size:0.8rem;color:#8a93a3;"></span>
+                    </div>
+                    <textarea id="tbRefAnalysis" rows="4" class="tbx-input" placeholder="분석 버튼을 누르면 레퍼런스의 공식(구도·인물·로고·사물·색·글자·감정)이 여기 정리돼요 — 수정 가능, 생성 시 자동 반영" style="resize:vertical;margin-bottom:12px;display:none;"></textarea>
                     <div class="tbx-row" style="margin-bottom:0;">
                         <span class="tbx-lab">따라기</span>
                         <div class="tb-options" id="tbRefMode">
@@ -5544,7 +5549,7 @@
                             }
 
                             const reqBody = {
-                                contents: [{ parts: [{ text: prompt }] }],
+                                contents: [{ parts: [...((opts.images || []).map(im => ({inline_data: {mime_type: im.mime, data: im.b64}}))), { text: prompt }] }],
                                 generationConfig: {
                                     temperature,
                                     maxOutputTokens: maxTokens,
@@ -20931,6 +20936,9 @@ Example format:
             } else {
                 ref = 'Ultra-clickable Korean YouTube thumbnail style: one dominant subject, dramatic lighting, high contrast. ';
             }
+            const anaEl = document.getElementById('tbRefAnalysis');
+            const ana = (anaEl && anaEl.style.display !== 'none' && anaEl.value.trim()) ? anaEl.value.trim() : '';
+            const anaClause = (ana && hasRefs) ? ('Detailed analysis of the reference thumbnail (follow this formula precisely; it is in Korean): ' + ana + ' ') : '';
             const what = scene ? ('Scene: ' + scene + '. ') : (topic ? ('Topic: ' + topic + '. ') : '');
             const txtSpec = 'TEXT SIZE AND STYLE ARE CRITICAL: the headline is a HUGE dominant graphic element — the main line spans nearly the FULL WIDTH of the frame across the lower third, each character is ultra-bold and taller than 1/6 of the frame height. Color: one vivid high-contrast color (bright yellow, or pure white)' + (hasRefs ? ' — match the reference text color scheme and placement' : '') + ', with a thick black outline or black band behind. Letters CLEAN and CRISP: solid fill, smooth sharp edges — never small, never faded, never scattered, never distressed. Text perfectly horizontal, neatly aligned like professional Korean YouTube typography. No other text anywhere.';
             const textMode = getSelectedVals('tbTextMode')[0] || 'overlay';
@@ -20939,7 +20947,7 @@ Example format:
                 : (line2
                 ? ('The thumbnail text must read exactly "' + line1 + '" as the huge main line, and "' + line2 + '" as a second line below it at about 60% of the main size. ' + txtSpec)
                 : ('The thumbnail text must read exactly "' + line1 + '" as the huge main line. ' + txtSpec));
-            return 'Create a YouTube thumbnail. ' + ref + what + txt + ' 16:9, high contrast, no watermark, no channel logo.';
+            return 'Create a YouTube thumbnail. ' + ref + anaClause + what + txt + ' 16:9, high contrast, no watermark, no channel logo.';
         }
         async function kieThumbCreate(prompt, refs, quality, model) {
             const input = {prompt: prompt, aspect_ratio: '16:9', resolution: quality === 'high' ? '2K' : '1K', output_format: 'png', quality: quality}; // 고급=2K(글자 가장자리 정밀)
@@ -21099,6 +21107,50 @@ Example format:
         function tbLivePreview() {
             clearTimeout(window._tbLp);
             window._tbLp = setTimeout(() => { renderThumbResults(null); }, 250);
+        }
+        // 레퍼런스 썸네일을 Gemini 비전으로 분석 — 구도·인물·로고·사물·색·글자·감정을 글로 추출해
+        //  프롬프트에 박는다(이미지 힌트보다 글 지시가 구속력 강함 — 벤치마킹 흔들림 해결).
+        async function refThumbToB64(t) {
+            if (t.isUpload) { const m = t.dataUrl.match(/^data:([^;]+);base64,(.*)$/); return m ? {mime: m[1], b64: m[2]} : null; }
+            for (const q of ['maxresdefault', 'hqdefault']) {
+                try {
+                    const r = await fetch('https://i.ytimg.com/vi/' + t.videoId + '/' + q + '.jpg');
+                    if (!r.ok) continue;
+                    const blob = await r.blob();
+                    if (blob.size < 5000) continue;
+                    const dataUrl = await new Promise((res) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.readAsDataURL(blob); });
+                    const m = String(dataUrl).match(/^data:([^;]+);base64,(.*)$/);
+                    if (m) return {mime: m[1], b64: m[2]};
+                } catch (e) {}
+            }
+            return null;
+        }
+        async function analyzeRefThumbs() {
+            const msgEl = document.getElementById('tbAnaMsg');
+            if (!_tbRefThumbs.length) { alert('먼저 레퍼런스 썸네일을 넣어주세요'); return; }
+            if (!GEMINI_API_KEYS.length || !GEMINI_API_KEYS[0]) { alert('설정에서 Gemini API 키를 등록해주세요 (무료)'); return; }
+            msgEl.textContent = '분석 중… (5~15초)';
+            try {
+                const img = await refThumbToB64(_tbRefThumbs[0]);
+                if (!img) throw new Error('레퍼런스 이미지를 읽지 못했어요');
+                const out = await callGemini(
+                    '이 유튜브 썸네일이 왜 클릭을 부르는지, 그대로 재현할 수 있게 정밀 분석해줘. 아래 항목을 짧은 불릿(한국어)으로:\n' +
+                    '- 매체: 실사 사진인지 일러스트인지 (일러스트면 어떤 그림체)\n' +
+                    '- 구도: 주인공이 어디에 얼마나 크게, 시선·포즈, 화면 분할 여부\n' +
+                    '- 인물: 누구인지 (실명 추정 가능하면 실명)\n' +
+                    '- 로고·브랜드·회사: 보이는 로고나 브랜드, 어떤 회사·제품인지\n' +
+                    '- 사물·소품: 미사일·금괴·차트 같은 상징물들과 위치\n' +
+                    '- 배경·장소\n' +
+                    '- 색 전략: 주조색, 강조색, 대비\n' +
+                    '- 글자: 위치·줄수·색·스타일 (내용 말고 형식)\n' +
+                    '- 감정 트리거: 위기감/충격/자부심 등\n' +
+                    '항목당 1줄, 군더더기 없이.',
+                    {images: [img], maxTokens: 2048});
+                const ta = document.getElementById('tbRefAnalysis');
+                ta.value = (out || '').trim();
+                ta.style.display = 'block';
+                msgEl.textContent = '✅ 분석 완료 — 내용 수정 가능, 생성 시 자동 반영돼요';
+            } catch (e) { msgEl.textContent = '⚠ ' + (e.message || '분석 실패'); }
         }
         function addRefFromUrl() {
             const el = document.getElementById('tbRefUrl');
