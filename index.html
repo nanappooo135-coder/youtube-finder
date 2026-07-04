@@ -6,7 +6,17 @@
     <title>뜨는 유튜브 채널 찾기</title>
     <!-- PWA 설정 -->
     <link rel="manifest" href="manifest.json">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Do+Hyeon&family=Jua&family=Gothic+A1:wght@900&family=Nanum+Gothic:wght@800&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Do+Hyeon&family=Jua&display=swap" rel="stylesheet">
+    <style>
+        /* 유튜브 썸네일 인기 폰트 — 눈누 CDN (URL 전수 200 확인 2026-07-04) */
+        @font-face { font-family: 'Jalnan'; src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_four@1.2/JalnanOTF00.woff') format('woff'); font-display: swap; }
+        @font-face { font-family: 'GmarketSans'; src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansBold.woff') format('woff'); font-display: swap; }
+        @font-face { font-family: 'SCDream8'; src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/S-CoreDream-8Heavy.woff') format('woff'); font-display: swap; }
+        @font-face { font-family: 'TmonMonsori'; src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_two@1.0/TmonMonsori.woff') format('woff'); font-display: swap; }
+        @font-face { font-family: 'Cafe24Ssurround'; src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2105_2@1.0/Cafe24Ssurround.woff') format('woff'); font-display: swap; }
+        @font-face { font-family: 'BMEuljiro'; src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_twelve@1.0/BMEULJIRO.woff') format('woff'); font-display: swap; }
+        @font-face { font-family: 'BMHannaPro'; src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_seven@1.0/BMHANNAPro.woff') format('woff'); font-display: swap; }
+    </style>
     <meta name="theme-color" content="#7048e8">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -2915,6 +2925,7 @@
                             <div class="btn-small btn-primary" style="padding:8px 16px;font-size:0.85rem;border-radius:8px;cursor:pointer;">이미지 업로드</div>
                         </label>
                         <button class="btn-small btn-primary" onclick="pasteRefImage()" style="padding:8px 16px;font-size:0.85rem;border-radius:8px;cursor:pointer;background:#fd7e14;border-color:#fd7e14;">Ctrl+V 붙여넣기</button>
+                        <input type="text" id="tbRefUrl" class="tbx-input" placeholder="또는 유튜브 주소 붙여넣기 → 엔터 (썸네일 자동 추출)" style="flex:1;min-width:240px;width:auto;" onkeydown="if(event.key==='Enter')addRefFromUrl()">
                     </div>
                     <div class="tbx-row" style="margin-bottom:0;">
                         <span class="tbx-lab">따라기</span>
@@ -2965,10 +2976,16 @@
                             <span class="tbx-lab">글꼴</span>
                             <div class="tb-options" id="tbFont">
                                 <button class="tb-opt selected" data-val="Black Han Sans" onclick="toggleTbOpt(this,'tbFont',1);tbLivePreview()"><div class="opt-title" style="font-family:'Black Han Sans';">검은고딕</div></button>
-                                <button class="tb-opt" data-val="Do Hyeon" onclick="toggleTbOpt(this,'tbFont',1);tbLivePreview()"><div class="opt-title" style="font-family:'Do Hyeon';">도현체</div></button>
-                                <button class="tb-opt" data-val="Jua" onclick="toggleTbOpt(this,'tbFont',1);tbLivePreview()"><div class="opt-title" style="font-family:'Jua';">주아체</div></button>
-                                <button class="tb-opt" data-val="Gothic A1" onclick="toggleTbOpt(this,'tbFont',1);tbLivePreview()"><div class="opt-title" style="font-family:'Gothic A1';font-weight:900;">고딕A1</div></button>
-                                <button class="tb-opt" data-val="Nanum Gothic" onclick="toggleTbOpt(this,'tbFont',1);tbLivePreview()"><div class="opt-title" style="font-family:'Nanum Gothic';font-weight:800;">나눔고딕</div></button>
+                                <button class="tb-opt" data-val="Jalnan" onclick="toggleTbOpt(this,'tbFont',1);tbLivePreview()"><div class="opt-title" style="font-family:'Jalnan';">잘난체</div></button>
+                                <button class="tb-opt" data-val="GmarketSans" onclick="toggleTbOpt(this,'tbFont',1);tbLivePreview()"><div class="opt-title" style="font-family:'GmarketSans';">G마켓산스</div></button>
+                                <button class="tb-opt" data-val="SCDream8" onclick="toggleTbOpt(this,'tbFont',1);tbLivePreview()"><div class="opt-title" style="font-family:'SCDream8';">에스코어드림</div></button>
+                                <button class="tb-opt" data-val="TmonMonsori" onclick="toggleTbOpt(this,'tbFont',1);tbLivePreview()"><div class="opt-title" style="font-family:'TmonMonsori';">티몬몬소리</div></button>
+                                <button class="tb-opt" data-val="Cafe24Ssurround" onclick="toggleTbOpt(this,'tbFont',1);tbLivePreview()"><div class="opt-title" style="font-family:'Cafe24Ssurround';">카페24써라운드</div></button>
+                                <button class="tb-opt" data-val="BMEuljiro" onclick="toggleTbOpt(this,'tbFont',1);tbLivePreview()"><div class="opt-title" style="font-family:'BMEuljiro';">배민 을지로</div></button>
+                                <button class="tb-opt" data-val="BMHannaPro" onclick="toggleTbOpt(this,'tbFont',1);tbLivePreview()"><div class="opt-title" style="font-family:'BMHannaPro';">배민 한나</div></button>
+                                <button class="tb-opt" data-val="Do Hyeon" onclick="toggleTbOpt(this,'tbFont',1);tbLivePreview()"><div class="opt-title" style="font-family:'Do Hyeon';">배민 도현</div></button>
+                            </div></button>
+                            </div></button>
                             </div>
                         </div>
                         <div class="tbx-row" style="margin:0;">
@@ -20953,7 +20970,7 @@ Example format:
         //  AI는 글자 없는 그림만 만들고, 검은고딕(Black Han Sans) 진짜 폰트로 문구를 얹는다. 오타·깨짐 0%.
         async function composeThumbText(imgUrl, line1, line2, c1, c2, band, sizeCap, font) {
             const FONT = font || 'Black Han Sans';
-            const FW = (FONT === 'Gothic A1') ? '900' : (FONT === 'Nanum Gothic') ? '800' : '700';
+            const FW = (FONT === 'Black Han Sans' || FONT === 'Do Hyeon' || FONT === 'Jua') ? '700' : '400'; // 눈누 CDN 폰트=파일 자체가 볼드
             try { await document.fonts.load(FW + ' 100px "' + FONT + '"'); } catch (e) {}
             // CORS 오염 방지 — fetch→blob→objectURL (실패 시 원본 그대로 폴백)
             let src = imgUrl;
@@ -21082,6 +21099,13 @@ Example format:
         function tbLivePreview() {
             clearTimeout(window._tbLp);
             window._tbLp = setTimeout(() => { renderThumbResults(null); }, 250);
+        }
+        function addRefFromUrl() {
+            const el = document.getElementById('tbRefUrl');
+            const m = (el.value || '').match(/(?:v=|youtu\.be\/|\/shorts\/|\/embed\/)([A-Za-z0-9_-]{11})/);
+            if (!m) { alert('유튜브 주소가 아니에요 — https://youtube.com/watch?v=... 형태로 붙여넣어 주세요'); return; }
+            addThumbRef(m[1], '유튜브 썸네일');
+            el.value = '';
         }
         async function reapplyThumbText() {
             if (!(window._tbBgs || []).length) {
