@@ -20957,6 +20957,8 @@ Example format:
         function buildThumbPrompt(topic, scene, line1, line2, hasRefs, styleKey, refMode) {
             // ★화풍 우선순위: 사용자가 고르면 그 화풍 > 레퍼런스 그림체 > AI 자동
             const chosen = TB_ART_STYLES[styleKey];
+            const anaEl0 = document.getElementById('tbRefAnalysis');
+            const ana = (anaEl0 && anaEl0.style.display !== 'none' && anaEl0.value.trim()) ? anaEl0.value.trim() : '';
             let ref;
             if (!chosen && hasRefs && refMode === 'edit') {
                 // ★i2i 편집 모드 — 레퍼런스 이미지를 직접 고쳐 만듦(스타일 추종 최대). vacode 사이트와 동일 방식(검증 2026-07-03).
@@ -20969,7 +20971,7 @@ Example format:
                     : ('Replace all existing text: the text must now read exactly "' + line1 + '", in the same lettering style and position as the original text.'));
                 return 'This is an EDIT of the given image, not a new picture. PRESERVE EVERYTHING from the original exactly — same composition, same background, same objects, same people and poses, same colors, same lighting, same art style. ' + subj + t + ' Apart from what is explicitly instructed, change NOTHING. Letters must be CLEAN and CRISP: perfectly solid fill, smooth sharp edges - never distressed or cracked. No watermark.';
             }
-            if (!chosen && hasRefs && refMode === 'loose') {
+            if (!chosen && refMode === 'loose' && (hasRefs || ana)) {
                 // 느낌만 — 매체·색·글자스타일·감정만 따오고 구도·배치·방향은 강제로 다르게(베낌 차단)
                 ref = 'FIRST, identify the MEDIUM of the attached reference thumbnail (photograph vs illustration) — your output MUST be the same medium and overall art style, same color strategy and contrast, same emotional trigger, same text styling language. BUT the PICTURE ITSELF MUST BE CLEARLY DIFFERENT: do NOT copy the layout — use a different camera angle and framing, rearrange or mirror the elements, different specific props and background of a similar kind, different poses. A viewer seeing both side by side should think "same genre and mood", never "the same picture redrawn". ';
             } else if (chosen && hasRefs) {
@@ -20981,9 +20983,7 @@ Example format:
             } else {
                 ref = 'Ultra-clickable Korean YouTube thumbnail style: one dominant subject, dramatic lighting, high contrast. ';
             }
-            const anaEl = document.getElementById('tbRefAnalysis');
-            const ana = (anaEl && anaEl.style.display !== 'none' && anaEl.value.trim()) ? anaEl.value.trim() : '';
-            const anaClause = (ana && hasRefs) ? (refMode === 'loose' ? ('Reference analysis (Korean). Use ONLY the medium/art style, color strategy, text styling and emotion from it — IGNORE its composition and object placement: ' + ana + ' ') : ('Detailed analysis of the reference thumbnail (follow this formula precisely; it is in Korean): ' + ana + ' ')) : '';
+            const anaClause = ana ? (refMode === 'loose' ? ('Analysis of a proven viral reference thumbnail (Korean). Match ONLY its medium/art style, color strategy, text styling language and emotional trigger — IGNORE and do NOT reproduce its composition or object placement: ' + ana + ' ') : ('Detailed analysis of the reference thumbnail (follow this formula precisely; it is in Korean): ' + ana + ' ')) : '';
             const what = scene ? ('Scene: ' + scene + '. ') : (topic ? ('Topic: ' + topic + '. ') : '');
             const txtSpec = 'TEXT SIZE AND STYLE ARE CRITICAL: the headline is a HUGE dominant graphic element — the main line spans nearly the FULL WIDTH of the frame across the lower third, each character is ultra-bold and taller than 1/6 of the frame height. Color: one vivid high-contrast color (bright yellow, or pure white)' + (hasRefs ? ' — match the reference text color scheme and placement' : '') + ', with a thick black outline or black band behind. Letters CLEAN and CRISP: solid fill, smooth sharp edges — never small, never faded, never scattered, never distressed. Text perfectly horizontal, neatly aligned like professional Korean YouTube typography. No other text anywhere.';
             const textMode = getSelectedVals('tbTextMode')[0] || 'overlay';
@@ -21216,7 +21216,8 @@ Example format:
                 ta.value = txt.trim();
                 ta.style.display = 'block';
                 msgEl.textContent = '✅ 분석 완료 — 내용 수정 가능, 생성 시 자동 반영돼요';
-            } catch (e) { msgEl.textContent = '⚠ ' + (e.message || '분석 실패'); }
+                return ta.value;
+            } catch (e) { msgEl.textContent = '⚠ ' + (e.message || '분석 실패'); return ''; }
         }
         function addRefFromUrl() {
             const el = document.getElementById('tbRefUrl');
@@ -21272,9 +21273,22 @@ Example format:
             }
             btn.disabled = true;
             try {
-                // ① 레퍼런스 호스팅 (최대 5장)
+                // ① 레퍼런스 준비 — ★느낌만 모드는 이미지를 첨부하지 않는다(첨부하면 모델이 가끔 그대로 복제 — 작가 재현).
+                //   대신 Gemini 분석문(글)만 전달 — 글 조건은 픽셀 복제가 원천 불가. 분석 안 했으면 자동 실행.
+                const refModePre = getSelectedVals('tbRefMode')[0] || 'loose';
                 let refs = [];
-                if (_tbRefThumbs.length) {
+                if (_tbRefThumbs.length && refModePre === 'loose') {
+                    const anaEl = document.getElementById('tbRefAnalysis');
+                    let anaTxt = (anaEl && anaEl.style.display !== 'none') ? anaEl.value.trim() : '';
+                    if (!anaTxt && GEMINI_API_KEYS.length && GEMINI_API_KEYS[0]) {
+                        msg.textContent = '레퍼런스 분석 중… (처음 한 번, 5~15초)';
+                        anaTxt = await analyzeRefThumbs();
+                    }
+                    if (!anaTxt) { // 분석 불가(키 없음 등) — 어쩔 수 없이 이미지 첨부로 폴백
+                        msg.textContent = '레퍼런스 ' + Math.min(5, _tbRefThumbs.length) + '장 업로드 중…';
+                        refs = (await Promise.all(_tbRefThumbs.slice(0, 5).map((t, i) => hostRefThumb(t, i)))).filter(Boolean);
+                    }
+                } else if (_tbRefThumbs.length) {
                     msg.textContent = '레퍼런스 ' + Math.min(5, _tbRefThumbs.length) + '장 업로드 중…';
                     refs = (await Promise.all(_tbRefThumbs.slice(0, 5).map((t, i) => hostRefThumb(t, i)))).filter(Boolean);
                 }
