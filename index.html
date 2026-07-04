@@ -2989,19 +2989,27 @@
             <!-- ⑤ 생성 -->
             <div class="tbx-card" data-step="4">
                 <div class="tbx-head"><div class="tbx-num">4</div><div class="tbx-t">생성</div></div>
-                <div class="tbx-hint">이미지 1장 ≈ 보통 $0.03 (약 45원) · 고급 $0.06 — 키는 이 브라우저에만 저장돼요.</div>
+                <div class="tbx-hint">나노바나나2 2K ≈ $0.06 · GPT-2는 1K $0.03 / 2K·4K $0.06~ — 키는 이 브라우저에만 저장돼요.</div>
                 <div class="tbx-body">
+                    <div class="tbx-row">
+                        <span class="tbx-lab">모델</span>
+                        <div class="tb-options" id="tbModel">
+                            <button class="tb-opt selected" data-val="nano" onclick="toggleTbOpt(this,'tbModel',1);tbSyncRes()"><div class="opt-title">나노바나나2</div><div class="opt-desc">저렴 · 배경용 충분</div></button>
+                            <button class="tb-opt" data-val="gpt" onclick="toggleTbOpt(this,'tbModel',1);tbSyncRes()"><div class="opt-title">GPT-2</div><div class="opt-desc">정밀 · AI 글자 그릴 때</div></button>
+                        </div>
+                        <span class="tbx-lab" style="width:auto;margin-left:14px;">해상도</span>
+                        <div class="tb-options" id="tbRes">
+                            <button class="tb-opt" data-val="1K" onclick="toggleTbOpt(this,'tbRes',1)"><div class="opt-title">1K</div></button>
+                            <button class="tb-opt selected" data-val="2K" onclick="toggleTbOpt(this,'tbRes',1)"><div class="opt-title">2K</div></button>
+                            <button class="tb-opt" data-val="4K" onclick="toggleTbOpt(this,'tbRes',1)"><div class="opt-title">4K</div></button>
+                        </div>
+                    </div>
                     <div class="tbx-row">
                         <span class="tbx-lab">장수</span>
                         <div class="tb-options" id="tbCount">
                             <button class="tb-opt" data-val="1" onclick="toggleTbOpt(this,'tbCount',1)"><div class="opt-title">1장</div></button>
                             <button class="tb-opt selected" data-val="2" onclick="toggleTbOpt(this,'tbCount',1)"><div class="opt-title">2장</div></button>
                             <button class="tb-opt" data-val="3" onclick="toggleTbOpt(this,'tbCount',1)"><div class="opt-title">3장</div></button>
-                        </div>
-                        <span class="tbx-lab" style="width:auto;margin-left:14px;">품질</span>
-                        <div class="tb-options" id="tbQuality">
-                            <button class="tb-opt selected" data-val="medium" onclick="toggleTbOpt(this,'tbQuality',1)"><div class="opt-title">보통</div></button>
-                            <button class="tb-opt" data-val="high" onclick="toggleTbOpt(this,'tbQuality',1)"><div class="opt-title">고급 (2K)</div></button>
                         </div>
                     </div>
                     <div class="tbx-row">
@@ -20981,8 +20989,9 @@ Example format:
                 : ('The thumbnail text must read exactly "' + line1 + '" as the huge main line. ' + txtSpec));
             return 'Create a YouTube thumbnail. ' + ref + anaClause + what + txt + ' 16:9, high contrast, no watermark, no channel logo.';
         }
-        async function kieThumbCreate(prompt, refs, quality, model) {
-            const input = {prompt: prompt, aspect_ratio: '16:9', resolution: quality === 'high' ? '2K' : '1K', output_format: 'png', quality: quality}; // 고급=2K(글자 가장자리 정밀)
+        async function kieThumbCreate(prompt, refs, res, model) {
+            const input = {prompt: prompt, aspect_ratio: '16:9', resolution: res || '2K', output_format: 'png'};
+            if (String(model).indexOf('gpt') === 0) input.quality = (res === '1K') ? 'medium' : 'high'; // quality는 GPT 전용
             if (refs.length) input.image_input = refs.slice(0, 5);
             const r = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
                 method: 'POST',
@@ -21191,6 +21200,15 @@ Example format:
             addThumbRef(m[1], '유튜브 썸네일');
             el.value = '';
         }
+        function tbSyncRes() {
+            const nano = (getSelectedVals('tbModel')[0] || 'nano') === 'nano';
+            document.querySelectorAll('#tbRes .tb-opt').forEach((b) => {
+                const is2k = b.dataset.val === '2K';
+                b.style.opacity = nano && !is2k ? '0.35' : '1';
+                b.style.pointerEvents = nano && !is2k ? 'none' : 'auto';
+                if (nano) b.classList.toggle('selected', is2k);
+            });
+        }
         function tbSwitchSub(which) {
             document.getElementById('tbSubMake').style.display = which === 'make' ? 'block' : 'none';
             document.getElementById('tbSubEdit').style.display = which === 'edit' ? 'block' : 'none';
@@ -21221,7 +21239,12 @@ Example format:
             if (!line1 && (getSelectedVals('tbTextMode')[0] || 'overlay') === 'ai') { alert('AI가 그리기 모드는 문구 줄1이 필요해요'); return; }
             if (!topic && !scene && !_tbRefThumbs.length) { alert('주제·장면 묘사·레퍼런스 중 하나는 필요해요'); return; }
             const n = parseInt(getSelectedVals('tbCount')[0] || '2');
-            const quality = getSelectedVals('tbQuality')[0] || 'medium';
+            let res = getSelectedVals('tbRes')[0] || '2K';
+            if ((getSelectedVals('tbModel')[0] || 'nano') === 'nano') res = '2K'; // 나노는 2K 고정(작가 지정)
+            // AI가 글자까지 그리는 모드는 한글 렌더가 되는 GPT-2가 필요
+            if ((getSelectedVals('tbTextMode')[0] || 'overlay') === 'ai' && (getSelectedVals('tbModel')[0] || 'nano') === 'nano') {
+                if (!confirm('\'AI가 그리기\' 모드는 한글을 잘 쓰는 GPT-2를 권장해요. 나노바나나2로 계속할까요? (글자가 깨질 수 있어요)')) return;
+            }
             btn.disabled = true;
             try {
                 // ① 레퍼런스 호스팅 (최대 5장)
@@ -21235,10 +21258,14 @@ Example format:
                 const prompt = buildThumbPrompt(topic, scene, line1, line2, refs.length > 0, styleKey, getSelectedVals('tbRefMode')[0] || 'inspire');
                 // 레퍼런스 추종 강도: 똑같이(edit)=i2i 편집 / 느낌만(inspire)=t2i 참고. 화풍 선택·레퍼런스 없음은 항상 t2i.
                 const refMode = getSelectedVals('tbRefMode')[0] || 'inspire';
-                const model = (styleKey === 'auto' && refs.length && refMode === 'edit') ? 'gpt-image-2-image-to-image' : 'gpt-image-2-text-to-image';
-                msg.textContent = '썸네일 ' + n + '장 생성 중… (20~60초, ' + (quality === 'high' ? '고급' : '보통') + ' 품질)';
+                const base = getSelectedVals('tbModel')[0] || 'nano';
+                // 나노바나나2=저렴한 기본(배경용 충분·레퍼런스 image_input 지원). GPT는 편집 모드에서 i2i 전용 모델 사용.
+                const model = base === 'nano'
+                    ? 'nano-banana-2'
+                    : ((styleKey === 'auto' && refs.length && refMode === 'edit') ? 'gpt-image-2-image-to-image' : 'gpt-image-2-text-to-image');
+                msg.textContent = '썸네일 ' + n + '장 생성 중… (20~60초, ' + (base === 'nano' ? '나노바나나2' : 'GPT-2') + ' · ' + res + ')';
                 const tasks = [];
-                for (let i = 0; i < n; i++) tasks.push(kieThumbCreate(prompt, refs, quality, model).then(kieThumbPoll).catch((e) => ({error: e.message})));
+                for (let i = 0; i < n; i++) tasks.push(kieThumbCreate(prompt, refs, res, model).then(kieThumbPoll).catch((e) => ({error: e.message})));
                 const results = await Promise.all(tasks);
                 // ③ 결과 렌더
                 const ok = results.filter((r) => typeof r === 'string');
