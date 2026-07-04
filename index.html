@@ -2917,6 +2917,20 @@
                 #process-thumbnail .tbx-mini{padding:6px 12px!important;}
                 #process-thumbnail .tbx-mini .opt-title{font-size:0.78rem!important;}
                 @media (max-width:1000px){#process-thumbnail .tbm-grid{grid-template-columns:1fr;}}
+                #tbSubMake .tbx-card{padding:28px 34px;border-radius:16px;margin-bottom:18px;}
+                #tbSubMake .tbm-grid{gap:0 18px;}
+                #tbSubMake .tbx-num{width:32px;height:32px;font-size:1rem;border-radius:10px;}
+                #tbSubMake .tbx-t{font-size:1.25rem;}
+                #tbSubMake .tbx-head{gap:12px;margin-bottom:8px;}
+                #tbSubMake .tbx-hint{font-size:0.92rem!important;}
+                #tbSubMake .tbx-input{padding:15px 18px;font-size:1.05rem;border-radius:12px;}
+                #tbSubMake .tbx-lab{font-size:0.95rem;width:64px;}
+                #tbSubMake .tb-opt{padding:12px 20px;border-radius:11px;}
+                #tbSubMake .tb-opt .opt-title{font-size:1rem;}
+                #tbSubMake .tb-opt .opt-desc{font-size:0.8rem;}
+                #tbSubMake #tbGenBtn{padding:18px!important;font-size:1.15rem!important;border-radius:13px!important;}
+                #tbSubMake #tbRefAnalysis{font-size:0.95rem!important;min-height:130px;}
+                #tbSubMake .tbx-row{gap:12px;margin-bottom:13px;}
                 #process-thumbnail .tbx-left{flex:1;min-width:0;}
                 #process-thumbnail .tbx-right{width:440px;flex-shrink:0;position:sticky;top:10px;max-height:calc(100vh - 20px);overflow-y:auto;}
                 @media (max-width:1150px){#process-thumbnail .tbx-wrap{flex-direction:column;}#process-thumbnail .tbx-right{width:100%;position:static;max-height:none;}}
@@ -2928,7 +2942,7 @@
             <button id="tbSubBtnEdit" class="tbx-subbtn" onclick="tbSwitchSub('edit')" style="padding:10px 22px;border-radius:12px;border:1.5px solid #e2e5ea;cursor:pointer;font-weight:800;font-size:0.92rem;background:#fff;color:#6b7280;">✍ 2단계 · 글자 후작업</button>
         </div>
 
-        <div id="tbSubMake" style="max-width:1500px;">
+        <div id="tbSubMake" style="max-width:100%;">
         <!-- ① 내용 -->
             <div class="tbx-card" data-step="1">
                 <div class="tbx-head"><div class="tbx-num">1</div><div class="tbx-t">무엇을 그릴까</div></div>
@@ -3104,16 +3118,16 @@
                         <label style="white-space:nowrap;">그라데이션 범위</label><input type="range" id="tbGradH" min="20" max="300" value="100" oninput="tbLivePreview()">
                     </div>
                     <div class="tbx-row" style="margin:0;">
-                        <div class="tb-options" id="tbTextPos">
+                        <span style="font-size:0.74rem;font-weight:700;color:#6b7280;margin-right:-4px;">위치</span><div class="tb-options" id="tbTextPos">
                             <button class="tb-opt tbx-mini selected" data-val="bottom" onclick="toggleTbOpt(this,'tbTextPos',1);tbLivePreview()"><div class="opt-title">하단</div></button>
                             <button class="tb-opt tbx-mini" data-val="middle" onclick="toggleTbOpt(this,'tbTextPos',1);tbLivePreview()"><div class="opt-title">중앙</div></button>
                             <button class="tb-opt tbx-mini" data-val="top" onclick="toggleTbOpt(this,'tbTextPos',1);tbLivePreview()"><div class="opt-title">상단</div></button>
                         </div>
-                        <div class="tb-options" id="tbTextAlign" style="margin-left:6px;">
+                        <span style="font-size:0.74rem;font-weight:700;color:#6b7280;margin-right:-4px;">정렬</span><div class="tb-options" id="tbTextAlign">
                             <button class="tb-opt tbx-mini selected" data-val="center" onclick="toggleTbOpt(this,'tbTextAlign',1);tbLivePreview()"><div class="opt-title">가운데</div></button>
                             <button class="tb-opt tbx-mini" data-val="left" onclick="toggleTbOpt(this,'tbTextAlign',1);tbLivePreview()"><div class="opt-title">왼쪽</div></button>
                         </div>
-                        <div class="tb-options" id="tbTextMargin" style="margin-left:6px;">
+                        <span style="font-size:0.74rem;font-weight:700;color:#6b7280;margin-right:-4px;">글자 여백</span><div class="tb-options" id="tbTextMargin">
                             <button class="tb-opt tbx-mini" data-val="0.015" onclick="toggleTbOpt(this,'tbTextMargin',1);tbLivePreview()"><div class="opt-title">붙임</div></button>
                             <button class="tb-opt tbx-mini selected" data-val="0.05" onclick="toggleTbOpt(this,'tbTextMargin',1);tbLivePreview()"><div class="opt-title">보통</div></button>
                             <button class="tb-opt tbx-mini" data-val="0.11" onclick="toggleTbOpt(this,'tbTextMargin',1);tbLivePreview()"><div class="opt-title">넓게</div></button>
