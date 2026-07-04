@@ -1024,7 +1024,7 @@
             gap: 16px;
         }
 
-        @media (max-width: 500px) {
+        @media (max-width: 600px) {
             .card-inner {
                 flex-direction: column;
             }
@@ -1035,7 +1035,7 @@
             width: 180px;
         }
 
-        @media (max-width: 500px) {
+        @media (max-width: 600px) {
             .card-thumbnail {
                 width: 100%;
             }
@@ -1142,7 +1142,7 @@
         }
 
         .card-title {
-            font-size: 1rem;
+            font-size: 1.12rem;
             font-weight: 600;
             margin-bottom: 8px;
             display: -webkit-box;
@@ -1167,7 +1167,7 @@
         .card-channel a {
             color: #666;
             text-decoration: none;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
         }
 
         .card-channel a:hover {
@@ -1183,9 +1183,9 @@
 
         .stat-badge {
             background: #f2f4f6;
-            padding: 4px 10px;
+            padding: 5px 12px;
             border-radius: 20px;
-            font-size: 0.8rem;
+            font-size: 0.88rem;
             color: #4e5968;
         }
 
@@ -1196,7 +1196,7 @@
         }
 
         .card-date {
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             color: #888;
         }
 
@@ -1315,17 +1315,17 @@
             flex-wrap: wrap;
         }
         .sort-bar .sort-label {
-            font-size: 0.8rem;
+            font-size: 0.9rem;
             color: #888;
             font-weight: 600;
             margin-right: 4px;
         }
         .sort-btn {
-            padding: 5px 12px;
+            padding: 8px 16px;
             border: 1.5px solid #e0e0e0;
             border-radius: 20px;
             background: white;
-            font-size: 0.8rem;
+            font-size: 0.92rem;
             cursor: pointer;
             transition: all 0.15s;
             color: #555;
@@ -1339,6 +1339,34 @@
             color: white;
             border-color: #dc3545;
             font-weight: 600;
+        }
+
+        /* 카드 액션 버튼 (제작함/검토중/패스/대본복사) — 데스크톱·모바일 공용 */
+        .vst-btn {
+            padding: 6px 13px; border-radius: 8px; border: 1.2px solid #d0d4da;
+            background: #fff; color: #4b5563; font-size: 0.85rem; font-weight: 700; cursor: pointer;
+        }
+        .vst-btn.on { background: #111827; color: #fff; border-color: #111827; }
+        .pipe-btn {
+            padding: 6px 13px; border-radius: 8px; border: 1.2px solid #4a90d9;
+            background: #fff; color: #4a90d9; font-size: 0.85rem; font-weight: 700; cursor: pointer;
+        }
+        .card-actions { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; margin-top: 8px; }
+
+        /* 📱 모바일 — 폰에서 보기·누르기 편하게 */
+        @media (max-width: 600px) {
+            .results-header { font-size: 1rem !important; }
+            /* 필터·정렬 = 한 줄 가로 스크롤 칩 (세로로 안 쌓이게) */
+            .sort-bar { padding: 8px 10px; gap: 7px; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+            .sort-bar::-webkit-scrollbar { display: none; }
+            .sort-bar .sort-label { flex-shrink: 0; }
+            .sort-btn { padding: 9px 14px; font-size: 0.9rem; min-height: 40px; white-space: nowrap; flex-shrink: 0; }
+            .card-inner { flex-direction: column; gap: 10px; }
+            .card-thumbnail { width: 100%; }
+            .card-title { font-size: 1.08rem; -webkit-line-clamp: 3; }
+            .stat-badge { font-size: 0.85rem; padding: 6px 12px; }
+            .vst-btn, .pipe-btn { min-height: 42px; padding: 9px 14px; font-size: 0.92rem; flex: 1 1 auto; }
+            .card-actions { gap: 8px; }
         }
 
         /* === Progress === */
@@ -24352,7 +24380,7 @@ ${titles}`;
             const isBookmarked = _isBookmarked(item.videoId);
             const vst = _loadVStatus()[item.videoId] || '';
             const newBadge = item._isNew ? `<span class="stat-badge" style="background:#7048e8;color:white;font-weight:800">🆕 NEW</span>` : '';
-            const stBtn = (key, label) => `<button onclick="setVideoStatus('${item.videoId}','${key}',this)" style="padding:3px 10px;border-radius:6px;border:1.2px solid ${vst === key ? '#111827' : '#d0d4da'};background:${vst === key ? '#111827' : '#fff'};color:${vst === key ? '#fff' : '#4b5563'};font-size:0.74rem;font-weight:700;cursor:pointer;">${label}</button>`;
+            const stBtn = (key, label) => `<button onclick="setVideoStatus('${item.videoId}','${key}',this)" class="vst-btn ${vst === key ? 'on' : ''}">${label}</button>`;
             const cardStyle = vst === 'made' ? 'opacity:0.45;' : vst === 'pass' ? 'opacity:0.35;' : '';
             return `
                 <div class="card" style="${cardStyle}">
@@ -24381,9 +24409,12 @@ ${titles}`;
                                 <span class="stat-badge">구독자 ${item.subscriberCount > 0 ? formatNumber(item.subscriberCount) : '비공개'}</span>
                                 <span class="stat-badge highlight">효율 ${item.efficiency === 99 ? '-' : item.efficiency.toFixed(1) + '배'}</span>
                             </div>
-                            <div class="card-date" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">${formatDate(item.publishedAt)}
-                                <span style="margin-left:6px;">${stBtn('made', vst === 'made' ? '🎬 제작함 ✓' : '🎬 제작함')}${stBtn('review', vst === 'review' ? ' 🔍 검토중 ✓' : ' 🔍 검토중')}${stBtn('pass', vst === 'pass' ? ' ✖ 패스 ✓' : ' ✖ 패스')}</span>
-                                <button onclick="copyPipelineCmd('${item.videoId}',this)" title="유정 대본 파이프라인 명령 복사" style="padding:3px 10px;border-radius:6px;border:1.2px solid #4a90d9;background:#fff;color:#4a90d9;font-size:0.74rem;font-weight:700;cursor:pointer;">📋 대본 명령 복사</button>
+                            <div class="card-date">${formatDate(item.publishedAt)}</div>
+                            <div class="card-actions">
+                                ${stBtn('made', vst === 'made' ? '🎬 제작함 ✓' : '🎬 제작함')}
+                                ${stBtn('review', vst === 'review' ? '🔍 검토중 ✓' : '🔍 검토중')}
+                                ${stBtn('pass', vst === 'pass' ? '✖ 패스 ✓' : '✖ 패스')}
+                                <button onclick="copyPipelineCmd('${item.videoId}',this)" title="유정 대본 파이프라인 명령 복사" class="pipe-btn">📋 대본 명령</button>
                             </div>
                         </div>
                     </div>
@@ -25280,7 +25311,8 @@ ${titles}`;
                 progBar.style.width = '100%'; loadText.textContent = '완료!';
 
                 // 🚫 할당량 소진으로 0개면 '조건 안 맞음'이 아니라 소진 안내 + 빈 캐시 저장 금지
-                if (results.length === 0 && typeof _exhaustedKeys !== 'undefined' && _exhaustedKeys.size >= loadApiKeys().filter(Boolean).length) {
+                const _nKeys = loadApiKeys().filter(Boolean).length;
+                if (results.length === 0 && _nKeys > 0 && typeof _exhaustedKeys !== 'undefined' && _exhaustedKeys.size >= _nKeys) {
                     showError('benchResults', '🚫 오늘 YouTube API 할당량을 모두 소진했어요. 매일 오후 4~5시(태평양 자정)에 초기화됩니다. 다른 Google 계정에서 발급한 키를 추가하면 바로 더 쓸 수 있어요 (API 키 설정).');
                     usageEl.textContent = 'API 할당량 소진 — 결과 없음 (캐시 저장 안 함)';
                     return;
