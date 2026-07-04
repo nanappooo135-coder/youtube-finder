@@ -21057,7 +21057,11 @@ Example format:
             if (w) w.document.write('<img src="' + u + '" style="max-width:100%">');
         }
         async function reapplyThumbText() {
+            if (!(window._tbBgs || []).length) {
+                try { window._tbBgs = JSON.parse(localStorage.getItem('tb_last_bgs') || '[]'); } catch (e) { window._tbBgs = []; }
+            }
             if (!(window._tbBgs || []).length) { alert('먼저 썸네일을 생성해주세요 — 그 배경에 글자만 바꿔 입힐 수 있어요'); return; }
+            if (!document.getElementById('tbText1').value.trim()) { alert('문구 줄1을 입력하고 눌러주세요'); return; }
             const msg = document.getElementById('tbGenMsg');
             await renderThumbResults(msg);
             msg.textContent = '✅ 글자 다시 입힘 (생성비 0원 — 문구·색·크기 바꿔서 계속 재시도 가능)';
@@ -21097,6 +21101,7 @@ Example format:
                 const ok = results.filter((r) => typeof r === 'string');
                 const fails = results.filter((r) => r && r.error);
                 window._tbBgs = ok; // ★배경 보관 — 글자만 다시 입히기(무료 재작업)용
+                try { localStorage.setItem('tb_last_bgs', JSON.stringify(ok)); } catch (e) {} // 새로고침 생존
                 await renderThumbResults(msg);
                 msg.textContent = fails.length ? ('⚠ ' + ok.length + '장 성공 · ' + fails.length + '장 실패: ' + fails[0].error) : ('✅ ' + ok.length + '장 완성!');
                 document.getElementById('tbResult').scrollIntoView({behavior: 'smooth'});
