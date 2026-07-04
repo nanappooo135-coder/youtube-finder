@@ -21322,7 +21322,28 @@ Example format:
                 tbLivePreview();
             });
             const close = () => { if (inp.parentNode) inp.remove(); };
-            inp.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === 'Escape') close(); });
+            inp.addEventListener('keydown', (ev) => {
+                if (ev.key === 'Escape') { close(); return; }
+                if (ev.key === 'Enter' || ev.key === 'Tab') {
+                    ev.preventDefault();
+                    close();
+                    if (target === 'tbText1') {
+                        // ↓ 아랫줄(줄2) 편집으로 이동 — 줄2가 아직 없으면(비어서 좌표 없음) 블록 하단에 새로 연다
+                        setTimeout(() => {
+                            const lines = window._tbLineRects || [];
+                            const L2 = lines.find((q) => q.line === 2);
+                            const wrapNow = document.getElementById('tbEditWrap');
+                            const imNow = wrapNow && wrapNow.querySelector('img');
+                            if (!imNow) return;
+                            if (L2) { tbOpenInline(wrapNow, imNow, L2); }
+                            else {
+                                const tr = window._tbTextRect || {y1: 0.95};
+                                tbOpenInline(wrapNow, imNow, {line: 2, y0: Math.min(0.93, tr.y1), y1: Math.min(0.99, tr.y1 + 0.06), fs: 70});
+                            }
+                        }, 350); // 재렌더 후 좌표 갱신 대기
+                    }
+                }
+            });
             inp.addEventListener('blur', () => setTimeout(close, 150)); // 색 버튼 클릭 여유
         }
         // 미리보기에서 글자 블록을 '잡아서' 끌기 — 블록 위에서만 드래그 시작(순간이동 없음), 상대 이동
