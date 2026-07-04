@@ -3052,6 +3052,12 @@
                     <div class="tbx-card" data-step="5">
                 <div class="tbx-head"><div class="tbx-num">5</div><div class="tbx-t">글자 입히기 <span style="font-weight:400;color:#9aa3b2;font-size:0.8rem;">(후작업 — 무료·실시간)</span></div></div>
                 <div class="tbx-body" style="margin-left:0;">
+                    <div class="tbx-row" style="margin:0 0 4px;">
+                        <button class="btn-small" onclick="tbUndo()" style="padding:7px 16px;border-radius:8px;cursor:pointer;border:1.5px solid #d0d4da;background:#fff;font-weight:700;">↶ 되돌리기</button>
+                        <button class="btn-small" onclick="tbRedo()" style="padding:7px 16px;border-radius:8px;cursor:pointer;border:1.5px solid #d0d4da;background:#fff;font-weight:700;">↷ 다시하기</button>
+                        <span style="font-size:0.7rem;color:#9aa3b2;">Ctrl+Z / Y</span>
+                        <button class="btn-small" style="margin-left:auto;padding:7px 12px;border-radius:8px;cursor:pointer;border:1px solid #d0d4da;background:#fff;font-size:0.78rem;" onclick="window._tbLayoutXY=null;tbLivePreview()">위치 초기화</button>
+                    </div>
 
                     <div class="tbx-sec">✏️ 문구 <span style="font-weight:400;letter-spacing:0;">— 단어 선택 후 색을 누르면 그 단어만 색칠</span></div>
                     <input type="text" id="tbText1" class="tbx-input" oninput="tbLivePreview()" placeholder="줄1 — 큰 글씨" style="margin-bottom:6px;">
@@ -3094,6 +3100,9 @@
                             <button class="tb-opt tbx-mini" data-val="none" onclick="toggleTbOpt(this,'tbBand',1);tbLivePreview()"><div class="opt-title">없음</div></button>
                         </div>
                     </div>
+                    <div class="tbx-sl" style="grid-template-columns:96px 1fr;margin-bottom:7px;">
+                        <label style="white-space:nowrap;">그라데이션 범위</label><input type="range" id="tbGradH" min="20" max="300" value="100" oninput="tbLivePreview()">
+                    </div>
                     <div class="tbx-row" style="margin:0;">
                         <div class="tb-options" id="tbTextPos">
                             <button class="tb-opt tbx-mini selected" data-val="bottom" onclick="toggleTbOpt(this,'tbTextPos',1);tbLivePreview()"><div class="opt-title">하단</div></button>
@@ -3119,13 +3128,6 @@
                     </div>
                     <div style="text-align:right;margin-top:4px;"><button class="btn-small" style="padding:3px 12px;border-radius:6px;cursor:pointer;border:1px solid #d0d4da;background:#fff;font-size:0.75rem;" onclick="document.getElementById('tbBright').value=100;document.getElementById('tbSat').value=100;document.getElementById('tbContrast').value=100;tbLivePreview()">보정 초기화</button></div>
 
-                    <div class="tbx-sec" style="border-top:1px solid #f0f2f5;"></div>
-                    <div class="tbx-row" style="margin:0 0 8px;">
-                        <button class="btn-small" onclick="tbUndo()" style="padding:7px 16px;border-radius:8px;cursor:pointer;border:1.5px solid #d0d4da;background:#fff;font-weight:700;">↶ 되돌리기</button>
-                        <button class="btn-small" onclick="tbRedo()" style="padding:7px 16px;border-radius:8px;cursor:pointer;border:1.5px solid #d0d4da;background:#fff;font-weight:700;">↷ 다시하기</button>
-                        <span style="font-size:0.7rem;color:#9aa3b2;">Ctrl+Z / Y</span>
-                        <button class="btn-small" style="margin-left:auto;padding:7px 12px;border-radius:8px;cursor:pointer;border:1px solid #d0d4da;background:#fff;font-size:0.78rem;" onclick="window._tbLayoutXY=null;tbLivePreview()">위치 초기화</button>
-                    </div>
                     <div id="tbEditMsg" style="font-size:0.8rem;color:#8a93a3;margin:0 0 8px;"></div>
                     <button class="btn-small" onclick="reapplyThumbText()" style="width:100%;padding:11px;border-radius:10px;cursor:pointer;border:1.5px solid #4a90d9;color:#4a90d9;background:white;font-weight:700;">✍ 글자만 다시 입히기 <span style="font-weight:400;">(무료)</span></button>
                 </div>
@@ -21123,9 +21125,10 @@ Example format:
             window._tbTextRect = {y0: bandTop / H, y1: (bandTop + blockH) / H}; // 드래그 잡기 영역
             if (band === 'grad') {
                 // 자연 그라데이션 — 위는 투명하게 스며들고 글자 구간은 충분히 어둡게. 하단 배치면 바닥까지 이어짐.
-                const fadeTop = Math.max(0, bandTop - Math.round(blockH * 0.7));
+                const gk = (lay.gradH != null ? lay.gradH : 100) / 100; // 그라데이션 범위 배율 (슬라이더)
+                const fadeTop = Math.max(0, bandTop - Math.round(blockH * 0.7 * gk));
                 const nearBottom = bandTop + blockH > H * 0.82;
-                const gradBottom = nearBottom ? H : Math.min(H, bandTop + blockH + Math.round(blockH * 0.5));
+                const gradBottom = nearBottom ? H : Math.min(H, bandTop + blockH + Math.round(blockH * 0.5 * gk));
                 const g = x.createLinearGradient(0, fadeTop, 0, gradBottom);
                 g.addColorStop(0, 'rgba(0,0,0,0)');
                 g.addColorStop(Math.max(0.01, (bandTop - fadeTop) / (gradBottom - fadeTop)), 'rgba(0,0,0,0.62)');
@@ -21225,6 +21228,7 @@ Example format:
                     size2: parseInt((document.getElementById('tbSize2Range') || {}).value || '70'),
                     bright: parseInt((document.getElementById('tbBright') || {}).value || '100'),
                     sat: parseInt((document.getElementById('tbSat') || {}).value || '100'),
+                    gradH: parseInt((document.getElementById('tbGradH') || {}).value || '100'),
                     contrast: parseInt((document.getElementById('tbContrast') || {}).value || '100'),
                 };
                 finals = await Promise.all(ok.map((u) => composeThumbText(u, line1, line2, c1, c2, band, sizeCap, font, layout).then((r) => r || u).catch(() => u)));
@@ -21395,7 +21399,7 @@ Example format:
         // ═══ 되돌리기/다시하기 — 글자·색·크기·위치·보정 전체 상태 히스토리 ═══
         const _tbHist = {stack: [], idx: -1, applying: false};
         const _TB_CHIP_GROUPS = ['tbFont', 'tbColor1', 'tbColor2', 'tbBand', 'tbTextPos', 'tbTextAlign', 'tbTextMargin', 'tbTextMode'];
-        const _TB_SLIDERS = ['tbSizeRange', 'tbSize2Range', 'tbLetterSp', 'tbLineGap', 'tbBright', 'tbSat', 'tbContrast'];
+        const _TB_SLIDERS = ['tbSizeRange', 'tbSize2Range', 'tbLetterSp', 'tbLineGap', 'tbBright', 'tbSat', 'tbContrast', 'tbGradH'];
         function tbSnapshot() {
             const s = {t1: (document.getElementById('tbText1') || {}).value || '', t2: (document.getElementById('tbText2') || {}).value || '', chips: {}, sl: {}, xy: window._tbLayoutXY || null};
             for (const g of _TB_CHIP_GROUPS) s.chips[g] = (getSelectedVals(g) || [])[0] || null;
