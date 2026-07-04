@@ -3042,7 +3042,7 @@
                 <div class="tbx-right" style="width:400px;">
                     <div class="tbx-card" data-step="5">
                 <div class="tbx-head"><div class="tbx-num">5</div><div class="tbx-t">글자 입히기 <span style="font-weight:400;color:#9aa3b2;font-size:0.8rem;">(후작업 — 무료·실시간)</span></div></div>
-                <div class="tbx-hint">[대괄호]로 감싼 단어만 강조색으로 칠해져요 — 예: 한국 소식에 일본 [초비상]</div>
+                <div class="tbx-hint">단어를 마우스로 선택한 채 색 버튼을 누르면 그 단어만 그 색이 돼요 (미리캔버스처럼). [대괄호]=줄 강조색도 그대로 동작.</div>
                 <div class="tbx-body">
                     <input type="text" id="tbText1" class="tbx-input" oninput="tbLivePreview()" placeholder="줄1 — 큰 글씨 (예: 세계 3번째 [국산화 성공])" style="margin-bottom:8px;">
                     <input type="text" id="tbText2" class="tbx-input" oninput="tbLivePreview()" placeholder="줄2 — 보조 문구 (선택)" style="margin-bottom:14px;">
@@ -3071,21 +3071,21 @@
                         <div class="tbx-row" style="margin:0;">
                             <span class="tbx-lab">줄1 색</span>
                             <div class="tb-options" id="tbColor1">
-                                <button class="tb-opt selected" data-val="#ffe400" onclick="toggleTbOpt(this,'tbColor1',1);tbLivePreview()"><div class="opt-title" style="color:#c7a600;">● 노랑</div></button>
-                                <button class="tb-opt" data-val="#ffffff" onclick="toggleTbOpt(this,'tbColor1',1);tbLivePreview()"><div class="opt-title">● 흰색</div></button>
-                                <button class="tb-opt" data-val="#ff2b2b" onclick="toggleTbOpt(this,'tbColor1',1);tbLivePreview()"><div class="opt-title" style="color:#e01f1f;">● 빨강</div></button>
-                                <button class="tb-opt" data-val="#ff9d00" onclick="toggleTbOpt(this,'tbColor1',1);tbLivePreview()"><div class="opt-title" style="color:#e08a00;">● 주황</div></button>
-                                <button class="tb-opt" data-val="#7dff7d" onclick="toggleTbOpt(this,'tbColor1',1);tbLivePreview()"><div class="opt-title" style="color:#2aa52a;">● 연두</div></button>
+                                <button class="tb-opt selected" data-val="#ffe400" onmousedown="tbColorDown()" onclick="tbColorClick(this,'tbColor1')"><div class="opt-title" style="color:#c7a600;">● 노랑</div></button>
+                                <button class="tb-opt" data-val="#ffffff" onmousedown="tbColorDown()" onclick="tbColorClick(this,'tbColor1')"><div class="opt-title">● 흰색</div></button>
+                                <button class="tb-opt" data-val="#ff2b2b" onmousedown="tbColorDown()" onclick="tbColorClick(this,'tbColor1')"><div class="opt-title" style="color:#e01f1f;">● 빨강</div></button>
+                                <button class="tb-opt" data-val="#ff9d00" onmousedown="tbColorDown()" onclick="tbColorClick(this,'tbColor1')"><div class="opt-title" style="color:#e08a00;">● 주황</div></button>
+                                <button class="tb-opt" data-val="#7dff7d" onmousedown="tbColorDown()" onclick="tbColorClick(this,'tbColor1')"><div class="opt-title" style="color:#2aa52a;">● 연두</div></button>
                             </div>
                         </div>
                         <div class="tbx-row" style="margin:0;">
                             <span class="tbx-lab">줄2 색</span>
                             <div class="tb-options" id="tbColor2">
-                                <button class="tb-opt selected" data-val="#ffffff" onclick="toggleTbOpt(this,'tbColor2',1);tbLivePreview()"><div class="opt-title">● 흰색</div></button>
-                                <button class="tb-opt" data-val="#ffe400" onclick="toggleTbOpt(this,'tbColor2',1);tbLivePreview()"><div class="opt-title" style="color:#c7a600;">● 노랑</div></button>
-                                <button class="tb-opt" data-val="#ff2b2b" onclick="toggleTbOpt(this,'tbColor2',1);tbLivePreview()"><div class="opt-title" style="color:#e01f1f;">● 빨강</div></button>
-                                <button class="tb-opt" data-val="#ff9d00" onclick="toggleTbOpt(this,'tbColor2',1);tbLivePreview()"><div class="opt-title" style="color:#e08a00;">● 주황</div></button>
-                                <button class="tb-opt" data-val="#7dff7d" onclick="toggleTbOpt(this,'tbColor2',1);tbLivePreview()"><div class="opt-title" style="color:#2aa52a;">● 연두</div></button>
+                                <button class="tb-opt selected" data-val="#ffffff" onmousedown="tbColorDown()" onclick="tbColorClick(this,'tbColor2')"><div class="opt-title">● 흰색</div></button>
+                                <button class="tb-opt" data-val="#ffe400" onmousedown="tbColorDown()" onclick="tbColorClick(this,'tbColor2')"><div class="opt-title" style="color:#c7a600;">● 노랑</div></button>
+                                <button class="tb-opt" data-val="#ff2b2b" onmousedown="tbColorDown()" onclick="tbColorClick(this,'tbColor2')"><div class="opt-title" style="color:#e01f1f;">● 빨강</div></button>
+                                <button class="tb-opt" data-val="#ff9d00" onmousedown="tbColorDown()" onclick="tbColorClick(this,'tbColor2')"><div class="opt-title" style="color:#e08a00;">● 주황</div></button>
+                                <button class="tb-opt" data-val="#7dff7d" onmousedown="tbColorDown()" onclick="tbColorClick(this,'tbColor2')"><div class="opt-title" style="color:#2aa52a;">● 연두</div></button>
                             </div>
                         </div>
                         <div class="tbx-row" style="margin:0;grid-column:1 / -1;">
@@ -21036,7 +21036,7 @@ Example format:
                 ? ('The thumbnail text must read exactly "' + line1 + '" as the huge main line, and "' + line2 + '" as a second line below it at about 60% of the main size. ' + txtSpec)
                 : ('The thumbnail text must read exactly "' + line1 + '" as the huge main line. ' + txtSpec));
             // ★썸네일 화질 상시 규칙(작가 벤치 비교 피드백): 채도·대비 쨍하게 + 이야기 소품 — 뿌옇고 밋밋한 그림 차단
-            const punch = 'VIVID PUNCHY COLORS: strong saturated color contrast between zones (warm vs cool), one bold accent color highlighting the key object, deep blacks and bright highlights — NEVER washed-out, hazy, foggy or low-saturation. Crisp sharp details. If the composition has two zones or a split, BLEND the boundary naturally with a soft gradational transition (smoke, dust, light falloff) — never a hard straight divider line, never a colored stripe between zones. Where it helps tell the story at a glance, include readable visual props with short clear ENGLISH labels (stamped boxes, warning stamps, signs — e.g. FAULTY stamp, MADE IN KOREA box). Any text on props must be ENGLISH ONLY — never draw Korean or other non-English characters in the image (Korean gets garbled). ';
+            const punch = 'CRITICAL FRAMING RULE: every face and key subject must sit ENTIRELY within the TOP 60 percent of the frame — the bottom 35 percent will be covered by a headline, so keep it simple background only (ground, floor, shadows, darker tones), never faces, never important objects there. VIVID PUNCHY COLORS: strong saturated color contrast between zones (warm vs cool), one bold accent color highlighting the key object, deep blacks and bright highlights — NEVER washed-out, hazy, foggy or low-saturation. Crisp sharp details. If the composition has two zones or a split, BLEND the boundary naturally with a soft gradational transition (smoke, dust, light falloff) — never a hard straight divider line, never a colored stripe between zones. Where it helps tell the story at a glance, include readable visual props with short clear ENGLISH labels (stamped boxes, warning stamps, signs — e.g. FAULTY stamp, MADE IN KOREA box). Any text on props must be ENGLISH ONLY — never draw Korean or other non-English characters in the image (Korean gets garbled). ';
             return 'Create a YouTube thumbnail. ' + ref + anaClause + what + punch + txt + ' 16:9, no watermark, no channel logo.';
         }
         async function kieThumbCreate(prompt, refs, res, model) {
@@ -21107,7 +21107,7 @@ Example format:
             // 글자 크기 자동 맞춤 — 줄1은 화면폭 94%까지 키움
             const fit = (text, maxW, startFs) => {
                 let fs = startFs;
-                const plain = text.replace(/[\[\]]/g, '');
+                const plain = text.replace(/\[#[0-9a-fA-F]{3,8}\|/g, '').replace(/[\[\]]/g, '');
                 do { x.font = FW + ' ' + fs + 'px "' + FONT + '", "Malgun Gothic", sans-serif'; if (x.measureText(plain).width <= maxW) break; fs -= 4; } while (fs > 40);
                 return fs;
             };
@@ -21154,7 +21154,10 @@ Example format:
                     const a = rest.indexOf('['), b = rest.indexOf(']', a + 1);
                     if (a < 0 || b < 0) { runs.push({t: rest, c: '#ffffff'}); break; }
                     if (a > 0) runs.push({t: rest.slice(0, a), c: '#ffffff'});
-                    runs.push({t: rest.slice(a + 1, b), c: accent});
+                    const inner = rest.slice(a + 1, b);
+                    const bar = inner.indexOf('|');
+                    if (bar > 0 && inner[0] === '#') runs.push({t: inner.slice(bar + 1), c: inner.slice(0, bar)}); // [#색|단어]
+                    else runs.push({t: inner, c: accent}); // [단어] = 줄 강조색
                     rest = rest.slice(b + 1);
                 }
                 return runs;
@@ -21300,6 +21303,28 @@ Example format:
             if (w) w.document.write('<img src="' + u + '" style="max-width:100%">');
         }
         // ★실시간 미리보기 — 문구·색·글꼴·크기·띠를 바꾸는 즉시 결과에 반영(0.25초 디바운스, 생성비 0)
+        // 미리캔버스식 단어별 색 — 입력칸에서 단어를 선택한 채 색 버튼 클릭 → [#색|단어] 마크업 삽입
+        function tbColorDown() {
+            const ae = document.activeElement;
+            window._tbSelTarget = null;
+            if (ae && (ae.id === 'tbText1' || ae.id === 'tbText2') && ae.selectionEnd > ae.selectionStart) {
+                window._tbSelTarget = {id: ae.id, s: ae.selectionStart, e: ae.selectionEnd};
+            }
+        }
+        function tbColorClick(btn, group) {
+            const hex = btn.dataset.val;
+            const t = window._tbSelTarget;
+            if (t) {
+                const el = document.getElementById(t.id);
+                const v = el.value;
+                el.value = v.slice(0, t.s) + '[' + hex + '|' + v.slice(t.s, t.e) + ']' + v.slice(t.e);
+                window._tbSelTarget = null;
+                tbLivePreview();
+                return; // 줄 전체 색은 안 바꿈 — 선택 단어만
+            }
+            toggleTbOpt(btn, group, 1);
+            tbLivePreview();
+        }
         function tbLivePreview() {
             clearTimeout(window._tbLp);
             window._tbLp = setTimeout(() => { renderThumbResults(null); }, 250);
