@@ -2956,8 +2956,9 @@
                     <div class="tbx-row" style="margin-bottom:0;">
                         <span class="tbx-lab">따라기</span>
                         <div class="tb-options" id="tbRefMode">
-                            <button class="tb-opt selected" data-val="inspire" onclick="toggleTbOpt(this,'tbRefMode',1)"><div class="opt-title">벤치마킹 (기본)</div><div class="opt-desc">공식은 유지, 그림은 다르게</div></button>
-                            <button class="tb-opt" data-val="edit" onclick="toggleTbOpt(this,'tbRefMode',1)"><div class="opt-title">똑같이 (편집)</div><div class="opt-desc">글자·소재만 교체 — 내 옛 썸네일용</div></button>
+                            <button class="tb-opt selected" data-val="loose" onclick="toggleTbOpt(this,'tbRefMode',1)"><div class="opt-title">느낌만 (기본)</div><div class="opt-desc">화풍·색·감정만 — 구도는 반드시 다르게</div></button>
+                            <button class="tb-opt" data-val="inspire" onclick="toggleTbOpt(this,'tbRefMode',1)"><div class="opt-title">비슷하게</div><div class="opt-desc">구도 골격까지 유지 — 베낌 주의</div></button>
+                            <button class="tb-opt" data-val="edit" onclick="toggleTbOpt(this,'tbRefMode',1)"><div class="opt-title">똑같이 (편집)</div><div class="opt-desc">내 옛 썸네일 재활용용</div></button>
                         </div>
                     </div>
                 </div>
@@ -20967,7 +20968,10 @@ Example format:
                     : ('Replace all existing text: the text must now read exactly "' + line1 + '", in the same lettering style and position as the original text.'));
                 return 'This is an EDIT of the given image, not a new picture. PRESERVE EVERYTHING from the original exactly — same composition, same background, same objects, same people and poses, same colors, same lighting, same art style. ' + subj + t + ' Apart from what is explicitly instructed, change NOTHING. Letters must be CLEAN and CRISP: perfectly solid fill, smooth sharp edges - never distressed or cracked. No watermark.';
             }
-            if (chosen && hasRefs) {
+            if (!chosen && hasRefs && refMode === 'loose') {
+                // 느낌만 — 매체·색·글자스타일·감정만 따오고 구도·배치·방향은 강제로 다르게(베낌 차단)
+                ref = 'FIRST, identify the MEDIUM of the attached reference thumbnail (photograph vs illustration) — your output MUST be the same medium and overall art style, same color strategy and contrast, same emotional trigger, same text styling language. BUT the PICTURE ITSELF MUST BE CLEARLY DIFFERENT: do NOT copy the layout — use a different camera angle and framing, rearrange or mirror the elements, different specific props and background of a similar kind, different poses. A viewer seeing both side by side should think "same genre and mood", never "the same picture redrawn". ';
+            } else if (chosen && hasRefs) {
                 ref = 'Art style: ' + chosen + ' Follow the attached reference thumbnail(s) for composition, color mood, text placement and dramatic tone — but render in the art style specified above. ';
             } else if (chosen) {
                 ref = 'Art style: ' + chosen + ' Ultra-clickable Korean YouTube thumbnail: one dominant subject, dramatic lighting, high contrast. ';
@@ -20978,7 +20982,7 @@ Example format:
             }
             const anaEl = document.getElementById('tbRefAnalysis');
             const ana = (anaEl && anaEl.style.display !== 'none' && anaEl.value.trim()) ? anaEl.value.trim() : '';
-            const anaClause = (ana && hasRefs) ? ('Detailed analysis of the reference thumbnail (follow this formula precisely; it is in Korean): ' + ana + ' ') : '';
+            const anaClause = (ana && hasRefs) ? (refMode === 'loose' ? ('Reference analysis (Korean). Use ONLY the medium/art style, color strategy, text styling and emotion from it — IGNORE its composition and object placement: ' + ana + ' ') : ('Detailed analysis of the reference thumbnail (follow this formula precisely; it is in Korean): ' + ana + ' ')) : '';
             const what = scene ? ('Scene: ' + scene + '. ') : (topic ? ('Topic: ' + topic + '. ') : '');
             const txtSpec = 'TEXT SIZE AND STYLE ARE CRITICAL: the headline is a HUGE dominant graphic element — the main line spans nearly the FULL WIDTH of the frame across the lower third, each character is ultra-bold and taller than 1/6 of the frame height. Color: one vivid high-contrast color (bright yellow, or pure white)' + (hasRefs ? ' — match the reference text color scheme and placement' : '') + ', with a thick black outline or black band behind. Letters CLEAN and CRISP: solid fill, smooth sharp edges — never small, never faded, never scattered, never distressed. Text perfectly horizontal, neatly aligned like professional Korean YouTube typography. No other text anywhere.';
             const textMode = getSelectedVals('tbTextMode')[0] || 'overlay';
@@ -21259,9 +21263,9 @@ Example format:
                 }
                 // ② 생성 (병렬)
                 const styleKey = getSelectedVals('tbArtStyle')[0] || 'auto';
-                const prompt = buildThumbPrompt(topic, scene, line1, line2, refs.length > 0, styleKey, getSelectedVals('tbRefMode')[0] || 'inspire');
+                const prompt = buildThumbPrompt(topic, scene, line1, line2, refs.length > 0, styleKey, getSelectedVals('tbRefMode')[0] || 'loose');
                 // 레퍼런스 추종 강도: 똑같이(edit)=i2i 편집 / 느낌만(inspire)=t2i 참고. 화풍 선택·레퍼런스 없음은 항상 t2i.
-                const refMode = getSelectedVals('tbRefMode')[0] || 'inspire';
+                const refMode = getSelectedVals('tbRefMode')[0] || 'loose';
                 const base = getSelectedVals('tbModel')[0] || 'nano';
                 // 나노바나나2=저렴한 기본(배경용 충분·레퍼런스 image_input 지원). GPT는 편집 모드에서 i2i 전용 모델 사용.
                 const model = base === 'nano'
