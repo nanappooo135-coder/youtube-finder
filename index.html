@@ -2717,6 +2717,9 @@
                     <button id="benchBtn" class="search-btn" onclick="clearBenchCache(); findBenchmarkChannels(true);">
                         비슷한 채널 영상 찾기
                     </button>
+                    <button class="search-btn" style="background:#ff4444;margin-top:8px;" onclick="findHotToday()">
+                        🔥 오늘 급상승 찾기 (최근 1일 · 시간당 조회수순)
+                    </button>
                 </div>
             </div>
 
@@ -23332,6 +23335,7 @@ Example format:
                     return b.efficiency - a.efficiency;
                 }); break;
                 case 'likes':        sorted.sort((a, b) => (b.likeCount||0) - (a.likeCount||0)); break;
+                case 'velocity':     sorted.sort((a, b) => _velVal(b) - _velVal(a)); break;
             }
             store.currentSort = sortKey;
             store.renderer(containerId, sorted, sortKey);
@@ -23341,11 +23345,24 @@ Example format:
         function _effVal(item) {
             return (item.efficiency === 99 || !item.subscriberCount) ? -1 : item.efficiency;
         }
+        // 급상승 속도 = 시간당 조회수 — 올라온 지 얼마 안 됐는데 조회수가 붕 뜨는 영상 감지
+        function _velVal(item) {
+            const hours = Math.max(1, (Date.now() - new Date(item.publishedAt)) / 3600000);
+            return (item.viewCount || 0) / hours;
+        }
+        function _velBadge(item) {
+            const v = _velVal(item);
+            if (v < 500) return '';
+            const txt = v >= 10000 ? (v / 10000).toFixed(1) + '만' : Math.round(v).toLocaleString();
+            const hot = v >= 3000;
+            return `<span class="stat-badge" style="background:${hot ? '#ff4444' : '#ff9d3f'};color:white;font-weight:700">${hot ? '🔥' : '📈'} 시간당 ${txt}회</span>`;
+        }
         function buildSortBar(containerId, activeSort, hasMatch) {
             const sorts = [
                 { key: 'views-desc', label: '조회수 높은순' },
                 { key: 'views-asc',  label: '조회수 낮은순' },
                 { key: 'efficiency', label: '효율순' },
+                { key: 'velocity',   label: '🔥 급상승순' },
                 { key: 'latest',     label: '최신순' },
             ];
             if (hasMatch) sorts.unshift({ key: 'match', label: '매칭도순' });
@@ -24010,11 +24027,23 @@ Example format:
             return score;
         }
 
+        // 🔥 오늘 급상승 — 기간 1일·조회수 1천으로 검색 후 시간당 조회수순 자동 정렬
+        async function findHotToday() {
+            document.getElementById('benchPeriod').value = '1';
+            document.getElementById('benchMinViews').value = 1000;
+            window._benchDefaultSort = 'velocity';
+            clearBenchCache();
+            await findBenchmarkChannels(true);
+            window._benchDefaultSort = null;
+        }
+
         function displayMatchResults(containerId, results) {
-            // 기본 정렬 = 효율순 — 구독자 대비 조회수 터진 영상(먹잇감)이 최우선 타겟
-            const byEff = [...results].sort((a, b) => _effVal(b) - _effVal(a));
-            _resultStore[containerId] = { results: byEff, currentSort: 'efficiency', renderer: renderMatchResults };
-            renderMatchResults(containerId, byEff, 'efficiency');
+            // 기본 정렬 = 효율순 (급상승 버튼으로 온 경우 = 시간당 조회수순)
+            const mode = window._benchDefaultSort === 'velocity' ? 'velocity' : 'efficiency';
+            const val = mode === 'velocity' ? _velVal : _effVal;
+            const sorted = [...results].sort((a, b) => val(b) - val(a));
+            _resultStore[containerId] = { results: sorted, currentSort: mode, renderer: renderMatchResults };
+            renderMatchResults(containerId, sorted, mode);
             // 트렌드 키워드 섹션 자동 노출 (검색 결과 있을 때)
             if (containerId === 'benchResults' && results.length >= 5) {
                 const tk = document.getElementById('trendKeywordSection');
@@ -24244,6 +24273,7 @@ ${titles}`;
                                 </div>
                                 <div class="card-stats">
                                     ${perfBadge}
+                                    ${_velBadge(item)}
                                     ${matchBadge}
                                     <span class="stat-badge">조회수 ${formatNumber(item.viewCount)}</span>
                                     <span class="stat-badge">구독자 ${item.subscriberCount > 0 ? formatNumber(item.subscriberCount) : '비공개'}</span>
