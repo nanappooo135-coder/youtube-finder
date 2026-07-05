@@ -21246,6 +21246,53 @@ Example format:
             } catch (e) { window.open(url, '_blank'); } // CORS로 못 받으면 새 탭
         }
         // 보관된 배경(window._tbBgs)에 현재 문구·색·크기·띠 설정으로 글자를 (다시) 입혀 결과 표시 — 생성비 0원
+        // ═══ 장별 독립 스타일 — 이미지마다 글꼴·색·크기·위치를 따로 가짐. 클릭한 장만 편집됨 ═══
+        function _tbReadControls() {
+            return {
+                line1: document.getElementById('tbText1').value.trim(),
+                line2: document.getElementById('tbText2').value.trim(),
+                c1: getSelectedVals('tbColor1')[0] || '#ffe400',
+                c2: getSelectedVals('tbColor2')[0] || '#ffffff',
+                band: getSelectedVals('tbBand')[0] || 'grad',
+                sizeCap: parseInt((document.getElementById('tbSizeRange') || {}).value || '115'),
+                font: getSelectedVals('tbFont')[0] || 'Black Han Sans',
+                layout: {
+                    pos: getSelectedVals('tbTextPos')[0] || 'bottom',
+                    align: getSelectedVals('tbTextAlign')[0] || 'center',
+                    margin: getSelectedVals('tbTextMargin')[0] || '0.05',
+                    letterSp: parseInt((document.getElementById('tbLetterSp') || {}).value || '0'),
+                    lineGap: parseInt((document.getElementById('tbLineGap') || {}).value || '18'),
+                    xy: window._tbLayoutXY ? {x: window._tbLayoutXY.x, y: window._tbLayoutXY.y} : null,
+                    size2: parseInt((document.getElementById('tbSize2Range') || {}).value || '70'),
+                    bright: parseInt((document.getElementById('tbBright') || {}).value || '100'),
+                    sat: parseInt((document.getElementById('tbSat') || {}).value || '100'),
+                    gradH: parseInt((document.getElementById('tbGradH') || {}).value || '100'),
+                    contrast: parseInt((document.getElementById('tbContrast') || {}).value || '100'),
+                },
+            };
+        }
+        function _tbApplyControls(s) {
+            if (!s) return;
+            document.getElementById('tbText1').value = s.line1 || '';
+            document.getElementById('tbText2').value = s.line2 || '';
+            const setChip = (g, v) => { if (v == null) return; document.querySelectorAll('#' + g + ' .tb-opt').forEach((b) => b.classList.toggle('selected', b.dataset.val === String(v))); };
+            setChip('tbColor1', s.c1); setChip('tbColor2', s.c2); setChip('tbBand', s.band); setChip('tbFont', s.font);
+            setChip('tbTextPos', s.layout.pos); setChip('tbTextAlign', s.layout.align); setChip('tbTextMargin', s.layout.margin);
+            const setV = (id, v) => { const el = document.getElementById(id); if (el && v != null) el.value = v; };
+            setV('tbSizeRange', s.sizeCap); setV('tbSize2Range', s.layout.size2); setV('tbLetterSp', s.layout.letterSp);
+            setV('tbLineGap', s.layout.lineGap); setV('tbBright', s.layout.bright); setV('tbSat', s.layout.sat);
+            setV('tbContrast', s.layout.contrast); setV('tbGradH', s.layout.gradH);
+            window._tbLayoutXY = (s.layout.xy && typeof s.layout.xy.x === 'number') ? {x: s.layout.xy.x, y: s.layout.xy.y} : null;
+        }
+        function tbSelectImg(i) {
+            const nImg = (window._tbBgs || []).length;
+            if (i === (window._tbSel || 0) || i < 0 || i >= nImg) return;
+            window._tbStyles = window._tbStyles || [];
+            window._tbStyles[window._tbSel || 0] = _tbReadControls(); // 지금까지 편집 저장
+            window._tbSel = i;
+            if (window._tbStyles[i]) _tbApplyControls(window._tbStyles[i]); // 그 장의 설정을 패널로 불러옴
+            renderThumbResults(null);
+        }
         async function renderThumbResults(msg) {
             if (!(window._tbBgs || []).length) {
                 try { window._tbBgs = JSON.parse(localStorage.getItem('tb_last_bgs') || '[]'); } catch (e) { window._tbBgs = []; }
@@ -21253,44 +21300,48 @@ Example format:
             const ok = window._tbBgs || [];
             if (!ok.length) return;
             const mySeq = (window._tbRenderSeq = (window._tbRenderSeq || 0) + 1); // 연타 시 마지막 것만 반영
-            const line1 = document.getElementById('tbText1').value.trim();
-            const line2 = document.getElementById('tbText2').value.trim();
-            window._tbComposed = [];
-            let finals = ok;
-            if ((getSelectedVals('tbTextMode')[0] || 'overlay') === 'overlay' && line1) {
-                if (msg) msg.textContent = '글자 입히는 중…';
-                const c1 = getSelectedVals('tbColor1')[0] || '#ffe400';
-                const c2 = getSelectedVals('tbColor2')[0] || '#ffffff';
-                const band = getSelectedVals('tbBand')[0] || 'grad'; // 'grad' | 'band' | 'none'
-                const sizeCap = parseInt((document.getElementById('tbSizeRange') || {}).value || '115');
-                const font = getSelectedVals('tbFont')[0] || 'Black Han Sans';
-                const layout = {
-                    pos: getSelectedVals('tbTextPos')[0] || 'bottom',
-                    align: getSelectedVals('tbTextAlign')[0] || 'center',
-                    margin: getSelectedVals('tbTextMargin')[0] || '0.05',
-                    letterSp: parseInt((document.getElementById('tbLetterSp') || {}).value || '0'),
-                    lineGap: parseInt((document.getElementById('tbLineGap') || {}).value || '18'),
-                    xy: window._tbLayoutXY || null, // 드래그로 정한 자유 좌표 {x,y} (0~1)
-                    size2: parseInt((document.getElementById('tbSize2Range') || {}).value || '70'),
-                    bright: parseInt((document.getElementById('tbBright') || {}).value || '100'),
-                    sat: parseInt((document.getElementById('tbSat') || {}).value || '100'),
-                    gradH: parseInt((document.getElementById('tbGradH') || {}).value || '100'),
-                    contrast: parseInt((document.getElementById('tbContrast') || {}).value || '100'),
-                };
-                finals = await Promise.all(ok.map((u) => composeThumbText(u, line1, line2, c1, c2, band, sizeCap, font, layout).then((r) => r || u).catch(() => u)));
-                window._tbComposed = finals;
-                const okN = finals.filter((f) => String(f).indexOf('data:') === 0).length;
-                const em = document.getElementById('tbEditMsg');
-                if (em) em.textContent = okN === finals.length
-                    ? '✅ ' + okN + '장 글자 입힘'
-                    : '⚠ ' + okN + '/' + finals.length + '장만 입힘 — ' + (window._tbLastErr || '원인 미상');
-                if (msg && okN < finals.length) msg.textContent = '⚠ ' + okN + '/' + finals.length + '장만 글자 입힘';
+            // 장별 스타일 준비: 선택 장 = 현재 컨트롤, 나머지 = 저장분(없으면 현재 값 복제로 시작)
+            window._tbStyles = window._tbStyles || [];
+            window._tbSel = Math.max(0, Math.min(window._tbSel || 0, ok.length - 1));
+            const sel = window._tbSel;
+            window._tbStyles[sel] = _tbReadControls();
+            for (let i = 0; i < ok.length; i++) {
+                if (!window._tbStyles[i]) window._tbStyles[i] = JSON.parse(JSON.stringify(window._tbStyles[sel]));
             }
+            const textMode = getSelectedVals('tbTextMode')[0] || 'overlay';
+            window._tbComposed = window._tbComposed || [];
+            window._tbComposeKey = window._tbComposeKey || [];
+            const finals = new Array(ok.length);
+            if (msg) msg.textContent = '글자 입히는 중…';
+            let okN = 0;
+            const composeOne = async (i) => {
+                const s = window._tbStyles[i];
+                if (textMode !== 'overlay' || !s.line1) { finals[i] = ok[i]; return; }
+                const key = ok[i] + '|' + JSON.stringify(s);
+                if (window._tbComposeKey[i] === key && window._tbComposed[i]) { finals[i] = window._tbComposed[i]; okN++; return; }
+                try {
+                    const r = await composeThumbText(ok[i], s.line1, s.line2, s.c1, s.c2, s.band, s.sizeCap, s.font, s.layout);
+                    finals[i] = r || ok[i];
+                    if (r) { okN++; window._tbComposeKey[i] = key; }
+                } catch (e) { finals[i] = ok[i]; }
+            };
+            // 비선택 장 먼저(캐시 재사용), 선택 장은 마지막에 — 드래그 좌표(_tbTextRect 등)가 선택 장 기준이 되게
+            await Promise.all(ok.map((_, i) => i === sel ? null : composeOne(i)).filter(Boolean));
+            await composeOne(sel);
+            window._tbComposed = finals;
+            const withText = window._tbStyles.filter((s) => textMode === 'overlay' && s.line1).length;
+            const em = document.getElementById('tbEditMsg');
+            if (em && withText) em.textContent = okN >= withText
+                ? '✅ ' + okN + '장 글자 입힘 · ' + (sel + 1) + '번 편집 중'
+                : '⚠ ' + okN + '/' + withText + '장만 입힘 — ' + (window._tbLastErr || '원인 미상');
             if (mySeq !== window._tbRenderSeq) return; // 더 새 요청이 이미 돌고 있음
             document.getElementById('tbResultContent').innerHTML = finals.map((u, i) =>
-                '<div style="border:1px solid #e0e0e0;border-radius:10px;overflow:hidden;">' +
-                (i === 0 ? '<div id="tbEditWrap" style="position:relative;">' : '<div style="position:relative;">') +
+                '<div style="border-radius:10px;overflow:hidden;border:' + (i === window._tbSel ? '3px solid #3b82f6' : '1px solid #e0e0e0') + ';">' +
+                (i === window._tbSel ? '<div id="tbEditWrap" style="position:relative;">' : '<div style="position:relative;cursor:pointer;" onclick="tbSelectImg(' + i + ')" title="클릭하면 이 장을 편집">') +
                 '<img src="' + u + '" style="width:100%;display:block;aspect-ratio:16/9;object-fit:cover;">' +
+                (i === window._tbSel
+                    ? '<div style="position:absolute;top:8px;left:8px;background:#3b82f6;color:#fff;font-size:0.72rem;font-weight:800;padding:3px 10px;border-radius:6px;z-index:4;">✏️ ' + (i + 1) + '번 편집 중</div>'
+                    : '<div style="position:absolute;top:8px;left:8px;background:rgba(17,24,39,0.65);color:#fff;font-size:0.72rem;font-weight:700;padding:3px 10px;border-radius:6px;">' + (i + 1) + '번 — 클릭해서 편집</div>') +
                 '</div>' +
                 '<div style="display:flex;gap:6px;padding:8px;">' +
                 '<button class="btn-small btn-primary" style="flex:1;padding:8px;border-radius:8px;cursor:pointer;" onclick="tbDl(' + i + ')">⬇ 다운로드</button>' +
@@ -21791,6 +21842,7 @@ Example format:
                     }
                 }
                 window._tbBgs = ok; // ★배경 보관 — 글자만 다시 입히기(무료 재작업)용
+                window._tbStyles = []; window._tbSel = 0; window._tbComposeKey = []; // 장별 스타일 새로 시작
                 try { localStorage.setItem('tb_last_bgs', JSON.stringify(ok)); } catch (e) {} // 새로고침 생존
                 await renderThumbResults(msg);
                 msg.textContent = (fails.length ? ('⚠ ' + ok.length + '장 성공 · ' + fails.length + '장 실패: ' + fails[0].error) : ('✅ ' + ok.length + '장 완성!')) + (simNote || '') + ' · ' + TB_VER;
