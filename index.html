@@ -21603,7 +21603,9 @@ Example format:
             await renderThumbResults(msg);
             msg.textContent = '✅ 글자 다시 입힘 (생성비 0원 — 문구·색·크기 바꿔서 계속 재시도 가능)';
         }
-        // ═══ 구도 복제 감지 (dHash 지각 해시) — remix 모드에서 모델이 확률적으로 레퍼런스를 그대로 복제하는 것 차단 ═══
+        const TB_VER = 'v122'; // 썸네일 엔진 버전 — 생성 메시지에 표시(반영 확인용)
+
+        // ═══ 구도 복제 감지 — remix 모드에서 모델이 확률적으로 레퍼런스를 그대로 복제하는 것 차단 ═══
         async function _tbLoadForHash(url) {
             const mk = (blob) => createImageBitmap(blob);
             try { const r = await fetch(url); if (r.ok) return await mk(await r.blob()); } catch (e) {}
@@ -21725,31 +21727,50 @@ Example format:
                 const fails = results.filter((r) => r && r.error);
                 // ★구도 비틀기 복제 감지 — 레퍼런스와 지문(dHash)이 거의 같으면(거리≤10) 좌우반전 강제로 1회 재생성.
                 //   프롬프트만으론 모델이 확률적으로 그대로 복제하는 걸 100% 못 막아서 결과를 코드로 검사.
+                let simNote = '';
                 if (refMode === 'remix' && refs.length && ok.length) {
                     const refGrids = (await Promise.all(_tbRefHashUrls().map((u) => _tbLumaGrid(u)))).filter(Boolean);
                     if (refGrids.length) {
+                        const simOf = async (url) => {
+                            const g = await _tbLumaGrid(url);
+                            return Math.max(...refGrids.map((rg) => _tbLayoutSim(rg, g)));
+                        };
                         for (let i = 0; i < ok.length; i++) {
-                            const g = await _tbLumaGrid(ok[i]);
-                            const sim = Math.max(...refGrids.map((rg) => _tbLayoutSim(rg, g))); // 어느 레퍼런스든 판박이면 감지
-                            if (sim >= 0.87) {
-                                msg.textContent = '⚠ ' + (i + 1) + '번이 레퍼런스와 거의 동일 — 구도 바꿔서 재생성 중…';
-                                const mirrorPrompt = prompt + ' CRITICAL OVERRIDE: a previous attempt copied the reference layout exactly, which is FORBIDDEN. You MUST MIRROR the composition horizontally — every subject on the LEFT side of the reference goes to the RIGHT side of your output and vice versa, and use a noticeably different camera framing. This mirroring is MANDATORY.';
+                            let sim = await simOf(ok[i]);
+                            if (sim < 0.87) { simNote += ' [' + (i + 1) + '번 구도차이 OK]'; continue; }
+                            // 2차: 좌우반전 강제 재생성
+                            msg.textContent = '⚠ ' + (i + 1) + '번이 레퍼런스와 거의 동일(유사도 ' + sim.toFixed(2) + ') — 반전 재생성 중…';
+                            const mirrorPrompt = prompt + ' CRITICAL OVERRIDE: a previous attempt copied the reference layout exactly, which is FORBIDDEN. You MUST MIRROR the composition horizontally — every subject on the LEFT side of the reference goes to the RIGHT side of your output and vice versa, and use a noticeably different camera framing. This mirroring is MANDATORY.';
+                            try {
+                                const redo = await kieThumbPoll(await kieThumbCreate(mirrorPrompt, refs, res, model));
+                                if (typeof redo === 'string') {
+                                    const s2 = await simOf(redo);
+                                    if (s2 < sim) { ok[i] = redo; sim = s2; }
+                                }
+                            } catch (e) {}
+                            if (sim < 0.87) { simNote += ' [' + (i + 1) + '번 반전 재생성 완료]'; continue; }
+                            // 3차: 이미지를 떼고 분석문만으로 생성 — 텍스트 조건은 픽셀 복제가 원천 불가 (확정 탈출구)
+                            const anaEl3 = document.getElementById('tbRefAnalysis');
+                            const anaTxt3 = (anaEl3 && anaEl3.style.display !== 'none') ? anaEl3.value.trim() : '';
+                            if (anaTxt3) {
+                                msg.textContent = '⚠ ' + (i + 1) + '번 여전히 유사(' + sim.toFixed(2) + ') — 이미지 떼고 분석문만으로 재생성 중…';
                                 try {
-                                    const redo = await kieThumbPoll(await kieThumbCreate(mirrorPrompt, refs, res, model));
-                                    if (typeof redo === 'string') {
-                                        const g2 = await _tbLumaGrid(redo);
-                                        const sim2 = Math.max(...refGrids.map((rg) => _tbLayoutSim(rg, g2)));
-                                        if (sim2 < sim) ok[i] = redo; // 더 달라졌을 때만 교체
+                                    const loosePrompt = buildThumbPrompt(topic, scene, line1, line2, false, styleKey, 'loose');
+                                    const redo3 = await kieThumbPoll(await kieThumbCreate(loosePrompt, [], res, base === 'nano' ? 'nano-banana-2' : 'gpt-image-2-text-to-image'));
+                                    if (typeof redo3 === 'string') {
+                                        const s3 = await simOf(redo3);
+                                        if (s3 < sim) { ok[i] = redo3; sim = s3; }
                                     }
-                                } catch (e) { /* 재생성 실패 시 원본 유지 */ }
+                                } catch (e) {}
                             }
+                            simNote += sim >= 0.87 ? ' [⚠ ' + (i + 1) + '번 유사도 ' + sim.toFixed(2) + ' — 직접 확인 권장]' : ' [' + (i + 1) + '번 분석문 재생성 완료]';
                         }
                     }
                 }
                 window._tbBgs = ok; // ★배경 보관 — 글자만 다시 입히기(무료 재작업)용
                 try { localStorage.setItem('tb_last_bgs', JSON.stringify(ok)); } catch (e) {} // 새로고침 생존
                 await renderThumbResults(msg);
-                msg.textContent = fails.length ? ('⚠ ' + ok.length + '장 성공 · ' + fails.length + '장 실패: ' + fails[0].error) : ('✅ ' + ok.length + '장 완성!');
+                msg.textContent = (fails.length ? ('⚠ ' + ok.length + '장 성공 · ' + fails.length + '장 실패: ' + fails[0].error) : ('✅ ' + ok.length + '장 완성!')) + (simNote || '') + ' · ' + TB_VER;
                 if (ok.length) tbSwitchSub('edit'); // 이미지가 나왔으면 후작업 탭으로 자동 이동
             } catch (e) {
                 msg.textContent = '⚠ ' + (e.message || '생성 실패');
