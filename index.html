@@ -3020,7 +3020,8 @@
                         <span class="tbx-lab">따라기</span>
                         <div class="tb-options" id="tbRefMode">
                             <button class="tb-opt" data-val="loose" onclick="toggleTbOpt(this,'tbRefMode',1)"><div class="opt-title">느낌만</div><div class="opt-desc">화풍·색·감정만 — 그림은 새로</div></button>
-                            <button class="tb-opt selected" data-val="inspire" onclick="toggleTbOpt(this,'tbRefMode',1)"><div class="opt-title">비슷하게 (기본)</div><div class="opt-desc">거의 그대로 — 살짝만 비틀어 차별화</div></button>
+                            <button class="tb-opt selected" data-val="remix" onclick="toggleTbOpt(this,'tbRefMode',1)"><div class="opt-title">구도 비틀기 (기본)</div><div class="opt-desc">인물·색·소품 유지 — 배치만 다르게</div></button>
+                            <button class="tb-opt" data-val="inspire" onclick="toggleTbOpt(this,'tbRefMode',1)"><div class="opt-title">판박이</div><div class="opt-desc">거의 그대로 — 디테일만 미세 변형</div></button>
                             <button class="tb-opt" data-val="edit" onclick="toggleTbOpt(this,'tbRefMode',1)"><div class="opt-title">똑같이 (편집)</div><div class="opt-desc">내 옛 썸네일 재활용용</div></button>
                         </div>
                     </div>
@@ -20995,7 +20996,18 @@ Example format:
                     : ('Replace all existing text: the text must now read exactly "' + line1 + '", in the same lettering style and position as the original text.'));
                 return 'This is an EDIT of the given image, not a new picture. PRESERVE EVERYTHING from the original exactly — same composition, same background, same objects, same people and poses, same colors, same lighting, same art style. ' + subj + t + ' Apart from what is explicitly instructed, change NOTHING. Letters must be CLEAN and CRISP: perfectly solid fill, smooth sharp edges - never distressed or cracked. No watermark.';
             }
-            if (!chosen && refMode === 'loose' && (hasRefs || ana)) {
+            if (!chosen && hasRefs && refMode === 'remix') {
+                // ★구도 비틀기 — 딥리서치(2026-07-05) 검증 패턴: Google 나노바나나 공식 가이드의 5축 편집(인물/구도/동작/배경/스타일)에서
+                //   '구도' 1축만 변경 + OpenAI 공식 invariants list("바꿀 것만 명시, 나머지는 전부 동일"). 표절 인식 회피와 공식 유지의 균형점.
+                ref = 'Using the attached reference thumbnail as the base, RECREATE it with the SAME content but a DIFFERENT layout. '
+                    + 'KEEP EXACTLY THE SAME: the same real people with their exact recognizable faces and identities (never swap them for different people), '
+                    + 'the same signature objects, props, flags, maps and charts, the same color treatment and contrast level, '
+                    + 'the same text styling language, the same emotional trigger and dramatic energy, and the same medium/art style (photo stays photo, illustration stays illustration). '
+                    + 'CHANGE ONLY THE COMPOSITION - rearrange the layout noticeably: MIRROR the left-right arrangement (subjects on the left move to the right and vice versa), '
+                    + 'or shift to a clearly different camera angle and framing (closer crop, wider shot, or diagonal arrangement), adjusting poses naturally to fit the new layout. '
+                    + 'Everything not explicitly changed must stay exactly the same as the reference. '
+                    + (scene ? 'ALSO swap the subject as described below while keeping all other reference elements: ' : '');
+            } else if (!chosen && refMode === 'loose' && (hasRefs || ana)) {
                 // 느낌만 — 매체·색·글자스타일·감정만 따오고 구도·배치·방향은 강제로 다르게(베낌 차단)
                 ref = 'FIRST, identify the MEDIUM of the attached reference thumbnail (photograph vs illustration) — your output MUST be the same medium and overall art style, same color strategy and contrast, same emotional trigger, same text styling language. BUT the PICTURE ITSELF MUST BE CLEARLY DIFFERENT: do NOT copy the layout — use a different camera angle and framing, rearrange or mirror the elements, different specific props and background of a similar kind, different poses. A viewer seeing both side by side should think "same genre and mood", never "the same picture redrawn". ';
             } else if (chosen && hasRefs) {
@@ -21589,7 +21601,7 @@ Example format:
             try {
                 // ① 레퍼런스 준비 — ★느낌만 모드는 이미지를 첨부하지 않는다(첨부하면 모델이 가끔 그대로 복제 — 작가 재현).
                 //   대신 Gemini 분석문(글)만 전달 — 글 조건은 픽셀 복제가 원천 불가. 분석 안 했으면 자동 실행.
-                const refModePre = getSelectedVals('tbRefMode')[0] || 'inspire';
+                const refModePre = getSelectedVals('tbRefMode')[0] || 'remix';
                 let refs = [];
                 if (_tbRefThumbs.length && refModePre === 'loose') {
                     const anaEl = document.getElementById('tbRefAnalysis');
@@ -21608,9 +21620,9 @@ Example format:
                 }
                 // ② 생성 (병렬)
                 const styleKey = getSelectedVals('tbArtStyle')[0] || 'auto';
-                let prompt = buildThumbPrompt(topic, scene, line1, line2, refs.length > 0, styleKey, getSelectedVals('tbRefMode')[0] || 'inspire');
+                let prompt = buildThumbPrompt(topic, scene, line1, line2, refs.length > 0, styleKey, getSelectedVals('tbRefMode')[0] || 'remix');
                 // 레퍼런스 추종 강도: 똑같이(edit)=i2i 편집 / 느낌만(inspire)=t2i 참고. 화풍 선택·레퍼런스 없음은 항상 t2i.
-                const refMode = getSelectedVals('tbRefMode')[0] || 'inspire';
+                const refMode = getSelectedVals('tbRefMode')[0] || 'remix';
                 let base = getSelectedVals('tbModel')[0] || 'nano';
                 // ★👤 인물 얼굴 슬롯 처리 — 얼굴 사진을 첫 번째 image_input으로 + 얼굴유지 지시 자동 삽입 (2026-07-05 실증)
                 if (window._tbFaceThumb) {
