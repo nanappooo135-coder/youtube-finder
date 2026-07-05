@@ -1,5 +1,5 @@
 ﻿// YouTube Finder PWA Service Worker
-const CACHE_NAME = 'yt-finder-v122';
+const CACHE_NAME = 'yt-finder-v123';
 const CORE_ASSETS = [
     './',
     './index.html',
