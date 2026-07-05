@@ -21151,8 +21151,10 @@ Example format:
             };
             const lay0 = layout || {};
             if (lay0.letterSp) { try { x.letterSpacing = lay0.letterSp + 'px'; } catch (e) {} } // 자간(Chrome 지원)
-            const fs1 = fit(line1, W * 0.94, sizeCap || 115); // 상한을 사용자가 선택 — 문구 길이가 달라도 크기 들쭉날쭉 방지
-            const fs2 = line2 ? fit(line2, W * 0.94, (lay0.size2 || Math.round(fs1 * 0.62))) : 0;
+            // 가로 최대폭은 '가장자리 여백' 설정 연동 — 붙임=끝에서 끝까지(99%), 보통=94%, 넓게=86%
+            const wFit = W * ({'0.015': 0.99, '0.05': 0.94, '0.11': 0.86}[String(lay0.margin)] || 0.94);
+            const fs1 = fit(line1, wFit, sizeCap || 115); // 상한을 사용자가 선택 — 문구 길이가 달라도 크기 들쭉날쭉 방지
+            const fs2 = line2 ? fit(line2, wFit, (lay0.size2 || Math.round(fs1 * 0.62))) : 0;
             const gap = line2 ? (lay0.lineGap != null ? Math.round(lay0.lineGap) : Math.round(fs1 * 0.16)) : 0;
             const pad = Math.round(fs1 * 0.22);
             const blockH = fs1 + (line2 ? gap + fs2 : 0) + pad * 2;
