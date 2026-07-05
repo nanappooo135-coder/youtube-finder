@@ -3019,8 +3019,8 @@
                     <div class="tbx-row" style="margin-bottom:0;">
                         <span class="tbx-lab">따라기</span>
                         <div class="tb-options" id="tbRefMode">
-                            <button class="tb-opt selected" data-val="loose" onclick="toggleTbOpt(this,'tbRefMode',1)"><div class="opt-title">느낌만 (기본)</div><div class="opt-desc">화풍·색·감정만 — 구도는 반드시 다르게</div></button>
-                            <button class="tb-opt" data-val="inspire" onclick="toggleTbOpt(this,'tbRefMode',1)"><div class="opt-title">비슷하게</div><div class="opt-desc">구도 골격까지 유지 — 베낌 주의</div></button>
+                            <button class="tb-opt" data-val="loose" onclick="toggleTbOpt(this,'tbRefMode',1)"><div class="opt-title">느낌만</div><div class="opt-desc">화풍·색·감정만 — 그림은 새로</div></button>
+                            <button class="tb-opt selected" data-val="inspire" onclick="toggleTbOpt(this,'tbRefMode',1)"><div class="opt-title">비슷하게 (기본)</div><div class="opt-desc">거의 그대로 — 살짝만 비틀어 차별화</div></button>
                             <button class="tb-opt" data-val="edit" onclick="toggleTbOpt(this,'tbRefMode',1)"><div class="opt-title">똑같이 (편집)</div><div class="opt-desc">내 옛 썸네일 재활용용</div></button>
                         </div>
                     </div>
@@ -21003,7 +21003,7 @@ Example format:
             } else if (chosen) {
                 ref = 'Art style: ' + chosen + ' Ultra-clickable Korean YouTube thumbnail: one dominant subject, dramatic lighting, high contrast. ';
             } else if (hasRefs) {
-                ref = 'FIRST, identify the MEDIUM of the attached reference thumbnail: is it a real PHOTOGRAPH/photo-composite, or an ILLUSTRATION? Your output MUST be the same medium — if the reference is photographic, produce a photorealistic photo-composite (real camera textures, NOT a drawing, NOT anime, NOT illustration); if it is an illustration, match that exact illustration style. This medium rule overrides everything else. The reference is a PROVEN viral YouTube thumbnail. Reproduce its WINNING FORMULA while making a clearly different picture. KEEP: the medium and art style as identified above, the composition skeleton (where the main subject sits and how much of the frame it fills, where the text block sits), the color strategy and contrast level, the emotional trigger and dramatic tone, the text styling language, and any SPLIT-SCREEN structure (if the reference divides the frame with a sharp straight or diagonal line into two image zones, reproduce that exact split layout with a crisp dividing edge). ' + (scene ? 'CHANGE the subject as described below — but ONLY the subject: keep the reference thumbnail-s other elements, props, background details and overall visual richness (flags, objects, charts, scenery...), so the result is NOT a plain portrait but a full rich thumbnail scene like the reference. ' : 'KEEP the very same real people and subjects as the reference — the same recognizable faces and identities (do NOT swap them for different people) — but CHANGE their pose, camera angle, expression, background details and arrangement so it is a fresh picture. ') + 'Placed side by side with the reference, it must feel like the same winning formula but nobody could call it a copy. '
+                ref = 'FIRST, identify the MEDIUM of the attached reference thumbnail: is it a real PHOTOGRAPH/photo-composite, or an ILLUSTRATION? Your output MUST be the same medium — if the reference is photographic, produce a photorealistic photo-composite (real camera textures, NOT a drawing, NOT anime, NOT illustration); if it is an illustration, match that exact illustration style. This medium rule overrides everything else. The reference is a PROVEN high-performing YouTube thumbnail. Your goal is to RECREATE IT AS CLOSELY AS POSSIBLE — a near-match, NOT a new picture. KEEP EVERYTHING: the medium and art style, the composition and layout (where each subject sits, how much of the frame it fills, where the text block sits), the same real people with their recognizable faces and identities (never swap them for different people), the same props, flags, maps and objects, the color strategy and contrast level, the emotional trigger and dramatic tone, the text styling language, and any SPLIT-SCREEN structure (reproduce the exact split layout with a crisp dividing edge). ' + (scene ? 'ONLY change the subject as described below — everything else stays like the reference: same other elements, props, background details and overall visual richness (flags, objects, charts, scenery...). ' : 'Then introduce only SMALL deliberate differences so it is not a pixel-identical copy: a slightly different pose or facial expression, a slightly shifted camera angle, or slightly varied background details — small tweaks only, never a redesign. ') + 'Placed side by side with the reference, the two should read as the same thumbnail family with minor variation — SIMILAR is the goal; only avoid an exact 1:1 duplicate. '
             } else {
                 ref = 'Ultra-clickable Korean YouTube thumbnail style: one dominant subject, dramatic lighting, high contrast. ';
             }
@@ -21589,7 +21589,7 @@ Example format:
             try {
                 // ① 레퍼런스 준비 — ★느낌만 모드는 이미지를 첨부하지 않는다(첨부하면 모델이 가끔 그대로 복제 — 작가 재현).
                 //   대신 Gemini 분석문(글)만 전달 — 글 조건은 픽셀 복제가 원천 불가. 분석 안 했으면 자동 실행.
-                const refModePre = getSelectedVals('tbRefMode')[0] || 'loose';
+                const refModePre = getSelectedVals('tbRefMode')[0] || 'inspire';
                 let refs = [];
                 if (_tbRefThumbs.length && refModePre === 'loose') {
                     const anaEl = document.getElementById('tbRefAnalysis');
@@ -21608,9 +21608,9 @@ Example format:
                 }
                 // ② 생성 (병렬)
                 const styleKey = getSelectedVals('tbArtStyle')[0] || 'auto';
-                let prompt = buildThumbPrompt(topic, scene, line1, line2, refs.length > 0, styleKey, getSelectedVals('tbRefMode')[0] || 'loose');
+                let prompt = buildThumbPrompt(topic, scene, line1, line2, refs.length > 0, styleKey, getSelectedVals('tbRefMode')[0] || 'inspire');
                 // 레퍼런스 추종 강도: 똑같이(edit)=i2i 편집 / 느낌만(inspire)=t2i 참고. 화풍 선택·레퍼런스 없음은 항상 t2i.
-                const refMode = getSelectedVals('tbRefMode')[0] || 'loose';
+                const refMode = getSelectedVals('tbRefMode')[0] || 'inspire';
                 let base = getSelectedVals('tbModel')[0] || 'nano';
                 // ★👤 인물 얼굴 슬롯 처리 — 얼굴 사진을 첫 번째 image_input으로 + 얼굴유지 지시 자동 삽입 (2026-07-05 실증)
                 if (window._tbFaceThumb) {
