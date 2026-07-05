@@ -21011,15 +21011,22 @@ Example format:
                 return 'This is an EDIT of the given image, not a new picture. PRESERVE EVERYTHING from the original exactly — same composition, same background, same objects, same people and poses, same colors, same lighting, same art style. ' + subj + t + ' Apart from what is explicitly instructed, change NOTHING. Letters must be CLEAN and CRISP: perfectly solid fill, smooth sharp edges - never distressed or cracked. No watermark.';
             }
             if (!chosen && hasRefs && refMode === 'remix') {
-                // ★구도 비틀기 — 딥리서치(2026-07-05) 검증 패턴: Google 나노바나나 공식 가이드의 5축 편집(인물/구도/동작/배경/스타일)에서
-                //   '구도' 1축만 변경 + OpenAI 공식 invariants list("바꿀 것만 명시, 나머지는 전부 동일"). 표절 인식 회피와 공식 유지의 균형점.
-                ref = 'Using the attached reference thumbnail as the base, RECREATE it with the SAME content but a DIFFERENT layout. '
-                    + 'KEEP EXACTLY THE SAME: the same real people with their exact recognizable faces and identities (never swap them for different people), '
-                    + 'the same signature objects, props, flags, maps and charts, the same color treatment and contrast level, '
-                    + 'the same text styling language, the same emotional trigger and dramatic energy, and the same medium/art style (photo stays photo, illustration stays illustration). '
-                    + 'CHANGE ONLY THE COMPOSITION - rearrange the layout noticeably: MIRROR the left-right arrangement (subjects on the left move to the right and vice versa), '
-                    + 'or shift to a clearly different camera angle and framing (closer crop, wider shot, or diagonal arrangement), adjusting poses naturally to fit the new layout. '
-                    + 'Everything not explicitly changed must stay exactly the same as the reference. '
+                // ★구도 비틀기 v2 — 딥리서치(2026-07-05) 공식 패턴 적용:
+                //   ①구글 공식 레퍼런스 공식 "[레퍼런스]+[역할 지정]+[새 장면 서술]" — 첨부 이미지에 '스타일 참고용' 역할을 명시
+                //   ②구도는 촬영 용어로 '하나를 확정'해 지시(공식 권고) — "반전하거나 다른 앵글로" 같은 재량 부여가 복제로 새는 원인
+                //   ③보존은 명시된 것만(구글: i2i는 기본이 보존 지향 — 바꿀 것을 강하게 선언해야 함)
+                const LAYOUTS = [
+                    'MIRRORED layout: every subject that sits on the LEFT in the reference goes to the RIGHT in your image and vice versa',
+                    'CLOSE-UP reframe: push in much tighter on the single most dramatic subject so it fills over half the frame, other elements smaller in the background',
+                    'WIDE-SHOT reframe: pull the camera back to a wider view, subjects smaller within a larger dramatic environment',
+                    'DIAGONAL composition: arrange the main elements along a strong diagonal from one corner to the opposite corner',
+                    'LOW-ANGLE reframe: dramatic low camera angle looking up at the main subject, background elements rearranged around it',
+                ];
+                const pick = LAYOUTS[Math.floor(Math.random() * LAYOUTS.length)];
+                ref = 'ROLE OF THE ATTACHED IMAGE: the attached reference thumbnail is a STYLE AND CASTING GUIDE ONLY — it defines WHO and WHAT appears (same real people with their exact recognizable faces, same signature objects, props, flags, maps, charts), the medium/art style (photo stays photo, illustration stays illustration), the color treatment and contrast, the text styling language, and the emotional trigger. It does NOT define the layout. '
+                    + 'NEW SCENE TO CREATE: compose a NEW picture with those same people and objects using this REQUIRED composition — ' + pick + '. '
+                    + 'This composition change is MANDATORY, not optional. Copying the reference layout as-is is a FAILURE. Adjust poses and framing naturally to fit the new composition. '
+                    + 'Everything else (identities, props, colors, style, mood) stays faithful to the reference. '
                     + (scene ? 'ALSO swap the subject as described below while keeping all other reference elements: ' : '');
             } else if (!chosen && refMode === 'loose' && (hasRefs || ana)) {
                 // 느낌만 — 매체·색·글자스타일·감정만 따오고 구도·배치·방향은 강제로 다르게(베낌 차단)
