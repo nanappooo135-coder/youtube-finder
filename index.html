@@ -3156,8 +3156,8 @@
 
                     <div class="tbx-sec">📐 크기 · 간격 <span style="font-weight:400;letter-spacing:0;">— 미리보기의 파란 점을 끌어도 돼요</span></div>
                     <div class="tbx-sl">
-                        <label>줄1 크기</label><input type="range" id="tbSizeRange" min="45" max="185" value="115" oninput="tbLivePreview()">
-                        <label>줄2 크기</label><input type="range" id="tbSize2Range" min="30" max="150" value="70" oninput="tbLivePreview()">
+                        <label>줄1 크기</label><input type="range" id="tbSizeRange" min="45" max="300" value="115" oninput="tbLivePreview()">
+                        <label>줄2 크기</label><input type="range" id="tbSize2Range" min="30" max="240" value="70" oninput="tbLivePreview()">
                         <label>자간</label><input type="range" id="tbLetterSp" min="-6" max="24" value="0" oninput="tbLivePreview()">
                         <label>줄간격</label><input type="range" id="tbLineGap" min="0" max="60" value="18" oninput="tbLivePreview()">
                     </div>
@@ -21332,8 +21332,8 @@ Example format:
                     const move = (ev) => {
                         const d = ((ev.clientX - startX) + (ev.clientY - startY)) / 2; // 대각선 이동량
                         const k = 1 + (sign * d) / 150;
-                        document.getElementById('tbSizeRange').value = Math.max(45, Math.min(185, Math.round(s1 * k)));
-                        document.getElementById('tbSize2Range').value = Math.max(30, Math.min(150, Math.round(s2 * k)));
+                        document.getElementById('tbSizeRange').value = Math.max(45, Math.min(300, Math.round(s1 * k)));
+                        document.getElementById('tbSize2Range').value = Math.max(30, Math.min(240, Math.round(s2 * k)));
                         tbLivePreviewFast();
                     };
                     const up = () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); tbCapture(); };
@@ -21626,7 +21626,7 @@ Example format:
             await renderThumbResults(msg);
             msg.textContent = '✅ 글자 다시 입힘 (생성비 0원 — 문구·색·크기 바꿔서 계속 재시도 가능)';
         }
-        const TB_VER = 'v123'; // 썸네일 엔진 버전 — 생성 메시지에 표시(반영 확인용)
+        const TB_VER = 'v124'; // 썸네일 엔진 버전 — 생성 메시지에 표시(반영 확인용)
 
         // ═══ 구도 복제 감지 — remix 모드에서 모델이 확률적으로 레퍼런스를 그대로 복제하는 것 차단 ═══
         async function _tbLoadForHash(url) {
