@@ -21593,6 +21593,55 @@ Example format:
             await renderThumbResults(msg);
             msg.textContent = '✅ 글자 다시 입힘 (생성비 0원 — 문구·색·크기 바꿔서 계속 재시도 가능)';
         }
+        // ═══ 구도 복제 감지 (dHash 지각 해시) — remix 모드에서 모델이 확률적으로 레퍼런스를 그대로 복제하는 것 차단 ═══
+        async function _tbLoadForHash(url) {
+            const mk = (blob) => createImageBitmap(blob);
+            try { const r = await fetch(url); if (r.ok) return await mk(await r.blob()); } catch (e) {}
+            try {
+                const prox = 'https://images.weserv.nl/?url=' + encodeURIComponent(url.replace(/^https?:\/\//, ''));
+                const r = await fetch(prox); if (r.ok) return await mk(await r.blob());
+            } catch (e) {}
+            return null;
+        }
+        async function _tbLumaGrid(url) {
+            // 16x9 밝기 그리드 — 구도(밝고 어두운 구역 배치)의 지문. 색·질감이 달라도 배치가 같으면 상관도↑
+            const bmp = await _tbLoadForHash(url);
+            if (!bmp) return null;
+            const c = document.createElement('canvas'); c.width = 16; c.height = 9;
+            const x = c.getContext('2d');
+            x.drawImage(bmp, 0, 0, 16, 9);
+            const d = x.getImageData(0, 0, 16, 9).data;
+            const g = [];
+            for (let i = 0; i < 144; i++) g.push(0.299 * d[i * 4] + 0.587 * d[i * 4 + 1] + 0.114 * d[i * 4 + 2]);
+            return g;
+        }
+        function _tbLayoutSim(a, b) {
+            // 이동 허용(±1칸) 최대 피어슨 상관 — 살짝 밀린 재렌더 복제까지 감지. 1=동일 구도, 0=무관
+            if (!a || !b) return 0;
+            const W = 16, H = 9;
+            const corrShift = (dx, dy) => {
+                const va = [], vb = [];
+                for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+                    const x2 = x + dx, y2 = y + dy;
+                    if (x2 < 0 || x2 >= W || y2 < 0 || y2 >= H) continue;
+                    va.push(a[y * W + x]); vb.push(b[y2 * W + x2]);
+                }
+                const n2 = va.length;
+                const ma = va.reduce((s, v) => s + v, 0) / n2, mb = vb.reduce((s, v) => s + v, 0) / n2;
+                let num = 0, da = 0, db = 0;
+                for (let i = 0; i < n2; i++) { num += (va[i] - ma) * (vb[i] - mb); da += (va[i] - ma) ** 2; db += (vb[i] - mb) ** 2; }
+                return num / Math.sqrt(da * db || 1);
+            };
+            let best = -1;
+            for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) best = Math.max(best, corrShift(dx, dy));
+            return best;
+        }
+        function _tbRefHashUrl() {
+            const t = _tbRefThumbs[0];
+            if (!t) return null;
+            return t.dataUrl || (t.videoId ? ('https://i.ytimg.com/vi/' + t.videoId + '/mqdefault.jpg') : null);
+        }
+
         async function generateAiThumbnails() {
             const msg = document.getElementById('tbGenMsg');
             const btn = document.getElementById('tbGenBtn');
@@ -21662,8 +21711,31 @@ Example format:
                 for (let i = 0; i < n; i++) tasks.push(kieThumbCreate(prompt, refs, res, model).then(kieThumbPoll).catch((e) => ({error: e.message})));
                 const results = await Promise.all(tasks);
                 // ③ 결과 렌더
-                const ok = results.filter((r) => typeof r === 'string');
+                let ok = results.filter((r) => typeof r === 'string');
                 const fails = results.filter((r) => r && r.error);
+                // ★구도 비틀기 복제 감지 — 레퍼런스와 지문(dHash)이 거의 같으면(거리≤10) 좌우반전 강제로 1회 재생성.
+                //   프롬프트만으론 모델이 확률적으로 그대로 복제하는 걸 100% 못 막아서 결과를 코드로 검사.
+                if (refMode === 'remix' && refs.length && ok.length) {
+                    const refUrl = _tbRefHashUrl();
+                    const refGrid = refUrl ? await _tbLumaGrid(refUrl) : null;
+                    if (refGrid) {
+                        for (let i = 0; i < ok.length; i++) {
+                            const g = await _tbLumaGrid(ok[i]);
+                            const sim = _tbLayoutSim(refGrid, g);
+                            if (sim >= 0.87) {
+                                msg.textContent = '⚠ ' + (i + 1) + '번이 레퍼런스와 거의 동일 — 구도 바꿔서 재생성 중…';
+                                const mirrorPrompt = prompt + ' CRITICAL OVERRIDE: a previous attempt copied the reference layout exactly, which is FORBIDDEN. You MUST MIRROR the composition horizontally — every subject on the LEFT side of the reference goes to the RIGHT side of your output and vice versa, and use a noticeably different camera framing. This mirroring is MANDATORY.';
+                                try {
+                                    const redo = await kieThumbPoll(await kieThumbCreate(mirrorPrompt, refs, res, model));
+                                    if (typeof redo === 'string') {
+                                        const g2 = await _tbLumaGrid(redo);
+                                        if (_tbLayoutSim(refGrid, g2) < sim) ok[i] = redo; // 더 달라졌을 때만 교체
+                                    }
+                                } catch (e) { /* 재생성 실패 시 원본 유지 */ }
+                            }
+                        }
+                    }
+                }
                 window._tbBgs = ok; // ★배경 보관 — 글자만 다시 입히기(무료 재작업)용
                 try { localStorage.setItem('tb_last_bgs', JSON.stringify(ok)); } catch (e) {} // 새로고침 생존
                 await renderThumbResults(msg);
