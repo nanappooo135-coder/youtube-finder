@@ -2952,6 +2952,16 @@
                 #process-thumbnail .tbx-grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;}
                 #process-thumbnail .tbx-wrap{display:flex;gap:16px;align-items:flex-start;}
                 #process-thumbnail .tbm-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 14px;align-items:start;}
+                #process-thumbnail .tbx-h2{font-size:0.9rem;font-weight:800;color:#111827;margin:18px 0 10px;display:flex;align-items:center;gap:8px;}
+                #process-thumbnail .tbx-h2::after{content:'';flex:1;height:1px;background:#e5e7eb;}
+                #process-thumbnail .tbx-frow{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+                #process-thumbnail .tbx-flab{font-size:0.84rem;font-weight:700;color:#374151;width:64px;flex-shrink:0;}
+                #process-thumbnail details.tbx-fold{border:1.5px solid #e5e7eb;border-radius:10px;margin:10px 0;background:#fafbfc;}
+                #process-thumbnail details.tbx-fold summary{cursor:pointer;padding:11px 14px;font-size:0.88rem;font-weight:800;color:#374151;list-style:none;display:flex;align-items:center;gap:8px;user-select:none;}
+                #process-thumbnail details.tbx-fold summary::before{content:'▸';color:#9ca3af;transition:transform 0.15s;}
+                #process-thumbnail details.tbx-fold[open] summary::before{transform:rotate(90deg);}
+                #process-thumbnail details.tbx-fold summary .tbx-sub{font-weight:400;color:#9ca3af;font-size:0.76rem;}
+                #process-thumbnail details.tbx-fold .tbx-fold-body{padding:4px 14px 14px;}
                 #process-thumbnail .tbx-sec{font-size:0.72rem;font-weight:800;color:#9aa3b2;letter-spacing:0.06em;margin:14px 0 7px;padding-top:12px;border-top:1px solid #f0f2f5;}
                 #process-thumbnail .tbx-sec:first-of-type{border-top:none;padding-top:0;margin-top:4px;}
                 #process-thumbnail .tbx-sw{width:26px;height:26px;border-radius:50%;padding:0!important;border:2px solid #fff!important;box-shadow:0 0 0 1.5px #d6dae0;flex-shrink:0;}
@@ -3120,86 +3130,84 @@
                 </div>
                 <div class="tbx-right" style="width:400px;">
                     <div class="tbx-card" data-step="5">
-                <div class="tbx-head"><div class="tbx-num">5</div><div class="tbx-t">글자 입히기 <span style="font-weight:400;color:#9aa3b2;font-size:0.8rem;">(후작업 — 무료·실시간)</span></div></div>
+                <div class="tbx-head"><div class="tbx-num">5</div><div class="tbx-t">글자 입히기 <span style="font-weight:400;color:#9aa3b2;font-size:0.8rem;">(무료 · 실시간 반영)</span></div></div>
                 <div class="tbx-body" style="margin-left:0;">
-                    <div class="tbx-row" style="margin:0 0 4px;">
-                        <button class="btn-small" onclick="tbUndo()" style="padding:7px 16px;border-radius:8px;cursor:pointer;border:1.5px solid #d0d4da;background:#fff;font-weight:700;">↶ 되돌리기</button>
-                        <button class="btn-small" onclick="tbRedo()" style="padding:7px 16px;border-radius:8px;cursor:pointer;border:1.5px solid #d0d4da;background:#fff;font-weight:700;">↷ 다시하기</button>
-                        <span style="font-size:0.7rem;color:#9aa3b2;">Ctrl+Z / Y</span>
-                        <button class="btn-small" style="margin-left:auto;padding:7px 12px;border-radius:8px;cursor:pointer;border:1px solid #d0d4da;background:#fff;font-size:0.78rem;" onclick="window._tbLayoutXY=null;tbLivePreview()">위치 초기화</button>
+
+                    <div class="tbx-row" style="margin:2px 0 0;">
+                        <button class="btn-small" onclick="tbUndo()" style="padding:8px 14px;border-radius:8px;cursor:pointer;border:1.5px solid #d0d4da;background:#fff;font-weight:700;">↶ 되돌리기</button>
+                        <button class="btn-small" onclick="tbRedo()" style="padding:8px 14px;border-radius:8px;cursor:pointer;border:1.5px solid #d0d4da;background:#fff;font-weight:700;">↷ 다시하기</button>
+                        <button class="btn-small" style="margin-left:auto;padding:8px 12px;border-radius:8px;cursor:pointer;border:1px solid #d0d4da;background:#fff;" onclick="window._tbLayoutXY=null;tbLivePreview()">글자 위치 초기화</button>
                     </div>
 
-                    <div class="tbx-sec">✏️ 문구 <span style="font-weight:400;letter-spacing:0;">— 단어 선택 후 색을 누르면 그 단어만 색칠</span></div>
-                    <input type="text" id="tbText1" class="tbx-input" oninput="tbLivePreview()" placeholder="줄1 — 큰 글씨" style="margin-bottom:6px;">
-                    <input type="text" id="tbText2" class="tbx-input" oninput="tbLivePreview()" placeholder="줄2 — 보조 문구 (선택)" style="margin-bottom:8px;">
-                    <div class="tbx-row" style="margin:0;">
+                    <div class="tbx-h2">✏️ 문구</div>
+                    <input type="text" id="tbText1" class="tbx-input" oninput="tbLivePreview()" placeholder="첫째 줄 (큰 글씨)" style="margin-bottom:7px;font-weight:700;">
+                    <input type="text" id="tbText2" class="tbx-input" oninput="tbLivePreview()" placeholder="둘째 줄 (작은 보조 문구 — 없어도 됨)" style="margin-bottom:9px;">
+                    <div class="tbx-frow" style="margin-bottom:2px;">
+                        <span class="tbx-flab">쓰는 방식</span>
                         <div class="tb-options" id="tbTextMode">
-                            <button class="tb-opt tbx-mini selected" data-val="overlay" onclick="toggleTbOpt(this,'tbTextMode',1)"><div class="opt-title">글자 직접 입히기</div></button>
-                            <button class="tb-opt tbx-mini" data-val="ai" onclick="toggleTbOpt(this,'tbTextMode',1)"><div class="opt-title">AI가 그리기</div></button>
+                            <button class="tb-opt tbx-mini selected" data-val="overlay" onclick="toggleTbOpt(this,'tbTextMode',1)"><div class="opt-title">진짜 글꼴로 입히기</div></button>
+                            <button class="tb-opt tbx-mini" data-val="ai" onclick="toggleTbOpt(this,'tbTextMode',1)"><div class="opt-title">AI가 그림으로</div></button>
                         </div>
                     </div>
+                    <p style="font-size:0.74rem;color:#9ca3af;margin:2px 0 0 74px;">💡 단어를 마우스로 긁어 선택하고 아래 색 동그라미를 누르면 그 단어만 색칠돼요</p>
 
-                    <div class="tbx-sec">🎨 색 · 글꼴</div>
-                    <div class="tbx-row" style="margin-bottom:6px;flex-wrap:nowrap;"><span class="tbx-lab">줄1 색</span><div class="tb-options" id="tbColor1" style="gap:6px;flex-wrap:nowrap;"><button class="tb-opt tbx-sw selected" data-val="#ffe400" style="background:#ffe400;" title="#ffe400" onmousedown="tbColorDown()" onclick="tbColorClick(this,'tbColor1')"></button><button class="tb-opt tbx-sw" data-val="#ffffff" style="background:#ffffff;" title="#ffffff" onmousedown="tbColorDown()" onclick="tbColorClick(this,'tbColor1')"></button><button class="tb-opt tbx-sw" data-val="#ff2b2b" style="background:#ff2b2b;" title="#ff2b2b" onmousedown="tbColorDown()" onclick="tbColorClick(this,'tbColor1')"></button><button class="tb-opt tbx-sw" data-val="#ff9d00" style="background:#ff9d00;" title="#ff9d00" onmousedown="tbColorDown()" onclick="tbColorClick(this,'tbColor1')"></button><button class="tb-opt tbx-sw" data-val="#7dff7d" style="background:#7dff7d;" title="#7dff7d" onmousedown="tbColorDown()" onclick="tbColorClick(this,'tbColor1')"></button></div></div>
-                    <div class="tbx-row" style="margin-bottom:8px;flex-wrap:nowrap;"><span class="tbx-lab">줄2 색</span><div class="tb-options" id="tbColor2" style="gap:6px;flex-wrap:nowrap;"><button class="tb-opt tbx-sw" data-val="#ffe400" style="background:#ffe400;" title="#ffe400" onmousedown="tbColorDown()" onclick="tbColorClick(this,'tbColor2')"></button><button class="tb-opt tbx-sw selected" data-val="#ffffff" style="background:#ffffff;" title="#ffffff" onmousedown="tbColorDown()" onclick="tbColorClick(this,'tbColor2')"></button><button class="tb-opt tbx-sw" data-val="#ff2b2b" style="background:#ff2b2b;" title="#ff2b2b" onmousedown="tbColorDown()" onclick="tbColorClick(this,'tbColor2')"></button><button class="tb-opt tbx-sw" data-val="#ff9d00" style="background:#ff9d00;" title="#ff9d00" onmousedown="tbColorDown()" onclick="tbColorClick(this,'tbColor2')"></button><button class="tb-opt tbx-sw" data-val="#7dff7d" style="background:#7dff7d;" title="#7dff7d" onmousedown="tbColorDown()" onclick="tbColorClick(this,'tbColor2')"></button></div></div>
-                    <div class="tb-options" id="tbFont" style="gap:5px;">
-                        <button class="tb-opt tbx-mini selected" data-val="Black Han Sans" onclick="toggleTbOpt(this,'tbFont',1);tbLivePreview()"><div class="opt-title" style="font-family:'Black Han Sans';">검은고딕</div></button>
-                        <button class="tb-opt tbx-mini" data-val="Jalnan" onclick="toggleTbOpt(this,'tbFont',1);tbLivePreview()"><div class="opt-title" style="font-family:'Jalnan';">잘난체</div></button>
-                        <button class="tb-opt tbx-mini" data-val="GmarketSans" onclick="toggleTbOpt(this,'tbFont',1);tbLivePreview()"><div class="opt-title" style="font-family:'GmarketSans';">G마켓산스</div></button>
-                        <button class="tb-opt tbx-mini" data-val="SCDream8" onclick="toggleTbOpt(this,'tbFont',1);tbLivePreview()"><div class="opt-title" style="font-family:'SCDream8';">에스코어드림</div></button>
-                        <button class="tb-opt tbx-mini" data-val="TmonMonsori" onclick="toggleTbOpt(this,'tbFont',1);tbLivePreview()"><div class="opt-title" style="font-family:'TmonMonsori';">티몬몬소리</div></button>
-                        <button class="tb-opt tbx-mini" data-val="Cafe24Ssurround" onclick="toggleTbOpt(this,'tbFont',1);tbLivePreview()"><div class="opt-title" style="font-family:'Cafe24Ssurround';">카페24</div></button>
-                        <button class="tb-opt tbx-mini" data-val="BMEuljiro" onclick="toggleTbOpt(this,'tbFont',1);tbLivePreview()"><div class="opt-title" style="font-family:'BMEuljiro';">을지로</div></button>
-                        <button class="tb-opt tbx-mini" data-val="BMHannaPro" onclick="toggleTbOpt(this,'tbFont',1);tbLivePreview()"><div class="opt-title" style="font-family:'BMHannaPro';">한나</div></button>
-                        <button class="tb-opt tbx-mini" data-val="Do Hyeon" onclick="toggleTbOpt(this,'tbFont',1);tbLivePreview()"><div class="opt-title" style="font-family:'Do Hyeon';">도현</div></button>
-                    </div>
+                    <div class="tbx-h2">🎨 색 · 글꼴</div>
+                    <div class="tbx-frow"><span class="tbx-flab">첫째 줄 색</span><div class="tb-options" id="tbColor1" style="gap:7px;flex-wrap:nowrap;"><button class="tb-opt tbx-sw selected" data-val="#ffe400" style="background:#ffe400;" title="#ffe400" onmousedown="tbColorDown()" onclick="tbColorClick(this,'tbColor1')"></button><button class="tb-opt tbx-sw" data-val="#ffffff" style="background:#ffffff;" title="#ffffff" onmousedown="tbColorDown()" onclick="tbColorClick(this,'tbColor1')"></button><button class="tb-opt tbx-sw" data-val="#ff2b2b" style="background:#ff2b2b;" title="#ff2b2b" onmousedown="tbColorDown()" onclick="tbColorClick(this,'tbColor1')"></button><button class="tb-opt tbx-sw" data-val="#ff9d00" style="background:#ff9d00;" title="#ff9d00" onmousedown="tbColorDown()" onclick="tbColorClick(this,'tbColor1')"></button><button class="tb-opt tbx-sw" data-val="#7dff7d" style="background:#7dff7d;" title="#7dff7d" onmousedown="tbColorDown()" onclick="tbColorClick(this,'tbColor1')"></button></div></div>
+                    <div class="tbx-frow"><span class="tbx-flab">둘째 줄 색</span><div class="tb-options" id="tbColor2" style="gap:7px;flex-wrap:nowrap;"><button class="tb-opt tbx-sw" data-val="#ffe400" style="background:#ffe400;" title="#ffe400" onmousedown="tbColorDown()" onclick="tbColorClick(this,'tbColor2')"></button><button class="tb-opt tbx-sw selected" data-val="#ffffff" style="background:#ffffff;" title="#ffffff" onmousedown="tbColorDown()" onclick="tbColorClick(this,'tbColor2')"></button><button class="tb-opt tbx-sw" data-val="#ff2b2b" style="background:#ff2b2b;" title="#ff2b2b" onmousedown="tbColorDown()" onclick="tbColorClick(this,'tbColor2')"></button><button class="tb-opt tbx-sw" data-val="#ff9d00" style="background:#ff9d00;" title="#ff9d00" onmousedown="tbColorDown()" onclick="tbColorClick(this,'tbColor2')"></button><button class="tb-opt tbx-sw" data-val="#7dff7d" style="background:#7dff7d;" title="#7dff7d" onmousedown="tbColorDown()" onclick="tbColorClick(this,'tbColor2')"></button></div></div>
+                    <div class="tbx-frow" style="align-items:flex-start;"><span class="tbx-flab" style="padding-top:8px;">글꼴</span><div class="tb-options" id="tbFont" style="gap:5px;"><button class="tb-opt tbx-mini selected" data-val="Black Han Sans" onclick="toggleTbOpt(this,'tbFont',1);tbLivePreview()"><div class="opt-title" style="font-family:'Black Han Sans';">검은고딕</div></button><button class="tb-opt tbx-mini" data-val="Jalnan" onclick="toggleTbOpt(this,'tbFont',1);tbLivePreview()"><div class="opt-title" style="font-family:'Jalnan';">잘난체</div></button><button class="tb-opt tbx-mini" data-val="GmarketSans" onclick="toggleTbOpt(this,'tbFont',1);tbLivePreview()"><div class="opt-title" style="font-family:'GmarketSans';">G마켓산스</div></button><button class="tb-opt tbx-mini" data-val="SCDream8" onclick="toggleTbOpt(this,'tbFont',1);tbLivePreview()"><div class="opt-title" style="font-family:'SCDream8';">에스코어드림</div></button><button class="tb-opt tbx-mini" data-val="TmonMonsori" onclick="toggleTbOpt(this,'tbFont',1);tbLivePreview()"><div class="opt-title" style="font-family:'TmonMonsori';">티몬몬소리</div></button><button class="tb-opt tbx-mini" data-val="Cafe24Ssurround" onclick="toggleTbOpt(this,'tbFont',1);tbLivePreview()"><div class="opt-title" style="font-family:'Cafe24Ssurround';">카페24</div></button><button class="tb-opt tbx-mini" data-val="BMEuljiro" onclick="toggleTbOpt(this,'tbFont',1);tbLivePreview()"><div class="opt-title" style="font-family:'BMEuljiro';">을지로</div></button><button class="tb-opt tbx-mini" data-val="BMHannaPro" onclick="toggleTbOpt(this,'tbFont',1);tbLivePreview()"><div class="opt-title" style="font-family:'BMHannaPro';">한나</div></button><button class="tb-opt tbx-mini" data-val="Do Hyeon" onclick="toggleTbOpt(this,'tbFont',1);tbLivePreview()"><div class="opt-title" style="font-family:'Do Hyeon';">도현</div></button></div></div>
 
-                    <div class="tbx-sec">📐 크기 · 간격 <span style="font-weight:400;letter-spacing:0;">— 미리보기의 파란 점을 끌어도 돼요</span></div>
-                    <div class="tbx-sl">
-                        <label>줄1 크기</label><input type="range" id="tbSizeRange" min="45" max="300" value="115" oninput="tbLivePreview()">
-                        <label>줄2 크기</label><input type="range" id="tbSize2Range" min="30" max="240" value="70" oninput="tbLivePreview()">
-                        <label>자간</label><input type="range" id="tbLetterSp" min="-6" max="24" value="0" oninput="tbLivePreview()">
-                        <label>줄간격</label><input type="range" id="tbLineGap" min="0" max="60" value="18" oninput="tbLivePreview()">
-                    </div>
+                    <div class="tbx-h2">📏 글자 크기 <span style="font-weight:400;color:#9ca3af;font-size:0.74rem;">— 미리보기 모서리의 파란 점을 끌어도 돼요</span></div>
+                    <div class="tbx-frow"><span class="tbx-flab">첫째 줄</span><input type="range" id="tbSizeRange" min="45" max="300" value="115" oninput="tbLivePreview()" style="flex:1;accent-color:#3b82f6;"></div>
+                    <div class="tbx-frow"><span class="tbx-flab">둘째 줄</span><input type="range" id="tbSize2Range" min="30" max="240" value="70" oninput="tbLivePreview()" style="flex:1;accent-color:#3b82f6;"></div>
 
-                    <div class="tbx-sec">🖼 배경 띠 · 배치 <span style="font-weight:400;letter-spacing:0;">— 글자는 미리보기에서 드래그로 이동</span></div>
-                    <div class="tbx-row" style="margin-bottom:7px;">
-                        <div class="tb-options" id="tbBand">
-                            <button class="tb-opt tbx-mini selected" data-val="grad" onclick="toggleTbOpt(this,'tbBand',1);tbLivePreview()"><div class="opt-title">그라데이션</div></button>
-                            <button class="tb-opt tbx-mini" data-val="band" onclick="toggleTbOpt(this,'tbBand',1);tbLivePreview()"><div class="opt-title">검정 띠</div></button>
-                            <button class="tb-opt tbx-mini" data-val="none" onclick="toggleTbOpt(this,'tbBand',1);tbLivePreview()"><div class="opt-title">없음</div></button>
+                    <details class="tbx-fold">
+                        <summary>세부 조절 <span class="tbx-sub">자간 · 줄간격 · 배경 띠 · 위치 · 정렬</span></summary>
+                        <div class="tbx-fold-body">
+                            <div class="tbx-frow"><span class="tbx-flab">자간</span><input type="range" id="tbLetterSp" min="-6" max="24" value="0" oninput="tbLivePreview()" style="flex:1;accent-color:#3b82f6;"></div>
+                            <div class="tbx-frow"><span class="tbx-flab">줄간격</span><input type="range" id="tbLineGap" min="0" max="60" value="18" oninput="tbLivePreview()" style="flex:1;accent-color:#3b82f6;"></div>
+                            <div class="tbx-frow"><span class="tbx-flab">배경 띠</span>
+                                <div class="tb-options" id="tbBand">
+                                    <button class="tb-opt tbx-mini selected" data-val="grad" onclick="toggleTbOpt(this,'tbBand',1);tbLivePreview()"><div class="opt-title">그라데이션</div></button>
+                                    <button class="tb-opt tbx-mini" data-val="band" onclick="toggleTbOpt(this,'tbBand',1);tbLivePreview()"><div class="opt-title">검정 띠</div></button>
+                                    <button class="tb-opt tbx-mini" data-val="none" onclick="toggleTbOpt(this,'tbBand',1);tbLivePreview()"><div class="opt-title">없음</div></button>
+                                </div>
+                            </div>
+                            <div class="tbx-frow"><span class="tbx-flab">띠 범위</span><input type="range" id="tbGradH" min="20" max="600" value="100" oninput="tbLivePreview()" style="flex:1;accent-color:#3b82f6;"></div>
+                            <div class="tbx-frow"><span class="tbx-flab">세로 위치</span>
+                                <div class="tb-options" id="tbTextPos">
+                                    <button class="tb-opt tbx-mini selected" data-val="bottom" onclick="toggleTbOpt(this,'tbTextPos',1);tbLivePreview()"><div class="opt-title">하단</div></button>
+                                    <button class="tb-opt tbx-mini" data-val="middle" onclick="toggleTbOpt(this,'tbTextPos',1);tbLivePreview()"><div class="opt-title">중앙</div></button>
+                                    <button class="tb-opt tbx-mini" data-val="top" onclick="toggleTbOpt(this,'tbTextPos',1);tbLivePreview()"><div class="opt-title">상단</div></button>
+                                </div>
+                            </div>
+                            <div class="tbx-frow"><span class="tbx-flab">가로 정렬</span>
+                                <div class="tb-options" id="tbTextAlign">
+                                    <button class="tb-opt tbx-mini selected" data-val="center" onclick="toggleTbOpt(this,'tbTextAlign',1);tbLivePreview()"><div class="opt-title">가운데</div></button>
+                                    <button class="tb-opt tbx-mini" data-val="left" onclick="toggleTbOpt(this,'tbTextAlign',1);tbLivePreview()"><div class="opt-title">왼쪽</div></button>
+                                </div>
+                            </div>
+                            <div class="tbx-frow" style="margin-bottom:0;"><span class="tbx-flab">가장자리 여백</span>
+                                <div class="tb-options" id="tbTextMargin">
+                                    <button class="tb-opt tbx-mini" data-val="0.015" onclick="toggleTbOpt(this,'tbTextMargin',1);tbLivePreview()"><div class="opt-title">붙임</div></button>
+                                    <button class="tb-opt tbx-mini selected" data-val="0.05" onclick="toggleTbOpt(this,'tbTextMargin',1);tbLivePreview()"><div class="opt-title">보통</div></button>
+                                    <button class="tb-opt tbx-mini" data-val="0.11" onclick="toggleTbOpt(this,'tbTextMargin',1);tbLivePreview()"><div class="opt-title">넓게</div></button>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="tbx-sl" style="grid-template-columns:96px 1fr;margin-bottom:7px;">
-                        <label style="white-space:nowrap;">그라데이션 범위</label><input type="range" id="tbGradH" min="20" max="600" value="100" oninput="tbLivePreview()">
-                    </div>
-                    <div class="tbx-row" style="margin:0;">
-                        <span style="font-size:0.74rem;font-weight:700;color:#6b7280;margin-right:-4px;">위치</span><div class="tb-options" id="tbTextPos">
-                            <button class="tb-opt tbx-mini selected" data-val="bottom" onclick="toggleTbOpt(this,'tbTextPos',1);tbLivePreview()"><div class="opt-title">하단</div></button>
-                            <button class="tb-opt tbx-mini" data-val="middle" onclick="toggleTbOpt(this,'tbTextPos',1);tbLivePreview()"><div class="opt-title">중앙</div></button>
-                            <button class="tb-opt tbx-mini" data-val="top" onclick="toggleTbOpt(this,'tbTextPos',1);tbLivePreview()"><div class="opt-title">상단</div></button>
-                        </div>
-                        <span style="font-size:0.74rem;font-weight:700;color:#6b7280;margin-right:-4px;">정렬</span><div class="tb-options" id="tbTextAlign">
-                            <button class="tb-opt tbx-mini selected" data-val="center" onclick="toggleTbOpt(this,'tbTextAlign',1);tbLivePreview()"><div class="opt-title">가운데</div></button>
-                            <button class="tb-opt tbx-mini" data-val="left" onclick="toggleTbOpt(this,'tbTextAlign',1);tbLivePreview()"><div class="opt-title">왼쪽</div></button>
-                        </div>
-                        <span style="font-size:0.74rem;font-weight:700;color:#6b7280;margin-right:-4px;">글자 여백</span><div class="tb-options" id="tbTextMargin">
-                            <button class="tb-opt tbx-mini" data-val="0.015" onclick="toggleTbOpt(this,'tbTextMargin',1);tbLivePreview()"><div class="opt-title">붙임</div></button>
-                            <button class="tb-opt tbx-mini selected" data-val="0.05" onclick="toggleTbOpt(this,'tbTextMargin',1);tbLivePreview()"><div class="opt-title">보통</div></button>
-                            <button class="tb-opt tbx-mini" data-val="0.11" onclick="toggleTbOpt(this,'tbTextMargin',1);tbLivePreview()"><div class="opt-title">넓게</div></button>
-                        </div>
-                    </div>
+                    </details>
 
-                    <div class="tbx-sec">🎛 이미지 보정 <span style="font-weight:400;letter-spacing:0;">— 배경에만 적용, 글자는 원색</span></div>
-                    <div class="tbx-sl" style="grid-template-columns:52px 1fr 52px 1fr 52px 1fr;">
-                        <label>밝기</label><input type="range" id="tbBright" min="50" max="150" value="100" oninput="tbLivePreview()">
-                        <label>채도</label><input type="range" id="tbSat" min="0" max="200" value="100" oninput="tbLivePreview()">
-                        <label>대비</label><input type="range" id="tbContrast" min="60" max="150" value="100" oninput="tbLivePreview()">
-                    </div>
-                    <div style="text-align:right;margin-top:4px;"><button class="btn-small" style="padding:3px 12px;border-radius:6px;cursor:pointer;border:1px solid #d0d4da;background:#fff;font-size:0.75rem;" onclick="document.getElementById('tbBright').value=100;document.getElementById('tbSat').value=100;document.getElementById('tbContrast').value=100;tbLivePreview()">보정 초기화</button></div>
+                    <details class="tbx-fold">
+                        <summary>이미지 보정 <span class="tbx-sub">밝기 · 채도 · 대비 (배경에만 적용)</span></summary>
+                        <div class="tbx-fold-body">
+                            <div class="tbx-frow"><span class="tbx-flab">밝기</span><input type="range" id="tbBright" min="50" max="150" value="100" oninput="tbLivePreview()" style="flex:1;accent-color:#3b82f6;"></div>
+                            <div class="tbx-frow"><span class="tbx-flab">채도</span><input type="range" id="tbSat" min="0" max="200" value="100" oninput="tbLivePreview()" style="flex:1;accent-color:#3b82f6;"></div>
+                            <div class="tbx-frow"><span class="tbx-flab">대비</span><input type="range" id="tbContrast" min="60" max="150" value="100" oninput="tbLivePreview()" style="flex:1;accent-color:#3b82f6;"></div>
+                            <div style="text-align:right;"><button class="btn-small" style="padding:5px 14px;border-radius:6px;cursor:pointer;border:1px solid #d0d4da;background:#fff;font-size:0.78rem;" onclick="document.getElementById('tbBright').value=100;document.getElementById('tbSat').value=100;document.getElementById('tbContrast').value=100;tbLivePreview()">보정 원래대로</button></div>
+                        </div>
+                    </details>
 
-                    <div id="tbEditMsg" style="font-size:0.8rem;color:#8a93a3;margin:0 0 8px;"></div>
-                    <button class="btn-small" onclick="reapplyThumbText()" style="width:100%;padding:11px;border-radius:10px;cursor:pointer;border:1.5px solid #4a90d9;color:#4a90d9;background:white;font-weight:700;">✍ 글자만 다시 입히기 <span style="font-weight:400;">(무료)</span></button>
+                    <div id="tbEditMsg" style="font-size:0.82rem;color:#8a93a3;margin:10px 0 8px;"></div>
+                    <button class="btn-small" onclick="reapplyThumbText()" style="width:100%;padding:12px;border-radius:10px;cursor:pointer;border:none;color:#fff;background:#3b82f6;font-weight:800;font-size:0.95rem;">✍ 글자만 다시 입히기 (무료)</button>
                 </div>
             </div>
                 </div>
@@ -21677,7 +21685,7 @@ Example format:
             await renderThumbResults(msg);
             msg.textContent = '✅ 글자 다시 입힘 (생성비 0원 — 문구·색·크기 바꿔서 계속 재시도 가능)';
         }
-        const TB_VER = 'v124'; // 썸네일 엔진 버전 — 생성 메시지에 표시(반영 확인용)
+        const TB_VER = 'v126'; // 썸네일 엔진 버전 — 생성 메시지에 표시(반영 확인용)
 
         // ═══ 구도 복제 감지 — remix 모드에서 모델이 확률적으로 레퍼런스를 그대로 복제하는 것 차단 ═══
         async function _tbLoadForHash(url) {
