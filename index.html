@@ -21023,7 +21023,10 @@ Example format:
                     'LOW-ANGLE reframe: dramatic low camera angle looking up at the main subject, background elements rearranged around it',
                 ];
                 const pick = LAYOUTS[Math.floor(Math.random() * LAYOUTS.length)];
-                ref = 'ROLE OF THE ATTACHED IMAGE: the attached reference thumbnail is a STYLE AND CASTING GUIDE ONLY — it defines WHO and WHAT appears (same real people with their exact recognizable faces, same signature objects, props, flags, maps, charts), the medium/art style (photo stays photo, illustration stays illustration), the color treatment and contrast, the text styling language, and the emotional trigger. It does NOT define the layout. '
+                const multi = _tbRefThumbs.length >= 2
+                    ? 'The attached reference thumbnails are SAME-TOPIC examples of one proven formula. FIRST extract what they share IN COMMON — the recurring people, objects, color strategy, mood and text styling — and build from that SHARED formula. Never copy any single reference; blend the common elements. '
+                    : '';
+                ref = multi + 'ROLE OF THE ATTACHED IMAGE' + (_tbRefThumbs.length >= 2 ? 'S' : '') + ': the attached reference thumbnail' + (_tbRefThumbs.length >= 2 ? 's are' : ' is') + ' a STYLE AND CASTING GUIDE ONLY — it defines WHO and WHAT appears (same real people with their exact recognizable faces, same signature objects, props, flags, maps, charts), the medium/art style (photo stays photo, illustration stays illustration), the color treatment and contrast, the text styling language, and the emotional trigger. It does NOT define the layout. '
                     + 'NEW SCENE TO CREATE: compose a NEW picture with those same people and objects using this REQUIRED composition — ' + pick + '. '
                     + 'This composition change is MANDATORY, not optional. Copying the reference layout as-is is a FAILURE. Adjust poses and framing naturally to fit the new composition. '
                     + 'Everything else (identities, props, colors, style, mood) stays faithful to the reference. '
@@ -21643,10 +21646,10 @@ Example format:
             for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) best = Math.max(best, corrShift(dx, dy));
             return best;
         }
-        function _tbRefHashUrl() {
-            const t = _tbRefThumbs[0];
-            if (!t) return null;
-            return t.dataUrl || (t.videoId ? ('https://i.ytimg.com/vi/' + t.videoId + '/mqdefault.jpg') : null);
+        function _tbRefHashUrls() {
+            return _tbRefThumbs.slice(0, 5)
+                .map((t) => t.dataUrl || (t.videoId ? ('https://i.ytimg.com/vi/' + t.videoId + '/mqdefault.jpg') : null))
+                .filter(Boolean);
         }
 
         async function generateAiThumbnails() {
@@ -21723,12 +21726,11 @@ Example format:
                 // ★구도 비틀기 복제 감지 — 레퍼런스와 지문(dHash)이 거의 같으면(거리≤10) 좌우반전 강제로 1회 재생성.
                 //   프롬프트만으론 모델이 확률적으로 그대로 복제하는 걸 100% 못 막아서 결과를 코드로 검사.
                 if (refMode === 'remix' && refs.length && ok.length) {
-                    const refUrl = _tbRefHashUrl();
-                    const refGrid = refUrl ? await _tbLumaGrid(refUrl) : null;
-                    if (refGrid) {
+                    const refGrids = (await Promise.all(_tbRefHashUrls().map((u) => _tbLumaGrid(u)))).filter(Boolean);
+                    if (refGrids.length) {
                         for (let i = 0; i < ok.length; i++) {
                             const g = await _tbLumaGrid(ok[i]);
-                            const sim = _tbLayoutSim(refGrid, g);
+                            const sim = Math.max(...refGrids.map((rg) => _tbLayoutSim(rg, g))); // 어느 레퍼런스든 판박이면 감지
                             if (sim >= 0.87) {
                                 msg.textContent = '⚠ ' + (i + 1) + '번이 레퍼런스와 거의 동일 — 구도 바꿔서 재생성 중…';
                                 const mirrorPrompt = prompt + ' CRITICAL OVERRIDE: a previous attempt copied the reference layout exactly, which is FORBIDDEN. You MUST MIRROR the composition horizontally — every subject on the LEFT side of the reference goes to the RIGHT side of your output and vice versa, and use a noticeably different camera framing. This mirroring is MANDATORY.';
@@ -21736,7 +21738,8 @@ Example format:
                                     const redo = await kieThumbPoll(await kieThumbCreate(mirrorPrompt, refs, res, model));
                                     if (typeof redo === 'string') {
                                         const g2 = await _tbLumaGrid(redo);
-                                        if (_tbLayoutSim(refGrid, g2) < sim) ok[i] = redo; // 더 달라졌을 때만 교체
+                                        const sim2 = Math.max(...refGrids.map((rg) => _tbLayoutSim(rg, g2)));
+                                        if (sim2 < sim) ok[i] = redo; // 더 달라졌을 때만 교체
                                     }
                                 } catch (e) { /* 재생성 실패 시 원본 유지 */ }
                             }
