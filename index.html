@@ -21136,7 +21136,13 @@ Example format:
             const anaEl0 = document.getElementById('tbRefAnalysis');
             const ana = (anaEl0 && anaEl0.style.display !== 'none' && anaEl0.value.trim()) ? anaEl0.value.trim() : '';
             let ref;
-            if (!chosen && hasRefs && refMode === 'edit') {
+            // 🎭템플릿 모드 — 채널 공식이 레퍼런스 스타일을 항상 이김. 레퍼런스는 소재(인물·국가·사물) 소스로만 강등
+            //  (르완다 실측: 실사 레퍼런스+분석문이 "정확히 따르라"로 들어가면 마스코트·화풍 지시를 눌러버림)
+            if (templateMode) {
+                const styleTxt = chosen || TB_ART_STYLES['mascot-scene'];
+                ref = 'CHANNEL TEMPLATE MODE — the look of this thumbnail is defined by THIS formula, and it OVERRIDES the style of any attached reference image: Art style: ' + styleTxt + ' '
+                    + (hasRefs ? 'ROLE OF THE ATTACHED REFERENCE THUMBNAIL(S): a subject-matter source ONLY — take the same people, country, flags and signature objects from it, but COMPLETELY re-stage them in the art style above with your own new dramatic composition. Do NOT copy the reference medium (photo vs illustration), its layout, camera angle, color grading or text styling. ' : '');
+            } else if (!chosen && hasRefs && refMode === 'edit') {
                 // ★i2i 편집 모드 — 레퍼런스 이미지를 직접 고쳐 만듦(스타일 추종 최대). vacode 사이트와 동일 방식(검증 2026-07-03).
                 const subj = scene ? ('Change ONLY this: ' + scene + '. This changes the subject only — every other element, prop and background detail of the original image stays. ') : (topic ? ('Adapt the subject to this topic: ' + topic + '. ') : '');
                 const tm = getSelectedVals('tbTextMode') ? (getSelectedVals('tbTextMode')[0] || 'overlay') : 'overlay';
@@ -21192,7 +21198,7 @@ Example format:
             const txt = textMode === 'overlay'
                 ? 'Do NOT render any text, letters, typography, captions or logos anywhere in the image — completely text-free. Compose the main subjects in the UPPER 60% of the frame and keep the lower third visually simple and darker (a headline will be added there later).'
                 : (!line1
-                ? '' // 🎭템플릿형에서 상단 헤드라인만 쓰는 경우 — 문구 지시는 TEMPLATE PROPS 절이 담당
+                ? 'Do NOT invent any headline or caption text of your own — render text ONLY where explicitly specified in this prompt. If no text is specified anywhere, keep the image completely free of typography (the creator adds copy later).' // 🎭템플릿형: 카피는 작가가 직접 — AI 임의 문구 차단
                 : (line2
                 ? ('The thumbnail text must read exactly "' + line1 + '" as the huge main line, and "' + line2 + '" as a second line below it at about 60% of the main size. ' + txtSpec)
                 : ('The thumbnail text must read exactly "' + line1 + '" as the huge main line. ' + txtSpec)));
@@ -22022,11 +22028,9 @@ Example format:
             const line2 = document.getElementById('tbText2').value.trim();
             if (!kieThumbKey()) { alert('먼저 Kie API 키를 저장해주세요'); return; }
             // 글자 직접 모드는 문구 없이 배경만 생성 가능(나중에 '글자만 다시 입히기'로 후작업) — AI가 그리기만 문구 필수
-            //  🎭템플릿형은 상단 헤드라인(tbTopText)만 있어도 OK — 문구칸이 2단계 탭에 있어서 못 찾는 사고 방지: 비었으면 그 탭으로 데려다줌
+            //  🎭템플릿형은 문구 강요 없음(작가가 카피 직접 씀) — 비워도 생성, AI가 임의 문구 지어내는 건 프롬프트로 차단
             const _tplModeV = (getSelectedVals('tbGenMode')[0] || 'normal') === 'template';
-            const _topTextV = ((document.getElementById('tbTopText') || {}).value || '').trim();
-            if (!line1 && (getSelectedVals('tbTextMode')[0] || 'overlay') === 'ai' && !(_tplModeV && _topTextV)) {
-                if (_tplModeV) { alert('템플릿형은 문구가 필요해요 — 2단계 탭의 "상단 헤드라인"이나 "첫째 줄"에 문구를 넣어주세요. 2단계 탭으로 이동할게요.'); tbSwitchSub('edit'); return; }
+            if (!line1 && (getSelectedVals('tbTextMode')[0] || 'overlay') === 'ai' && !_tplModeV) {
                 alert('AI가 그리기 모드는 문구 줄1이 필요해요'); return;
             }
             if (!topic && !scene && !_tbRefThumbs.length && !window._tbFaceThumb) { alert('주제·장면 묘사·레퍼런스·인물 사진 중 하나는 필요해요'); return; }
@@ -22088,7 +22092,7 @@ Example format:
                         ? window._tbMascotThumb.dataUrl
                         : await kieUploadDataUrl(window._tbMascotThumb.dataUrl, 'mascot_' + Date.now() + '.png');
                     if (mascotUrl) {
-                        prompt = 'CHARACTER LOCK: one of the attached images is a FIXED recurring mascot character that must appear IDENTICALLY in every thumbnail of this series — reproduce it exactly (same design, proportions, colors, face and expression), only its pose, scale and position may adjust slightly to fit the new scene. Do not draw any other cartoon mascot or shocked-face character of your own; this is the only such figure. ' + prompt;
+                        prompt = 'CHARACTER LOCK: one of the attached images is a FIXED recurring mascot character that must appear IDENTICALLY in every thumbnail of this series — reproduce it exactly (same design, proportions, colors, face and expression), only its pose, scale and position may adjust to fit the new scene. Place it PROMINENTLY in the foreground (roughly 35-50% of the frame height), reacting to the scene (shocked, pointing, running or falling). Do not draw any other cartoon mascot or shocked-face character of your own; this is the only such figure. ' + prompt;
                         refs = refs.concat([mascotUrl]);
                     }
                 }
