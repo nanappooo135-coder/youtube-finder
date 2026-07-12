@@ -2998,6 +2998,18 @@
         </div>
 
         <div id="tbSubMake" style="max-width:100%;">
+        <!-- ⓪ 생성 방식 -->
+            <div class="tbx-card" style="border-left:4px solid #0ea5e9;">
+                <div class="tbx-head"><div class="tbx-num" style="background:#0ea5e9;">0</div><div class="tbx-t">생성 방식</div></div>
+                <div class="tbx-hint">🎭 채널템플릿형 = 고정 마스코트 캐릭터 + AI 배경 + 상단·하단 헤드라인·메모지·뱃지·국기·화살표를 자동으로 같은 자리에 합성 (예: 경제초고수류 채널 포맷)</div>
+                <div class="tbx-body">
+                    <div class="tb-options" id="tbGenMode">
+                        <button class="tb-opt selected" data-val="normal" onclick="toggleTbOpt(this,'tbGenMode',1);tbSwitchGenMode()"><div class="opt-title">일반형</div><div class="opt-desc">지금까지 쓰던 방식</div></button>
+                        <button class="tb-opt" data-val="template" onclick="toggleTbOpt(this,'tbGenMode',1);tbSwitchGenMode()"><div class="opt-title">🎭 채널템플릿형</div><div class="opt-desc">마스코트 + 자동 뱃지·메모지</div></button>
+                    </div>
+                </div>
+            </div>
+
         <!-- ① 내용 -->
             <div class="tbx-card" data-step="1">
                 <div class="tbx-head"><div class="tbx-num">1</div><div class="tbx-t">무엇을 그릴까</div></div>
@@ -3013,6 +3025,19 @@
                         <img id="tbFacePreview" src="" alt="" style="display:none;height:44px;border-radius:6px;border:2px solid #7c3aed;">
                         <button id="tbFaceClear" onclick="tbFaceClear()" style="display:none;padding:4px 10px;background:#f1f3f5;border:1px solid #dee2e6;border-radius:6px;font-size:0.78rem;cursor:pointer;">✕ 제거</button>
                         <span style="font-size:0.78rem;color:#888;">캡쳐(Win+Shift+S)·우클릭 이미지 복사 후 📋 클릭. 실존 인물이면 <b>최근</b> 사진 — "이 얼굴 그대로" 지시 자동 (나노바나나2 전용)</span>
+                    </div>
+                    <div id="tbMascotBlock" style="display:none;margin-top:14px;padding-top:14px;border-top:1.5px dashed #e2e5ea;">
+                        <div style="font-size:0.85rem;font-weight:700;color:#0ea5e9;margin-bottom:6px;">🎭 마스코트 캐릭터 (한 번 만들면 계속 재사용돼요)</div>
+                        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                            <label style="cursor:pointer;padding:6px 12px;border:1px dashed #0ea5e9;border-radius:8px;color:#0ea5e9;font-size:0.85rem;font-weight:700;">📁 업로드
+                                <input type="file" id="tbMascotInput" accept="image/*" style="display:none;" onchange="tbMascotPick(this)">
+                            </label>
+                            <button onclick="tbMascotPaste()" style="padding:6px 12px;background:#0ea5e9;color:white;border:none;border-radius:8px;font-size:0.85rem;font-weight:700;cursor:pointer;">📋 붙여넣기</button>
+                            <button onclick="genMascotChar()" id="tbMascotGenBtn" style="padding:6px 12px;background:#111827;color:white;border:none;border-radius:8px;font-size:0.85rem;font-weight:700;cursor:pointer;">🎨 마스코트 생성 (Kie)</button>
+                            <img id="tbMascotPreview" src="" alt="" style="display:none;height:52px;border-radius:6px;border:2px solid #0ea5e9;">
+                            <button id="tbMascotClear" onclick="tbMascotClear()" style="display:none;padding:4px 10px;background:#f1f3f5;border:1px solid #dee2e6;border-radius:6px;font-size:0.78rem;cursor:pointer;">✕ 제거</button>
+                        </div>
+                        <div id="tbMascotMsg" style="font-size:0.78rem;color:#888;margin-top:6px;">마음에 드는 캐릭터가 나올 때까지 "마스코트 생성"을 눌러 다시 뽑을 수 있어요. 저장되면 이후 모든 생성에 자동으로 같이 들어가요.</div>
                     </div>
                 </div>
             </div>
@@ -3071,6 +3096,7 @@
                         <button class="tb-opt" data-val="psych-cartoon" onclick="toggleTbOpt(this,'tbArtStyle',1)" style="width:128px;"><img src="assets/style-samples/psych-cartoon.jpg" loading="lazy" style="width:118px;height:64px;object-fit:cover;border-radius:6px;display:block;margin:0 auto 4px;"><div class="opt-title">한눈에심리학</div></button>
                         <button class="tb-opt" data-val="anime" onclick="toggleTbOpt(this,'tbArtStyle',1)" style="width:128px;"><img src="assets/style-samples/anime.jpg" loading="lazy" style="width:118px;height:64px;object-fit:cover;border-radius:6px;display:block;margin:0 auto 4px;"><div class="opt-title">애니메</div></button>
                         <button class="tb-opt" data-val="3d-render" onclick="toggleTbOpt(this,'tbArtStyle',1)" style="width:128px;"><img src="assets/style-samples/3d-render.jpg" loading="lazy" style="width:118px;height:64px;object-fit:cover;border-radius:6px;display:block;margin:0 auto 4px;"><div class="opt-title">3D 렌더</div></button>
+                        <button class="tb-opt" data-val="mascot-scene" onclick="toggleTbOpt(this,'tbArtStyle',1)" style="width:128px;"><div style="width:118px;height:64px;border-radius:6px;background:linear-gradient(135deg,#0ea5e9,#111827);display:flex;align-items:center;justify-content:center;font-size:1.6rem;margin:0 auto 4px;">🎭</div><div class="opt-title">마스코트씬</div></button>
                     </div>
                 </div>
             </div>
@@ -3150,6 +3176,27 @@
                         </div>
                     </div>
                     <p style="font-size:0.74rem;color:#9ca3af;margin:2px 0 0 74px;">💡 단어를 마우스로 긁어 선택하고 아래 색 동그라미를 누르면 그 단어만 색칠돼요</p>
+
+                    <div id="tbTemplateFields" style="display:none;">
+                        <div class="tbx-h2">🎭 템플릿 요소 <span style="font-weight:400;color:#9ca3af;font-size:0.74rem;">— "AI가 그리기"면 이미지 안에 직접 렌더(GPT-2), "진짜 글꼴"이면 고정 위치에 캔버스 합성</span></div>
+                        <input type="text" id="tbTopText" class="tbx-input" oninput="tbLivePreview()" placeholder="상단 헤드라인 (예: 업계 2위 대형마트, 사실상 파산)" style="margin-bottom:7px;font-weight:700;">
+                        <div class="tbx-frow"><span class="tbx-flab">상단 색</span><div class="tb-options" id="tbTopColor" style="gap:7px;flex-wrap:nowrap;"><button class="tb-opt tbx-sw selected" data-val="#ffe400" style="background:#ffe400;" title="#ffe400" onmousedown="tbColorDown()" onclick="tbColorClick(this,'tbTopColor')"></button><button class="tb-opt tbx-sw" data-val="#ffffff" style="background:#ffffff;" title="#ffffff" onmousedown="tbColorDown()" onclick="tbColorClick(this,'tbTopColor')"></button><button class="tb-opt tbx-sw" data-val="#ff2b2b" style="background:#ff2b2b;" title="#ff2b2b" onmousedown="tbColorDown()" onclick="tbColorClick(this,'tbTopColor')"></button></div></div>
+                        <div class="tbx-grid2" style="margin-bottom:9px;">
+                            <input type="text" id="tbNote1" class="tbx-input" oninput="tbLivePreview()" placeholder="메모지① 좌상단 (예: 영업손실 -5,021억)">
+                            <input type="text" id="tbNote2" class="tbx-input" oninput="tbLivePreview()" placeholder="메모지② 우상단">
+                            <input type="text" id="tbNote3" class="tbx-input" oninput="tbLivePreview()" placeholder="메모지③ 좌하단">
+                            <input type="text" id="tbNote4" class="tbx-input" oninput="tbLivePreview()" placeholder="메모지④ 우하단">
+                        </div>
+                        <input type="text" id="tbBadge" class="tbx-input" oninput="tbLivePreview()" placeholder="뱃지 문구 (예: 초대형 호재)" style="margin-bottom:9px;">
+                        <input type="text" id="tbFlags" class="tbx-input" oninput="tbLivePreview()" placeholder="국기·로고 라벨 — 콤마로 구분 (예: 🇨🇦 캐나다, 🇩🇪 독일)" style="margin-bottom:9px;">
+                        <div class="tbx-frow" style="margin-bottom:0;"><span class="tbx-flab">화살표</span>
+                            <div class="tb-options" id="tbArrow">
+                                <button class="tb-opt tbx-mini selected" data-val="none" onclick="toggleTbOpt(this,'tbArrow',1);tbLivePreview()"><div class="opt-title">없음</div></button>
+                                <button class="tb-opt tbx-mini" data-val="up" onclick="toggleTbOpt(this,'tbArrow',1);tbLivePreview()"><div class="opt-title">📈 상승</div></button>
+                                <button class="tb-opt tbx-mini" data-val="down" onclick="toggleTbOpt(this,'tbArrow',1);tbLivePreview()"><div class="opt-title">📉 하락</div></button>
+                            </div>
+                        </div>
+                    </div>
 
                     <div class="tbx-h2">🎨 색 · 글꼴</div>
                     <div class="tbx-frow"><span class="tbx-flab">첫째 줄 색</span><div class="tb-options" id="tbColor1" style="gap:7px;flex-wrap:nowrap;"><button class="tb-opt tbx-sw selected" data-val="#ffe400" style="background:#ffe400;" title="#ffe400" onmousedown="tbColorDown()" onclick="tbColorClick(this,'tbColor1')"></button><button class="tb-opt tbx-sw" data-val="#ffffff" style="background:#ffffff;" title="#ffffff" onmousedown="tbColorDown()" onclick="tbColorClick(this,'tbColor1')"></button><button class="tb-opt tbx-sw" data-val="#ff2b2b" style="background:#ff2b2b;" title="#ff2b2b" onmousedown="tbColorDown()" onclick="tbColorClick(this,'tbColor1')"></button><button class="tb-opt tbx-sw" data-val="#ff9d00" style="background:#ff9d00;" title="#ff9d00" onmousedown="tbColorDown()" onclick="tbColorClick(this,'tbColor1')"></button><button class="tb-opt tbx-sw" data-val="#7dff7d" style="background:#7dff7d;" title="#7dff7d" onmousedown="tbColorDown()" onclick="tbColorClick(this,'tbColor1')"></button></div></div>
@@ -20964,6 +21011,87 @@ Example format:
             document.getElementById('tbFaceClear').style.display = 'none';
         }
 
+        // 🎭 마스코트 캐릭터 슬롯 — 얼굴 락(_tbFace*)과 동일한 패턴이지만, 세션이 아니라 localStorage에 영속화
+        //  (경제초고수류 채널 실측: 모든 영상에 완전히 같은 캐릭터 재사용 — 매번 재생성이 아니라 한 번 만들고 계속 씀)
+        const TB_MASCOT_LS = 'tb_mascot_char';
+        window._tbMascotThumb = null;
+        function _tbMascotSet(dataUrl, persist) {
+            window._tbMascotThumb = {dataUrl};
+            const p = document.getElementById('tbMascotPreview');
+            p.src = dataUrl; p.style.display = '';
+            document.getElementById('tbMascotClear').style.display = '';
+            if (persist !== false) { try { localStorage.setItem(TB_MASCOT_LS, dataUrl); } catch (e) {} }
+        }
+        function tbMascotPick(input) {
+            const f = input.files && input.files[0];
+            if (!f) return;
+            const fr = new FileReader();
+            fr.onload = () => _tbMascotSet(fr.result);
+            fr.readAsDataURL(f);
+            input.value = '';
+        }
+        async function tbMascotPaste() {
+            try {
+                const items = await navigator.clipboard.read();
+                for (const it of items) {
+                    const type = (it.types || []).find((t) => t.startsWith('image/'));
+                    if (type) {
+                        const blob = await it.getType(type);
+                        const fr = new FileReader();
+                        fr.onload = () => _tbMascotSet(fr.result);
+                        fr.readAsDataURL(blob);
+                        return;
+                    }
+                }
+                alert('클립보드에 이미지가 없어요. 캡쳐(Win+Shift+S)하거나 우클릭 → 이미지 복사한 뒤 다시 눌러주세요.');
+            } catch (e) {
+                alert('클립보드 읽기 권한이 필요해요. 계속 안 되면 옆의 업로드 버튼을 쓰세요.');
+            }
+        }
+        function tbMascotClear() {
+            window._tbMascotThumb = null;
+            document.getElementById('tbMascotPreview').style.display = 'none';
+            document.getElementById('tbMascotClear').style.display = 'none';
+            try { localStorage.removeItem(TB_MASCOT_LS); } catch (e) {}
+        }
+        async function genMascotChar() {
+            if (!kieThumbKey()) { alert('먼저 4단계에서 Kie API 키를 저장해주세요'); return; }
+            const btn = document.getElementById('tbMascotGenBtn');
+            const msg = document.getElementById('tbMascotMsg');
+            btn.disabled = true;
+            msg.textContent = '마스코트 생성 중… (20~40초)';
+            try {
+                const prompt = 'A cute 3D-rendered cartoon mascot character, full body, centered: round bald pale head, wide shocked round eyes, sweating drops, open mouth in surprise, wearing a plain black business suit and black tie over a white shirt. Simple clean plain light-grey studio background, no scenery. Glossy smooth toon-render lighting like a modern 3D animated movie. No text, no logo, no watermark.';
+                const taskId = await kieThumbCreate(prompt, [], '2K', 'nano-banana-2');
+                const url = await kieThumbPoll(taskId);
+                if (url) { _tbMascotSet(url); msg.textContent = '✅ 생성 완료 — 마음에 안 들면 다시 눌러서 재생성하세요.'; }
+                else { msg.textContent = '⚠ 생성 실패 — 다시 시도해주세요.'; }
+            } catch (e) {
+                msg.textContent = '⚠ ' + (e.message || '생성 실패');
+            } finally { btn.disabled = false; }
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+                const saved = localStorage.getItem(TB_MASCOT_LS);
+                if (saved) _tbMascotSet(saved, false);
+            } catch (e) {}
+        });
+        // ⓪ 생성 방식 토글 — 채널템플릿형이면 마스코트 슬롯·전용 화풍·글자 후작업 전용 필드를 노출
+        //  ★템플릿형 기본값 = GPT-2 + "AI가 그리기" (경제초고수류 실측: 헤드라인·메모지·로고·한글 전부 이미지 안에 한 방 렌더 — 한글은 GPT-2만 됨)
+        function tbSwitchGenMode() {
+            const mode = getSelectedVals('tbGenMode')[0] || 'normal';
+            const isTpl = mode === 'template';
+            const mb = document.getElementById('tbMascotBlock'); if (mb) mb.style.display = isTpl ? '' : 'none';
+            const tf = document.getElementById('tbTemplateFields'); if (tf) tf.style.display = isTpl ? '' : 'none';
+            if (isTpl) {
+                const setChip = (g, v) => document.querySelectorAll('#' + g + ' .tb-opt').forEach((b) => b.classList.toggle('selected', b.dataset.val === v));
+                setChip('tbArtStyle', 'mascot-scene');
+                setChip('tbTextMode', 'ai');
+                setChip('tbModel', 'gpt');
+                if (typeof tbSyncRes === 'function') tbSyncRes();
+            }
+        }
+
         async function kieUploadDataUrl(dataUrl, fileName) {
             const r = await fetch('https://kieai.redpandaai.co/api/file-base64-upload', {
                 method: 'POST',
@@ -21000,8 +21128,9 @@ Example format:
             'psych-cartoon': 'Warm soft educational cartoon illustration. Characters with round simple faces, small dot eyes, oversized heads, soft warm pastel palette, thin clean outlines, gentle webtoon mood.',
             anime: 'Vibrant anime-style illustration with bold outlines and cel-shaded lighting.',
             '3d-render': 'High-quality 3D rendered illustration with polished surfaces and dramatic lighting.',
+            'mascot-scene': 'Dark dramatic cinematic photo-composite background scene (industrial, financial or disaster imagery fitting the topic — sparks, fire, cracked ground, falling charts, factories, ships, as appropriate), rendered with glossy dramatic lighting consistent with a polished 3D-toon-rendered foreground character. High contrast, deep blacks, vivid accent colors.',
         };
-        function buildThumbPrompt(topic, scene, line1, line2, hasRefs, styleKey, refMode) {
+        function buildThumbPrompt(topic, scene, line1, line2, hasRefs, styleKey, refMode, templateMode) {
             // ★화풍 우선순위: 사용자가 고르면 그 화풍 > 레퍼런스 그림체 > AI 자동
             const chosen = TB_ART_STYLES[styleKey];
             const anaEl0 = document.getElementById('tbRefAnalysis');
@@ -21067,7 +21196,8 @@ Example format:
                 : ('The thumbnail text must read exactly "' + line1 + '" as the huge main line. ' + txtSpec));
             // ★썸네일 화질 상시 규칙(작가 벤치 비교 피드백): 채도·대비 쨍하게 + 이야기 소품 — 뿌옇고 밋밋한 그림 차단
             const punch = 'CRITICAL FRAMING RULE: every face and key subject must sit ENTIRELY within the TOP 60 percent of the frame — the bottom 35 percent will be covered by a headline, so keep it simple background only (ground, floor, shadows, darker tones), never faces, never important objects there. VIVID PUNCHY COLORS: strong saturated color contrast between zones (warm vs cool), one bold accent color highlighting the key object, deep blacks and bright highlights — NEVER washed-out, hazy, foggy or low-saturation. Crisp sharp details. If the composition has two zones or a split, BLEND the boundary naturally with a soft gradational transition (smoke, dust, light falloff) — never a hard straight divider line, never a colored stripe between zones. Where it helps tell the story at a glance, include readable visual props with short clear ENGLISH labels (stamped boxes, warning stamps, signs — e.g. FAULTY stamp, MADE IN KOREA box). Any text on props must be ENGLISH ONLY — never draw Korean or other non-English characters in the image (Korean gets garbled). ';
-            return 'Create a YouTube thumbnail. ' + ref + anaClause + what + punch + txt + ' 16:9, no watermark, no channel logo.';
+            const tplClause = (templateMode && textMode === 'overlay') ? 'TEMPLATE LAYOUT RULE: this image will be overlaid with a top headline bar, side caption notes and a badge sticker — also keep the TOP 15 percent of the frame simple and uncluttered (no faces, no critical detail there), in addition to the bottom 35 percent rule above. Keep the main subject and mascot character roughly centered in the remaining middle band. ' : '';
+            return 'Create a YouTube thumbnail. ' + ref + anaClause + what + punch + tplClause + txt + ' 16:9, no watermark, no channel logo.';
         }
         async function kieThumbCreate(prompt, refs, res, model) {
             const input = {prompt: prompt, aspect_ratio: '16:9', resolution: res || '2K', output_format: 'png'};
@@ -21255,6 +21385,129 @@ Example format:
                 URL.revokeObjectURL(a.href);
             } catch (e) { window.open(url, '_blank'); } // CORS로 못 받으면 새 탭
         }
+        // ===== 🎭 채널템플릿형 오버레이 — 경제초고수류 실측(상단·하단 헤드라인+메모지+뱃지+국기·로고+화살표) =====
+        //  마스코트+배경이 합성된(또는 원본) 이미지 위에, 고정 위치로 얹는 2차 캔버스 패스. 드래그는 v1 범위 밖(고정 위치).
+        function _tbRoundRect(x, rx, ry, rw, rh, rr) {
+            x.beginPath();
+            x.moveTo(rx + rr, ry);
+            x.arcTo(rx + rw, ry, rx + rw, ry + rh, rr);
+            x.arcTo(rx + rw, ry + rh, rx, ry + rh, rr);
+            x.arcTo(rx, ry + rh, rx, ry, rr);
+            x.arcTo(rx, ry, rx + rw, ry, rr);
+            x.closePath();
+        }
+        function _tbDrawNote(x, text, pos) {
+            const nx = pos.x, ny = pos.y, nw = pos.w, pad = 12;
+            x.font = '700 20px "Malgun Gothic", sans-serif';
+            const words = String(text).split(/\s+/);
+            const lines = [];
+            let cur = '';
+            for (const w2 of words) {
+                const test = cur ? cur + ' ' + w2 : w2;
+                if (x.measureText(test).width > nw - pad * 2 && cur) { lines.push(cur); cur = w2; } else cur = test;
+            }
+            if (cur) lines.push(cur);
+            const lineH = 26;
+            const nh = pad * 2 + lineH * Math.min(lines.length, 2);
+            x.save();
+            x.fillStyle = '#fdf8ec';
+            _tbRoundRect(x, nx, ny, nw, nh, 8);
+            x.fill();
+            x.strokeStyle = 'rgba(0,0,0,0.15)'; x.lineWidth = 2;
+            _tbRoundRect(x, nx, ny, nw, nh, 8);
+            x.stroke();
+            x.fillStyle = '#111827';
+            x.textAlign = 'left'; x.textBaseline = 'alphabetic';
+            lines.slice(0, 2).forEach((ln, i) => x.fillText(ln, nx + pad, ny + pad + lineH * (i + 1) - 6));
+            x.restore();
+        }
+        function _tbDrawBadge(x, text, cx, cy) {
+            x.save();
+            x.font = '700 30px "Malgun Gothic", sans-serif';
+            const tw = x.measureText(text).width;
+            const bw = tw + 56, bh = 62;
+            x.translate(cx, cy);
+            x.rotate(-6 * Math.PI / 180);
+            x.fillStyle = '#e11d2e';
+            _tbRoundRect(x, -bw / 2, -bh / 2, bw, bh, bh / 2);
+            x.fill();
+            x.strokeStyle = '#fff'; x.lineWidth = 4;
+            _tbRoundRect(x, -bw / 2, -bh / 2, bw, bh, bh / 2);
+            x.stroke();
+            x.fillStyle = '#fff';
+            x.textAlign = 'center'; x.textBaseline = 'middle';
+            x.fillText(text, 0, 2);
+            x.restore();
+        }
+        function _tbDrawFlagChip(x, chip, startX, y) {
+            x.save();
+            x.font = '28px "Malgun Gothic", sans-serif';
+            const w2 = x.measureText(chip).width + 24;
+            x.fillStyle = 'rgba(17,24,39,0.72)';
+            _tbRoundRect(x, startX, y, w2, 44, 10);
+            x.fill();
+            x.fillStyle = '#fff';
+            x.textAlign = 'left'; x.textBaseline = 'middle';
+            x.fillText(chip, startX + 12, y + 23);
+            x.restore();
+            return startX + w2 + 10;
+        }
+        function _tbDrawArrow(x, dir, cx, cy) {
+            const up = dir === 'up';
+            const color = up ? '#22c55e' : '#ef4444';
+            x.save();
+            x.translate(cx, cy);
+            if (!up) x.rotate(Math.PI);
+            x.fillStyle = color;
+            x.strokeStyle = '#000'; x.lineWidth = 4;
+            x.beginPath();
+            x.moveTo(-18, 70); x.lineTo(18, 70); x.lineTo(18, 0); x.lineTo(44, 0); x.lineTo(0, -70); x.lineTo(-44, 0); x.lineTo(-18, 0); x.closePath();
+            x.fill(); x.stroke();
+            x.restore();
+        }
+        async function composeTemplateOverlay(dataUrl, tpl) {
+            if (!tpl || (!tpl.topText && !(tpl.notes || []).some(Boolean) && !tpl.badge && !tpl.flags && (!tpl.arrow || tpl.arrow === 'none'))) return dataUrl;
+            let img;
+            try {
+                img = await new Promise((res, rej) => {
+                    const im = new Image();
+                    im.onload = () => res(im);
+                    im.onerror = () => rej(new Error('이미지 로드 실패'));
+                    im.src = dataUrl;
+                });
+            } catch (e) { return dataUrl; }
+            const W = 1280, H = 720;
+            const c = document.createElement('canvas'); c.width = W; c.height = H;
+            const x = c.getContext('2d');
+            x.drawImage(img, 0, 0, W, H);
+            if (tpl.topText) {
+                const FONT = 'Black Han Sans';
+                try { await document.fonts.load('700 100px "' + FONT + '"'); } catch (e) {}
+                let fs = 74;
+                do { x.font = '700 ' + fs + 'px "' + FONT + '", "Malgun Gothic", sans-serif'; if (x.measureText(tpl.topText).width <= W * 0.92) break; fs -= 3; } while (fs > 30);
+                x.textAlign = 'center'; x.textBaseline = 'alphabetic'; x.lineJoin = 'round';
+                const ty = 22 + fs * 0.82;
+                x.strokeStyle = '#000'; x.lineWidth = Math.max(6, fs * 0.14);
+                x.strokeText(tpl.topText, W / 2, ty);
+                x.fillStyle = tpl.topColor || '#ffe400';
+                x.fillText(tpl.topText, W / 2, ty);
+            }
+            const NOTE_POS = [
+                {x: 24, y: 130, w: 230},
+                {x: W - 254, y: 130, w: 230},
+                {x: 24, y: H - 190, w: 230},
+                {x: W - 254, y: H - 190, w: 230},
+            ];
+            (tpl.notes || []).forEach((t, i) => { if (t && NOTE_POS[i]) _tbDrawNote(x, t, NOTE_POS[i]); });
+            if (tpl.badge) _tbDrawBadge(x, tpl.badge, W / 2, H * 0.46);
+            if (tpl.flags) {
+                const chips = tpl.flags.split(',').map((s) => s.trim()).filter(Boolean).slice(0, 4);
+                let cx0 = 24;
+                chips.forEach((ch) => { cx0 = _tbDrawFlagChip(x, ch, cx0, 96); });
+            }
+            if (tpl.arrow === 'up' || tpl.arrow === 'down') _tbDrawArrow(x, tpl.arrow, W - 110, H * 0.5);
+            try { return c.toDataURL('image/png'); } catch (e) { return dataUrl; }
+        }
         // 보관된 배경(window._tbBgs)에 현재 문구·색·크기·띠 설정으로 글자를 (다시) 입혀 결과 표시 — 생성비 0원
         // ═══ 장별 독립 스타일 — 이미지마다 글꼴·색·크기·위치를 따로 가짐. 클릭한 장만 편집됨 ═══
         function _tbReadControls() {
@@ -21279,6 +21532,14 @@ Example format:
                     gradH: parseInt((document.getElementById('tbGradH') || {}).value || '100'),
                     contrast: parseInt((document.getElementById('tbContrast') || {}).value || '100'),
                 },
+                tpl: {
+                    topText: ((document.getElementById('tbTopText') || {}).value || '').trim(),
+                    topColor: getSelectedVals('tbTopColor')[0] || '#ffe400',
+                    notes: [1, 2, 3, 4].map((n) => ((document.getElementById('tbNote' + n) || {}).value || '').trim()),
+                    badge: ((document.getElementById('tbBadge') || {}).value || '').trim(),
+                    flags: ((document.getElementById('tbFlags') || {}).value || '').trim(),
+                    arrow: getSelectedVals('tbArrow')[0] || 'none',
+                },
             };
         }
         function _tbApplyControls(s) {
@@ -21293,6 +21554,11 @@ Example format:
             setV('tbLineGap', s.layout.lineGap); setV('tbBright', s.layout.bright); setV('tbSat', s.layout.sat);
             setV('tbContrast', s.layout.contrast); setV('tbGradH', s.layout.gradH);
             window._tbLayoutXY = (s.layout.xy && typeof s.layout.xy.x === 'number') ? {x: s.layout.xy.x, y: s.layout.xy.y} : null;
+            if (s.tpl) {
+                setV('tbTopText', s.tpl.topText); setV('tbBadge', s.tpl.badge); setV('tbFlags', s.tpl.flags);
+                [1, 2, 3, 4].forEach((n) => setV('tbNote' + n, s.tpl.notes ? s.tpl.notes[n - 1] : ''));
+                setChip('tbTopColor', s.tpl.topColor); setChip('tbArrow', s.tpl.arrow);
+            }
         }
         function tbSelectImg(i) {
             const nImg = (window._tbBgs || []).length;
@@ -21319,6 +21585,7 @@ Example format:
                 if (!window._tbStyles[i]) window._tbStyles[i] = JSON.parse(JSON.stringify(window._tbStyles[sel]));
             }
             const textMode = getSelectedVals('tbTextMode')[0] || 'overlay';
+            const templateModeActive = (getSelectedVals('tbGenMode')[0] || 'normal') === 'template';
             window._tbComposed = window._tbComposed || [];
             window._tbComposeKey = window._tbComposeKey || [];
             const finals = new Array(ok.length);
@@ -21326,14 +21593,20 @@ Example format:
             let okN = 0;
             const composeOne = async (i) => {
                 const s = window._tbStyles[i];
-                if (textMode !== 'overlay' || !s.line1) { finals[i] = ok[i]; return; }
-                const key = ok[i] + '|' + JSON.stringify(s);
-                if (window._tbComposeKey[i] === key && window._tbComposed[i]) { finals[i] = window._tbComposed[i]; okN++; return; }
-                try {
-                    const r = await composeThumbText(ok[i], s.line1, s.line2, s.c1, s.c2, s.band, s.sizeCap, s.font, s.layout);
-                    finals[i] = r || ok[i];
-                    if (r) { okN++; window._tbComposeKey[i] = key; }
-                } catch (e) { finals[i] = ok[i]; }
+                const key = ok[i] + '|' + JSON.stringify(s) + '|tpl' + templateModeActive;
+                if (window._tbComposeKey[i] === key && window._tbComposed[i]) { finals[i] = window._tbComposed[i]; if (textMode === 'overlay' && s.line1) okN++; return; }
+                let base = ok[i];
+                if (textMode === 'overlay' && s.line1) {
+                    try {
+                        const r = await composeThumbText(ok[i], s.line1, s.line2, s.c1, s.c2, s.band, s.sizeCap, s.font, s.layout);
+                        if (r) { base = r; okN++; }
+                    } catch (e) {}
+                }
+                if (templateModeActive && textMode === 'overlay') { // AI가 그리기 모드는 메모지·뱃지가 이미지 안에 이미 그려짐 — 이중 렌더 방지
+                    try { base = await composeTemplateOverlay(base, s.tpl || {}); } catch (e) {}
+                }
+                finals[i] = base;
+                window._tbComposeKey[i] = key;
             };
             // 비선택 장 먼저(캐시 재사용), 선택 장은 마지막에 — 드래그 좌표(_tbTextRect 등)가 선택 장 기준이 되게
             await Promise.all(ok.map((_, i) => i === sel ? null : composeOne(i)).filter(Boolean));
@@ -21779,7 +22052,8 @@ Example format:
                 }
                 // ② 생성 (병렬)
                 const styleKey = getSelectedVals('tbArtStyle')[0] || 'auto';
-                let prompt = buildThumbPrompt(topic, scene, line1, line2, refs.length > 0, styleKey, getSelectedVals('tbRefMode')[0] || 'remix');
+                const templateMode = (getSelectedVals('tbGenMode')[0] || 'normal') === 'template';
+                let prompt = buildThumbPrompt(topic, scene, line1, line2, refs.length > 0, styleKey, getSelectedVals('tbRefMode')[0] || 'remix', templateMode);
                 // 레퍼런스 추종 강도: 똑같이(edit)=i2i 편집 / 느낌만(inspire)=t2i 참고. 화풍 선택·레퍼런스 없음은 항상 t2i.
                 const refMode = getSelectedVals('tbRefMode')[0] || 'remix';
                 let base = getSelectedVals('tbModel')[0] || 'nano';
@@ -21796,6 +22070,33 @@ Example format:
                         prompt = 'IDENTITY LOCK: the FIRST attached image is a real photo of the exact person who must appear in the thumbnail. Reproduce EXACTLY the same face - same facial structure, same eyes, same nose and mouth, same hairstyle and hair color as in that photo. Never swap or alter the identity; only pose, expression, clothing and scene may follow the instructions below. '
                             + (refs.length ? 'The OTHER attached image(s) are style references only - never copy faces from them. ' : '') + prompt;
                         refs = [faceUrl].concat(refs);
+                    }
+                }
+                // ★🎭 마스코트 캐릭터 락 — 채널템플릿형일 때, 저장된 마스코트 이미지를 image_input에 추가하고 동일 재현 지시 삽입
+                //  모델 강제 없음: GPT-2도 만화 마스코트는 유지 가능(얼굴 정책은 실존 인물 대상) + 한글 글자를 AI가 그리는 모드는 GPT-2가 정답(경제초고수류 실측 — 메모지·문서 안 한글이 이미지에 통합 렌더됨)
+                if (templateMode && window._tbMascotThumb) {
+                    msg.textContent = '마스코트 캐릭터 업로드 중…';
+                    const mascotUrl = window._tbMascotThumb.dataUrl.indexOf('http') === 0
+                        ? window._tbMascotThumb.dataUrl
+                        : await kieUploadDataUrl(window._tbMascotThumb.dataUrl, 'mascot_' + Date.now() + '.png');
+                    if (mascotUrl) {
+                        prompt = 'CHARACTER LOCK: one of the attached images is a FIXED recurring mascot character that must appear IDENTICALLY in every thumbnail of this series — reproduce it exactly (same design, proportions, colors, face and expression), only its pose, scale and position may adjust slightly to fit the new scene. Do not draw any other cartoon mascot or shocked-face character of your own; this is the only such figure. ' + prompt;
+                        refs = refs.concat([mascotUrl]);
+                    }
+                }
+                // ★🎭 템플릿 + "AI가 그리기" 모드 — 경제초고수류처럼 메모지·뱃지·전광판 한글까지 GPT-2가 이미지 안에 직접 그림.
+                //  (캔버스 오버레이는 renderThumbResults에서 이 모드일 땐 건너뜀 — 이중 렌더 방지)
+                if (templateMode && (getSelectedVals('tbTextMode')[0] || 'overlay') === 'ai') {
+                    const tplC = _tbReadControls().tpl;
+                    const parts = [];
+                    if (tplC.topText) parts.push('a HUGE bold headline across the very top of the frame reading exactly "' + tplC.topText + '" in ultra-bold Korean lettering, color ' + (tplC.topColor || '#ffe400') + ' with a thick black outline, spanning nearly the full width');
+                    tplC.notes.forEach((t, i) => { if (t) parts.push('a torn sticky-note paper caption pinned near a corner reading exactly "' + t + '" in bold black Korean lettering on cream paper'); });
+                    if (tplC.badge) parts.push('a red starburst badge sticker near the center reading exactly "' + tplC.badge + '" in bold white Korean lettering');
+                    if (tplC.flags) parts.push('small national flag icons with labels: ' + tplC.flags);
+                    if (tplC.arrow === 'up') parts.push('a thick glossy GREEN rising arrow graphic surging upward on the right side');
+                    if (tplC.arrow === 'down') parts.push('a thick glossy RED crashing arrow graphic plunging downward on the right side');
+                    if (parts.length) {
+                        prompt += ' TEMPLATE PROPS TO DRAW IN-IMAGE (this rule OVERRIDES any earlier English-only text rule — Korean text on these props IS allowed and must be spelled EXACTLY as given, clean crisp and legible, professional Korean YouTube thumbnail typography): ' + parts.join('; ') + '. Real brand logos and signage relevant to the topic may also appear naturally in the scene.';
                     }
                 }
                 // 나노바나나2=저렴한 기본(배경용 충분·레퍼런스 image_input 지원). GPT는 편집 모드에서 i2i 전용 모델 사용.
@@ -21839,7 +22140,7 @@ Example format:
                             if (anaTxt3) {
                                 msg.textContent = '⚠ ' + (i + 1) + '번 여전히 유사(' + sim.toFixed(2) + ') — 이미지 떼고 분석문만으로 재생성 중…';
                                 try {
-                                    const loosePrompt = buildThumbPrompt(topic, scene, line1, line2, false, styleKey, 'loose');
+                                    const loosePrompt = buildThumbPrompt(topic, scene, line1, line2, false, styleKey, 'loose', templateMode);
                                     const redo3 = await kieThumbPoll(await kieThumbCreate(loosePrompt, [], res, base === 'nano' ? 'nano-banana-2' : 'gpt-image-2-text-to-image'));
                                     if (typeof redo3 === 'string') {
                                         const s3 = await simOf(redo3);
