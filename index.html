@@ -23959,6 +23959,9 @@ Example format:
                                     <span class="stat-badge">댓글 ${formatNumber(item.commentCount)}</span>
                                 </div>
                                 <div class="card-date">${formatDate(item.publishedAt)}</div>
+                                <div class="card-actions">
+                                    <button onclick="copyVideoPack('${item.videoId}',this)" title="URL + 제목 + 인기 댓글 100개 클립보드 복사" class="pipe-btn">💬 URL·제목·댓글</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -24641,6 +24644,108 @@ Example format:
             });
         }
 
+        // ═══ URL·제목·댓글 원클릭 복사 (선택한 영상 → 클립보드) ═══
+        async function copyVideoPack(videoId, btn) {
+            const item = _findResultItem(videoId) || {};
+            let title = item.title;
+            if (!title) {
+                const card = btn.closest('.card');
+                title = card?.querySelector('.card-title a')?.textContent?.trim() || '';
+            }
+            const url = 'https://www.youtube.com/watch?v=' + videoId;
+            const orig = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = '⏳ 댓글 수집 중...';
+            let comments = [];
+            let note = '';
+            try {
+                comments = await _fetchTopComments(videoId, 100);
+            } catch (e) {
+                note = '(댓글 수집 실패: ' + e.message + ')';
+            }
+            let text = '제목: ' + title + '\nURL: ' + url + '\n';
+            if (comments.length) {
+                text += '\n댓글 ' + comments.length + '개 (인기순):\n';
+                comments.forEach((c, i) => {
+                    text += '\n' + (i + 1) + '. [👍' + c.likes + '] ' + c.text.replace(/\r/g, '') + '\n';
+                });
+            } else {
+                text += '\n' + (note || '(댓글 없음 또는 댓글 비활성화 영상)') + '\n';
+            }
+            btn.disabled = false;
+            try {
+                await navigator.clipboard.writeText(text);
+                btn.textContent = comments.length ? '✅ 복사됨 (댓글 ' + comments.length + '개)' : '✅ 복사됨 (댓글 없음)';
+            } catch (e) {
+                // 모바일 등 클립보드 차단 시 수동 복사 창
+                _showCopyFallback(text);
+                btn.textContent = orig;
+                return;
+            }
+            setTimeout(() => { btn.textContent = orig; }, 2500);
+        }
+
+        async function _fetchTopComments(videoId, want) {
+            const out = [];
+            let pageToken = '';
+            let retriedKey = false;
+            while (out.length < want) {
+                const apiKey = getActiveApiKey();
+                if (!apiKey) throw new Error('YouTube API 키 미설정 (주제찾기 탭에서 등록)');
+                let u = `${YOUTUBE_API_BASE}/commentThreads?part=snippet&videoId=${videoId}&maxResults=100&order=relevance&textFormat=plainText&key=${apiKey}`;
+                if (pageToken) u += `&pageToken=${pageToken}`;
+                const res = await fetch(u);
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    const reason = err.error?.errors?.[0]?.reason || '';
+                    if (reason === 'commentsDisabled') return [];
+                    if (res.status === 403 && !retriedKey && switchApiKey()) { retriedKey = true; continue; }
+                    throw new Error(err.error?.message || res.statusText);
+                }
+                const data = await res.json();
+                for (const t of (data.items || [])) {
+                    const c = t.snippet?.topLevelComment?.snippet;
+                    if (c) out.push({ text: c.textDisplay || '', likes: c.likeCount || 0 });
+                }
+                pageToken = data.nextPageToken || '';
+                if (!pageToken || !(data.items || []).length) break;
+            }
+            return out.slice(0, want);
+        }
+
+        function _showCopyFallback(text) {
+            const ov = document.createElement('div');
+            ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
+            const box = document.createElement('div');
+            box.style.cssText = 'background:#fff;border-radius:12px;max-width:640px;width:100%;max-height:80vh;display:flex;flex-direction:column;padding:16px;gap:10px;';
+            const head = document.createElement('div');
+            head.style.cssText = 'font-weight:700;font-size:0.95rem;';
+            head.textContent = '자동 복사가 막혔어요 — 아래 버튼으로 복사하세요';
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.readOnly = true;
+            ta.style.cssText = 'width:100%;flex:1;min-height:220px;font-size:0.8rem;padding:10px;border:1.5px solid #ddd;border-radius:8px;resize:none;';
+            const row = document.createElement('div');
+            row.style.cssText = 'display:flex;gap:8px;';
+            const cbtn = document.createElement('button');
+            cbtn.textContent = '📋 복사';
+            cbtn.style.cssText = 'flex:1;padding:12px;background:#dc3545;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;';
+            cbtn.onclick = () => {
+                ta.select(); ta.setSelectionRange(0, ta.value.length);
+                document.execCommand('copy');
+                cbtn.textContent = '✅ 복사됨';
+                setTimeout(() => ov.remove(), 900);
+            };
+            const xbtn = document.createElement('button');
+            xbtn.textContent = '닫기';
+            xbtn.style.cssText = 'padding:12px 18px;background:#6c757d;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;';
+            xbtn.onclick = () => ov.remove();
+            row.append(cbtn, xbtn);
+            box.append(head, ta, row);
+            ov.appendChild(box);
+            document.body.appendChild(ov);
+        }
+
         function displayMatchResults(containerId, results) {
             // 기본 정렬 = 효율순 (급상승 버튼으로 온 경우 = 시간당 조회수순)
             const mode = window._benchDefaultSort === 'velocity' ? 'velocity' : 'efficiency';
@@ -25015,6 +25120,7 @@ ${titles}`;
                                 ${stBtn('review', vst === 'review' ? '🔍 검토중 ✓' : '🔍 검토중')}
                                 ${stBtn('pass', vst === 'pass' ? '✖ 패스 ✓' : '✖ 패스')}
                                 <button onclick="copyPipelineCmd('${item.videoId}',this)" title="유정 대본 파이프라인 명령 복사" class="pipe-btn">📋 대본 명령</button>
+                                <button onclick="copyVideoPack('${item.videoId}',this)" title="URL + 제목 + 인기 댓글 100개 클립보드 복사" class="pipe-btn">💬 URL·제목·댓글</button>
                             </div>
                         </div>
                     </div>
