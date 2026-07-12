@@ -21187,7 +21187,9 @@ Example format:
                 ref = 'Ultra-clickable Korean YouTube thumbnail style: one dominant subject, dramatic lighting, high contrast. ';
             }
             const anaEn = (window._tbAnaEn || '').trim();
-            const anaClause = ana ? (refMode === 'loose'
+            const anaClause = templateMode
+                ? (ana ? ('Subject notes extracted from a reference thumbnail (Korean) — use ONLY the people, country, flags and objects named here as subject matter; IGNORE everything it says about medium, art style, composition, colors and text styling (the template formula above decides those): ' + ana + ' ') : '')
+                : ana ? (refMode === 'loose'
                 ? (anaEn
                     ? ('Detailed scene direction (from expert analysis of a proven viral thumbnail — follow it): ' + anaEn + ' ')
                     : ('Analysis of a proven viral reference thumbnail (Korean). Match its medium/art style, color strategy, text styling language and emotional trigger. IMPORTANT — if the analysis names real famous people (인물), DRAW THOSE EXACT SAME famous people as the main subjects with their real recognizable faces; never replace them with generic anonymous people. Same for named countries, flags, maps and signature objects — keep the same subject matter. BUT do NOT reproduce the composition or object placement — arrange everything in a clearly different layout: ' + ana + ' '))
