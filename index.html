@@ -21077,7 +21077,8 @@ Example format:
             } catch (e) {}
         });
         // ⓪ 생성 방식 토글 — 채널템플릿형이면 마스코트 슬롯·전용 화풍·글자 후작업 전용 필드를 노출
-        //  ★템플릿형 기본값 = GPT-2 + "AI가 그리기" (경제초고수류 실측: 헤드라인·메모지·로고·한글 전부 이미지 안에 한 방 렌더 — 한글은 GPT-2만 됨)
+        //  ★템플릿형 기본값 = 나노바나나2 + "AI가 그리기" (2026-07-12 실측: 나노=마스코트 동일재현+한글 뱃지 완벽·20초.
+        //   GPT-2는 i2i/t2i 모두 마스코트를 다른 캐릭터로 바꿔버림 — 정체성 유지는 나노 계열만 됨)
         function tbSwitchGenMode() {
             const mode = getSelectedVals('tbGenMode')[0] || 'normal';
             const isTpl = mode === 'template';
@@ -21087,7 +21088,7 @@ Example format:
                 const setChip = (g, v) => document.querySelectorAll('#' + g + ' .tb-opt').forEach((b) => b.classList.toggle('selected', b.dataset.val === v));
                 setChip('tbArtStyle', 'mascot-scene');
                 setChip('tbTextMode', 'ai');
-                setChip('tbModel', 'gpt');
+                setChip('tbModel', 'nano');
                 if (typeof tbSyncRes === 'function') tbSyncRes();
             }
         }
@@ -21152,8 +21153,7 @@ Example format:
                     ? ('Replace all existing text: the text must now read exactly "' + line1 + '" as the main line and "' + line2 + '" as a smaller second line, in the same lettering style and position as the original text.')
                     : ('Replace all existing text: the text must now read exactly "' + line1 + '", in the same lettering style and position as the original text.'));
                 return 'This is an EDIT of the given image, not a new picture. PRESERVE EVERYTHING from the original exactly — same composition, same background, same objects, same people and poses, same colors, same lighting, same art style. ' + subj + t + ' Apart from what is explicitly instructed, change NOTHING. Letters must be CLEAN and CRISP: perfectly solid fill, smooth sharp edges - never distressed or cracked. No watermark.';
-            }
-            if (!chosen && hasRefs && refMode === 'remix') {
+            } else if (!chosen && hasRefs && refMode === 'remix') { // ★한 체인으로 — 템플릿 분기의 ref를 아래 화풍 분기가 덮어쓰지 않게(E2E 프롬프트 검증에서 적발)
                 // ★구도 비틀기 v2 — 딥리서치(2026-07-05) 공식 패턴 적용:
                 //   ①구글 공식 레퍼런스 공식 "[레퍼런스]+[역할 지정]+[새 장면 서술]" — 첨부 이미지에 '스타일 참고용' 역할을 명시
                 //   ②구도는 촬영 용어로 '하나를 확정'해 지시(공식 권고) — "반전하거나 다른 앵글로" 같은 재량 부여가 복제로 새는 원인
@@ -21223,7 +21223,7 @@ Example format:
             return j.data.taskId;
         }
         async function kieThumbPoll(taskId) {
-            for (let i = 0; i < 90; i++) {
+            for (let i = 0; i < 150; i++) { // 10분 — GPT 큐가 느린 날 결제된 결과를 버리는 사고 방지 (2026-07-12 실측 6분+ 사례)
                 await new Promise((r) => setTimeout(r, 4000));
                 const r = await fetch('https://api.kie.ai/api/v1/jobs/recordInfo?taskId=' + taskId, {
                     headers: {Authorization: 'Bearer ' + kieThumbKey()},
@@ -22039,8 +22039,8 @@ Example format:
             const n = parseInt(getSelectedVals('tbCount')[0] || '2');
             let res = getSelectedVals('tbRes')[0] || '2K';
             if ((getSelectedVals('tbModel')[0] || 'nano') === 'nano') res = '2K'; // 나노는 2K 고정(작가 지정)
-            // AI가 글자까지 그리는 모드는 한글 렌더가 되는 GPT-2가 필요
-            if ((getSelectedVals('tbTextMode')[0] || 'overlay') === 'ai' && (getSelectedVals('tbModel')[0] || 'nano') === 'nano') {
+            // AI가 글자까지 그리는 모드 — 🎭템플릿형은 나노가 정답(2026-07-12 실측: 한글 뱃지 완벽+마스코트 유지)이라 confirm 없이 통과
+            if (!_tplModeV && (getSelectedVals('tbTextMode')[0] || 'overlay') === 'ai' && (getSelectedVals('tbModel')[0] || 'nano') === 'nano') {
                 if (!confirm('\'AI가 그리기\' 모드는 한글을 잘 쓰는 GPT-2를 권장해요. 나노바나나2로 계속할까요? (글자가 깨질 수 있어요)')) return;
             }
             btn.disabled = true;
@@ -22087,8 +22087,11 @@ Example format:
                     }
                 }
                 // ★🎭 마스코트 캐릭터 락 — 채널템플릿형일 때, 저장된 마스코트 이미지를 image_input에 추가하고 동일 재현 지시 삽입
-                //  모델 강제 없음: GPT-2도 만화 마스코트는 유지 가능(얼굴 정책은 실존 인물 대상) + 한글 글자를 AI가 그리는 모드는 GPT-2가 정답(경제초고수류 실측 — 메모지·문서 안 한글이 이미지에 통합 렌더됨)
+                //  2026-07-12 실측: GPT-2는 i2i/t2i 모두 마스코트를 다른 캐릭터(고양이·새싹)로 바꿔버림. 나노바나나2만 동일 재현 + 한글 뱃지도 완벽 → 경고 후 나노 권장
                 if (templateMode && window._tbMascotThumb) {
+                    if (base !== 'nano') {
+                        if (confirm('🎭 실측 결과: GPT-2는 마스코트를 다른 캐릭터로 바꿔버려요. 나노바나나2로 바꿔서 생성할까요? (한글 뱃지·문구도 나노에서 잘 나와요 — 실측 확인)\n\n[확인]=나노바나나2로 변경 / [취소]=GPT-2 그대로')) { base = 'nano'; res = '2K'; }
+                    }
                     msg.textContent = '마스코트 캐릭터 업로드 중…';
                     const mascotUrl = window._tbMascotThumb.dataUrl.indexOf('http') === 0
                         ? window._tbMascotThumb.dataUrl
@@ -22113,10 +22116,11 @@ Example format:
                         prompt += ' TEMPLATE PROPS TO DRAW IN-IMAGE (this rule OVERRIDES any earlier English-only text rule — Korean text on these props IS allowed and must be spelled EXACTLY as given, clean crisp and legible, professional Korean YouTube thumbnail typography): ' + parts.join('; ') + '. Real brand logos and signage relevant to the topic may also appear naturally in the scene.';
                     }
                 }
-                // 나노바나나2=저렴한 기본(배경용 충분·레퍼런스 image_input 지원). GPT는 편집 모드에서 i2i 전용 모델 사용.
+                // 나노바나나2=저렴한 기본(배경용 충분·레퍼런스 image_input 지원).
+                // ★GPT-2는 이미지 첨부 시 무조건 i2i 변형 (2026-07-12 실측: t2i+image_input=10분+ 초저속에 첨부 이미지 무시 / i2i=~1분에 반영)
                 const model = base === 'nano'
                     ? 'nano-banana-2'
-                    : ((styleKey === 'auto' && refs.length && refMode === 'edit') ? 'gpt-image-2-image-to-image' : 'gpt-image-2-text-to-image');
+                    : (refs.length ? 'gpt-image-2-image-to-image' : 'gpt-image-2-text-to-image');
                 msg.textContent = '썸네일 ' + n + '장 생성 중… (20~60초, ' + (base === 'nano' ? '나노바나나2' : 'GPT-2') + ' · ' + res + ')';
                 const tasks = [];
                 for (let i = 0; i < n; i++) tasks.push(kieThumbCreate(prompt, refs, res, model).then(kieThumbPoll).catch((e) => ({error: e.message})));
