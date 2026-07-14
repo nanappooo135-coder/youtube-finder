@@ -2884,7 +2884,8 @@
                     </div>
                     <div class="section-content">
                         <p style="font-size:0.85rem;color:#888;margin-bottom:10px;">
-                            등록한 해외 채널의 최신 영상은 제목을 한국어로 번역해서 표시해요.
+                            🇺🇸 <b>채널을 하나도 등록 안 하면</b> 위 [비슷한 채널 영상 찾기]를 누를 때 미국 채널을 키워드로 자동 검색해서 국내처럼 효율·대박 판정을 보여줘요.
+                            <b>채널을 등록하면</b> 그때부턴 등록한 채널의 최신 영상만(제목은 한국어로 번역) 보여줘요.
                         </p>
                         <div class="bench-ch-row">
                             <input type="text" id="foreignChInput" placeholder="@핸들 또는 채널 URL"
@@ -24517,6 +24518,16 @@ Example format:
             ]
         };
 
+        // ★해외(미국) 채널 자동 검색 쿼리 — 국내 buildSearchQueries와 같은 자리, 채널 카테고리별 영어 검색어 5개.
+        //  해외 탭에 등록 채널이 0개일 때만 사용(등록 채널 있으면 그 채널 위주 — 국내의 useRegisteredOnly와 동일한 원칙).
+        //  대상은 미국(regionCode:'US', relevanceLanguage:'en') — 해외가 국내보다 속보·다양성이 큼(사용자 요청, 2026-07-14).
+        const FOREIGN_QUERIES_EN = {
+            '경제':   ['economic collapse explained', 'why the economy is failing', 'stock market crash history', 'global economic crisis explained', 'how countries go bankrupt'],
+            '역사':   ['history documentary', 'the untold history of', 'rise and fall of empires', 'historical mystery explained', 'forgotten history documentary'],
+            '심리학': ['psychology explained', 'the psychology behind', 'human behavior psychology', 'social psychology experiment', 'why we do this psychology'],
+            '일본경제': ['japan economy explained', 'japan lost decade', 'japan economic crisis', 'why japan economy failed', 'japan deflation explained']
+        };
+
         // 장르별 기본 단어 (사용자 고유 키워드 추출 시 제외)
         const GENRE_BASE_WORDS = {
             '경제':   ['경제학','경제','재테크','주식','투자','부동산'],
@@ -25768,11 +25779,14 @@ ${titles}`;
         // ===========================
         // 해외 채널 결과 표시
         // ===========================
-        function displayForeignResults(results) {
+        function displayForeignResults(results, isAuto) {
             const el = document.getElementById('foreignResults');
             if (!results || results.length === 0) { el.innerHTML = ''; return; }
 
-            let html = `<div class="foreign-header">🌍 해외 참고 채널 영상 (${results.length}개)</div>`;
+            // ★isAuto=true면 등록 채널 없이 키워드로 자동 발굴한 결과(미국) — 헤더로 구분해 어떤 모드인지 보여줌
+            let html = isAuto
+                ? `<div class="foreign-header">🇺🇸 미국 채널 자동 검색 결과 (${results.length}개)</div>`
+                : `<div class="foreign-header">🌍 해외 참고 채널 영상 (${results.length}개)</div>`;
             results.forEach(item => {
                 const origTitle = item.snippet?.title || item.title || '';
                 const transTitle = item.translatedTitle || origTitle;
@@ -26071,21 +26085,51 @@ ${titles}`;
                 saveBenchCache(results, [query1, query2, query3, query4, query5].filter(Boolean));
                 displayMatchResults('benchResults', results);
 
-                // 해외 채널 처리 (playlistItems — 채널당 1 유닛)
+                // 해외 채널 처리 — 등록 채널 있으면 그 채널만(playlistItems, 채널당 1유닛),
+                //  없으면 미국(US) 채널을 키워드로 자동 검색(search.list, 국내와 동일한 효율·대박 판정으로 표시)
                 const foreignChannels = loadBenchChannels('foreign');
-                if (foreignChannels.length > 0) { try {
-                    loadText.textContent = '해외 채널 수집 중...';
-                    const foreignPl = await Promise.all(
-                        foreignChannels.map(c => fetchChannelVideosViaPlaylist(c.id, c.title, publishedAfter, 50))
-                    );
-                    const foreignItems = foreignPl.flat().filter(i => i.id?.videoId);
-                    console.log('[해외] 수집된 영상 수:', foreignItems.length, '채널 수:', foreignChannels.length);
+                const foreignIsAuto = foreignChannels.length === 0;
+                let foreignUnitsUsed = 0;
+                try {
+                    let foreignItems = [];
+                    if (!foreignIsAuto) {
+                        loadText.textContent = '해외 채널 수집 중...';
+                        const foreignPl = await Promise.all(
+                            foreignChannels.map(c => fetchChannelVideosViaPlaylist(c.id, c.title, publishedAfter, 50))
+                        );
+                        foreignItems = foreignPl.flat().filter(i => i.id?.videoId);
+                        foreignUnitsUsed = foreignChannels.length;
+                        console.log('[해외] 등록채널 수집된 영상 수:', foreignItems.length, '채널 수:', foreignChannels.length);
+                    } else {
+                        loadText.textContent = '🇺🇸 미국 채널 자동 검색 중...';
+                        const foreignQueries = FOREIGN_QUERIES_EN[currentChannel] || FOREIGN_QUERIES_EN['경제'];
+                        const foreignSearchParams = {
+                            part: 'snippet', type: 'video',
+                            publishedAfter: publishedAfter.toISOString(),
+                            regionCode: 'US', relevanceLanguage: 'en',
+                            order: 'relevance', maxResults: 50
+                        };
+                        const safeSearch = async (q) => {
+                            try { const r = await fetchYouTubeAPI('search', { key: apiKey, q, ...foreignSearchParams }); return r.items || []; }
+                            catch(e) { console.warn('[해외] 검색 에러 무시:', e.message); return []; }
+                        };
+                        const foreignSearchResults = await Promise.all(foreignQueries.map(safeSearch));
+                        foreignItems = foreignSearchResults.flat().filter(i => i.id?.videoId);
+                        foreignUnitsUsed = foreignQueries.length * 100;
+                        console.log('[해외] 자동검색(US) 수집된 영상 수:', foreignItems.length, '쿼리:', foreignQueries);
+                    }
 
                     if (foreignItems.length > 0) {
-                        // 유효한 YouTube 영상 ID만 필터 (11자, 영숫자+_-)
+                        // 유효한 YouTube 영상 ID만 필터 (11자, 영숫자+_-) + videoId 기준 중복 제거(자동검색은 쿼리 5개가 겹칠 수 있음)
                         const validVideoId = id => /^[a-zA-Z0-9_-]{11}$/.test(id);
-                        const fVideoIds  = foreignItems.map(i => i.id.videoId).filter(validVideoId);
-                        const fChIds     = [...new Set(foreignItems.map(i => i.snippet.channelId))];
+                        const seenForeignIds = new Set();
+                        const dedupedForeignItems = foreignItems.filter(i => {
+                            const vid = i.id?.videoId;
+                            if (!vid || !validVideoId(vid) || seenForeignIds.has(vid)) return false;
+                            seenForeignIds.add(vid); return true;
+                        });
+                        const fVideoIds  = dedupedForeignItems.map(i => i.id.videoId);
+                        const fChIds     = [...new Set(dedupedForeignItems.map(i => i.snippet.channelId))];
                         const fChunk = (arr, size) => Array.from({ length: Math.ceil(arr.length / size) }, (_, i) => arr.slice(i * size, i * size + size));
                         const safeFetch = async (endpoint, params) => {
                             try { return await fetchYouTubeAPI(endpoint, params); }
@@ -26101,7 +26145,7 @@ ${titles}`;
                         ]);
                         const fVMap = {}; fVResults.flatMap(r => r.items || []).forEach(v => { fVMap[v.id] = v.statistics; });
                         const fCMap = {}; fCResults.flatMap(r => r.items || []).forEach(c => { fCMap[c.id] = c; });
-                        const foreignWithStatsAll = foreignItems.map(i => ({
+                        const foreignWithStatsAll = dedupedForeignItems.map(i => ({
                             ...i, vs: fVMap[i.id.videoId], ch: fCMap[i.snippet.channelId]
                         }));
                         console.log('[해외] 통계 매칭된 영상:', foreignWithStatsAll.length);
@@ -26120,17 +26164,20 @@ ${titles}`;
                         });
                         console.log('[해외] 필터 통과:', foreignWithStats.length);
                         const translated = await translateItems(foreignWithStats);
-                        displayForeignResults(translated);
+                        displayForeignResults(translated, foreignIsAuto);
+                    } else {
+                        document.getElementById('foreignResults').innerHTML = foreignIsAuto
+                            ? '<p style="color:#888;font-size:0.85rem;padding:14px;">🇺🇸 미국 채널 자동 검색 결과가 없어요 — 기간을 늘리거나 최소 조회수를 낮춰보세요.</p>'
+                            : '';
                     }
                 } catch(foreignErr) {
                     console.warn('[해외] 해외 채널 처리 중 에러 (무시하고 계속):', foreignErr.message);
-                } } else {
-                    document.getElementById('foreignResults').innerHTML = '';
                 }
 
                 const usedQueries = [query1, query2, query3, query4, query5].filter(Boolean);
                 const krCost = krChannels.length;
-                usageEl.textContent = `추천 완료: ${results.length}개 영상 | API 유닛: 키워드검색 ${usedQueries.length * 100} + 통계 6 + 등록채널 ${krCost} = 총 ${usedQueries.length * 100 + 6 + krCost}유닛 | 6시간 캐시 저장됨`;
+                const foreignLabel = foreignIsAuto ? `미국자동검색 ${foreignUnitsUsed}` : `해외등록채널 ${foreignUnitsUsed}`;
+                usageEl.textContent = `추천 완료: ${results.length}개 영상 | API 유닛: 키워드검색 ${usedQueries.length * 100} + 통계 6 + 등록채널 ${krCost} + ${foreignLabel} = 총 ${usedQueries.length * 100 + 6 + krCost + foreignUnitsUsed}유닛 | 6시간 캐시 저장됨`;
 
             } catch(err) {
                 console.error(err);
