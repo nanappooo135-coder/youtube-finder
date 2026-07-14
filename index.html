@@ -25709,8 +25709,17 @@ ${titles}`;
         // 번역 (MyMemory 무료 API)
         // ===========================
         function loadTransCache() {
-            try { return JSON.parse(localStorage.getItem(TRANS_CACHE_KEY) || '{}'); }
-            catch(e) { return {}; }
+            try {
+                const cache = JSON.parse(localStorage.getItem(TRANS_CACHE_KEY) || '{}');
+                // ★자가치유 — 예전 버그로 "MYMEMORY WARNING..." 문구가 번역인 척 캐시에 박혀있던 것들을 여기서 걷어냄.
+                //  이게 남아있으면 할당량이 풀린 뒤에도 그 문구가 영원히 다시 나옴.
+                let purged = 0;
+                for (const k of Object.keys(cache)) {
+                    if (_isMyMemoryQuotaMsg(cache[k])) { delete cache[k]; purged++; }
+                }
+                if (purged > 0) { saveTransCache(cache); console.log(`[번역] 손상된 캐시 ${purged}개 정리`); }
+                return cache;
+            } catch(e) { return {}; }
         }
         function saveTransCache(cache) {
             localStorage.setItem(TRANS_CACHE_KEY, JSON.stringify(cache));
@@ -25821,6 +25830,12 @@ ${titles}`;
             statusEl.innerHTML = `<span style="color:#28a745;font-weight:600;">✅ 완료: ${added}개 추가, ${skipped}개 중복 건너뜀${failMsg}</span>`;
         }
 
+        // ★MyMemory 무료 할당량 소진 감지 — responseStatus!==200이거나(가장 확실. 429 등)
+        //  본문에 경고문구가 섞여 나오면(가끔 200인데도 이 문구를 얹어 보내는 경우 대비) 번역 실패로 취급.
+        //  실패를 캐시하면 할당량이 풀린 뒤에도 그 문구가 영원히 재사용돼 버그가 안 없어짐 — 절대 캐시 금지.
+        function _isMyMemoryQuotaMsg(s) {
+            return /MYMEMORY WARNING|YOU USED ALL AVAILABLE|USAGELIMITS\.PHP/i.test(s || '');
+        }
         async function translateText(text) {
             if (hasKorean(text)) return text;
             const cache = loadTransCache();
@@ -25829,6 +25844,9 @@ ${titles}`;
                 const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|ko`);
                 const data = await res.json();
                 const translated = data.responseData?.translatedText || text;
+                if (data.responseStatus !== 200 || _isMyMemoryQuotaMsg(translated)) {
+                    return text; // 할당량 소진 등 실패 — 원문 그대로, 캐시 안 함(할당량 풀리면 다음 호출에서 재시도)
+                }
                 cache[text] = translated;
                 saveTransCache(cache);
                 return translated;
