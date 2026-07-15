@@ -26021,8 +26021,12 @@ ${titles}`;
             const resultsEl  = document.getElementById('benchResults');
             const usageEl    = document.getElementById('recommendApiUsage');
 
-            // 캐시 확인 (강제 새로고침 아닐 때)
-            if (!forceRefresh) {
+            // ★현재 보고 있는 서브탭(국내/해외)만 검색 — 국내와 해외를 완전히 분리(사용자 요청: 국내 검색 시 해외 수집 안 함).
+            //  국내 탭이면 국내만, 해외 탭이면 해외만 돈다.
+            const activeSubTab = document.querySelector('.sub-tab-nav .sub-tab-btn.active')?.dataset.subtab || 'kr';
+
+            // 캐시 확인 (강제 새로고침 아닐 때) — 국내 탭에서만(캐시는 국내 결과 전용). 해외 탭이면 국내 캐시로 조기 return 안 함
+            if (!forceRefresh && activeSubTab !== 'foreign') {
                 const cache = loadBenchCache();
                 if (cache) {
                     displayMatchResults('benchResults', cache.results);
@@ -26034,7 +26038,9 @@ ${titles}`;
 
             benchBtn.disabled = true;
             benchBtn.innerHTML = '<div class="spinner"></div> 찾는 중...';
-            resultsEl.innerHTML = '';
+            // 활성 탭의 결과 영역만 비움(국내 탭이면 국내, 해외 탭이면 해외)
+            if (activeSubTab === 'foreign') { const fe = document.getElementById('foreignResults'); if (fe) fe.innerHTML = ''; }
+            else resultsEl.innerHTML = '';
             usageEl.textContent = '';
 
             const overlay  = document.getElementById('loadingOverlay');
@@ -26048,6 +26054,8 @@ ${titles}`;
                 const publishedAfter = new Date();
                 publishedAfter.setDate(publishedAfter.getDate() - period);
 
+                // ═══════ 국내 채널 검색 — 국내 탭일 때만 (해외 탭이면 이 블록 통째로 스킵) ═══════
+                if (activeSubTab === 'kr') {
                 // 등록 채널 우선 — 등록된 채널이 있으면 키워드 자동 검색 스킵 (사용자가 등록한 것만 결과)
                 const krChannels = loadBenchChannels('kr');
                 const useRegisteredOnly = krChannels.length > 0;
@@ -26214,7 +26222,14 @@ ${titles}`;
                 saveBenchCache(results, [query1, query2, query3, query4, query5].filter(Boolean));
                 displayMatchResults('benchResults', results);
 
-                // 해외 채널 처리 — 등록 채널 있으면 그 채널만(playlistItems, 채널당 1유닛),
+                // 국내 전용 usage 요약
+                const usedQueries = [query1, query2, query3, query4, query5].filter(Boolean);
+                usageEl.textContent = `🇰🇷 국내 추천 완료: ${results.length}개 영상 | API 유닛: 키워드검색 ${usedQueries.length * 100} + 통계 6 + 등록채널 ${krChannels.length} = 총 ${usedQueries.length * 100 + 6 + krChannels.length}유닛 | 6시간 캐시 저장됨`;
+                } // ═══════ 국내 블록 끝 ═══════
+
+                // ═══════ 해외 채널 검색 — 해외 탭일 때만 (국내 탭이면 이 블록 통째로 스킵) ═══════
+                if (activeSubTab === 'foreign') {
+                // 등록 채널 있으면 그 채널만(playlistItems, 채널당 1유닛),
                 //  없으면 미국(US) 채널을 키워드로 자동 검색(search.list, 국내와 동일한 효율·대박 판정으로 표시)
                 const foreignChannels = loadBenchChannels('foreign');
                 const foreignIsAuto = foreignChannels.length === 0;
@@ -26309,10 +26324,10 @@ ${titles}`;
                     console.warn('[해외] 해외 채널 처리 중 에러 (무시하고 계속):', foreignErr.message);
                 }
 
-                const usedQueries = [query1, query2, query3, query4, query5].filter(Boolean);
-                const krCost = krChannels.length;
-                const foreignLabel = foreignIsAuto ? `미국자동검색 ${foreignUnitsUsed}` : `해외등록채널 ${foreignUnitsUsed}`;
-                usageEl.textContent = `추천 완료: ${results.length}개 영상 | API 유닛: 키워드검색 ${usedQueries.length * 100} + 통계 6 + 등록채널 ${krCost} + ${foreignLabel} = 총 ${usedQueries.length * 100 + 6 + krCost + foreignUnitsUsed}유닛 | 6시간 캐시 저장됨`;
+                // 해외 전용 usage 요약
+                const foreignLabel = foreignIsAuto ? `미국 키워드 자동검색 ${foreignUnitsUsed}` : `해외 등록채널 ${foreignChannels.length}개 ${foreignUnitsUsed}`;
+                usageEl.textContent = `🌍 해외 추천 완료 | API 유닛: ${foreignLabel} + 통계 약 6 = 총 약 ${foreignUnitsUsed + 6}유닛`;
+                } // ═══════ 해외 블록 끝 ═══════
 
             } catch(err) {
                 console.error(err);
