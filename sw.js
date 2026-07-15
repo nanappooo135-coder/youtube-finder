@@ -1,5 +1,10 @@
 // YouTube Finder PWA Service Worker
-const CACHE_NAME = 'yt-finder-v129';
+const CACHE_NAME = 'yt-finder-v130';
+
+// 페이지가 SKIP_WAITING 메시지를 보내면 즉시 활성화(대기 상태 건너뜀) → 새 버전 바로 적용
+self.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
+});
 const CORE_ASSETS = [
     './',
     './index.html',

@@ -25367,21 +25367,27 @@ ${titles}`;
                                 overwriteCount += chData[type].length;
                             }
                         } else if (chData[type].length > 0) {
-                            // PAT 있음: 로컬 우선 + repo에만 있는 채널은 병합 (외부에서 repo에 직접 추가한 것 반영)
+                            // PAT 있음: repo와 동기화 — 개명·추가·★삭제까지 반영(외부에서 채널 목록을 정리한 것 반영)
                             const repoById = {};
                             chData[type].forEach(c => { if (c.id) repoById[c.id] = c; });
                             let renamed = 0;
-                            // 채널 개명 반영 — repo의 이름이 다르면 갱신 (예: 재미경제학→김재민TV)
-                            const updated = existing.map(c => {
-                                const r = repoById[c.id];
-                                if (r && r.title && r.title !== c.title) { renamed++; return Object.assign({}, c, {title: r.title}); }
-                                return c;
-                            });
+                            // ★repo에서 사라진(삭제된) 채널은 로컬에서도 제거 — 단 repo에 채널이 충분(≥10)할 때만.
+                            //  repo가 실수로 비었거나 극소수면 로컬 전멸 방지(안전장치). 지금처럼 대량 정리(1646→1393)는 반영됨.
+                            //  (2026-07-15: 오래된 채널을 repo에서 정리했는데 PAT 기기 로컬엔 안 지워지던 문제.)
+                            const applyDeletion = chData[type].length >= 10;
+                            const before = existing.length;
+                            const kept = (applyDeletion ? existing.filter(c => repoById[c.id]) : existing)
+                                .map(c => {
+                                    const r = repoById[c.id];
+                                    if (r && r.title && r.title !== c.title) { renamed++; return Object.assign({}, c, {title: r.title}); }
+                                    return c;
+                                });
                             const localIds = new Set(existing.map(c => c.id));
-                            const merged = updated.concat(chData[type].filter(c => c.id && !localIds.has(c.id)));
-                            if (merged.length !== existing.length || renamed > 0) {
+                            const added = chData[type].filter(c => c.id && !localIds.has(c.id));
+                            const merged = kept.concat(added);
+                            if (merged.length !== before || renamed > 0) {
                                 localStorage.setItem(key, JSON.stringify(merged));
-                                loadedCount += (merged.length - existing.length) + renamed;
+                                loadedCount += Math.abs(merged.length - before) + renamed;
                             }
                         }
                     }
@@ -33560,12 +33566,35 @@ ${commentText.slice(0, 12000)}`;
         }
     </script>
 
-    <!-- PWA Service Worker 등록 -->
+    <!-- PWA Service Worker 등록 + 자동 갱신 -->
     <script>
         if ('serviceWorker' in navigator) {
+            // ★새 서비스워커가 제어권을 잡으면(새 버전 활성화) 딱 한 번 자동 새로고침 →
+            //  사용자가 수동으로 강력새로고침/unregister 안 해도 최신 코드가 반영됨.
+            //  (2026-07-15: 낡은 SW가 옛 index.html을 계속 서빙해 국내/해외 분리 수정이 사용자에게
+            //   반영 안 되던 문제 근본 차단. controllerchange = 새 SW가 페이지 제어를 넘겨받는 순간.)
+            let _swRefreshing = false;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (_swRefreshing) return;
+                _swRefreshing = true;
+                console.log('[PWA] 새 버전 감지 — 자동 새로고침');
+                window.location.reload();
+            });
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js')
-                    .then(reg => console.log('[PWA] SW registered:', reg.scope))
+                    .then(reg => {
+                        console.log('[PWA] SW registered:', reg.scope);
+                        reg.update(); // 방문할 때마다 새 sw.js 즉시 확인(브라우저 24시간 캐시 우회)
+                        // 새 SW가 설치 대기(waiting) 중이면 즉시 활성화하라고 지시 → controllerchange 유발
+                        if (reg.waiting) reg.waiting.postMessage({type: 'SKIP_WAITING'});
+                        reg.addEventListener('updatefound', () => {
+                            const nw = reg.installing;
+                            if (!nw) return;
+                            nw.addEventListener('statechange', () => {
+                                if (nw.state === 'installed' && reg.waiting) reg.waiting.postMessage({type: 'SKIP_WAITING'});
+                            });
+                        });
+                    })
                     .catch(err => console.warn('[PWA] SW registration failed:', err));
             });
         }
