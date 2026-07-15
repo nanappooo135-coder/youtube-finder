@@ -23500,7 +23500,8 @@ Example format:
             if (!pills || !btn) return;
             const isHidden = pills.style.display === 'none';
             pills.style.display = isHidden ? 'flex' : 'none';
-            // 채널 수 표시
+            // ★열 때만 실제로 그림(지연 렌더) — renderBenchChannelList가 닫힌 상태에선 그리지 않으므로 여기서 채워줌
+            if (isHidden && typeof renderBenchChannelList === 'function') renderBenchChannelList(type);
             const count = (typeof loadBenchChannels === 'function') ? loadBenchChannels(type).length : 0;
             btn.textContent = isHidden
                 ? `▲ 등록 채널 ${count}개 숨기기`
@@ -23708,7 +23709,20 @@ Example format:
             const paramLog = Object.fromEntries(url.searchParams.entries());
             const keyPreview = (paramLog.key || '').slice(-6);
             console.log(`[API] ${endpoint} (키 ...${keyPreview})`, {...paramLog, key: '...' + keyPreview});
-            const response = await fetch(url);
+            // ★fetch()는 기본 타임아웃이 없음 — 등록 채널이 많을 때(수백~수천개) 그중 단 하나만
+            //  응답이 안 와도 Promise.all 전체가 영원히 멈춤(사용자 실측: 해외채널 1,395개 등록 후 "수집 중"에서 무한 로딩).
+            //  20초 넘으면 이 요청만 포기하고 빈 결과로 넘어가게 강제 타임아웃.
+            const _ac = new AbortController();
+            const _timer = setTimeout(() => _ac.abort(), 20000);
+            let response;
+            try {
+                response = await fetch(url, {signal: _ac.signal});
+            } catch (e) {
+                clearTimeout(_timer);
+                if (e.name === 'AbortError') { console.warn(`[API TIMEOUT] ${endpoint} 20초 초과 — 건너뜀`, paramLog); return {items: []}; }
+                throw e;
+            }
+            clearTimeout(_timer);
             const data = await response.json();
 
             if (data.error) {
@@ -25626,27 +25640,35 @@ ${titles}`;
             alert(`channels.json 다운로드 완료 (총 ${totalCount}개 채널)\n\n다음 단계:\n1. 받은 파일을 youtube-finder repo 루트에 덮어쓰기\n2. git add channels.json && git commit && git push\n3. 폰/다른 기기에서 페이지 새로고침 → 자동 로드`);
         }
 
+        const PILL_RENDER_CAP = 300; // ★등록 채널이 이보다 많으면 처음 N개만 DOM/이미지로 그리고 나머지는 텍스트 요약
         function renderBenchChannelList(type) {
             const pillsEl = document.getElementById(type === 'kr' ? 'krChPills' : 'foreignChPills');
             const channels = loadBenchChannels(type);
-            // 토글 버튼 카운트 갱신
             const tbtn = document.getElementById(type === 'kr' ? 'krPillsToggle' : 'foreignPillsToggle');
+            const isOpen = pillsEl.style.display !== 'none';
             if (tbtn) {
-                const isOpen = pillsEl.style.display !== 'none';
                 tbtn.textContent = isOpen
                     ? `▲ 등록 채널 ${channels.length}개 숨기기`
                     : `▼ 등록 채널 ${channels.length}개 보기`;
             }
+            // ★패널이 닫혀있으면 무거운 DOM(썸네일 이미지 최대 수천 장)을 안 그림 — 열릴 때(_togglePills)만 실제 렌더.
+            //  안 그러면 페이지 로드마다 등록 채널 수만큼(1,000개+) 이미지가 한꺼번에 로드되어 렉·화면깨짐 발생
+            //  (해외채널 1,395개 등록 후 실측 — "화면이 깨지고 느려짐" 리포트).
+            if (!isOpen) return;
             if (channels.length === 0) {
                 pillsEl.innerHTML = '<span style="font-size:0.8rem;color:#aaa;">등록된 채널 없음</span>';
                 return;
             }
-            pillsEl.innerHTML = channels.map(ch => `
+            const shown = channels.slice(0, PILL_RENDER_CAP);
+            pillsEl.innerHTML = shown.map(ch => `
                 <div class="bench-ch-pill">
-                    ${ch.thumbnail ? `<img src="${escapeHtml(ch.thumbnail)}" onerror="this.style.display='none'">` : ''}
+                    ${ch.thumbnail ? `<img src="${escapeHtml(ch.thumbnail)}" loading="lazy" onerror="this.style.display='none'">` : ''}
                     <span>${escapeHtml(ch.title)}</span>
                     <button class="pill-x" onclick="removeBenchChannel('${type}','${ch.id}')" title="삭제">×</button>
-                </div>`).join('');
+                </div>`).join('')
+                + (channels.length > PILL_RENDER_CAP
+                    ? `<div style="font-size:0.8rem;color:#888;padding:6px 4px;width:100%;">…외 ${channels.length - PILL_RENDER_CAP}개 (목록이 너무 길어 일부만 표시)</div>`
+                    : '');
         }
 
         function removeBenchChannel(type, channelId) {
@@ -25965,6 +25987,21 @@ ${titles}`;
             return `${Math.floor(mins / 60)}시간 ${mins % 60}분 전`;
         }
 
+        // ★등록 채널이 수백~수천 개일 때 Promise.all로 전부 한꺼번에 쏘면(브라우저 동시연결 한계·API 순간
+        //  rate limit) 느려지거나 극단적으론 멈춘 것처럼 보임 — N개씩 나눠서 순차 실행.
+        async function mapWithConcurrency(items, limit, fn) {
+            const out = new Array(items.length);
+            let idx = 0;
+            async function worker() {
+                while (idx < items.length) {
+                    const i = idx++;
+                    out[i] = await fn(items[i], i);
+                }
+            }
+            await Promise.all(Array.from({length: Math.min(limit, items.length)}, worker));
+            return out;
+        }
+
         // ===========================
         // 내 채널 성격 맞춤 영상 추천
         // ===========================
@@ -26064,9 +26101,10 @@ ${titles}`;
                     // 기간 내 영상은 채널당 전부 수집 — 페이지는 기간 밖 도달 시 자동 중단되므로 상한은 안전망일 뿐
                     // (쇼츠 다작 채널은 롱폼이 최신 50개 밖으로 밀림: 삼프로·신사임당 누락 사례 → 상한 500)
                     const perChannel = 500;
-                    const plResults = await Promise.all(
-                        krChannels.map(c => fetchChannelVideosViaPlaylist(c.id, c.title, publishedAfter, perChannel))
-                    );
+                    // ★동시 20개로 제한(mapWithConcurrency) — 등록 채널이 많아지면 Promise.all 전부 동시발사가
+                    //  타임아웃 없는 fetch 하나만 걸려도 전체를 무한 대기시킴(1,395채널 실측 재현). 국내도 선제 적용.
+                    const plResults = await mapWithConcurrency(krChannels, 20,
+                        c => fetchChannelVideosViaPlaylist(c.id, c.title, publishedAfter, perChannel));
                     registeredItems.push(...plResults.flat());
                 }
 
@@ -26184,10 +26222,16 @@ ${titles}`;
                 try {
                     let foreignItems = [];
                     if (!foreignIsAuto) {
-                        loadText.textContent = '해외 채널 수집 중...';
-                        const foreignPl = await Promise.all(
-                            foreignChannels.map(c => fetchChannelVideosViaPlaylist(c.id, c.title, publishedAfter, 50))
-                        );
+                        loadText.textContent = `해외 채널 수집 중... (0/${foreignChannels.length})`;
+                        let _foreignDone = 0;
+                        const foreignPl = await mapWithConcurrency(foreignChannels, 20, async (c) => {
+                            const r = await fetchChannelVideosViaPlaylist(c.id, c.title, publishedAfter, 50);
+                            _foreignDone++;
+                            if (_foreignDone % 50 === 0 || _foreignDone === foreignChannels.length) {
+                                loadText.textContent = `해외 채널 수집 중... (${_foreignDone}/${foreignChannels.length})`;
+                            }
+                            return r;
+                        });
                         foreignItems = foreignPl.flat().filter(i => i.id?.videoId);
                         foreignUnitsUsed = foreignChannels.length;
                         console.log('[해외] 등록채널 수집된 영상 수:', foreignItems.length, '채널 수:', foreignChannels.length);
