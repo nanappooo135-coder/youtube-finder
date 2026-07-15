@@ -1,5 +1,5 @@
-﻿// YouTube Finder PWA Service Worker
-const CACHE_NAME = 'yt-finder-v127';
+// YouTube Finder PWA Service Worker
+const CACHE_NAME = 'yt-finder-v129';
 const CORE_ASSETS = [
     './',
     './index.html',
@@ -8,7 +8,7 @@ const CORE_ASSETS = [
     './icon-512.png'
 ];
 
-// ?ㅼ튂 ???듭떖 ?뚯씪 罹먯떆
+// 설치 시 핵심 파일 캐시
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME)
@@ -18,7 +18,7 @@ self.addEventListener('install', (event) => {
     );
 });
 
-// ?쒖꽦?????댁쟾 罹먯떆 ?뺣━
+// 활성화 시 이전 캐시 정리
 self.addEventListener('activate', (event) => {
     event.waitUntil(
         caches.keys().then((keys) =>
@@ -29,17 +29,18 @@ self.addEventListener('activate', (event) => {
     );
 });
 
-// ?붿껌 泥섎━ ??Network First + Cache Fallback
-// ?몃? API ?몄텧(news.json, gemini, kie ??? 罹먯떆 ????self.addEventListener('fetch', (event) => {
+// 요청 처리 — Network First + Cache Fallback
+// 외부 API 호출(news.json, gemini, kie 등)은 캐시 안 함
+self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
 
-    // GET ?붿껌留?泥섎━
+    // GET 요청만 처리
     if (event.request.method !== 'GET') return;
 
-    // API ?몄텧? ?⑥뒪 (Gemini, Kie, etc)
+    // 외부 오리진(다른 도메인) API 호출은 서비스워커가 손대지 않음 (Gemini, Kie, YouTube 등)
     if (url.origin !== self.location.origin) return;
 
-    // ?숈쟻 ?곗씠??news.json, channels.json) ??긽 fresh ??湲곌린 媛??숆린???꾪빐 罹먯떆 湲덉?
+    // 동적 데이터(news.json, channels.json)는 항상 최신을 받도록 — 네트워크만, 실패 시에만 캐시
     if (url.pathname.endsWith('/news.json') || url.pathname.endsWith('/channels.json')) {
         event.respondWith(
             fetch(event.request).catch(() => caches.match(event.request))
@@ -47,7 +48,7 @@ self.addEventListener('activate', (event) => {
         return;
     }
 
-    // ?뺤쟻 ?먯썝 ??Network First, ?ㅽ뙣 ??Cache
+    // 정적 자원(index.html 등) — Network First, 실패 시 Cache
     event.respondWith(
         fetch(event.request)
             .then((res) => {
