@@ -1,0 +1,37 @@
+name: Enrich Foreign Channels
+
+on:
+  workflow_dispatch:  # 수동 실행 전용 — 해외 채널 정리 원자료 수집
+
+permissions:
+  contents: write
+
+jobs:
+  enrich:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Enrich foreign channels
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YT_KEYS }}
+        run: python scripts/enrich_foreign.py
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add scripts/economy/foreign_enriched.json
+          if git diff --staged --quiet; then
+            echo "No changes"
+          else
+            git commit -m "chore: foreign_enriched.json 수집 [skip ci]"
+            git pull --rebase
+            git push
+          fi
