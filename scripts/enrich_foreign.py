@@ -32,13 +32,16 @@ def api(endpoint, **params):
             return json.load(urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"}), timeout=30))
         except urllib.error.HTTPError as e:
             last = e
-            if e.code in (403, 429):
-                _ki = (_ki + 1) % len(KEYS)
-                continue
+            body = ""
             try:
-                print("API ERROR", e.code, endpoint, e.read().decode("utf-8", "ignore")[:300])
+                body = e.read().decode("utf-8", "ignore")
             except Exception:
                 pass
+            # 403/429(쿼터)뿐 아니라 400 "API key not valid"(죽은 키)도 다음 키로 로테이션
+            if e.code in (403, 429) or (e.code == 400 and "API key not valid" in body):
+                _ki = (_ki + 1) % len(KEYS)
+                continue
+            print("API ERROR", e.code, endpoint, body[:300])
             raise
     raise RuntimeError("모든 키 소진: %s" % last)
 
@@ -75,6 +78,8 @@ def main():
                 except urllib.error.HTTPError:
                     print("bad id skipped:", repr(cid))
     print("meta:", len(meta))
+    if not meta:
+        raise SystemExit("meta 0개 — 키 전멸 또는 API 장애. 깡통 파일 커밋 방지를 위해 실패 처리.")
 
     results = []
     for i, cid in enumerate(ids):
