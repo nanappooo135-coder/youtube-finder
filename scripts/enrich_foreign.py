@@ -35,6 +35,10 @@ def api(endpoint, **params):
             if e.code in (403, 429):
                 _ki = (_ki + 1) % len(KEYS)
                 continue
+            try:
+                print("API ERROR", e.code, endpoint, e.read().decode("utf-8", "ignore")[:300])
+            except Exception:
+                pass
             raise
     raise RuntimeError("모든 키 소진: %s" % last)
 
@@ -45,8 +49,8 @@ def main():
     print("foreign channels:", len(ids), "keys:", len(KEYS))
 
     meta = {}
-    for b in range(0, len(ids), 50):
-        r = api("channels", part="snippet,statistics", id=",".join(ids[b:b + 50]), maxResults=50)
+
+    def add_items(r):
         for it in r.get("items", []):
             sn, st = it["snippet"], it.get("statistics", {})
             meta[it["id"]] = {
@@ -57,6 +61,19 @@ def main():
                 "subs": int(st.get("subscriberCount", 0) or 0),
                 "videoCount": int(st.get("videoCount", 0) or 0),
             }
+
+    for b in range(0, len(ids), 50):
+        batch = ids[b:b + 50]
+        try:
+            add_items(api("channels", part="snippet,statistics", id=",".join(batch)))
+        except urllib.error.HTTPError:
+            # 배치에 불량 ID가 섞임 — 낱개로 재시도해 불량만 건너뛴다
+            print("batch fail, retry singly:", b)
+            for cid in batch:
+                try:
+                    add_items(api("channels", part="snippet,statistics", id=cid))
+                except urllib.error.HTTPError:
+                    print("bad id skipped:", repr(cid))
     print("meta:", len(meta))
 
     results = []
