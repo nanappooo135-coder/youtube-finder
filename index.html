@@ -2884,7 +2884,7 @@
                     </div>
                     <div class="section-content">
                         <p style="font-size:0.85rem;color:#888;margin-bottom:10px;">
-                            🇺🇸 미국 경제 채널 <b>1,393개</b>가 이미 자동 등록돼 있어요(channels.json에서 새로고침 시 자동 로드 — 실제 유튜브 검색 66개 키워드로 발굴 후 90일+ 무업로드·경제무관 채널 정리 완료). 등록한 채널의 최신 영상을 국내처럼 효율·대박 판정으로(제목은 한국어로 번역) 보여줘요.
+                            🇺🇸 미국 경제 채널 <b>783개</b>가 이미 자동 등록돼 있어요(channels.json에서 새로고침 시 자동 로드 — 66개 키워드로 발굴한 1,393개를 2026-07-16 대청소: 90일+ 무업로드·경제무관(클립·게임·브이로그·시험강의·정치뉴스 등) 610개 제거). 등록 채널의 최신 영상을 <b>효율순 정렬</b>로(제목은 한국어로 번역, 상위 100개) 보여줘요.
                             아래에서 직접 몇 개 더 추가하거나 삭제할 수도 있어요. <b>전부 지우면</b> 그때부턴 [비슷한 채널 영상 찾기] 버튼이 미국 채널을 키워드로 다시 자동 검색해요.
                         </p>
                         <div class="bench-ch-row">
@@ -26319,7 +26319,17 @@ ${titles}`;
                             return true;
                         });
                         console.log('[해외] 필터 통과:', foreignWithStats.length);
-                        const translated = await translateItems(foreignWithStats);
+                        // ★효율순 정렬(조회수÷구독자) — 정렬이 없어 대박 영상이 최신순에 묻히던 문제(2026-07-16)
+                        const _effOf = i => {
+                            const s = parseInt(i.ch?.statistics?.subscriberCount) || 0;
+                            const v = parseInt(i.vs?.viewCount) || 0;
+                            return s > 0 ? v / s : 0;
+                        };
+                        foreignWithStats.sort((a, b) => _effOf(b) - _effOf(a));
+                        // ★속도 병목 = 무료 번역(MyMemory, 5개씩 순차) — 효율 상위 100개만 번역·표시
+                        const foreignTop = foreignWithStats.slice(0, 100);
+                        loadText.textContent = `해외 제목 번역 중... (효율 상위 ${foreignTop.length}개)`;
+                        const translated = await translateItems(foreignTop);
                         displayForeignResults(translated, foreignIsAuto);
                     } else {
                         document.getElementById('foreignResults').innerHTML = foreignIsAuto
