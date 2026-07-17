@@ -165,15 +165,21 @@
                 why = '첫 히트 ' + firstHitAge.toFixed(0) + '일 경과' + (newest > 4 ? ' · 최근 4일간 신규 없음' : '') + ' — 파도 끝';
             } else if (firstHitAge <= 3 && copies <= 3) {
                 badge = '🔥 지금 타라'; cls = 'wr-hot';
-                why = '첫 히트 ' + firstHitAge.toFixed(1) + '일 전 · 참전 ' + copies + '개뿐 — 48시간 내 제작하면 파도 위';
+                why = '첫 히트 ' + firstHitAge.toFixed(1) + '일 전 · 참전 ' + copies + '개(히트 ' + hits.length + ') — 48시간 내 제작하면 파도 위';
             } else if (newestHitAge <= 2 && copies <= 3) {
                 // ★재점화(2026-07-17 감사): 옛 히트에 끌려 신선한 새 히트까지 ⚠️ 받던 결함
                 //   (조지아 1일짜리가 10일 된 로봇 영상과 묶여 늙은 판정). 최신 히트가 2일 내 + 참전 적으면 🔥.
                 badge = '🔥 지금 타라'; cls = 'wr-hot';
-                why = '재점화 — 최신 히트 ' + newestHitAge.toFixed(1) + '일 전 · 참전 ' + copies + '개. 새 불씨가 방금 붙음, 48시간 내 제작';
+                why = '재점화 — 최신 히트 ' + newestHitAge.toFixed(1) + '일 전 · 참전 ' + copies + '개(히트 ' + hits.length + '). 새 불씨가 방금 붙음, 48시간 내 제작';
             } else {
-                badge = '⚠️ 새각도 필수'; cls = 'wr-warm';
-                why = '첫 히트 ' + firstHitAge.toFixed(0) + '일 · 참전 ' + copies + '개 — 같은 얘기 재탕은 사망, 원본에 없는 다음 궁금증만 생존';
+                // ★참전≠경쟁(2026-07-17 사용자 관찰): 못 뜬 아류는 실경쟁이 아님 — 히트 수로 재탕 위험 판정
+                if (hits.length <= 2) {
+                    badge = '⚠️ 새각도 필수'; cls = 'wr-warm';
+                    why = '첫 히트 ' + firstHitAge.toFixed(0) + '일 · 참전 ' + copies + '개(진짜 히트 ' + hits.length + '개) — 히트작에 없는 다음 궁금증으로만 진입';
+                } else {
+                    badge = '⚠️ 새각도 필수'; cls = 'wr-warm';
+                    why = '첫 히트 ' + firstHitAge.toFixed(0) + '일 · 히트 ' + hits.length + '개 포함 참전 ' + copies + '개 — 판이 붐빔. 같은 얘기 재탕은 사망, 원본에 없는 다음 궁금증만 생존';
+                }
             }
         }
         // 축 태그
