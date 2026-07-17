@@ -126,10 +126,13 @@
             members.forEach(function (i) { assigned[i] = 1; });
             clusters.push({ label: tk, idx: members });
         });
-        // 홀로 남았어도 폭발 중이면(배수 5+ & 3일 내) 단독 파도로 — 신규 파도 조기 감지
+        // 홀로 남았어도 폭발 중이면 단독 파도로 — 신규 파도 조기 감지 (3일 내)
+        // ★2026-07-17 정정: 배수 5+ 기준만 쓰면 대형 채널의 대박을 놓침(김재민 조지아 14만 =
+        //   평소의 2.6배라 탈락한 실측 — 사용자 발견). 대형 채널은 절대치+2배로도 인정.
         items.forEach(function (it, i) {
             if (assigned[i]) return;
-            if (it.mult >= 5 && ageDays(it.publishedAt) <= 3) {
+            if (ageDays(it.publishedAt) > 3) return;
+            if (it.mult >= 5 || (it.viewCount >= 100000 && it.mult >= 2)) {
                 clusters.push({ label: wrTokens(it.title)[0] || it.channelTitle, idx: [i], solo: true });
             }
         });
