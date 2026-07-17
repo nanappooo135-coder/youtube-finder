@@ -126,13 +126,13 @@
             members.forEach(function (i) { assigned[i] = 1; });
             clusters.push({ label: tk, idx: members });
         });
-        // 홀로 남았어도 폭발 중이면 단독 파도로 — 신규 파도 조기 감지 (3일 내)
-        // ★2026-07-17 정정: 배수 5+ 기준만 쓰면 대형 채널의 대박을 놓침(김재민 조지아 14만 =
-        //   평소의 2.6배라 탈락한 실측 — 사용자 발견). 대형 채널은 절대치+2배로도 인정.
+        // 홀로 남았어도 강한 신호면 단독 파도로 — 신규 파도 조기 감지
+        // ★2026-07-17 정정 2회: ①배수 5+만 쓰면 대형 채널 대박 누락(김재민 조지아 2.6배, 사용자 발견)
+        //   ②"3일 이내" 이중 필터가 691배 괴물(주린이 공안 월급, 7일)까지 증발시킴(누락 감사 실측).
+        //   신선도 판정은 배지(🔥/💀) 몫 — 수집 단계에서 숨기지 않는다. 기준 = 히트 기준과 동일.
         items.forEach(function (it, i) {
             if (assigned[i]) return;
-            if (ageDays(it.publishedAt) > 3) return;
-            if (it.mult >= 5 || (it.viewCount >= 100000 && it.mult >= 2)) {
+            if (it.mult >= 3 || (it.viewCount >= 30000 && it.mult >= 1.5)) {
                 clusters.push({ label: wrTokens(it.title)[0] || it.channelTitle, idx: [i], solo: true });
             }
         });
@@ -344,6 +344,7 @@
             verdict = '✅ 진행 (48시간 내)';
             lines.push('첫 히트 ' + el + '일 · 조회 ' + fmtN(lead.viewCount) + ' · 배수 ' + lead.mult.toFixed(1) + '배 · 참전 ' + copies + '개 — 파도 초입.');
         }
+        lines.push('※ 이 판정은 "진행형 사건" 가정 — 끝난 옛날 얘기(완결형: 과거 참사·역사물)면 원본이 수요를 이미 소비해서 후발 재탕 사망. 만들기 전에 "내일도 새 뉴스가 나올 얘기인가" 한 번만 자문할 것.');
         var judged = {
             "실측": {
                 "레퍼런스_업로드일": lead.publishedAt.slice(0, 10),
@@ -414,10 +415,16 @@
             return b.j.sumVph - a.j.sumVph;
         });
         var axisFilter = (document.getElementById('wrAxisFilter') || {}).value || '';
-        listEl.innerHTML = scored.filter(function (s) {
+        var visible = scored.filter(function (s) {
             if (!axisFilter) return true;
             return s.j.axis.indexOf(axisFilter) >= 0;
-        }).slice(0, 15).map(function (s) {
+        });
+        // ★침묵 잘림 방지(2026-07-17 감사): 상한 25 + 잘리면 몇 개 숨겼는지 명시
+        var CAP = 25;
+        var cutNote = visible.length > CAP
+            ? '<p style="color:#868e96;font-size:0.85rem;margin:8px 0;">파도 ' + visible.length + '개 중 상위 ' + CAP + '개 표시 — 숨겨진 ' + (visible.length - CAP) + '개는 대부분 💀·👀 (배지 순 정렬)</p>'
+            : '';
+        listEl.innerHTML = cutNote + visible.slice(0, CAP).map(function (s) {
             var c = s.c, j = s.j;
             var vids = c.idx.map(function (i) { return items[i]; })
                 .sort(function (a, b) { return b.viewCount - a.viewCount; });
