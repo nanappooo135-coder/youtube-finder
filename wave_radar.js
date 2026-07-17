@@ -41,7 +41,10 @@
         '만든', '만들', '받은', '받는', '모든', '때문', '결말', '최후', '현재', '반전', '근황',
         // 국가명 단독은 파도 이름이 못 됨(너무 넓음) — 축 태그(AXIS_*)에서만 사용
         '중국', '한국', '미국', '일본', '유럽', '인도', '러시아', '북한',
-        '최악', '최고', '최대', '전부', '갑자기', '완전히', '그리고', '한국만', '중국이', '한국이'];
+        '최악', '최고', '최대', '전부', '갑자기', '완전히', '그리고', '한국만', '중국이', '한국이',
+        // 주식 토크방송 일반어 (2026-07-17 — 광각 그물 합류 후 [방송][폭락][하락] 쓰레기 파도 실측)
+        '방송', '전체보기', '오전', '오후', '폭락', '하락', '상승', '급등', '급락',
+        '전망', '주식', '코스피', '증시', '시장', '투자', '매수', '매도', '신호'];
 
     // 축 태그: 우리 채널에 맞는 두 축 (푸짐한 실측 — 한국역전극·중국위기만 산다)
     var AXIS_KR = ['한화', '삼성', 'LG', 'SK', '현대', '기아', 'K9', 'K2', '천무', '조선소',
@@ -133,7 +136,9 @@
     // ---------- 배지 판정 (소재게이트 v2와 같은 잣대) ----------
     function wrJudgeCluster(c, items) {
         var vids = c.idx.map(function (i) { return items[i]; });
-        var hits = vids.filter(function (v) { return v.viewCount >= 30000 || v.mult >= 3; });
+        // 히트 기준(2026-07-17 정정): 조회수만 크고 그 채널 평소보다 못한 영상(삼프로 53만=평소의 0.2배)은
+        // 히트가 아님 — 배수 3+ 이거나, 3만+이면서 최소 평소 이상(1.5배+)이어야 소재의 힘으로 인정
+        var hits = vids.filter(function (v) { return v.mult >= 3 || (v.viewCount >= 30000 && v.mult >= 1.5); });
         var sumVph = vids.reduce(function (s, v) { return s + vph(v); }, 0);
         var newest = Math.min.apply(null, vids.map(function (v) { return ageDays(v.publishedAt); }));
         var badge, cls, why;
@@ -267,6 +272,8 @@
                 (cat.rising || []).concat(cat.viral || []).forEach(function (b) {
                     if (seen[b.videoId]) return; seen[b.videoId] = 1;
                     if (ageDays(b.publishedAt) > DAYS) return;
+                    // 데일리 방송 녹화·라이브 재방은 소재가 아님 (삼프로 '오전 방송 전체보기' 류)
+                    if (/전체보기|풀버전|다시보기|라이브|LIVE|생방송|모닝브리핑|마감시황|시황/i.test(b.title || '')) return;
                     allItems.push({
                         videoId: b.videoId, title: b.title, publishedAt: b.publishedAt,
                         channelId: b.channelId, channelTitle: b.channelTitle + ' ⚡',
@@ -305,10 +312,10 @@
         var copies = vids.length;
         var lines = [];
         var verdict;
-        var demandOk = lead.viewCount >= 30000 || eff >= 3;
+        var demandOk = lead.mult >= 3 || (lead.viewCount >= 30000 && lead.mult >= 1.5);
         if (!demandOk) {
             verdict = '⛔ 폐기 권고';
-            lines.push('수요 미증명 — 조회 ' + fmtN(lead.viewCount) + ' · 효율 ' + eff.toFixed(1) + '배 (3만+ 또는 3배+ 필요). 원작자도 못 살린 소재.');
+            lines.push('수요 미증명 — 조회 ' + fmtN(lead.viewCount) + ' · 평소의 ' + lead.mult.toFixed(1) + '배. 배수 3+ 또는 3만+이면서 평소 이상(1.5배+)이어야 소재의 힘 증명. 조회수만 크고 그 채널 평소만 못하면 채널빨이지 소재빨이 아님.');
         } else if (el >= 14) {
             verdict = '⛔ 폐기 권고';
             lines.push('선점 실기 — 리드 영상이 ' + el + '일 경과(2주+). 파도가 지나감.');
