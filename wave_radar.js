@@ -256,6 +256,30 @@
                     });
                 });
             }
+            // ★넓은 그물 합류: 아침브리핑(등록 채널 563개 전체를 서버가 매일 무료 스캔한 결과)의
+            //   최근 24시간 급상승·떡상 상위를 파도 재료에 합침 — 추적 5~15개(정밀) + 563개(광각) 이중 레이더.
+            st.textContent = '아침브리핑(전체 등록채널) 합류 중...';
+            try {
+                var br = await fetch('briefing.json?v=' + Math.floor(Date.now() / 600000)).then(function (r) { return r.json(); });
+                var cat = (br.categories || {})['경제'] || {};
+                var seen = {};
+                allItems.forEach(function (it) { seen[it.videoId] = 1; });
+                (cat.rising || []).concat(cat.viral || []).forEach(function (b) {
+                    if (seen[b.videoId]) return; seen[b.videoId] = 1;
+                    if (ageDays(b.publishedAt) > DAYS) return;
+                    allItems.push({
+                        videoId: b.videoId, title: b.title, publishedAt: b.publishedAt,
+                        channelId: b.channelId, channelTitle: b.channelTitle + ' ⚡',
+                        viewCount: b.viewCount || 0, likeCount: 0, commentCount: 0,
+                        thumbnail: b.thumbnail || '',
+                        subscriberCount: b.subscriberCount || 0,
+                        efficiency: b.efficiency || 0,
+                        chMedian: 0,
+                        // 브리핑 채널은 평소 중앙값을 모름 → 효율(조회÷구독)을 배수 근사치로 사용
+                        mult: b.efficiency || 1
+                    });
+                });
+            } catch (e) { /* 브리핑 없으면 추적 채널만으로 진행 */ }
             var clusters = wrCluster(allItems);
             localStorage.setItem(WR_CACHE_KEY, JSON.stringify({ at: Date.now(), items: allItems, clusters: clusters }));
             wrRender(allItems, clusters);
