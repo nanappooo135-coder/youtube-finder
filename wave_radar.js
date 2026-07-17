@@ -369,7 +369,12 @@
                 "레퍼런스_구독자수": lead.subscriberCount,
                 "판정일": new Date().toISOString().slice(0, 10)
             },
-            "시의성": { "판정": "진행형", "근거": "파도 레이더 실측 — 참전 " + copies + "개, 합산 시속 " + sumVphNow + "회", "새각도": "" }
+            "시의성": { "판정": "진행형", "근거": "파도 레이더 실측 — 참전 " + copies + "개, 합산 시속 " + sumVphNow + "회", "새각도": "" },
+            // 제목·썸네일 벤치용(2026-07-17): 검증된 훅 구조를 SEO 단계가 벤치마킹(표현 복사 금지, 구조만).
+            // 근거: 같은 소재로 골고루 7만 vs 우리 400 — 간판이 승부를 가름.
+            "히트작_제목들": vids.filter(function (v) { return v.mult >= 3 || (v.viewCount >= 30000 && v.mult >= 1.5); })
+                .slice(0, 3).map(function (v) { return v.title + " (" + fmtN(v.viewCount) + "회·" + v.mult.toFixed(0) + "배)"; }),
+            "레퍼런스_URL": "https://www.youtube.com/watch?v=" + lead.videoId
         };
         var box = document.getElementById('wrJudge_' + ci);
         if (box) {
