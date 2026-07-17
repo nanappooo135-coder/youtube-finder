@@ -301,9 +301,46 @@
                     if (ageDays(hist[k].publishedAt) > DAYS) delete hist[k];
                 });
                 try { localStorage.setItem('wave_briefing_hist_v1', JSON.stringify(hist)); } catch (e3) {}
+                // ★광각 채널 진짜 중앙값(2026-07-17): 효율(조회÷구독) 근사는 유령구독 채널의 대박을
+                //   쪽박으로 오판(구독10만·평소5천 채널이 3만 터뜨리면 실제 6배인데 근사 0.3배 → 히트 탈락).
+                //   광각 채널도 실제 최근 영상 중앙값을 계산 — 채널당 2유닛, 7일 캐시, 스캔당 신규 30개 상한.
+                var medCache = {};
+                try { medCache = JSON.parse(localStorage.getItem('wave_ch_median_v1') || '{}'); } catch (e4) {}
+                var histArr = Object.keys(hist).map(function (k) { return hist[k]; });
+                var needMed = [];
+                histArr.forEach(function (b) {
+                    var mc = medCache[b.channelId];
+                    if (!mc || Date.now() - mc.at > 7 * 86400000) {
+                        if (needMed.indexOf(b.channelId) < 0) needMed.push(b.channelId);
+                    }
+                });
+                var MED_CAP = 30;
+                for (var mi = 0; mi < Math.min(needMed.length, MED_CAP); mi++) {
+                    var cid2 = needMed[mi];
+                    st.textContent = '광각 채널 평소성적 계산 (' + (mi + 1) + '/' + Math.min(needMed.length, MED_CAP) + ')...';
+                    try {
+                        var pl2 = await fetchYouTubeAPI('playlistItems', { part: 'contentDetails,snippet', playlistId: 'UU' + cid2.slice(2), maxResults: 30 });
+                        var vv = (pl2.items || []).map(function (it) {
+                            return { id: it.contentDetails.videoId, d: it.contentDetails.videoPublishedAt || it.snippet.publishedAt };
+                        });
+                        var ids2 = vv.map(function (x) { return x.id; }).join(',');
+                        if (ids2) {
+                            var vr2 = await fetchYouTubeAPI('videos', { part: 'statistics', id: ids2, maxResults: 50 });
+                            var sm = {};
+                            (vr2.items || []).forEach(function (x) { sm[x.id] = parseInt((x.statistics || {}).viewCount || '0'); });
+                            var matured2 = vv.filter(function (x) { var a = ageDays(x.d); return a >= 3 && a <= 90 && sm[x.id] != null; })
+                                .map(function (x) { return sm[x.id]; });
+                            medCache[cid2] = { at: Date.now(), med: Math.max(1, median(matured2.length >= 5 ? matured2 : vv.map(function (x) { return sm[x.id] || 0; }))) };
+                        }
+                    } catch (e5) { medCache[cid2] = { at: Date.now(), med: 0 }; }
+                }
+                try { localStorage.setItem('wave_ch_median_v1', JSON.stringify(medCache)); } catch (e6) {}
+                if (needMed.length > MED_CAP) {
+                    console.log('[파도레이더] 광각 중앙값 미계산 채널 ' + (needMed.length - MED_CAP) + '개 — 다음 스캔에서 이어서');
+                }
                 var seen = {};
                 allItems.forEach(function (it) { seen[it.videoId] = 1; });
-                Object.keys(hist).map(function (k) { return hist[k]; }).forEach(function (b) {
+                histArr.forEach(function (b) {
                     if (seen[b.videoId]) return; seen[b.videoId] = 1;
                     if (ageDays(b.publishedAt) > DAYS) return;
                     // 데일리 방송 녹화·라이브 재방은 소재가 아님 (삼프로 '오전 방송 전체보기' 류)
@@ -315,9 +352,11 @@
                         thumbnail: b.thumbnail || '',
                         subscriberCount: b.subscriberCount || 0,
                         efficiency: b.efficiency || 0,
-                        chMedian: 0,
-                        // 브리핑 채널은 평소 중앙값을 모름 → 효율(조회÷구독)을 배수 근사치로 사용
-                        mult: b.efficiency || 1
+                        chMedian: (medCache[b.channelId] || {}).med || 0,
+                        // 진짜 중앙값이 있으면 그걸로, 없으면(상한 초과분) 효율 근사 — 다음 스캔에서 채워짐
+                        mult: ((medCache[b.channelId] || {}).med > 0)
+                            ? (b.viewCount || 0) / medCache[b.channelId].med
+                            : (b.efficiency || 1)
                     });
                 });
             } catch (e) { /* 브리핑 없으면 추적 채널만으로 진행 */ }
