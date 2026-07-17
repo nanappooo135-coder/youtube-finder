@@ -53,7 +53,10 @@
         '공장', '산업', '제품', '가격', '돈', '수출', '수입',
         // 4차 (2026-07-17 [있다]·[알고] 잡탕 실측) — 동사·서술어·연결어는 씨앗 자격 없음
         '있다', '없다', '한다', '된다', '간다', '왔다', '온다', '됐다', '했다', '먹었다', '누빈다',
-        '알고', '보니', '결국', '먼저', '직접', '전부', '통째로', '하필'];
+        '알고', '보니', '결국', '먼저', '직접', '전부', '통째로', '하필',
+        // 5차 (2026-07-17 [교수] 잡탕 실측) — 인터뷰 채널의 직함·형식 단어는 소재가 아님
+        '교수', '박사', '대표', '소장', '위원', '기자', '앵커', '작가', '전문가',
+        '1부', '2부', '3부', '인터뷰', '대담', '강연', '특집', '총정리', '몰아보기', '요약'];
 
     // 축 태그: 우리 채널에 맞는 두 축 (푸짐한 실측 — 한국역전극·중국위기만 산다)
     var AXIS_KR = ['한화', '삼성', 'LG', 'SK', '현대', '기아', 'K9', 'K2', '천무', '조선소',
@@ -160,12 +163,32 @@
     // ---------- 배지 판정 (소재게이트 v2와 같은 잣대) ----------
     function wrJudgeCluster(c, items) {
         var vids = c.idx.map(function (i) { return items[i]; });
+        // ★숲 포화도(2026-07-17 사용자 발견): 2토큰 규칙이 큰 파도를 조각내면 조각만 보고 🔥 오판
+        //   (에어컨 10일·참전 8인데 김재민+카피캣 조각이 "첫 히트 2일·참전 2"로 신선해 보임).
+        //   같은 소재 단어를 제목에 쓴 영상을 파도 경계 무시하고 전체에서 센다 — 4개+면 판이 붐빔.
+        var forest = items.filter(function (v) { return (v.title || '').indexOf(c.label) >= 0; }).length;
+        // ★결 필터(2026-07-17 사용자 "지금타라 개판" — [남자] 국제커플 브이로그가 🔥 받던 실측):
+        //   광각(⚡) 채널의 아웃라이어는 '그 채널 기준' 대박일 뿐 우리 결 보장이 없음.
+        //   🔥/⚠️ 행동 배지는 추적 채널이 낀 파도에만 — 전원 광각이면 📡 참고 배지로 강등.
+        var tracked = {};
+        wrLoadChannels().forEach(function (ch2) { tracked[ch2.id] = 1; });
+        var hasTracked = vids.some(function (v) { return tracked[v.channelId]; });
         // 히트 기준(2026-07-17 정정): 조회수만 크고 그 채널 평소보다 못한 영상(삼프로 53만=평소의 0.2배)은
         // 히트가 아님 — 배수 3+ 이거나, 3만+이면서 최소 평소 이상(1.5배+)이어야 소재의 힘으로 인정
         var hits = vids.filter(function (v) { return v.mult >= 3 || (v.viewCount >= 30000 && v.mult >= 1.5); });
         var sumVph = vids.reduce(function (s, v) { return s + vph(v); }, 0);
         var newest = Math.min.apply(null, vids.map(function (v) { return ageDays(v.publishedAt); }));
         var badge, cls, why;
+        if (!hasTracked) {
+            badge = '📡 광각 발견'; cls = 'wr-scout';
+            var bestM = Math.max.apply(null, vids.map(function (v) { return v.mult; }));
+            why = '추적채널 밖(등록 563개 그물)에서 발견 — 최고 배수 ' + bestM.toFixed(1) + '배. 우리 결(국가·기업 스토리)인지 눈으로 확인 후 판단. 결이 맞고 세면 그 채널을 추적 목록에 추가';
+            var text0 = vids.map(function (v) { return v.title; }).join(' ');
+            var axis0 = '';
+            if (AXIS_KR.some(function (w) { return text0.indexOf(w) >= 0; })) axis0 = '🇰🇷 한국역전극';
+            else if (AXIS_CN.some(function (w) { return text0.indexOf(w) >= 0; })) axis0 = '🐉 중국위기';
+            return { badge: badge, cls: cls, why: why, sumVph: vids.reduce(function (s, v) { return s + vph(v); }, 0), axis: axis0 };
+        }
         if (!hits.length) {
             badge = '👀 관찰'; cls = 'wr-watch';
             why = '아직 터진 영상 없음(3만+/배수3+ 미달) — 오르면 알림판에 올라옴';
@@ -176,6 +199,9 @@
             if (firstHitAge > 13 || newest > 4) {
                 badge = '💀 지났다'; cls = 'wr-dead';
                 why = '첫 히트 ' + firstHitAge.toFixed(0) + '일 경과' + (newest > 4 ? ' · 최근 4일간 신규 없음' : '') + ' — 파도 끝';
+            } else if (forest >= 4) {
+                badge = '⚠️ 새각도 필수'; cls = 'wr-warm';
+                why = "'" + c.label + "' 단어를 쓴 영상이 전체 " + forest + '개 — 이 조각은 신선해 보여도 소재 판 전체가 붐빔. 같은 얘기 재탕은 사망, 빈 각도만 생존';
             } else if (firstHitAge <= 3 && copies <= 3) {
                 badge = '🔥 지금 타라'; cls = 'wr-hot';
                 why = '첫 히트 ' + firstHitAge.toFixed(1) + '일 전 · 참전 ' + copies + '개(히트 ' + hits.length + ') — 48시간 내 제작하면 파도 위';
@@ -517,8 +543,8 @@
             c.sumVphView = j.sumVph;
             return { c: c, j: j, i: i };
         });
-        // 정렬: 🔥 먼저, 그 안에서 합산 시속 순
-        var order = { 'wr-hot': 0, 'wr-warm': 1, 'wr-watch': 2, 'wr-dead': 3 };
+        // 정렬: 🔥 먼저, 그 안에서 합산 시속 순 (📡 광각은 ⚠️ 다음)
+        var order = { 'wr-hot': 0, 'wr-warm': 1, 'wr-scout': 2, 'wr-watch': 3, 'wr-dead': 4 };
         scored.sort(function (a, b) {
             if (order[a.j.cls] !== order[b.j.cls]) return order[a.j.cls] - order[b.j.cls];
             return b.j.sumVph - a.j.sumVph;
@@ -613,6 +639,8 @@
         + '.wr-wave.wr-hot-wave{border-left:5px solid #fa5252;}'
         + '.wr-wave.wr-warm-wave{border-left:5px solid #ff922b;}'
         + '.wr-wave.wr-watch-wave{border-left:5px solid #4dabf7;}'
+        + '.wr-wave.wr-scout-wave{border-left:5px solid #9775fa;opacity:.9;}'
+        + '.wr-badge.wr-scout{background:#f3f0ff;color:#5f3dc4;}'
         + '.wr-wave.wr-dead-wave{border-left:5px solid #ced4da;opacity:.75;}'
         + '.wr-wave-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}'
         + '.wr-badge{padding:6px 14px;border-radius:10px;font-weight:800;font-size:0.95rem;white-space:nowrap;}'
