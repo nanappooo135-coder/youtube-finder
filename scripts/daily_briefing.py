@@ -37,7 +37,10 @@ def api(endpoint, **params):
             return json.load(urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"}), timeout=30))
         except urllib.error.HTTPError as e:
             last = e
-            if e.code in (403, 429):
+            # ★2026-07-17: 400(무효 키)도 키 로테이션 대상 — 7/5 유출사고 정리 때 삭제된 키가
+            #   목록 첫 번째에 있어서, 400에서 즉시 raise → 전 채널 침묵 실패 12일(스캔 0개인데 워크플로 성공).
+            #   무효 키 하나가 전체를 죽이면 안 되므로 quota(403/429)와 똑같이 다음 키로 넘어간다.
+            if e.code in (400, 403, 429):
                 _ki = (_ki + 1) % len(KEYS)
                 continue
             raise
@@ -142,6 +145,14 @@ def main():
         vids = enrich(raw)
         result["categories"][cat] = top_lists(vids)
         print("[%s] 채널 %d개 → 24h 영상 %d개 → 필터 후 %d개" % (cat, len(chs), len(raw), len(vids)), file=sys.stderr)
+    # ★침묵 실패 방지(2026-07-17): 7/5~7/16 12일간 API 키가 죽어 전 카테고리 0개를
+    #   저장하면서도 워크플로는 '성공'이었다 — 등록채널 800개+가 24h에 영상 0개일 수는 없으므로
+    #   전 카테고리 0개면 키/네트워크 장애로 보고 exit 1 → Actions가 빨간불 → 즉시 발견.
+    #   (빈 briefing.json은 저장하지 않음 — 마지막 정상본 유지가 빈 깡통보다 낫다)
+    total_scanned = sum((c or {}).get("scanned", 0) for c in result["categories"].values())
+    if result["categories"] and total_scanned == 0:
+        print("★전 카테고리 스캔 0개 — API 키 장애 의심. briefing.json 미갱신, 실패 처리.", file=sys.stderr)
+        sys.exit(1)
     with open(os.path.join(BASE, "briefing.json"), "w", encoding="utf-8") as f:
         json.dump(result, f, ensure_ascii=False)
     print("briefing.json 저장 완료", file=sys.stderr)
