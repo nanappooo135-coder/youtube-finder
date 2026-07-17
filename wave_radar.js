@@ -388,6 +388,77 @@
             box.dataset.judged = JSON.stringify(judged, null, 2);
         }
     };
+    // ---------- 🔍 각도 재료 (2026-07-17 — "각도 뽑기"를 클로드 주장이 아니라 날것 증거로) ----------
+    // 사용자 요구: LLM에게 시키면 대충 해도 검증 불가 → 파인더가 원자료를 그대로 화면에 띄운다.
+    // ①경쟁작 제목(이미 차지된 각도) ②히트작 댓글 중 질문 TOP(시청자가 직접 요구하는 다음 각도)
+    // ③관련 최신 뉴스(news.json — 새 국면). 해석 없음, 전부 날것. API 비용: 댓글 1유닛×히트작 2개.
+    window.wrAngleProbe = async function (ci) {
+        var cache = wrCache(); if (!cache) return;
+        var c = cache.clusters[ci];
+        var vids = c.idx.map(function (i) { return cache.items[i]; })
+            .sort(function (a, b) { return b.viewCount - a.viewCount; });
+        var box = document.getElementById('wrAngle_' + ci);
+        if (!box) return;
+        box.style.display = '';
+        box.innerHTML = '<div style="color:#1971c2;font-weight:700;">각도 재료 수집 중... (경쟁작·댓글·뉴스)</div>';
+        try {
+            // ② 히트작 댓글 질문 (상위 2개 영상)
+            var hitVids = vids.filter(function (v) { return v.mult >= 3 || (v.viewCount >= 30000 && v.mult >= 1.5); }).slice(0, 2);
+            if (!hitVids.length) hitVids = vids.slice(0, 1);
+            var questions = [];
+            for (var h = 0; h < hitVids.length; h++) {
+                try {
+                    var cr = await fetchYouTubeAPI('commentThreads', { part: 'snippet', videoId: hitVids[h].videoId, order: 'relevance', maxResults: 100, textFormat: 'plainText' });
+                    (cr.items || []).forEach(function (it) {
+                        var s = it.snippet.topLevelComment.snippet;
+                        var txt = String(s.textDisplay || '').replace(/\s+/g, ' ').trim();
+                        if (txt.length < 8 || txt.length > 220) return;
+                        if (!/[?？]|궁금|왜 |어떻게|얼마나|그럼 |다음엔|우리나라는|한국은/.test(txt)) return;
+                        questions.push({ t: txt, likes: parseInt(s.likeCount || 0), from: hitVids[h].channelTitle });
+                    });
+                } catch (e2) { /* 댓글 막힌 영상 등 */ }
+            }
+            questions.sort(function (a, b) { return b.likes - a.likes; });
+            // ③ 관련 뉴스 (news.json 키워드 매칭)
+            var newsHits = [];
+            try {
+                var nj = await fetch('news.json?v=' + Math.floor(Date.now() / 600000)).then(function (r) { return r.json(); });
+                var toks = {};
+                vids.forEach(function (v) { wrTokens(v.title).forEach(function (tk) { toks[tk] = 1; }); });
+                toks[c.label] = 1;
+                var tokList = Object.keys(toks).filter(function (t) { return t.length >= 2; });
+                Object.keys(nj.categories || {}).forEach(function (k) {
+                    ((nj.categories[k] || {}).news || []).forEach(function (n) {
+                        if (tokList.some(function (t) { return (n.title || '').indexOf(t) >= 0; })) {
+                            newsHits.push(n);
+                        }
+                    });
+                });
+                var seenL = {};
+                newsHits = newsHits.filter(function (n) { if (seenL[n.link]) return false; seenL[n.link] = 1; return true; })
+                    .sort(function (a, b) { return (b.pubTimestamp || 0) - (a.pubTimestamp || 0); }).slice(0, 6);
+            } catch (e3) {}
+            // 렌더 — 전부 날것, 해석 없음
+            var html = '';
+            html += '<div style="font-weight:800;margin-bottom:6px;">① 이미 차지된 각도 (경쟁작 제목 — 이거랑 겹치면 재탕)</div>';
+            html += vids.slice(0, 6).map(function (v) {
+                return '<div style="font-size:0.86rem;margin-bottom:3px;">· ' + esc(v.title) + ' <span style="color:#888;">(' + fmtN(v.viewCount) + '회·' + v.mult.toFixed(1) + '배)</span></div>';
+            }).join('');
+            html += '<div style="font-weight:800;margin:12px 0 6px;">② 시청자가 직접 묻는 다음 궁금증 (히트작 댓글, 좋아요순 — 이게 각도 후보)</div>';
+            html += questions.length ? questions.slice(0, 10).map(function (q) {
+                return '<div style="font-size:0.86rem;margin-bottom:4px;background:#fffbeb;border-radius:6px;padding:6px 8px;">💬 ' + esc(q.t) + ' <b style="color:#e8590c;">👍' + q.likes + '</b></div>';
+            }).join('') : '<div style="color:#888;font-size:0.85rem;">질문 댓글 없음</div>';
+            html += '<div style="font-weight:800;margin:12px 0 6px;">③ 이 소재의 최신 뉴스 (새 국면 = 공짜 각도)</div>';
+            html += newsHits.length ? newsHits.map(function (n) {
+                var dt = n.pubTimestamp ? new Date(n.pubTimestamp).toLocaleDateString() : '';
+                return '<div style="font-size:0.86rem;margin-bottom:3px;">📰 <a href="' + n.link + '" target="_blank" style="color:#1971c2;">' + esc(n.title) + '</a> <span style="color:#888;">' + dt + '</span></div>';
+            }).join('') : '<div style="color:#888;font-size:0.85rem;">매칭 뉴스 없음 (뉴스탭에서 직접 검색 권장)</div>';
+            box.innerHTML = html;
+        } catch (e) {
+            box.innerHTML = '<div style="color:#dc3545;">각도 재료 수집 실패: ' + esc(e.message) + '</div>';
+        }
+    };
+
     window.wrCopyJudge = function (ci) {
         var box = document.getElementById('wrJudge_' + ci);
         if (!box || !box.dataset.judged) return;
@@ -456,9 +527,11 @@
                 + '<span class="wr-label">' + esc(c.label) + '</span>'
                 + (j.axis ? '<span class="wr-axis">' + j.axis + '</span>' : '')
                 + '<span class="wr-sum">합산 시속 <b>' + fmtN(Math.round(j.sumVph)) + '</b>' + wrArrow(c.label, j.sumVph) + '</span>'
+                + '<button class="wr-judge-btn" style="background:#5f3dc4;box-shadow:0 2px 6px rgba(95,61,196,.25);" onclick="wrAngleProbe(' + s.i + ')">🔍 각도 재료</button>'
                 + '<button class="wr-judge-btn" onclick="wrGateJudge(' + s.i + ')">⚖️ 게이트 판정</button>'
                 + '</div>'
                 + '<div class="wr-why">' + esc(j.why) + '</div>'
+                + '<div id="wrAngle_' + s.i + '" class="wr-judgebox" style="display:none;background:#f8f5ff;border-color:#d7ccf5;"></div>'
                 + '<div id="wrJudge_' + s.i + '" class="wr-judgebox" style="display:none;"></div>'
                 + '<div class="wr-grid">' + vids.map(wrCardHtml).join('') + '</div>'
                 + '</div>';
