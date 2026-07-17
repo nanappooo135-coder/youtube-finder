@@ -270,9 +270,20 @@
             try {
                 var br = await fetch('briefing.json?v=' + Math.floor(Date.now() / 600000)).then(function (r) { return r.json(); });
                 var cat = (br.categories || {})['경제'] || {};
+                // ★14일 축적(2026-07-17): 브리핑은 24시간 창이라, 매 스캔마다 그날 수확 전량('videos',
+                //   없으면 rising+viral)을 로컬에 쌓아 14일치 광각 그물을 만든다 — 업계 DB 방식의 경량판.
+                var todays = (cat.videos && cat.videos.length) ? cat.videos : (cat.rising || []).concat(cat.viral || []);
+                var hist = {};
+                try { hist = JSON.parse(localStorage.getItem('wave_briefing_hist_v1') || '{}'); } catch (e2) {}
+                todays.forEach(function (b) { if (b && b.videoId) hist[b.videoId] = b; });
+                // 14일 지난 항목 청소 + 저장
+                Object.keys(hist).forEach(function (k) {
+                    if (ageDays(hist[k].publishedAt) > DAYS) delete hist[k];
+                });
+                try { localStorage.setItem('wave_briefing_hist_v1', JSON.stringify(hist)); } catch (e3) {}
                 var seen = {};
                 allItems.forEach(function (it) { seen[it.videoId] = 1; });
-                (cat.rising || []).concat(cat.viral || []).forEach(function (b) {
+                Object.keys(hist).map(function (k) { return hist[k]; }).forEach(function (b) {
                     if (seen[b.videoId]) return; seen[b.videoId] = 1;
                     if (ageDays(b.publishedAt) > DAYS) return;
                     // 데일리 방송 녹화·라이브 재방은 소재가 아님 (삼프로 '오전 방송 전체보기' 류)

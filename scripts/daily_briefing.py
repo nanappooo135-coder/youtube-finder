@@ -130,7 +130,10 @@ def enrich(items):
 def top_lists(vids):
     rising = sorted(vids, key=lambda x: -x["velocity"])[:TOP_N]
     viral = sorted([v for v in vids if v["efficiency"] is not None], key=lambda x: -x["efficiency"])[:TOP_N]
-    return {"rising": rising, "viral": viral, "scanned": len(vids)}
+    # ★2026-07-17 파도 레이더 광각 그물용: 상위 20개만 남기고 버리던 하루치 수확 전량을 보존
+    #   (업계 표준 = DB 전량에 아웃라이어 점수 — 1of10/TubeLab 방식. 208개×300B ≈ 60KB라 부담 없음)
+    allv = sorted(vids, key=lambda x: -(x["efficiency"] or 0))
+    return {"rising": rising, "viral": viral, "scanned": len(vids), "videos": allv}
 
 
 def main():
