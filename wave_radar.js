@@ -358,17 +358,19 @@
     }
 
     function wrCardHtml(v) {
-        // _matchCardHtml 재사용이 원칙이나 파도 카드엔 배수가 핵심이라 슬림 카드 자체 렌더
+        // 큼지막·한눈에 (2026-07-17 사용자 요청: 썸네일·글자 확대, 공백 압축, 배수=색깔 알약)
         var a = ageDays(v.publishedAt);
         var ageTxt = a < 1 ? Math.round(a * 24) + '시간 전' : Math.round(a) + '일 전';
-        var multColor = v.mult >= 10 ? '#c92a2a' : (v.mult >= 3 ? '#e8590c' : '#868e96');
-        return '<div style="display:flex;gap:10px;padding:10px;border:1px solid #eee;border-radius:10px;margin-bottom:6px;background:white;align-items:flex-start;">'
-            + (v.thumbnail ? '<img src="' + v.thumbnail + '" style="width:120px;height:68px;object-fit:cover;border-radius:6px;flex-shrink:0;cursor:pointer;" onclick="window.open(\'https://www.youtube.com/watch?v=' + v.videoId + '\')">' : '')
-            + '<div style="flex:1;min-width:0;">'
-            + '<div style="font-weight:700;font-size:0.9rem;line-height:1.35;cursor:pointer;" onclick="window.open(\'https://www.youtube.com/watch?v=' + v.videoId + '\')">' + esc(v.title) + '</div>'
-            + '<div style="font-size:0.78rem;color:#888;margin-top:4px;">' + esc(v.channelTitle) + ' · ' + ageTxt + ' · 조회 ' + fmtN(v.viewCount)
-            + ' · <b style="color:' + multColor + ';">평소의 ' + v.mult.toFixed(1) + '배</b>'
-            + ' · 시속 ' + fmtN(Math.round(vph(v))) + '회</div>'
+        var multCls = v.mult >= 10 ? 'wrm-hot' : (v.mult >= 3 ? 'wrm-warm' : 'wrm-cold');
+        var multTxt = v.mult >= 10 ? Math.round(v.mult) : v.mult.toFixed(1);
+        return '<div class="wr-card" onclick="window.open(\'https://www.youtube.com/watch?v=' + v.videoId + '\')">'
+            + (v.thumbnail ? '<img class="wr-thumb" src="' + v.thumbnail + '" loading="lazy">' : '<div class="wr-thumb"></div>')
+            + '<div class="wr-body">'
+            + '<div class="wr-title">' + esc(v.title) + '</div>'
+            + '<div class="wr-meta"><span class="wr-ch">' + esc(v.channelTitle) + '</span><span>' + ageTxt + '</span>'
+            + '<b class="wr-views">' + fmtN(v.viewCount) + '회</b></div>'
+            + '<div class="wr-pills"><span class="wr-mult ' + multCls + '">평소의 ' + multTxt + '배</span>'
+            + '<span class="wr-vph">시속 ' + fmtN(Math.round(vph(v))) + '</span></div>'
             + '</div></div>';
     }
 
@@ -395,18 +397,17 @@
             var c = s.c, j = s.j;
             var vids = c.idx.map(function (i) { return items[i]; })
                 .sort(function (a, b) { return b.viewCount - a.viewCount; });
-            var badgeColors = { 'wr-hot': '#ffe3e3;color:#c92a2a', 'wr-warm': '#fff3e0;color:#e8590c', 'wr-watch': '#e7f0fb;color:#1971c2', 'wr-dead': '#f1f3f5;color:#868e96' };
-            return '<div style="border:1px solid #e5e5e5;border-radius:12px;padding:14px;margin-bottom:14px;background:#fafafa;">'
-                + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">'
-                + '<span style="padding:4px 12px;border-radius:8px;font-weight:800;font-size:0.85rem;background:' + badgeColors[j.cls] + ';">' + j.badge + '</span>'
-                + '<span style="font-weight:800;font-size:1rem;">[' + esc(c.label) + ']</span>'
-                + (j.axis ? '<span style="font-size:0.78rem;padding:3px 8px;background:#eef;border-radius:6px;">' + j.axis + '</span>' : '')
-                + '<span style="font-size:0.8rem;color:#888;">합산 시속 ' + fmtN(Math.round(j.sumVph)) + '회' + wrArrow(c.label, j.sumVph) + '</span>'
-                + '<button onclick="wrGateJudge(' + s.i + ')" style="margin-left:auto;padding:5px 14px;background:#0ca678;color:white;border:none;border-radius:8px;font-size:0.8rem;font-weight:700;cursor:pointer;">⚖️ 게이트 판정</button>'
+            return '<div class="wr-wave ' + j.cls + '-wave">'
+                + '<div class="wr-wave-head">'
+                + '<span class="wr-badge ' + j.cls + '">' + j.badge + '</span>'
+                + '<span class="wr-label">' + esc(c.label) + '</span>'
+                + (j.axis ? '<span class="wr-axis">' + j.axis + '</span>' : '')
+                + '<span class="wr-sum">합산 시속 <b>' + fmtN(Math.round(j.sumVph)) + '</b>' + wrArrow(c.label, j.sumVph) + '</span>'
+                + '<button class="wr-judge-btn" onclick="wrGateJudge(' + s.i + ')">⚖️ 게이트 판정</button>'
                 + '</div>'
-                + '<div style="font-size:0.82rem;color:#666;margin-bottom:8px;">' + esc(j.why) + '</div>'
-                + '<div id="wrJudge_' + s.i + '" style="display:none;background:#f0faf5;border:1px solid #c3e6d4;border-radius:10px;padding:12px;margin-bottom:8px;"></div>'
-                + vids.map(wrCardHtml).join('')
+                + '<div class="wr-why">' + esc(j.why) + '</div>'
+                + '<div id="wrJudge_' + s.i + '" class="wr-judgebox" style="display:none;"></div>'
+                + '<div class="wr-grid">' + vids.map(wrCardHtml).join('') + '</div>'
                 + '</div>';
         }).join('');
     }
@@ -466,9 +467,50 @@
         host.parentNode.insertBefore(div, host);
     }
 
+    // 큼지막·깔끔 카드 스타일 (2026-07-17 — 흰 카드+옅은 그림자, 2열 그리드, 공백 압축)
+    var WR_CSS = ''
+        + '.wr-wave{background:white;border:1px solid #ececec;border-radius:16px;padding:16px 18px;margin-bottom:16px;box-shadow:0 2px 10px rgba(0,0,0,.05);}'
+        + '.wr-wave.wr-hot-wave{border-left:5px solid #fa5252;}'
+        + '.wr-wave.wr-warm-wave{border-left:5px solid #ff922b;}'
+        + '.wr-wave.wr-watch-wave{border-left:5px solid #4dabf7;}'
+        + '.wr-wave.wr-dead-wave{border-left:5px solid #ced4da;opacity:.75;}'
+        + '.wr-wave-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}'
+        + '.wr-badge{padding:6px 14px;border-radius:10px;font-weight:800;font-size:0.95rem;white-space:nowrap;}'
+        + '.wr-badge.wr-hot{background:#ffe3e3;color:#c92a2a;}'
+        + '.wr-badge.wr-warm{background:#fff3e0;color:#e8590c;}'
+        + '.wr-badge.wr-watch{background:#e7f0fb;color:#1971c2;}'
+        + '.wr-badge.wr-dead{background:#f1f3f5;color:#868e96;}'
+        + '.wr-label{font-weight:900;font-size:1.35rem;letter-spacing:-0.5px;}'
+        + '.wr-axis{font-size:0.82rem;font-weight:700;padding:4px 10px;background:#f3f0ff;color:#5f3dc4;border-radius:8px;}'
+        + '.wr-sum{font-size:0.88rem;color:#666;}'
+        + '.wr-sum b{color:#1971c2;font-size:1rem;}'
+        + '.wr-judge-btn{margin-left:auto;padding:8px 18px;background:#0ca678;color:white;border:none;border-radius:10px;font-size:0.9rem;font-weight:800;cursor:pointer;box-shadow:0 2px 6px rgba(12,166,120,.25);}'
+        + '.wr-judge-btn:hover{background:#099268;}'
+        + '.wr-why{font-size:0.86rem;color:#868e96;margin:6px 0 12px;}'
+        + '.wr-judgebox{background:#f0faf5;border:1px solid #c3e6d4;border-radius:12px;padding:14px;margin-bottom:12px;font-size:0.95rem;}'
+        + '.wr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(460px,1fr));gap:10px;}'
+        + '@media(max-width:1000px){.wr-grid{grid-template-columns:1fr;}}'
+        + '.wr-card{display:flex;gap:14px;padding:12px;border:1px solid #f0f0f0;border-radius:14px;background:white;cursor:pointer;transition:all .15s;align-items:center;box-shadow:0 1px 4px rgba(0,0,0,.04);}'
+        + '.wr-card:hover{border-color:#1971c2;box-shadow:0 4px 14px rgba(25,113,194,.15);transform:translateY(-1px);}'
+        + '.wr-thumb{width:210px;height:118px;object-fit:cover;border-radius:10px;flex-shrink:0;background:#f1f3f5;}'
+        + '.wr-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px;}'
+        + '.wr-title{font-weight:800;font-size:1.05rem;line-height:1.4;color:#212529;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}'
+        + '.wr-meta{display:flex;gap:10px;align-items:center;font-size:0.88rem;color:#868e96;flex-wrap:wrap;}'
+        + '.wr-ch{font-weight:700;color:#495057;}'
+        + '.wr-views{color:#212529;font-size:0.95rem;}'
+        + '.wr-pills{display:flex;gap:8px;align-items:center;}'
+        + '.wr-mult{padding:5px 12px;border-radius:9px;font-weight:800;font-size:0.92rem;}'
+        + '.wr-mult.wrm-hot{background:#fa5252;color:white;}'
+        + '.wr-mult.wrm-warm{background:#fff3e0;color:#e8590c;}'
+        + '.wr-mult.wrm-cold{background:#f1f3f5;color:#868e96;}'
+        + '.wr-vph{font-size:0.85rem;color:#1971c2;font-weight:700;}';
+
     // ---------- 탭 등록 (index.html 무수정 — 몽키패치 패턴) ----------
     function setup() {
         if (document.getElementById('process-radar')) return;
+        var st0 = document.createElement('style');
+        st0.textContent = WR_CSS;
+        document.head.appendChild(st0);
         // 사이드바 버튼 (제작 흐름 그룹, 트렌드 다음)
         var trendBtn = document.getElementById('procBtn_trend');
         if (trendBtn) {
