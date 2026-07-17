@@ -58,6 +58,10 @@
         '교수', '박사', '대표', '소장', '위원', '기자', '앵커', '작가', '전문가',
         '1부', '2부', '3부', '인터뷰', '대담', '강연', '특집', '총정리', '몰아보기', '요약'];
 
+    // 장르 차단 (2026-07-17 — [남자] 국제커플 브이로그 🔥 사고 → 채널이 아니라 장르로 거른다)
+    // 생활·연예 콘텐츠는 채널 규모 대비 아무리 터져도 우리(국가·기업 스토리) 소재가 아님.
+    var WR_GENRE_BLOCK = /결혼|연애|커플|데이트|썸|이혼|브이로그|vlog|일상|여행기|먹방|맛집|레시피|요리법|다이어트|운동법|루틴|언박싱|리뷰어|국제커플|한국 온|한국에 온|시댁|남편|아내|육아|출산|연예인|아이돌|열애|드라마|예능/i;
+
     // 축 태그: 우리 채널에 맞는 두 축 (푸짐한 실측 — 한국역전극·중국위기만 산다)
     var AXIS_KR = ['한화', '삼성', 'LG', 'SK', '현대', '기아', 'K9', 'K2', '천무', '조선소',
         '방산', '잠수함', '반도체', '수주', '한국', 'HD현대', '한미', 'K팝', 'K-'];
@@ -167,12 +171,10 @@
         //   (에어컨 10일·참전 8인데 김재민+카피캣 조각이 "첫 히트 2일·참전 2"로 신선해 보임).
         //   같은 소재 단어를 제목에 쓴 영상을 파도 경계 무시하고 전체에서 센다 — 4개+면 판이 붐빔.
         var forest = items.filter(function (v) { return (v.title || '').indexOf(c.label) >= 0; }).length;
-        // ★결 필터(2026-07-17 사용자 "지금타라 개판" — [남자] 국제커플 브이로그가 🔥 받던 실측):
-        //   광각(⚡) 채널의 아웃라이어는 '그 채널 기준' 대박일 뿐 우리 결 보장이 없음.
-        //   🔥/⚠️ 행동 배지는 추적 채널이 낀 파도에만 — 전원 광각이면 📡 참고 배지로 강등.
-        var tracked = {};
-        wrLoadChannels().forEach(function (ch2) { tracked[ch2.id] = 1; });
-        var hasTracked = vids.some(function (v) { return tracked[v.channelId]; });
+        // ★결 필터 2차 정정(2026-07-17): 처음엔 광각 채널 전체를 📡로 강등했으나 사용자 정정 —
+        //   "작은 채널 떡상=소재의 힘=먹잇감"([[feedback_small_channel_viral_prey]] 원칙). 채널 출신이
+        //   아니라 '장르'가 문제였음(국제커플 브이로그 등). 장르 차단은 수집 단계(WR_GENRE_BLOCK)로 이동.
+        var hasTracked = true;
         // 히트 기준(2026-07-17 정정): 조회수만 크고 그 채널 평소보다 못한 영상(삼프로 53만=평소의 0.2배)은
         // 히트가 아님 — 배수 3+ 이거나, 3만+이면서 최소 평소 이상(1.5배+)이어야 소재의 힘으로 인정
         var hits = vids.filter(function (v) { return v.mult >= 3 || (v.viewCount >= 30000 && v.mult >= 1.5); });
@@ -310,6 +312,7 @@
                 chMeta[ch.id].median = Math.max(1, med);
                 vids.forEach(function (v) {
                     if (ageDays(v.publishedAt) > DAYS || !stats[v.videoId]) return;
+                    if (WR_GENRE_BLOCK.test(v.title || '')) return; // 생활·연예 장르 컷
                     var s = stats[v.videoId];
                     allItems.push({
                         videoId: v.videoId, title: v.title, publishedAt: v.publishedAt,
@@ -384,6 +387,7 @@
                     if (ageDays(b.publishedAt) > DAYS) return;
                     // 데일리 방송 녹화·라이브 재방은 소재가 아님 (삼프로 '오전 방송 전체보기' 류)
                     if (/전체보기|풀버전|다시보기|라이브|LIVE|생방송|모닝브리핑|마감시황|시황/i.test(b.title || '')) return;
+                    if (WR_GENRE_BLOCK.test(b.title || '')) return; // 생활·연예 장르 컷 ([남자] 브이로그 사고)
                     allItems.push({
                         videoId: b.videoId, title: b.title, publishedAt: b.publishedAt,
                         channelId: b.channelId, channelTitle: b.channelTitle + ' ⚡',
