@@ -553,6 +553,17 @@
             if (order[a.j.cls] !== order[b.j.cls]) return order[a.j.cls] - order[b.j.cls];
             return b.j.sumVph - a.j.sumVph;
         });
+        // ★💥 대박 소재 최우선 표시(2026-07-17 사용자: "내가 보는 건 대박 터진 소재 찾기, 그게 최우선")
+        //   파도 묶음과 무관하게, 최근 7일 내 '평소 대비 폭발'한 영상을 배수 순으로 맨 위에 깐다.
+        var bangs = items.filter(function (v) { return v.mult >= 3 && ageDays(v.publishedAt) <= 7; })
+            .sort(function (a, b) { return b.mult - a.mult; }).slice(0, 10);
+        var bangHtml = bangs.length
+            ? '<div class="wr-wave" style="border-left:5px solid #e8590c;background:#fffdf8;">'
+            + '<div class="wr-wave-head"><span class="wr-badge" style="background:#e8590c;color:white;">💥 대박 소재</span>'
+            + '<span class="wr-label" style="font-size:1.05rem;">평소 대비 확 터진 것 — 폭발력 순 (최근 7일)</span></div>'
+            + '<div class="wr-why">배수가 클수록 채널이 아니라 소재가 끌고 온 것. 아래에서 소재 고르고, 만들지 말지는 파도(참전·신선도)와 ⚖️판정으로 확인</div>'
+            + '<div class="wr-grid">' + bangs.map(wrCardHtml).join('') + '</div></div>'
+            : '';
         var axisFilter = (document.getElementById('wrAxisFilter') || {}).value || '';
         var visible = scored.filter(function (s) {
             if (!axisFilter) return true;
@@ -563,7 +574,7 @@
         var cutNote = visible.length > CAP
             ? '<p style="color:#868e96;font-size:0.85rem;margin:8px 0;">파도 ' + visible.length + '개 중 상위 ' + CAP + '개 표시 — 숨겨진 ' + (visible.length - CAP) + '개는 대부분 💀·👀 (배지 순 정렬)</p>'
             : '';
-        listEl.innerHTML = cutNote + visible.slice(0, CAP).map(function (s) {
+        listEl.innerHTML = bangHtml + cutNote + visible.slice(0, CAP).map(function (s) {
             var c = s.c, j = s.j;
             var vids = c.idx.map(function (i) { return items[i]; })
                 .sort(function (a, b) { return b.viewCount - a.viewCount; });
