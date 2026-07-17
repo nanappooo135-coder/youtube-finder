@@ -50,7 +50,9 @@
         '문제', '사건', '내막', '전쟁', '흔들리고', '무너지는', '망해가는', '잘살던',
         // 3차 (2026-07-17 [공장] 실측 — 조지아 로봇공장(21시간)과 삼성 LNG공장(8일)이 '공장'으로
         //  합쳐져 신선한 파도가 늙은 파도 취급됨). 진짜 파도는 고유명사(조지아·한화오션)로 묶인다.
-        '공장', '산업', '제품', '가격', '돈', '수출', '수입'];
+        '공장', '산업', '제품', '가격', '돈', '수출', '수입',
+        // 4차 (2026-07-17 [있다] 잡탕 실측) — 동사·서술어는 씨앗 자격 없음
+        '있다', '없다', '한다', '된다', '간다', '왔다', '온다', '됐다', '했다', '먹었다', '누빈다'];
 
     // 축 태그: 우리 채널에 맞는 두 축 (푸짐한 실측 — 한국역전극·중국위기만 산다)
     var AXIS_KR = ['한화', '삼성', 'LG', 'SK', '현대', '기아', 'K9', 'K2', '천무', '조선소',
@@ -156,6 +158,7 @@
             why = '아직 터진 영상 없음(3만+/배수3+ 미달) — 오르면 알림판에 올라옴';
         } else {
             var firstHitAge = Math.max.apply(null, hits.map(function (v) { return ageDays(v.publishedAt); }));
+            var newestHitAge = Math.min.apply(null, hits.map(function (v) { return ageDays(v.publishedAt); }));
             var copies = vids.length;
             if (firstHitAge > 13 || newest > 4) {
                 badge = '💀 지났다'; cls = 'wr-dead';
@@ -163,6 +166,11 @@
             } else if (firstHitAge <= 3 && copies <= 3) {
                 badge = '🔥 지금 타라'; cls = 'wr-hot';
                 why = '첫 히트 ' + firstHitAge.toFixed(1) + '일 전 · 참전 ' + copies + '개뿐 — 48시간 내 제작하면 파도 위';
+            } else if (newestHitAge <= 2 && copies <= 3) {
+                // ★재점화(2026-07-17 감사): 옛 히트에 끌려 신선한 새 히트까지 ⚠️ 받던 결함
+                //   (조지아 1일짜리가 10일 된 로봇 영상과 묶여 늙은 판정). 최신 히트가 2일 내 + 참전 적으면 🔥.
+                badge = '🔥 지금 타라'; cls = 'wr-hot';
+                why = '재점화 — 최신 히트 ' + newestHitAge.toFixed(1) + '일 전 · 참전 ' + copies + '개. 새 불씨가 방금 붙음, 48시간 내 제작';
             } else {
                 badge = '⚠️ 새각도 필수'; cls = 'wr-warm';
                 why = '첫 히트 ' + firstHitAge.toFixed(0) + '일 · 참전 ' + copies + '개 — 같은 얘기 재탕은 사망, 원본에 없는 다음 궁금증만 생존';
