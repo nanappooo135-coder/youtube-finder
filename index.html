@@ -23728,14 +23728,18 @@ Example format:
             if (data.error) {
                 const reason = data.error.errors?.[0]?.reason || '';
                 const isQuotaError = reason === 'quotaExceeded' || reason === 'dailyLimitExceeded' || data.error.code === 429;
+                // ★2026-07-17: 무효 키(400 API_KEY_INVALID — 7/5 키 정리 때 삭제된 키가 목록에 남은 경우)도
+                //   로테이션 대상. 이걸 '빈 결과'로 삼키면 활성 키가 죽은 키일 때 모든 기능이 조용히 텅 빔
+                //   (서버 브리핑을 12일 침묵시킨 것과 동일 버그 클래스).
+                const isDeadKey = data.error.code === 400 && /api key/i.test(data.error.message || '');
                 console.error(`[API ERROR] ${endpoint} (reason: ${reason}):`, data.error.message, paramLog);
-                if (isQuotaError) {
+                if (isQuotaError || isDeadKey) {
                     _exhaustedKeys.add(activeIdx);
-                    console.log(`키 ${activeIdx + 1} 소진됨 (총 소진: ${_exhaustedKeys.size}/${allKeys.length})`);
+                    console.log(`키 ${activeIdx + 1} ${isDeadKey ? '무효(삭제된 키 — API 키 설정에서 지우세요)' : '소진됨'} (총 제외: ${_exhaustedKeys.size}/${allKeys.length})`);
                     if (_exhaustedKeys.size < allKeys.length) {
                         return fetchYouTubeAPI(endpoint, params, _triedCount + 1);
                     }
-                    throw new Error('오늘 API 할당량을 모두 소진했어요. 내일 오후 4~5시에 초기화돼요.');
+                    throw new Error(isDeadKey ? '모든 API 키가 무효/소진 상태예요. API 키 설정을 확인하세요.' : '오늘 API 할당량을 모두 소진했어요. 내일 오후 4~5시에 초기화돼요.');
                 }
                 // 할당량 외 모든 에러는 빈 결과로 처리 (throw 안 함)
                 console.warn(`[API SKIP] ${endpoint}: ${reason} — 빈 결과로 대체`);
