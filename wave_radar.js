@@ -512,6 +512,29 @@
             + '</div>';
     }
 
+    // 💥 리더보드 행 (2026-07-17 — 순위 크게, 배수가 주인공, 나머지는 조용히)
+    function wrBangRow(v, rank) {
+        var a = ageDays(v.publishedAt);
+        var ageTxt = a < 1 ? Math.round(a * 24) + '시간 전' : Math.round(a) + '일 전';
+        var rcls = rank === 1 ? ' r1' : (rank === 2 ? ' r2' : (rank === 3 ? ' r3' : ''));
+        var multTxt = v.mult >= 10 ? Math.round(v.mult).toLocaleString() : v.mult.toFixed(1);
+        var open = "window.open('https://www.youtube.com/watch?v=" + v.videoId + "')";
+        return '<div class="wr-row">'
+            + '<div class="wr-rank' + rcls + '">' + rank + '</div>'
+            + (v.thumbnail ? '<img class="wr-row-thumb" src="' + v.thumbnail + '" loading="lazy" onclick="' + open + '">' : '<div class="wr-row-thumb"></div>')
+            + '<div class="wr-row-body">'
+            + '<div class="wr-row-title" onclick="' + open + '">' + esc(v.title) + '</div>'
+            + '<div class="wr-row-meta"><b>' + esc(v.channelTitle) + '</b> · ' + ageTxt + ' · 조회 <b>' + fmtN(v.viewCount) + '</b> · 시속 ' + fmtN(Math.round(vph(v))) + '</div>'
+            + '</div>'
+            + '<div class="wr-row-metric"><div class="wr-row-mult' + (v.mult >= 30 ? '' : ' cool') + '">' + multTxt + '배</div><div class="wr-row-vph">평소 대비</div></div>'
+            + '<div class="wr-row-btns">'
+            + '<button class="wr-btn-sm wr-btn-judge" onclick="event.stopPropagation();wrVideoJudge(\'' + v.videoId + '\')">⚖️ 판정</button>'
+            + '<button class="wr-btn-sm wr-btn-q" onclick="event.stopPropagation();wrVideoQ(\'' + v.videoId + '\')">💬 질문</button>'
+            + '</div></div>'
+            + '<div id="wrVJ_' + v.videoId + '" style="display:none;background:#f0faf5;border:1px solid #c3e6d4;border-radius:12px;padding:12px;margin:0 0 8px 68px;"></div>'
+            + '<div id="wrQ_' + v.videoId + '" style="display:none;background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:12px;margin:0 0 8px 68px;"></div>';
+    }
+
     // ⚖️ 영상 단독 판정 (2026-07-17 — 사용자: "파도 묶음 필요 없다, 소재가 중요" → 대박 카드에서 바로 판정)
     window.wrVideoJudge = function (vid) {
         var cache = wrCache(); if (!cache) return;
@@ -599,11 +622,11 @@
         var bangs = items.filter(function (v) { return v.mult >= 3 && ageDays(v.publishedAt) <= 7; })
             .sort(function (a, b) { return b.mult - a.mult; }).slice(0, 20);
         var bangHtml = bangs.length
-            ? '<div class="wr-wave" style="border-left:5px solid #e8590c;background:#fffdf8;">'
-            + '<div class="wr-wave-head"><span class="wr-badge" style="background:#e8590c;color:white;">💥 대박 소재</span>'
-            + '<span class="wr-label" style="font-size:1.05rem;">평소 대비 확 터진 것 — 폭발력 순 (최근 7일, 등록채널 전체)</span></div>'
-            + '<div class="wr-why">배수가 클수록 채널이 아니라 소재가 끌고 온 것. 카드의 ⚖️로 바로 판정·실측 복사 — 광각 채널 배수는 매 스캔 60개씩 채워짐(며칠이면 전체 커버)</div>'
-            + '<div class="wr-grid">' + bangs.map(function (v) { return wrCardHtml(v, true); }).join('') + '</div></div>'
+            ? '<div class="wr-bang">'
+            + '<div class="wr-bang-head"><span class="wr-bang-title">💥 대박 소재 순위</span>'
+            + '<span class="wr-bang-sub">채널 평소 조회수 대비 몇 배 터졌나 — 최근 7일 · 등록채널 전체</span></div>'
+            + bangs.map(function (v, bi) { return wrBangRow(v, bi + 1); }).join('')
+            + '</div>'
             : '';
         var axisFilter = (document.getElementById('wrAxisFilter') || {}).value || '';
         var visible = scored.filter(function (s) {
@@ -727,7 +750,35 @@
         + '.wr-mult.wrm-hot{background:#fa5252;color:white;}'
         + '.wr-mult.wrm-warm{background:#fff3e0;color:#e8590c;}'
         + '.wr-mult.wrm-cold{background:#f1f3f5;color:#868e96;}'
-        + '.wr-vph{font-size:0.85rem;color:#1971c2;font-weight:700;}';
+        + '.wr-vph{font-size:0.85rem;color:#1971c2;font-weight:700;}'
+        // 💥 대박 리더보드 (2026-07-17 — 순위+큼지막+차분한 배색, 배수가 주인공)
+        + '.wr-bang{background:white;border:1px solid #ececec;border-radius:16px;padding:6px 18px 10px;margin-bottom:18px;box-shadow:0 2px 10px rgba(0,0,0,.05);}'
+        + '.wr-bang-head{display:flex;align-items:baseline;gap:12px;padding:12px 4px 8px;border-bottom:2px solid #f1f3f5;}'
+        + '.wr-bang-title{font-size:1.25rem;font-weight:900;letter-spacing:-0.5px;}'
+        + '.wr-bang-sub{font-size:0.82rem;color:#adb5bd;}'
+        + '.wr-row{display:flex;align-items:center;gap:16px;padding:14px 4px;border-bottom:1px solid #f4f4f4;}'
+        + '.wr-row:last-child{border-bottom:none;}'
+        + '.wr-rank{width:52px;text-align:center;font-size:1.7rem;font-weight:900;color:#ced4da;flex-shrink:0;font-style:italic;}'
+        + '.wr-rank.r1{color:#fa5252;font-size:2rem;}'
+        + '.wr-rank.r2{color:#ff922b;font-size:1.85rem;}'
+        + '.wr-rank.r3{color:#fab005;}'
+        + '.wr-row-thumb{width:200px;height:112px;object-fit:cover;border-radius:12px;flex-shrink:0;background:#f1f3f5;cursor:pointer;}'
+        + '.wr-row-body{flex:1;min-width:0;}'
+        + '.wr-row-title{font-weight:800;font-size:1.08rem;line-height:1.4;color:#212529;cursor:pointer;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}'
+        + '.wr-row-title:hover{color:#1971c2;}'
+        + '.wr-row-meta{font-size:0.85rem;color:#adb5bd;margin-top:6px;}'
+        + '.wr-row-meta b{color:#495057;font-weight:700;}'
+        + '.wr-row-metric{width:130px;text-align:right;flex-shrink:0;}'
+        + '.wr-row-mult{font-size:1.45rem;font-weight:900;color:#fa5252;letter-spacing:-0.5px;}'
+        + '.wr-row-mult.cool{color:#e8590c;}'
+        + '.wr-row-vph{font-size:0.8rem;color:#868e96;margin-top:2px;}'
+        + '.wr-row-btns{display:flex;flex-direction:column;gap:6px;flex-shrink:0;}'
+        + '.wr-btn-sm{padding:7px 14px;border:none;border-radius:9px;font-size:0.82rem;font-weight:800;cursor:pointer;white-space:nowrap;}'
+        + '.wr-btn-judge{background:#e6f7ee;color:#0ca678;}'
+        + '.wr-btn-judge:hover{background:#0ca678;color:white;}'
+        + '.wr-btn-q{background:#f3f0ff;color:#5f3dc4;}'
+        + '.wr-btn-q:hover{background:#5f3dc4;color:white;}'
+        + '@media(max-width:900px){.wr-row{flex-wrap:wrap;}.wr-row-thumb{width:150px;height:84px;}}';
 
     // ---------- 탭 등록 (index.html 무수정 — 몽키패치 패턴) ----------
     function setup() {
