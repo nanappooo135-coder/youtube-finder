@@ -68,6 +68,40 @@
     var AXIS_CN = ['중국', '시진핑', '위안', '헝다', 'BYD', '비야디', '샤오미', '홍콩',
         '대만', '알리', '테무', '일대일로', '베이징', '상하이'];
 
+    // ---------- 차단 채널 (2026-07-17 — 세력주분석 같은 결 안 맞는 채널 손수 제거) ----------
+    var WR_BLOCK_KEY = 'wave_blocked_channels_v1'; // {channelId: name}
+    function wrBlocked() {
+        try { return JSON.parse(localStorage.getItem(WR_BLOCK_KEY) || '{}'); } catch (e) { return {}; }
+    }
+    window.wrBlockChannel = function (cid, name) {
+        var b = wrBlocked(); b[cid] = name;
+        localStorage.setItem(WR_BLOCK_KEY, JSON.stringify(b));
+        var c = wrCache();
+        if (c) { // 캐시에서 즉시 제거 + 파도 재계산 + 화면 갱신
+            c.items = c.items.filter(function (v) { return v.channelId !== cid; });
+            c.clusters = wrCluster(c.items);
+            localStorage.setItem(WR_CACHE_KEY, JSON.stringify(c));
+            wrRender(c.items, c.clusters);
+        }
+        wrRenderBlocked();
+    };
+    window.wrUnblockChannel = function (cid) {
+        var b = wrBlocked(); delete b[cid];
+        localStorage.setItem(WR_BLOCK_KEY, JSON.stringify(b));
+        wrRenderBlocked();
+    };
+    window.wrRenderBlocked = function () {
+        var el = document.getElementById('wrBlockedChips');
+        if (!el) return;
+        var b = wrBlocked(); var ids = Object.keys(b);
+        el.innerHTML = ids.length
+            ? '<span style="font-size:0.78rem;color:#adb5bd;font-weight:700;">🚫 차단:</span> ' + ids.map(function (cid) {
+                return '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 9px;background:#f8f9fa;color:#868e96;border-radius:14px;font-size:0.78rem;">'
+                    + esc(b[cid]) + '<span onclick="wrUnblockChannel(\'' + cid + '\')" style="cursor:pointer;color:#1971c2;font-weight:800;">해제</span></span>';
+            }).join(' ')
+            : '';
+    };
+
     // ---------- 저장 ----------
     function wrLoadChannels() {
         try {
@@ -313,6 +347,7 @@
                 vids.forEach(function (v) {
                     if (ageDays(v.publishedAt) > DAYS || !stats[v.videoId]) return;
                     if (WR_GENRE_BLOCK.test(v.title || '')) return; // 생활·연예 장르 컷
+                    if (wrBlocked()[ch.id]) return; // 사용자 차단 채널
                     var s = stats[v.videoId];
                     allItems.push({
                         videoId: v.videoId, title: v.title, publishedAt: v.publishedAt,
@@ -388,6 +423,7 @@
                     // 데일리 방송 녹화·라이브 재방은 소재가 아님 (삼프로 '오전 방송 전체보기' 류)
                     if (/전체보기|풀버전|다시보기|라이브|LIVE|생방송|모닝브리핑|마감시황|시황/i.test(b.title || '')) return;
                     if (WR_GENRE_BLOCK.test(b.title || '')) return; // 생활·연예 장르 컷 ([남자] 브이로그 사고)
+                    if (wrBlocked()[b.channelId]) return; // 사용자 차단 채널
                     allItems.push({
                         videoId: b.videoId, title: b.title, publishedAt: b.publishedAt,
                         channelId: b.channelId, channelTitle: b.channelTitle + ' ⚡',
@@ -512,18 +548,18 @@
             + '</div>';
     }
 
-    // 💥 리더보드 행 (2026-07-17 — 순위 크게, 배수가 주인공, 나머지는 조용히)
+    // 💥 리더보드 행 (2026-07-17 — 순위 크게, 배수가 주인공. 클릭=액션 메뉴(URL복사·차단 등), 바로 이동 안 함)
     function wrBangRow(v, rank) {
         var a = ageDays(v.publishedAt);
         var ageTxt = a < 1 ? Math.round(a * 24) + '시간 전' : Math.round(a) + '일 전';
         var rcls = rank === 1 ? ' r1' : (rank === 2 ? ' r2' : (rank === 3 ? ' r3' : ''));
         var multTxt = v.mult >= 10 ? Math.round(v.mult).toLocaleString() : v.mult.toFixed(1);
-        var open = "window.open('https://www.youtube.com/watch?v=" + v.videoId + "')";
+        var act = "wrActions('" + v.videoId + "')";
         return '<div class="wr-row">'
             + '<div class="wr-rank' + rcls + '">' + rank + '</div>'
-            + (v.thumbnail ? '<img class="wr-row-thumb" src="' + v.thumbnail + '" loading="lazy" onclick="' + open + '">' : '<div class="wr-row-thumb"></div>')
+            + (v.thumbnail ? '<img class="wr-row-thumb" src="' + v.thumbnail + '" loading="lazy" onclick="' + act + '">' : '<div class="wr-row-thumb"></div>')
             + '<div class="wr-row-body">'
-            + '<div class="wr-row-title" onclick="' + open + '">' + esc(v.title) + '</div>'
+            + '<div class="wr-row-title" onclick="' + act + '">' + esc(v.title) + '</div>'
             + '<div class="wr-row-meta"><b>' + esc(v.channelTitle) + '</b> · ' + ageTxt + ' · 조회 <b>' + fmtN(v.viewCount) + '</b> · 시속 ' + fmtN(Math.round(vph(v))) + '</div>'
             + '</div>'
             + '<div class="wr-row-metric"><div class="wr-row-mult' + (v.mult >= 30 ? '' : ' cool') + '">' + multTxt + '배</div><div class="wr-row-vph">평소 대비</div></div>'
@@ -531,9 +567,30 @@
             + '<button class="wr-btn-sm wr-btn-judge" onclick="event.stopPropagation();wrVideoJudge(\'' + v.videoId + '\')">⚖️ 판정</button>'
             + '<button class="wr-btn-sm wr-btn-q" onclick="event.stopPropagation();wrVideoQ(\'' + v.videoId + '\')">💬 질문</button>'
             + '</div></div>'
+            + '<div id="wrAct_' + v.videoId + '" style="display:none;background:#f8f9fa;border:1px solid #e9ecef;border-radius:12px;padding:10px 12px;margin:0 0 8px 68px;"></div>'
             + '<div id="wrVJ_' + v.videoId + '" style="display:none;background:#f0faf5;border:1px solid #c3e6d4;border-radius:12px;padding:12px;margin:0 0 8px 68px;"></div>'
             + '<div id="wrQ_' + v.videoId + '" style="display:none;background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:12px;margin:0 0 8px 68px;"></div>';
     }
+
+    // 클릭 액션 메뉴 (2026-07-17 사용자 요청 — 카드 클릭시 영상으로 바로 튀지 않게)
+    window.wrActions = function (vid) {
+        var cache = wrCache(); if (!cache) return;
+        var v = cache.items.find(function (x) { return x.videoId === vid; });
+        var box = document.getElementById('wrAct_' + vid);
+        if (!v || !box) return;
+        if (box.style.display !== 'none') { box.style.display = 'none'; return; }
+        var url = 'https://www.youtube.com/watch?v=' + vid;
+        var bs = 'padding:8px 16px;border:none;border-radius:9px;font-size:0.85rem;font-weight:800;cursor:pointer;';
+        box.style.display = '';
+        box.innerHTML = '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">'
+            + '<button style="' + bs + 'background:#1971c2;color:white;" onclick="window.open(\'' + url + '\')">▶ 영상 열기</button>'
+            + '<button style="' + bs + 'background:#e7f0fb;color:#1971c2;" onclick="navigator.clipboard.writeText(\'' + url + '\').then(function(){alert(\'URL 복사됨\')})">📋 URL 복사</button>'
+            + '<button style="' + bs + 'background:#fff5f5;color:#c92a2a;" onclick="if(confirm(\'' + esc(v.channelTitle).replace(/'/g, '') + ' 채널을 차단할까요? 앞으로 레이더에 안 나옵니다\')){wrBlockChannel(\'' + v.channelId + '\',\'' + esc(v.channelTitle).replace(/'/g, '') + '\')}">🚫 이 채널 차단</button>'
+            + '<button style="' + bs + 'background:#e6f7ee;color:#0ca678;" onclick="window.open(\'https://www.youtube.com/channel/' + v.channelId + '/videos\')">📺 채널 들어가기</button>'
+            + '<button style="' + bs + 'background:#f3f0ff;color:#5f3dc4;" onclick="var chs=JSON.parse(localStorage.getItem(\'wave_channels_v1\')||\'[]\');if(!chs.some(function(c){return c.id===\'' + v.channelId + '\'})){chs.push({id:\'' + v.channelId + '\',name:\'' + esc(v.channelTitle).replace(/'/g, '').replace(' ⚡', '') + '\'});localStorage.setItem(\'wave_channels_v1\',JSON.stringify(chs));wrRenderChannels();alert(\'추적 목록에 추가됨\')}else{alert(\'이미 추적 중\')}">⭐ 추적 추가</button>'
+            + '<button style="' + bs + 'background:#f1f3f5;color:#495057;" onclick="navigator.clipboard.writeText(' + JSON.stringify(JSON.stringify(v.title)) + ').then(function(){alert(\'제목 복사됨\')})">제목 복사</button>'
+            + '</div>';
+    };
 
     // ⚖️ 영상 단독 판정 (2026-07-17 — 사용자: "파도 묶음 필요 없다, 소재가 중요" → 대박 카드에서 바로 판정)
     window.wrVideoJudge = function (vid) {
@@ -826,6 +883,7 @@
             + '      <input type="text" id="wrAddInput" placeholder="추적 채널 추가 (채널명)" style="padding:7px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:0.82rem;width:180px;" onkeydown="if(event.key===\'Enter\')wrAddChannel()">'
             + '      <button onclick="wrAddChannel()" style="padding:7px 12px;background:#f1f3f5;border:1px solid #dee2e6;border-radius:8px;font-size:0.8rem;font-weight:700;cursor:pointer;">+ 추가</button>'
             + '    </div>'
+            + '    <div id="wrBlockedChips" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px;"></div>'
             + '    <div id="wrStatus" style="font-size:0.85rem;color:#1971c2;font-weight:600;margin-bottom:10px;"></div>'
             + '    <div id="wrList"></div>'
             + '  </div>'
@@ -841,7 +899,7 @@
                     if (el) el.style.display = (p === 'radar') ? '' : 'none';
                     var b = document.getElementById('procBtn_radar');
                     if (b) b.classList.toggle('inactive', p !== 'radar');
-                    if (p === 'radar') { wrRenderChannels(); wrRerenderFromCache(); }
+                    if (p === 'radar') { wrRenderChannels(); wrRenderBlocked(); wrRerenderFromCache(); }
                 } catch (e) {}
                 return r;
             };
