@@ -356,7 +356,7 @@
                         if (needMed.indexOf(b.channelId) < 0) needMed.push(b.channelId);
                     }
                 });
-                var MED_CAP = 30;
+                var MED_CAP = 60; // 2026-07-17 상향: 563채널 전체 배수 계산이 본체(사용자 확정) — 채널당 2유닛
                 for (var mi = 0; mi < Math.min(needMed.length, MED_CAP); mi++) {
                     var cid2 = needMed[mi];
                     st.textContent = '광각 채널 평소성적 계산 (' + (mi + 1) + '/' + Math.min(needMed.length, MED_CAP) + ')...';
@@ -487,7 +487,7 @@
         } catch (e) { return null; }
     }
 
-    function wrCardHtml(v) {
+    function wrCardHtml(v, withJudge) {
         // 큼지막·한눈에 (2026-07-17 사용자 요청: 썸네일·글자 확대, 공백 압축, 배수=색깔 알약)
         var a = ageDays(v.publishedAt);
         var ageTxt = a < 1 ? Math.round(a * 24) + '시간 전' : Math.round(a) + '일 전';
@@ -503,12 +503,53 @@
             + '<b class="wr-views">' + fmtN(v.viewCount) + '회</b></div>'
             + '<div class="wr-pills"><span class="wr-mult ' + multCls + '">평소의 ' + multTxt + '배</span>'
             + '<span class="wr-vph">시속 ' + fmtN(Math.round(vph(v))) + '</span>'
+            + (withJudge ? '<button onclick="event.stopPropagation();wrVideoJudge(\'' + v.videoId + '\')" style="padding:5px 12px;background:#0ca678;color:white;border:none;border-radius:9px;font-size:0.82rem;font-weight:700;cursor:pointer;">⚖️ 판정</button>' : '')
             + (isHit ? '<button onclick="event.stopPropagation();wrVideoQ(\'' + v.videoId + '\')" style="padding:5px 12px;background:#5f3dc4;color:white;border:none;border-radius:9px;font-size:0.82rem;font-weight:700;cursor:pointer;">💬 시청자 질문</button>' : '')
             + '</div>'
             + '</div></div>'
+            + '<div id="wrVJ_' + v.videoId + '" style="display:none;background:#f0faf5;border:1px solid #c3e6d4;border-radius:12px;padding:12px;margin:-4px 0 8px;"></div>'
             + '<div id="wrQ_' + v.videoId + '" style="display:none;background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:12px;margin:-4px 0 8px;"></div>'
             + '</div>';
     }
+
+    // ⚖️ 영상 단독 판정 (2026-07-17 — 사용자: "파도 묶음 필요 없다, 소재가 중요" → 대박 카드에서 바로 판정)
+    window.wrVideoJudge = function (vid) {
+        var cache = wrCache(); if (!cache) return;
+        var v = cache.items.find(function (x) { return x.videoId === vid; });
+        var box = document.getElementById('wrVJ_' + vid);
+        if (!v || !box) return;
+        if (box.style.display !== 'none') { box.style.display = 'none'; return; }
+        var el = Math.floor(ageDays(v.publishedAt));
+        // 참전 추정: 제목 토큰 2개+ 겹치는 다른 영상 수 (같은 소재를 몇 명이 건드렸나)
+        var myToks = {}; wrTokens(v.title).forEach(function (t) { myToks[t] = 1; });
+        var copies = cache.items.filter(function (x) {
+            if (x.videoId === vid) return false;
+            return wrTokens(x.title).filter(function (t) { return myToks[t]; }).length >= 2;
+        }).length + 1;
+        var verdict, lines = [];
+        var demandOk = v.mult >= 3 || (v.viewCount >= 30000 && v.mult >= 1.5);
+        if (!demandOk) { verdict = '⛔ 폐기 권고'; lines.push('수요 미증명 — 평소의 ' + v.mult.toFixed(1) + '배.'); }
+        else if (el >= 14) { verdict = '⛔ 폐기 권고'; lines.push('선점 실기 — ' + el + '일 경과(2주+).'); }
+        else if (el >= 3 || copies >= 4) {
+            verdict = '⚠️ 새각도 조건부 진행';
+            lines.push(el + '일 경과 · 같은 소재 건드린 영상 ' + copies + '개 — 원본에 없는 다음 궁금증으로만.');
+        } else {
+            verdict = '✅ 진행 (48시간 내)';
+            lines.push(el + '일 · ' + fmtN(v.viewCount) + '회 · 평소의 ' + v.mult.toFixed(1) + '배 · 참전 ' + copies + '개 — 초입.');
+        }
+        lines.push('※ 완결형(끝난 옛날 얘기)이면 무효 — "내일도 새 뉴스 나올 얘기인가" 자문.');
+        var judged = {
+            "실측": { "레퍼런스_업로드일": v.publishedAt.slice(0, 10), "레퍼런스_조회수": v.viewCount, "레퍼런스_구독자수": v.subscriberCount, "판정일": new Date().toISOString().slice(0, 10) },
+            "시의성": { "판정": "진행형", "근거": "레이더 실측 — 평소의 " + v.mult.toFixed(1) + "배, 참전 " + copies + "개", "새각도": "" },
+            "히트작_제목들": [v.title + " (" + fmtN(v.viewCount) + "회·" + v.mult.toFixed(0) + "배)"],
+            "레퍼런스_URL": "https://www.youtube.com/watch?v=" + vid
+        };
+        box.style.display = '';
+        box.innerHTML = '<div style="font-weight:800;margin-bottom:6px;">' + verdict + '</div>'
+            + lines.map(function (l) { return '<div style="font-size:0.85rem;color:#555;margin-bottom:4px;">· ' + esc(l) + '</div>'; }).join('')
+            + '<button onclick="navigator.clipboard.writeText(document.getElementById(\'wrVJ_' + vid + '\').dataset.judged).then(function(){alert(\'복사됨 — 클로드에게 붙여넣고 작업 시작\')})" style="margin-top:6px;padding:6px 14px;background:#1971c2;color:white;border:none;border-radius:8px;font-size:0.82rem;font-weight:700;cursor:pointer;">📋 실측 JSON 복사</button>';
+        box.dataset.judged = JSON.stringify(judged, null, 2);
+    };
 
     // 💬 시청자 질문 (2026-07-17 리워크 — 파도 묶음이 아니라 "터진 영상 하나"의 댓글만, 안내 한 줄 포함)
     // 사용자 피드백: 파도 통짜 묶음은 잡탕·용도불명. 뉴스 매칭도 품질 낮아 제거.
@@ -556,13 +597,13 @@
         // ★💥 대박 소재 최우선 표시(2026-07-17 사용자: "내가 보는 건 대박 터진 소재 찾기, 그게 최우선")
         //   파도 묶음과 무관하게, 최근 7일 내 '평소 대비 폭발'한 영상을 배수 순으로 맨 위에 깐다.
         var bangs = items.filter(function (v) { return v.mult >= 3 && ageDays(v.publishedAt) <= 7; })
-            .sort(function (a, b) { return b.mult - a.mult; }).slice(0, 10);
+            .sort(function (a, b) { return b.mult - a.mult; }).slice(0, 20);
         var bangHtml = bangs.length
             ? '<div class="wr-wave" style="border-left:5px solid #e8590c;background:#fffdf8;">'
             + '<div class="wr-wave-head"><span class="wr-badge" style="background:#e8590c;color:white;">💥 대박 소재</span>'
-            + '<span class="wr-label" style="font-size:1.05rem;">평소 대비 확 터진 것 — 폭발력 순 (최근 7일)</span></div>'
-            + '<div class="wr-why">배수가 클수록 채널이 아니라 소재가 끌고 온 것. 아래에서 소재 고르고, 만들지 말지는 파도(참전·신선도)와 ⚖️판정으로 확인</div>'
-            + '<div class="wr-grid">' + bangs.map(wrCardHtml).join('') + '</div></div>'
+            + '<span class="wr-label" style="font-size:1.05rem;">평소 대비 확 터진 것 — 폭발력 순 (최근 7일, 등록채널 전체)</span></div>'
+            + '<div class="wr-why">배수가 클수록 채널이 아니라 소재가 끌고 온 것. 카드의 ⚖️로 바로 판정·실측 복사 — 광각 채널 배수는 매 스캔 60개씩 채워짐(며칠이면 전체 커버)</div>'
+            + '<div class="wr-grid">' + bangs.map(function (v) { return wrCardHtml(v, true); }).join('') + '</div></div>'
             : '';
         var axisFilter = (document.getElementById('wrAxisFilter') || {}).value || '';
         var visible = scored.filter(function (s) {
