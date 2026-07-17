@@ -51,8 +51,9 @@
         // 3차 (2026-07-17 [공장] 실측 — 조지아 로봇공장(21시간)과 삼성 LNG공장(8일)이 '공장'으로
         //  합쳐져 신선한 파도가 늙은 파도 취급됨). 진짜 파도는 고유명사(조지아·한화오션)로 묶인다.
         '공장', '산업', '제품', '가격', '돈', '수출', '수입',
-        // 4차 (2026-07-17 [있다] 잡탕 실측) — 동사·서술어는 씨앗 자격 없음
-        '있다', '없다', '한다', '된다', '간다', '왔다', '온다', '됐다', '했다', '먹었다', '누빈다'];
+        // 4차 (2026-07-17 [있다]·[알고] 잡탕 실측) — 동사·서술어·연결어는 씨앗 자격 없음
+        '있다', '없다', '한다', '된다', '간다', '왔다', '온다', '됐다', '했다', '먹었다', '누빈다',
+        '알고', '보니', '결국', '먼저', '직접', '전부', '통째로', '하필'];
 
     // 축 태그: 우리 채널에 맞는 두 축 (푸짐한 실측 — 한국역전극·중국위기만 산다)
     var AXIS_KR = ['한화', '삼성', 'LG', 'SK', '현대', '기아', 'K9', 'K2', '천무', '조선소',
@@ -127,6 +128,18 @@
         var assigned = {}, clusters = [];
         keys.forEach(function (tk) {
             var members = tokMap[tk].filter(function (i) { return !assigned[i]; });
+            if (members.length < 2) return;
+            // ★2토큰 규칙(2026-07-17 [로봇] 잡탕 실측 — 사용자 발견): 단어 1개만 겹치면 딴 소재가 섞임
+            //   (현대차 조지아·삼성 전고체·농업로봇이 '로봇' 하나로 합쳐짐). 리드(최고시속) 영상과
+            //   공유 토큰 2개+ 인 멤버만 같은 파도로 인정 — 나머지는 풀에 남겨 단독 파도 기회 유지.
+            var lead = members.slice().sort(function (a, b) { return vph(items[b]) - vph(items[a]); })[0];
+            var leadToks = {};
+            wrTokens(items[lead].title).forEach(function (t2) { leadToks[t2] = 1; });
+            members = members.filter(function (i) {
+                if (i === lead) return true;
+                var shared = wrTokens(items[i].title).filter(function (t2) { return leadToks[t2]; }).length;
+                return shared >= 2;
+            });
             if (members.length < 2) return;
             members.forEach(function (i) { assigned[i] = 1; });
             clusters.push({ label: tk, idx: members });
@@ -427,76 +440,6 @@
             box.dataset.judged = JSON.stringify(judged, null, 2);
         }
     };
-    // ---------- 🔍 각도 재료 (2026-07-17 — "각도 뽑기"를 클로드 주장이 아니라 날것 증거로) ----------
-    // 사용자 요구: LLM에게 시키면 대충 해도 검증 불가 → 파인더가 원자료를 그대로 화면에 띄운다.
-    // ①경쟁작 제목(이미 차지된 각도) ②히트작 댓글 중 질문 TOP(시청자가 직접 요구하는 다음 각도)
-    // ③관련 최신 뉴스(news.json — 새 국면). 해석 없음, 전부 날것. API 비용: 댓글 1유닛×히트작 2개.
-    window.wrAngleProbe = async function (ci) {
-        var cache = wrCache(); if (!cache) return;
-        var c = cache.clusters[ci];
-        var vids = c.idx.map(function (i) { return cache.items[i]; })
-            .sort(function (a, b) { return b.viewCount - a.viewCount; });
-        var box = document.getElementById('wrAngle_' + ci);
-        if (!box) return;
-        box.style.display = '';
-        box.innerHTML = '<div style="color:#1971c2;font-weight:700;">각도 재료 수집 중... (경쟁작·댓글·뉴스)</div>';
-        try {
-            // ② 히트작 댓글 질문 (상위 2개 영상)
-            var hitVids = vids.filter(function (v) { return v.mult >= 3 || (v.viewCount >= 30000 && v.mult >= 1.5); }).slice(0, 2);
-            if (!hitVids.length) hitVids = vids.slice(0, 1);
-            var questions = [];
-            for (var h = 0; h < hitVids.length; h++) {
-                try {
-                    var cr = await fetchYouTubeAPI('commentThreads', { part: 'snippet', videoId: hitVids[h].videoId, order: 'relevance', maxResults: 100, textFormat: 'plainText' });
-                    (cr.items || []).forEach(function (it) {
-                        var s = it.snippet.topLevelComment.snippet;
-                        var txt = String(s.textDisplay || '').replace(/\s+/g, ' ').trim();
-                        if (txt.length < 8 || txt.length > 220) return;
-                        if (!/[?？]|궁금|왜 |어떻게|얼마나|그럼 |다음엔|우리나라는|한국은/.test(txt)) return;
-                        questions.push({ t: txt, likes: parseInt(s.likeCount || 0), from: hitVids[h].channelTitle });
-                    });
-                } catch (e2) { /* 댓글 막힌 영상 등 */ }
-            }
-            questions.sort(function (a, b) { return b.likes - a.likes; });
-            // ③ 관련 뉴스 (news.json 키워드 매칭)
-            var newsHits = [];
-            try {
-                var nj = await fetch('news.json?v=' + Math.floor(Date.now() / 600000)).then(function (r) { return r.json(); });
-                var toks = {};
-                vids.forEach(function (v) { wrTokens(v.title).forEach(function (tk) { toks[tk] = 1; }); });
-                toks[c.label] = 1;
-                var tokList = Object.keys(toks).filter(function (t) { return t.length >= 2; });
-                Object.keys(nj.categories || {}).forEach(function (k) {
-                    ((nj.categories[k] || {}).news || []).forEach(function (n) {
-                        if (tokList.some(function (t) { return (n.title || '').indexOf(t) >= 0; })) {
-                            newsHits.push(n);
-                        }
-                    });
-                });
-                var seenL = {};
-                newsHits = newsHits.filter(function (n) { if (seenL[n.link]) return false; seenL[n.link] = 1; return true; })
-                    .sort(function (a, b) { return (b.pubTimestamp || 0) - (a.pubTimestamp || 0); }).slice(0, 6);
-            } catch (e3) {}
-            // 렌더 — 전부 날것, 해석 없음
-            var html = '';
-            html += '<div style="font-weight:800;margin-bottom:6px;">① 이미 차지된 각도 (경쟁작 제목 — 이거랑 겹치면 재탕)</div>';
-            html += vids.slice(0, 6).map(function (v) {
-                return '<div style="font-size:0.86rem;margin-bottom:3px;">· ' + esc(v.title) + ' <span style="color:#888;">(' + fmtN(v.viewCount) + '회·' + v.mult.toFixed(1) + '배)</span></div>';
-            }).join('');
-            html += '<div style="font-weight:800;margin:12px 0 6px;">② 시청자가 직접 묻는 다음 궁금증 (히트작 댓글, 좋아요순 — 이게 각도 후보)</div>';
-            html += questions.length ? questions.slice(0, 10).map(function (q) {
-                return '<div style="font-size:0.86rem;margin-bottom:4px;background:#fffbeb;border-radius:6px;padding:6px 8px;">💬 ' + esc(q.t) + ' <b style="color:#e8590c;">👍' + q.likes + '</b></div>';
-            }).join('') : '<div style="color:#888;font-size:0.85rem;">질문 댓글 없음</div>';
-            html += '<div style="font-weight:800;margin:12px 0 6px;">③ 이 소재의 최신 뉴스 (새 국면 = 공짜 각도)</div>';
-            html += newsHits.length ? newsHits.map(function (n) {
-                var dt = n.pubTimestamp ? new Date(n.pubTimestamp).toLocaleDateString() : '';
-                return '<div style="font-size:0.86rem;margin-bottom:3px;">📰 <a href="' + n.link + '" target="_blank" style="color:#1971c2;">' + esc(n.title) + '</a> <span style="color:#888;">' + dt + '</span></div>';
-            }).join('') : '<div style="color:#888;font-size:0.85rem;">매칭 뉴스 없음 (뉴스탭에서 직접 검색 권장)</div>';
-            box.innerHTML = html;
-        } catch (e) {
-            box.innerHTML = '<div style="color:#dc3545;">각도 재료 수집 실패: ' + esc(e.message) + '</div>';
-        }
-    };
 
     window.wrCopyJudge = function (ci) {
         var box = document.getElementById('wrJudge_' + ci);
@@ -520,16 +463,50 @@
         var ageTxt = a < 1 ? Math.round(a * 24) + '시간 전' : Math.round(a) + '일 전';
         var multCls = v.mult >= 10 ? 'wrm-hot' : (v.mult >= 3 ? 'wrm-warm' : 'wrm-cold');
         var multTxt = v.mult >= 10 ? Math.round(v.mult) : v.mult.toFixed(1);
-        return '<div class="wr-card" onclick="window.open(\'https://www.youtube.com/watch?v=' + v.videoId + '\')">'
+        var isHit = v.mult >= 3 || (v.viewCount >= 30000 && v.mult >= 1.5);
+        return '<div>'
+            + '<div class="wr-card" onclick="window.open(\'https://www.youtube.com/watch?v=' + v.videoId + '\')">'
             + (v.thumbnail ? '<img class="wr-thumb" src="' + v.thumbnail + '" loading="lazy">' : '<div class="wr-thumb"></div>')
             + '<div class="wr-body">'
             + '<div class="wr-title">' + esc(v.title) + '</div>'
             + '<div class="wr-meta"><span class="wr-ch">' + esc(v.channelTitle) + '</span><span>' + ageTxt + '</span>'
             + '<b class="wr-views">' + fmtN(v.viewCount) + '회</b></div>'
             + '<div class="wr-pills"><span class="wr-mult ' + multCls + '">평소의 ' + multTxt + '배</span>'
-            + '<span class="wr-vph">시속 ' + fmtN(Math.round(vph(v))) + '</span></div>'
-            + '</div></div>';
+            + '<span class="wr-vph">시속 ' + fmtN(Math.round(vph(v))) + '</span>'
+            + (isHit ? '<button onclick="event.stopPropagation();wrVideoQ(\'' + v.videoId + '\')" style="padding:5px 12px;background:#5f3dc4;color:white;border:none;border-radius:9px;font-size:0.82rem;font-weight:700;cursor:pointer;">💬 시청자 질문</button>' : '')
+            + '</div>'
+            + '</div></div>'
+            + '<div id="wrQ_' + v.videoId + '" style="display:none;background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:12px;margin:-4px 0 8px;"></div>'
+            + '</div>';
     }
+
+    // 💬 시청자 질문 (2026-07-17 리워크 — 파도 묶음이 아니라 "터진 영상 하나"의 댓글만, 안내 한 줄 포함)
+    // 사용자 피드백: 파도 통짜 묶음은 잡탕·용도불명. 뉴스 매칭도 품질 낮아 제거.
+    window.wrVideoQ = async function (vid) {
+        var box = document.getElementById('wrQ_' + vid);
+        if (!box) return;
+        if (box.style.display !== 'none') { box.style.display = 'none'; return; } // 토글
+        box.style.display = '';
+        box.innerHTML = '<span style="color:#b45309;font-weight:700;">이 영상의 댓글에서 질문 수집 중...</span>';
+        try {
+            var qs = [];
+            var cr = await fetchYouTubeAPI('commentThreads', { part: 'snippet', videoId: vid, order: 'relevance', maxResults: 100, textFormat: 'plainText' });
+            (cr.items || []).forEach(function (it) {
+                var s = it.snippet.topLevelComment.snippet;
+                var txt = String(s.textDisplay || '').replace(/\s+/g, ' ').trim();
+                if (txt.length < 8 || txt.length > 220) return;
+                if (!/[?？]|궁금|왜 |어떻게 |얼마나 |그럼 |다음엔|우리나라는|한국은/.test(txt)) return;
+                qs.push({ t: txt, likes: parseInt(s.likeCount || 0) });
+            });
+            qs.sort(function (a, b) { return b.likes - a.likes; });
+            box.innerHTML = '<div style="font-weight:800;margin-bottom:8px;">💬 이 영상 시청자들이 직접 묻는 것 (좋아요순) — <span style="color:#b45309;">이 중 하나가 우리 다음 영상 제목감. 골라서 클로드에게 "이 각도로 작업 시작"</span></div>'
+                + (qs.length ? qs.slice(0, 8).map(function (q) {
+                    return '<div style="font-size:0.9rem;margin-bottom:5px;background:white;border-radius:8px;padding:8px 10px;">' + esc(q.t) + ' <b style="color:#e8590c;">👍' + q.likes + '</b></div>';
+                }).join('') : '<div style="color:#888;">질문형 댓글이 없음 — 이 영상엔 각도 단서가 없으니 뉴스에서 새 국면을 찾는 쪽 권장</div>');
+        } catch (e) {
+            box.innerHTML = '<span style="color:#dc3545;">댓글 수집 실패(' + esc(e.message) + ') — 댓글 막힌 영상일 수 있음</span>';
+        }
+    };
 
     function wrRender(items, clusters) {
         var listEl = document.getElementById('wrList');
@@ -566,11 +543,9 @@
                 + '<span class="wr-label">' + esc(c.label) + '</span>'
                 + (j.axis ? '<span class="wr-axis">' + j.axis + '</span>' : '')
                 + '<span class="wr-sum">합산 시속 <b>' + fmtN(Math.round(j.sumVph)) + '</b>' + wrArrow(c.label, j.sumVph) + '</span>'
-                + '<button class="wr-judge-btn" style="background:#5f3dc4;box-shadow:0 2px 6px rgba(95,61,196,.25);" onclick="wrAngleProbe(' + s.i + ')">🔍 각도 재료</button>'
                 + '<button class="wr-judge-btn" onclick="wrGateJudge(' + s.i + ')">⚖️ 게이트 판정</button>'
                 + '</div>'
                 + '<div class="wr-why">' + esc(j.why) + '</div>'
-                + '<div id="wrAngle_' + s.i + '" class="wr-judgebox" style="display:none;background:#f8f5ff;border-color:#d7ccf5;"></div>'
                 + '<div id="wrJudge_' + s.i + '" class="wr-judgebox" style="display:none;"></div>'
                 + '<div class="wr-grid">' + vids.map(wrCardHtml).join('') + '</div>'
                 + '</div>';
