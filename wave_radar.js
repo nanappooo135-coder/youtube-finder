@@ -15,61 +15,105 @@
 (function () {
     'use strict';
 
-    var WR_CH_KEY = 'wave_channels_v1';      // [{id,name}]
-    var WR_CACHE_KEY = 'wave_scan_cache_v1'; // {at, items, clusters}
-    var WR_SNAP_KEY = 'wave_snapshots_v1';   // [{at, waves:{label:sumVph}}] 최근 10개
     var WR_CACHE_TTL = 30 * 60 * 1000;
     var DAYS = 14;
 
-    // 기본 추적 채널 (2026-07-17 API로 ID 검증 — 사용자가 자유롭게 추가/삭제)
-    var WR_DEFAULTS = [
-        { id: 'UCD69gLlIMcDAHG5AzNnp7Bg', name: '김재민TV' },
-        { id: 'UC2JEVexKegalan4xSKjVQ0g', name: '얄궂은 경제학' },
-        { id: 'UCMKNGcOiDjQkroDtuCdocuQ', name: '주린이경제학' },
-        { id: 'UCJG9mwOwrHpNZRalbZjkk_g', name: '안경 경제학' },
-        { id: 'UCR2242gJ23KCtXU3yEZeh2A', name: '골고루 경제학' }
-    ];
+    // ★장르 (2026-07-18 신설) — 같은 파도 엔진 위에서 경제 채널 파도 ⇄ 역사 채널 파도를 토글.
+    //   근거: 역썰남(역사) 진단 — 대박작은 전부 '지금 뉴스를 역사로 푸는' 뉴스재킹형이었다.
+    //   경제와 역사는 벤치 채널·소재 씨앗·축이 다르므로 장르로 config를 통째 갈아끼운다.
+    //   localStorage는 장르별로 격리(역사는 '_h' 접미) — 경제 기존 데이터 보존.
+    var WR_GENRE = (function () { try { return localStorage.getItem('wave_genre_v1') || '경제'; } catch (e) { return '경제'; } })();
+    // 아래 6개는 wrApplyGenre()가 장르에 맞춰 재바인딩하는 가변 상태 (선언만)
+    var WR_CH_KEY, WR_CACHE_KEY, WR_SNAP_KEY, WR_BLOCK_KEY, WR_BRIEF_KEY, WR_CAT;
+    var WR_DEFAULTS, WR_STOPWORDS, WR_GENRE_BLOCK, AXIS_KR, AXIS_CN, WR_AXIS_LABELS;
 
-    // 파도 묶기용: 제목에서 의미 없는 상투어는 클러스터 키에서 제외
-    var WR_STOPWORDS = ['이유', '진짜', '충격', '충격적', '소름', '실체', '정체', '결국', '지금',
-        '오늘', '사실', '논란', '공개', '최초', '세계', '전세계', '난리', '발칵', '뒤집힌', '뒤집힌',
+    // ── 파도 묶기용 공통 상투어 (제목에서 씨앗 자격 박탈) — 장르 무관 ──
+    var WR_STOP_COMMON = ['이유', '진짜', '충격', '충격적', '소름', '실체', '정체', '결국', '지금',
+        '오늘', '사실', '논란', '공개', '최초', '세계', '전세계', '난리', '발칵', '뒤집힌',
         '이것', '그런데', '하지만', '못하는', '있는', '없는', '하는', '해버린', '만에', '이제',
         '진실', '비밀', '경고', '몰랐던', '숨겨진', '드디어', '역대급', '대박', '초유',
-        // 2026-07-17 실데이터 테스트에서 추가 — 일반어가 파도 씨앗이 되면 무관 영상이 한 덩어리로 묶임
-        '언론', '무너지', '몰락', '위기', '날린', '정부', '국민', '대통령', '회장', '기업',
-        '상황', '사태', '경제', '속보', '발표', '시작', '벌어진', '벌어지', '사라진', '사라지',
+        '언론', '무너지', '몰락', '위기', '날린', '정부', '국민', '대통령', '회장',
+        '상황', '사태', '속보', '발표', '시작', '벌어진', '벌어지', '사라진', '사라지',
         '만든', '만들', '받은', '받는', '모든', '때문', '결말', '최후', '현재', '반전', '근황',
-        // 국가명 단독은 파도 이름이 못 됨(너무 넓음) — 축 태그(AXIS_*)에서만 사용
         '중국', '한국', '미국', '일본', '유럽', '인도', '러시아', '북한',
         '최악', '최고', '최대', '전부', '갑자기', '완전히', '그리고', '한국만', '중국이', '한국이',
-        // 주식 토크방송 일반어 (2026-07-17 — 광각 그물 합류 후 [방송][폭락][하락] 쓰레기 파도 실측)
-        '방송', '전체보기', '오전', '오후', '폭락', '하락', '상승', '급등', '급락',
-        '전망', '주식', '코스피', '증시', '시장', '투자', '매수', '매도', '신호',
-        // 잡탕 묶음 방지 2차 (2026-07-17 [나라] 실측 — 흔한 명사가 무관 영상 3개를 한 방에 묶음)
-        '나라', '국가', '도시', '사람', '사람들', '국민들', '기업들', '회사',
-        '문제', '사건', '내막', '전쟁', '흔들리고', '무너지는', '망해가는', '잘살던',
-        // 3차 (2026-07-17 [공장] 실측 — 조지아 로봇공장(21시간)과 삼성 LNG공장(8일)이 '공장'으로
-        //  합쳐져 신선한 파도가 늙은 파도 취급됨). 진짜 파도는 고유명사(조지아·한화오션)로 묶인다.
-        '공장', '산업', '제품', '가격', '돈', '수출', '수입',
-        // 4차 (2026-07-17 [있다]·[알고] 잡탕 실측) — 동사·서술어·연결어는 씨앗 자격 없음
-        '있다', '없다', '한다', '된다', '간다', '왔다', '온다', '됐다', '했다', '먹었다', '누빈다',
-        '알고', '보니', '결국', '먼저', '직접', '전부', '통째로', '하필',
-        // 5차 (2026-07-17 [교수] 잡탕 실측) — 인터뷰 채널의 직함·형식 단어는 소재가 아님
+        '나라', '국가', '도시', '사람', '사람들', '국민들', '전쟁', '흔들리고', '무너지는', '망해가는',
+        '있다', '없다', '한다', '된다', '간다', '왔다', '온다', '됐다', '했다', '먹었다',
+        '알고', '보니', '먼저', '직접', '통째로', '하필',
         '교수', '박사', '대표', '소장', '위원', '기자', '앵커', '작가', '전문가',
         '1부', '2부', '3부', '인터뷰', '대담', '강연', '특집', '총정리', '몰아보기', '요약'];
+    // 경제 전용 추가 상투어 (주식 토크방송 일반어 — [방송][폭락] 쓰레기 파도 실측)
+    var WR_STOP_ECON = ['기업', '경제', '기업들', '회사', '문제', '사건', '내막', '잘살던',
+        '방송', '전체보기', '오전', '오후', '폭락', '하락', '상승', '급등', '급락',
+        '전망', '주식', '코스피', '증시', '시장', '투자', '매수', '매도', '신호',
+        '공장', '산업', '제품', '가격', '돈', '수출', '수입', '누빈다'];
+    // 역사 전용 추가 상투어 (2026-07-18 — 역사 채널 제목 상투어·수면채널 형식어)
+    var WR_STOP_HIST = ['역사', '세계사', '한국사', '조선', '고려', '신라', '백제', '왕조',
+        '이야기', '실화', '미스터리', '다큐', '비하인드', '재조명', '스토리', '전쟁사',
+        '그날', '당시', '시대', '인물', '최강', '전설', '레전드', '위인', '영웅',
+        '자면서', '잠들기', '잘때', '수면', '수면유도', '잠', '듣는', '읽어주는', 'asmr'];
 
     // 장르 차단 (2026-07-17 — [남자] 국제커플 브이로그 🔥 사고 → 채널이 아니라 장르로 거른다)
-    // 생활·연예 콘텐츠는 채널 규모 대비 아무리 터져도 우리(국가·기업 스토리) 소재가 아님.
-    var WR_GENRE_BLOCK = /결혼|연애|커플|데이트|썸|이혼|브이로그|vlog|일상|여행기|먹방|맛집|레시피|요리법|다이어트|운동법|루틴|언박싱|리뷰어|국제커플|한국 온|한국에 온|시댁|남편|아내|육아|출산|연예인|아이돌|열애|드라마|예능/i;
+    var WR_BLOCK_LIFE = '결혼|연애|커플|데이트|썸|이혼|브이로그|vlog|일상|여행기|먹방|맛집|레시피|요리법|다이어트|운동법|루틴|언박싱|리뷰어|국제커플|한국 온|한국에 온|시댁|남편|아내|육아|출산|연예인|아이돌|열애|드라마|예능';
+    // 역사 추가 차단: 수면유도·ASMR·낭독채널(신호 낮음) + 게임/롤플레이
+    var WR_BLOCK_HIST_EXTRA = '자면서|잠들기|잠들 때|잘 때 듣|잘때 듣|잠 안 올|잠안올|잠 올 때|잠 잘|잠잘|잠자기|수면유도|숙면|백색소음|자장가|asmr|낭독|오디오북|롤플레이|게임';
 
-    // 축 태그: 우리 채널에 맞는 두 축 (푸짐한 실측 — 한국역전극·중국위기만 산다)
-    var AXIS_KR = ['한화', '삼성', 'LG', 'SK', '현대', '기아', 'K9', 'K2', '천무', '조선소',
-        '방산', '잠수함', '반도체', '수주', '한국', 'HD현대', '한미', 'K팝', 'K-'];
-    var AXIS_CN = ['중국', '시진핑', '위안', '헝다', 'BYD', '비야디', '샤오미', '홍콩',
-        '대만', '알리', '테무', '일대일로', '베이징', '상하이'];
+    // ── 장르별 config (2026-07-18) ──
+    var WR_CFG = {
+        '경제': {
+            cat: '경제',
+            defaults: [
+                { id: 'UCD69gLlIMcDAHG5AzNnp7Bg', name: '김재민TV' },
+                { id: 'UC2JEVexKegalan4xSKjVQ0g', name: '얄궂은 경제학' },
+                { id: 'UCMKNGcOiDjQkroDtuCdocuQ', name: '주린이경제학' },
+                { id: 'UCJG9mwOwrHpNZRalbZjkk_g', name: '안경 경제학' },
+                { id: 'UCR2242gJ23KCtXU3yEZeh2A', name: '골고루 경제학' }
+            ],
+            stopwords: WR_STOP_COMMON.concat(WR_STOP_ECON),
+            block: new RegExp(WR_BLOCK_LIFE, 'i'),
+            // 축: 한국역전극·중국위기 (푸짐한 실측)
+            axisA: { label: '🇰🇷 한국역전극', key: '한국역전극', words: ['한화', '삼성', 'LG', 'SK', '현대', '기아', 'K9', 'K2', '천무', '조선소', '방산', '잠수함', '반도체', '수주', '한국', 'HD현대', '한미', 'K팝', 'K-'] },
+            axisB: { label: '🐉 중국위기', key: '중국위기', words: ['중국', '시진핑', '위안', '헝다', 'BYD', '비야디', '샤오미', '홍콩', '대만', '알리', '테무', '일대일로', '베이징', '상하이'] }
+        },
+        '역사': {
+            cat: '역사',
+            // 역사 벤치 씨앗 (finder 등록채널에서 선별 — 사용자가 자유롭게 교체)
+            defaults: [
+                { id: 'UCYuiS1EYw54dEJVzseQSYXw', name: '별별역사' },
+                { id: 'UC9cCBxBAQW2CzLYeT20q49A', name: '지식해적단' },
+                { id: 'UCdop7AYwvReE6jK7M69MA2A', name: '함께하는 세계사' },
+                { id: 'UCbgGRffxm74LGKMVXXUsOZQ', name: '전쟁의 신' },
+                { id: 'UCPHQb5jYhC3pDVE5E3hb32w', name: '히스토리 라이브러리' }
+            ],
+            stopwords: WR_STOP_COMMON.concat(WR_STOP_HIST),
+            block: new RegExp(WR_BLOCK_LIFE + '|' + WR_BLOCK_HIST_EXTRA, 'i'),
+            // 축: 역썰남 실측 승리 레인 — 지정학·현대사(뉴스재킹) / 권력·몰락(서태후형)
+            axisA: { label: '🌍 지정학·현대사', key: '지정학', words: ['전쟁', '이란', '이스라엘', '모사드', 'CIA', '스파이', '북한', '러시아', '우크라', '핵', '미사일', '쿠데타', '하마스', '헤즈볼라', '팔레스타인', '중동', '분쟁', '냉전', '테러', '독재', '학살'] },
+            axisB: { label: '👑 권력·몰락', key: '권력몰락', words: ['왕', '황제', '황후', '여왕', '권력', '몰락', '배신', '처형', '반란', '음모', '멸망', '암살', '독살', '숙청', '쿠데타', '최후', '몰살'] }
+        }
+    };
+
+    function wrApplyGenre(g) {
+        WR_GENRE = (g === '역사') ? '역사' : '경제';
+        try { localStorage.setItem('wave_genre_v1', WR_GENRE); } catch (e) {}
+        var cfg = WR_CFG[WR_GENRE];
+        var suf = (WR_GENRE === '역사') ? '_h' : ''; // 경제=기존 키(하위호환), 역사=격리
+        WR_CH_KEY = 'wave_channels_v1' + suf;
+        WR_CACHE_KEY = 'wave_scan_cache_v1' + suf;
+        WR_SNAP_KEY = 'wave_snapshots_v1' + suf;
+        WR_BLOCK_KEY = 'wave_blocked_channels_v1' + suf;
+        WR_BRIEF_KEY = 'wave_briefing_hist_v1' + suf;
+        WR_CAT = cfg.cat;
+        WR_DEFAULTS = cfg.defaults;
+        WR_STOPWORDS = cfg.stopwords;
+        WR_GENRE_BLOCK = cfg.block;
+        AXIS_KR = cfg.axisA.words; AXIS_CN = cfg.axisB.words;
+        WR_AXIS_LABELS = { A: cfg.axisA, B: cfg.axisB };
+    }
+    wrApplyGenre(WR_GENRE);
 
     // ---------- 차단 채널 (2026-07-17 — 세력주분석 같은 결 안 맞는 채널 손수 제거) ----------
-    var WR_BLOCK_KEY = 'wave_blocked_channels_v1'; // {channelId: name}
+    // WR_BLOCK_KEY는 wrApplyGenre()가 장르별로 세팅(경제=..._v1, 역사=..._v1_h)
     function wrBlocked() {
         try { return JSON.parse(localStorage.getItem(WR_BLOCK_KEY) || '{}'); } catch (e) { return {}; }
     }
@@ -221,8 +265,8 @@
             why = '추적채널 밖(등록 563개 그물)에서 발견 — 최고 배수 ' + bestM.toFixed(1) + '배. 우리 결(국가·기업 스토리)인지 눈으로 확인 후 판단. 결이 맞고 세면 그 채널을 추적 목록에 추가';
             var text0 = vids.map(function (v) { return v.title; }).join(' ');
             var axis0 = '';
-            if (AXIS_KR.some(function (w) { return text0.indexOf(w) >= 0; })) axis0 = '🇰🇷 한국역전극';
-            else if (AXIS_CN.some(function (w) { return text0.indexOf(w) >= 0; })) axis0 = '🐉 중국위기';
+            if (AXIS_KR.some(function (w) { return text0.indexOf(w) >= 0; })) axis0 = WR_AXIS_LABELS.A.label;
+            else if (AXIS_CN.some(function (w) { return text0.indexOf(w) >= 0; })) axis0 = WR_AXIS_LABELS.B.label;
             return { badge: badge, cls: cls, why: why, sumVph: vids.reduce(function (s, v) { return s + vph(v); }, 0), axis: axis0 };
         }
         if (!hits.length) {
@@ -260,8 +304,8 @@
         // 축 태그
         var text = vids.map(function (v) { return v.title; }).join(' ');
         var axis = '';
-        if (AXIS_KR.some(function (w) { return text.indexOf(w) >= 0; })) axis = '🇰🇷 한국역전극';
-        else if (AXIS_CN.some(function (w) { return text.indexOf(w) >= 0; })) axis = '🐉 중국위기';
+        if (AXIS_KR.some(function (w) { return text.indexOf(w) >= 0; })) axis = WR_AXIS_LABELS.A.label;
+        else if (AXIS_CN.some(function (w) { return text.indexOf(w) >= 0; })) axis = WR_AXIS_LABELS.B.label;
         return { badge: badge, cls: cls, why: why, sumVph: sumVph, axis: axis };
     }
 
@@ -366,18 +410,18 @@
             st.textContent = '아침브리핑(전체 등록채널) 합류 중...';
             try {
                 var br = await fetch('briefing.json?v=' + Math.floor(Date.now() / 600000)).then(function (r) { return r.json(); });
-                var cat = (br.categories || {})['경제'] || {};
+                var cat = (br.categories || {})[WR_CAT] || {};
                 // ★14일 축적(2026-07-17): 브리핑은 24시간 창이라, 매 스캔마다 그날 수확 전량('videos',
                 //   없으면 rising+viral)을 로컬에 쌓아 14일치 광각 그물을 만든다 — 업계 DB 방식의 경량판.
                 var todays = (cat.videos && cat.videos.length) ? cat.videos : (cat.rising || []).concat(cat.viral || []);
                 var hist = {};
-                try { hist = JSON.parse(localStorage.getItem('wave_briefing_hist_v1') || '{}'); } catch (e2) {}
+                try { hist = JSON.parse(localStorage.getItem(WR_BRIEF_KEY) || '{}'); } catch (e2) {}
                 todays.forEach(function (b) { if (b && b.videoId) hist[b.videoId] = b; });
                 // 14일 지난 항목 청소 + 저장
                 Object.keys(hist).forEach(function (k) {
                     if (ageDays(hist[k].publishedAt) > DAYS) delete hist[k];
                 });
-                try { localStorage.setItem('wave_briefing_hist_v1', JSON.stringify(hist)); } catch (e3) {}
+                try { localStorage.setItem(WR_BRIEF_KEY, JSON.stringify(hist)); } catch (e3) {}
                 // ★광각 채널 진짜 중앙값(2026-07-17): 효율(조회÷구독) 근사는 유령구독 채널의 대박을
                 //   쪽박으로 오판(구독10만·평소5천 채널이 3만 터뜨리면 실제 6배인데 근사 0.3배 → 히트 탈락).
                 //   광각 채널도 실제 최근 영상 중앙값을 계산 — 채널당 2유닛, 7일 캐시, 스캔당 신규 30개 상한.
@@ -837,6 +881,37 @@
         + '.wr-btn-q:hover{background:#5f3dc4;color:white;}'
         + '@media(max-width:900px){.wr-row{flex-wrap:wrap;}.wr-row-thumb{width:150px;height:84px;}}';
 
+    // ---------- 장르 토글 (경제 ⇄ 역사) ----------
+    function wrPaintGenreToggle() {
+        var e = document.getElementById('wrGenreEcon'), h = document.getElementById('wrGenreHist');
+        if (!e || !h) return;
+        var on = 'background:#1971c2;color:#fff;', off = 'background:#fff;color:#868e96;';
+        e.style.cssText = 'padding:6px 12px;border:none;cursor:pointer;font-weight:700;' + (WR_GENRE === '경제' ? on : off);
+        h.style.cssText = 'padding:6px 12px;border:none;cursor:pointer;border-left:1px solid #dee2e6;font-weight:700;' + (WR_GENRE === '역사' ? on : off);
+    }
+    function wrRebuildAxisOptions() {
+        var sel = document.getElementById('wrAxisFilter');
+        if (!sel) return;
+        sel.innerHTML = '<option value="">전체 축</option>'
+            + '<option value="' + WR_AXIS_LABELS.A.key + '">' + WR_AXIS_LABELS.A.label + '만</option>'
+            + '<option value="' + WR_AXIS_LABELS.B.key + '">' + WR_AXIS_LABELS.B.label + '만</option>';
+    }
+    window.wrSetGenre = function (g) {
+        if ((g === '역사' ? '역사' : '경제') === WR_GENRE) return; // 같은 장르 클릭 무시
+        wrApplyGenre(g);
+        wrPaintGenreToggle();
+        wrRebuildAxisOptions();
+        // 장르별 격리된 상태로 화면 갱신 — 추적채널·차단·캐시 전부 새 장르 것으로
+        wrRenderChannels(); wrRenderBlocked();
+        var st = document.getElementById('wrStatus');
+        var cache = wrCache();
+        if (cache) { wrRerenderFromCache(); }
+        else {
+            var el = document.getElementById('wrList'); if (el) el.innerHTML = '';
+            if (st) st.textContent = (WR_GENRE === '역사' ? '📜 역사' : '💹 경제') + ' 모드 — 아직 스캔 없음. 🌊 파도 스캔을 눌러주세요.';
+        }
+    };
+
     // ---------- 탭 등록 (index.html 무수정 — 몽키패치 패턴) ----------
     function setup() {
         if (document.getElementById('process-radar')) return;
@@ -864,10 +939,14 @@
             + '  <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">'
             + '    <span>🌊 파도 레이더 — 오늘 뭘 만들어야 하나</span>'
             + '    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">'
+            + '      <div id="wrGenreToggle" style="display:inline-flex;border:1px solid #dee2e6;border-radius:8px;overflow:hidden;font-size:0.8rem;font-weight:700;">'
+            + '        <button id="wrGenreEcon" onclick="wrSetGenre(\'경제\')" style="padding:6px 12px;border:none;cursor:pointer;">💹 경제</button>'
+            + '        <button id="wrGenreHist" onclick="wrSetGenre(\'역사\')" style="padding:6px 12px;border:none;cursor:pointer;border-left:1px solid #dee2e6;">📜 역사</button>'
+            + '      </div>'
             + '      <select id="wrAxisFilter" onchange="wrRerender()" style="padding:6px 10px;border:1px solid #e0e0e0;border-radius:6px;font-size:0.8rem;">'
             + '        <option value="">전체 축</option>'
-            + '        <option value="한국역전극">🇰🇷 한국역전극만</option>'
-            + '        <option value="중국위기">🐉 중국위기만</option>'
+            + '        <option value="' + WR_AXIS_LABELS.A.key + '">' + WR_AXIS_LABELS.A.label + '만</option>'
+            + '        <option value="' + WR_AXIS_LABELS.B.key + '">' + WR_AXIS_LABELS.B.label + '만</option>'
             + '      </select>'
             + '      <button id="wrScanBtn" onclick="runWaveRadar()" style="padding:6px 16px;background:#1971c2;color:white;border:none;border-radius:8px;font-size:0.85rem;font-weight:700;cursor:pointer;">🌊 파도 스캔</button>'
             + '    </div>'
@@ -899,13 +978,14 @@
                     if (el) el.style.display = (p === 'radar') ? '' : 'none';
                     var b = document.getElementById('procBtn_radar');
                     if (b) b.classList.toggle('inactive', p !== 'radar');
-                    if (p === 'radar') { wrRenderChannels(); wrRenderBlocked(); wrRerenderFromCache(); }
+                    if (p === 'radar') { wrPaintGenreToggle(); wrRenderChannels(); wrRenderBlocked(); wrRerenderFromCache(); }
                 } catch (e) {}
                 return r;
             };
             patched._wrPatched = true;
             window.switchProcess = patched;
         }
+        wrPaintGenreToggle();
         wrRenderChannels();
         // 주제찾기 상단 한 줄 (캐시 있으면)
         setTimeout(wrTopicTeaser, 1500);
