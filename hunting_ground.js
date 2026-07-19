@@ -341,6 +341,8 @@
     // 채널 차단/해제 직후 index.html의 _rerenderAllLists()가 호출 — 사냥터도 즉시 갱신
     window.hgRerender = function () {
         if (HG_DATA && document.getElementById('hgList')) hgRender();
+        // ♻️ 에버그린 리스트도 즉시 갱신 (2026-07-19: 사냥터와 동일 유형의 누락 — 차단 직후 반영 안 되던 구멍)
+        if (HG_EVER && document.getElementById('hgEverList')) hgRenderEvergreen();
     };
 
     window.hgSetGenre = function (g) {
