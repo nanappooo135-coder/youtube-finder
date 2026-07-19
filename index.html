@@ -25240,7 +25240,8 @@ ${titles}`;
                 <button class="sort-btn bf-btn ${window._benchFilter === 'review' ? 'active' : ''}" onclick="setBenchFilter('${containerId}','review',this)">🔍 검토중 (${nReview})</button>
                 <button class="sort-btn bf-btn ${window._benchFilter === 'showpass' ? 'active' : ''}" onclick="setBenchFilter('${containerId}','showpass',this)">패스 포함</button>
                 <button class="sort-btn bf-btn" onclick="showBlockedChannels()" style="color:#c92a2a;">🚫 차단 관리 (${Object.keys(_blockedCh()).length})</button></div>`;
-            html += buildSortBar(containerId, activeSort, true);
+            // 매칭도순 버튼도 등록채널 전용 결과에선 숨김 (키워드 검색 결과가 섞였을 때만 의미)
+            html += buildSortBar(containerId, activeSort, filtered.some(r => !r._registered));
             const first = filtered.slice(0, 120);
             html += `<div id="${containerId}_cards">` + first.map(it => _matchCardHtml(it, activeSort)).join('') + `</div>`;
             if (filtered.length > 120) {
@@ -25267,7 +25268,9 @@ ${titles}`;
         }
 
         function _matchCardHtml(item, activeSort) {
-            const matchBadge = item.matchScore >= 8
+            // 등록채널 결과엔 매칭도 배지 숨김 — 채널을 사용자가 골랐으니 전부 관련(참고용 배지가 헛돎)
+            const matchBadge = item._registered ? ''
+                : item.matchScore >= 8
                 ? `<span class="stat-badge highlight">매칭도 최상</span>`
                 : item.matchScore >= 5
                 ? `<span class="stat-badge" style="background:#fd7e14;color:white">매칭도 높음</span>`
@@ -26355,7 +26358,10 @@ ${titles}`;
                     if (!hiddenSubs && subscriberCount > maxSubs) return;
 
                     const _med = _benchMedians[item.snippet.channelId];
+                    // ★등록채널 모드 표시(2026-07-19): 채널을 사용자가 직접 골랐으니 키워드 매칭
+                    //   배지(참고용/매칭도)는 헛돎 — 카드에서 숨기는 데 씀
                     results.push({
+                        _registered: useRegisteredOnly,
                         videoId: item.id.videoId,
                         title,
                         channelTitle: item.snippet.channelTitle,
