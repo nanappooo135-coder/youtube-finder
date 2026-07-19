@@ -83,12 +83,26 @@
                 rows.push({ v: v, rm: rm, ri: ri });
             });
         });
-        rows.sort(function (a, b) { return (b.v.mult || 0) - (a.v.mult || 0); });
+        // ★활동 중 소재 강등(2026-07-19 사용자 실물검사: 한화오션·삼성 조립주택 = 핫이슈 유입):
+        //   최근 30일 내 히트가 있는 소재는 '진행형 사가'인지 에버그린인지 기계로 확정 불가(리서치 결론)
+        //   → 조용한 검증 소재를 위로, 활동 중 소재는 경고 붙여 아래로.
+        rows.forEach(function (x) { x.active = x.rm ? x.rm.lastHitDays < 30 : false; });
+        rows.sort(function (a, b) {
+            if (a.active !== b.active) return a.active ? 1 : -1;
+            return (b.v.mult || 0) - (a.v.mult || 0);
+        });
         // ★단독(재탕 미검증)은 기본 화면에서 제외, 접힌 참고 섹션으로 강등 (2026-07-19 사용자:
         //   "한 번 훅하고 꺼진 건 에버그린이 아니다" — 재탕 증명이 있는 것만 본편)
         var singles = (cat.singles || []).filter(function (v) { return !blk[v.channelId] && !seen[v.videoId]; });
-        var html = rows.slice(0, 120).map(hgEverRow).join('')
-            || '<p style="color:#888;padding:14px;">아직 잡힌 재탕 검증 소재가 없어요.</p>';
+        var quiet = rows.filter(function (x) { return !x.active; });
+        var act = rows.filter(function (x) { return x.active; });
+        var html = quiet.slice(0, 80).map(hgEverRow).join('')
+            || '<p style="color:#888;padding:14px;">조용한 검증 소재가 아직 없어요.</p>';
+        if (act.length) {
+            html += '<div style="margin:18px 0 8px;padding:10px 14px;background:#fff9db;border:1.5px solid #f08c00;border-radius:10px;font-weight:800;color:#b45309;font-size:0.95rem;">'
+                + '⚠️ 아래는 최근 30일 내 히트가 있는 "활동 중" 소재 — 에버그린 확정이 아니라 진행형 핫이슈일 수 있어요. 만들기 전에 ⏳수명판정 돌려보세요.</div>'
+                + act.slice(0, 40).map(hgEverRow).join('');
+        }
         if (singles.length) {
             html += '<div style="margin-top:14px;">'
                 + '<button onclick="hgToggleSingles()" style="width:100%;padding:11px;background:#f1f3f5;border:1.5px solid #d0d4da;border-radius:10px;font-size:0.9rem;font-weight:700;color:#666;cursor:pointer;">'
@@ -109,9 +123,9 @@
             ? '<button onclick="hgEverExpand(' + x.ri + ',\'' + v.videoId + '\')" style="padding:5px 12px;background:#0ca678;color:#fff;border:none;border-radius:8px;font-size:0.85rem;font-weight:800;cursor:pointer;">♻️ 이 소재 ' + rm.hits + '번 터짐 · ' + rm.channels + '채널 ▾</button>'
             : '<span class="stat-badge" style="font-size:0.82rem;">💎 단독 검증</span>';
         var hint = !rm ? ''
+            : rm.lastHitDays < 30 ? '<span class="stat-badge" style="background:#f08c00;color:#fff;font-weight:800;">⚠️ 지금 활동 중인 소재(' + rm.lastHitDays + '일 전 히트) — 진행형 핫이슈일 수 있음, ⏳수명판정 필수</span>'
             : rm.saturated ? '<span class="stat-badge" style="background:#e03131;color:#fff;font-weight:700;">🚧 최근 2달 재탕 몰림 — 새 각도 필수</span>'
-            : rm.lastHitDays < 21 ? '<span class="stat-badge" style="background:#f08c00;color:#fff;font-weight:700;">⚠️ ' + rm.lastHitDays + '일 전 방금 재탕됨</span>'
-            : '<span class="stat-badge" style="background:#0ca678;color:#fff;font-weight:700;">✅ 재탕 기회</span>';
+            : '<span class="stat-badge" style="background:#0ca678;color:#fff;font-weight:700;">✅ 조용한 검증 소재 — 재탕 기회</span>';
         // 🌲 감쇠곡선 신호: 90일+ 지난 영상이 지난주에도 조회수를 벎 = 수요 지속의 직접 증거
         var earning = (v.stillEarning || (rm && rm.earning))
             ? '<span class="stat-badge" style="background:#2f9e44;color:#fff;font-weight:700;">🌲 지금도 조회수 붙는 중' + (v.weekGain ? ' +' + fmtN(v.weekGain) + '/주' : '') + '</span>'
