@@ -1,0 +1,43 @@
+name: Evergreen Scan
+
+on:
+  schedule:
+    # 매주 일요일 22:00 UTC = 월요일 07:00 KST — 한 주 시작 전에 에버그린 금고 갱신
+    - cron: '0 22 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  evergreen:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install kiwipiepy (소재 클러스터링)
+        run: pip install kiwipiepy
+
+      - name: Scan channels for evergreen outliers
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YT_KEYS }}
+        run: python scripts/evergreen_scan.py
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add evergreen.json
+          if git diff --staged --quiet; then
+            echo "No changes"
+          else
+            git commit -m "chore: update evergreen.json [skip ci]"
+            git pull --rebase
+            git push
+          fi
