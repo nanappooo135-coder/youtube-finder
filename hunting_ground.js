@@ -83,15 +83,23 @@
                 rows.push({ v: v, rm: rm, ri: ri });
             });
         });
-        (cat.singles || []).forEach(function (v) {
-            if (blk[v.channelId] || seen[v.videoId]) return;
-            seen[v.videoId] = 1;
-            rows.push({ v: v });
-        });
         rows.sort(function (a, b) { return (b.v.mult || 0) - (a.v.mult || 0); });
-        listEl.innerHTML = rows.slice(0, 120).map(hgEverRow).join('')
-            || '<p style="color:#888;padding:14px;">아직 잡힌 에버그린 소재가 없어요.</p>';
+        // ★단독(재탕 미검증)은 기본 화면에서 제외, 접힌 참고 섹션으로 강등 (2026-07-19 사용자:
+        //   "한 번 훅하고 꺼진 건 에버그린이 아니다" — 재탕 증명이 있는 것만 본편)
+        var singles = (cat.singles || []).filter(function (v) { return !blk[v.channelId] && !seen[v.videoId]; });
+        var html = rows.slice(0, 120).map(hgEverRow).join('')
+            || '<p style="color:#888;padding:14px;">아직 잡힌 재탕 검증 소재가 없어요.</p>';
+        if (singles.length) {
+            html += '<div style="margin-top:14px;">'
+                + '<button onclick="hgToggleSingles()" style="width:100%;padding:11px;background:#f1f3f5;border:1.5px solid #d0d4da;border-radius:10px;font-size:0.9rem;font-weight:700;color:#666;cursor:pointer;">'
+                + (HG_EVER_SINGLES ? '▲ 접기' : '▼ 참고: 단독 대박 ' + singles.length + '개 (6개월+ 전 한 번 터짐 — 재탕은 아직 검증 안 됨)') + '</button>'
+                + (HG_EVER_SINGLES ? '<div style="opacity:0.75;margin-top:8px;">' + singles.slice(0, 40).map(function (v) { return hgEverRow({ v: v }); }).join('') + '</div>' : '')
+                + '</div>';
+        }
+        listEl.innerHTML = html;
     }
+    var HG_EVER_SINGLES = false;
+    window.hgToggleSingles = function () { HG_EVER_SINGLES = !HG_EVER_SINGLES; hgRenderEvergreen(); };
 
     function hgEverRow(x) {
         var v = x.v, rm = x.rm;
@@ -298,15 +306,20 @@
     window.hgSetGenre = function (g) {
         HG_GENRE = g;
         hgPaintGenre();
+        // ★두 탭 리스트 모두 재렌더(2026-07-19 버그: 에버그린 탭에서 역사 눌러도 사냥터만 다시 그려 화면 불변)
         hgRender();
+        hgRenderEvergreen();
     };
 
     function hgPaintGenre() {
-        var e = document.getElementById('hgGenreEcon'), h = document.getElementById('hgGenreHist');
-        if (!e || !h) return;
         var on = 'background:#1971c2;color:#fff;', off = 'background:#fff;color:#555;';
-        e.style.cssText = 'padding:6px 12px;border:none;cursor:pointer;font-weight:700;' + (HG_GENRE === '경제' ? on : off);
-        h.style.cssText = 'padding:6px 12px;border:none;cursor:pointer;font-weight:700;border-left:1px solid #dee2e6;' + (HG_GENRE === '역사' ? on : off);
+        // 사냥터·에버그린 두 탭의 토글 버튼 전부 칠함
+        [['hgGenreEcon', 'hgGenreHist'], ['hgEverGenreEcon', 'hgEverGenreHist']].forEach(function (pair) {
+            var e = document.getElementById(pair[0]), h = document.getElementById(pair[1]);
+            if (!e || !h) return;
+            e.style.cssText = 'padding:6px 12px;border:none;cursor:pointer;font-weight:700;' + (HG_GENRE === '경제' ? on : off);
+            h.style.cssText = 'padding:6px 12px;border:none;cursor:pointer;font-weight:700;border-left:1px solid #dee2e6;' + (HG_GENRE === '역사' ? on : off);
+        });
     }
 
     // ---------- 주입 (preempt_radar와 동일 패턴) ----------
