@@ -24007,7 +24007,9 @@ Example format:
                     .filter(it => (Date.now() - new Date(getDate(it))) / 86400000 >= 3)
                     .map(getView);
                 const src = (matured.length >= 5 ? matured : all).slice().sort((a, b) => a - b);
-                if (src.length >= 3) {
+                // ★표본 5개 미만이면 미계산(2026-07-19 상향, 기존 3개): 업로드 뜸한 채널은 3~4개
+                //   중앙값이 출렁여 배수가 뻥튀기됨("대박이 엄청 많이 나옴" 실사용 보고의 원인 중 하나)
+                if (src.length >= 5) {
                     const mid = src.length % 2 ? src[(src.length - 1) / 2] : (src[src.length / 2 - 1] + src[src.length / 2]) / 2;
                     med[cid] = Math.max(1, mid);
                 }
@@ -24017,7 +24019,59 @@ Example format:
         function _multBadge(item) {
             if (item.mult == null) return '';
             const txt = item.mult >= 10 ? Math.round(item.mult) : item.mult.toFixed(1);
-            return `<span class="stat-badge" style="background:#8b5cf6;color:#fff;font-weight:700;">💥 평소의 ${txt}배</span>`;
+            // ★1.5배 이상만 강조(2026-07-19): 평소 이하 영상까지 💥 보라 배지가 붙어
+            //   "대박이 엄청 많아 보이는" 착시 유발 — 이하는 회색 정보 배지로만
+            if (item.mult >= 1.5) return `<span class="stat-badge" style="background:#8b5cf6;color:#fff;font-weight:700;">💥 평소의 ${txt}배</span>`;
+            return `<span class="stat-badge">평소의 ${txt}배</span>`;
+        }
+        // ═══ 🚫 채널 차단 (2026-07-19) — 결과 카드에서 원치 않는 채널을 영구 숨김 ═══
+        const BLOCK_CH_KEY = 'global_blocked_channels_v1';
+        function _blockedCh() {
+            try { return JSON.parse(localStorage.getItem(BLOCK_CH_KEY) || '{}'); } catch (e) { return {}; }
+        }
+        function blockChannelFromCard(btn) {
+            const cid = btn.dataset.cid, name = btn.dataset.cname || cid;
+            if (!cid) return;
+            if (!confirm(`"${name}" 채널을 앞으로 모든 결과에서 숨길까요?\n(차단 목록에서 언제든 해제 가능)`)) return;
+            const b = _blockedCh(); b[cid] = name;
+            localStorage.setItem(BLOCK_CH_KEY, JSON.stringify(b));
+            _rerenderAllLists();
+        }
+        function unblockChannel(cid) {
+            const b = _blockedCh(); delete b[cid];
+            localStorage.setItem(BLOCK_CH_KEY, JSON.stringify(b));
+            showBlockedChannels(); // 목록 갱신
+            _rerenderAllLists();
+        }
+        // 지금 화면의 모든 결과 목록 + 해외 + 브리핑 즉시 재렌더
+        function _rerenderAllLists() {
+            Object.keys(_resultStore).forEach(cId => {
+                const s = _resultStore[cId];
+                if (s && document.getElementById(cId)) s.renderer(cId, s.results, s.currentSort);
+            });
+            if (window._foreignRaw) displayForeignResults(window._foreignRaw.results, window._foreignRaw.isAuto);
+            if (typeof loadBriefing === 'function') loadBriefing();
+        }
+        function showBlockedChannels() {
+            const old = document.getElementById('blockChOverlay');
+            if (old) old.remove();
+            const b = _blockedCh();
+            const rows = Object.keys(b).map(cid =>
+                `<div style="display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid #f1f3f5;">
+                    <a href="https://www.youtube.com/channel/${cid}" target="_blank" style="flex:1;color:#333;font-weight:600;text-decoration:none;">${escapeHtml(b[cid])}</a>
+                    <button onclick="unblockChannel('${cid}')" style="padding:6px 14px;background:#28a745;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">해제</button>
+                </div>`).join('') || '<p style="color:#999;padding:14px;">차단한 채널이 없어요.</p>';
+            const ov = document.createElement('div');
+            ov.id = 'blockChOverlay';
+            ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center;';
+            ov.innerHTML = `<div style="background:#fff;border-radius:14px;padding:20px;width:min(480px,92vw);max-height:70vh;overflow:auto;">
+                <div style="display:flex;align-items:center;margin-bottom:10px;"><b style="flex:1;font-size:1.05rem;">🚫 차단 채널 (${Object.keys(b).length})</b>
+                <button onclick="document.getElementById('blockChOverlay').remove()" style="padding:6px 14px;background:#6c757d;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">닫기</button></div>${rows}</div>`;
+            ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+            document.body.appendChild(ov);
+        }
+        function _blockBtnHtml(cid, cname) {
+            return `<button onclick="blockChannelFromCard(this)" data-cid="${cid}" data-cname="${escapeHtml(cname)}" title="이 채널 다시 안 보기" class="pipe-btn" style="color:#c92a2a;">🚫 채널 차단</button>`;
         }
         function buildSortBar(containerId, activeSort, hasMatch) {
             const sorts = [
@@ -24048,6 +24102,8 @@ Example format:
 
         function renderResults(containerId, results, activeSort) {
             const el = document.getElementById(containerId);
+            const _blk = _blockedCh();
+            results = results.filter(r => !_blk[r.channelId]); // 🚫 차단 채널 숨김
             if (results.length === 0) {
                 el.innerHTML = '<div class="results-header">조건에 맞는 영상이 없어요. 필터를 조정해보세요.</div>';
                 return;
@@ -24087,6 +24143,7 @@ Example format:
                                 <div class="card-date">${formatDate(item.publishedAt)}</div>
                                 <div class="card-actions">
                                     <button onclick="copyVideoPack('${item.videoId}',this)" title="URL + 제목 + 인기 댓글 100개 클립보드 복사" class="pipe-btn">💬 URL·제목·댓글</button>
+                                    ${_blockBtnHtml(item.channelId, item.channelTitle)}
                                 </div>
                             </div>
                         </div>
@@ -24772,6 +24829,8 @@ Example format:
             if (store) store.renderer(containerId, store.results, store.currentSort);
         }
         function _applyBenchFilter(results) {
+            const _blk = _blockedCh();
+            results = results.filter(r => !_blk[r.channelId]); // 🚫 차단 채널 숨김
             const st = _loadVStatus();
             let out = results.filter(r => window._benchFilter === 'showpass' || st[r.videoId] !== 'pass');
             if (window._benchFilter === 'new') out = out.filter(r => r._isNew);
@@ -25176,7 +25235,8 @@ ${titles}`;
                 <button class="sort-btn bf-btn ${window._benchFilter === 'all' ? 'active' : ''}" onclick="setBenchFilter('${containerId}','all',this)">전체</button>
                 <button class="sort-btn bf-btn ${window._benchFilter === 'new' ? 'active' : ''}" onclick="setBenchFilter('${containerId}','new',this)">🆕 신규만 (${nNew})</button>
                 <button class="sort-btn bf-btn ${window._benchFilter === 'review' ? 'active' : ''}" onclick="setBenchFilter('${containerId}','review',this)">🔍 검토중 (${nReview})</button>
-                <button class="sort-btn bf-btn ${window._benchFilter === 'showpass' ? 'active' : ''}" onclick="setBenchFilter('${containerId}','showpass',this)">패스 포함</button></div>`;
+                <button class="sort-btn bf-btn ${window._benchFilter === 'showpass' ? 'active' : ''}" onclick="setBenchFilter('${containerId}','showpass',this)">패스 포함</button>
+                <button class="sort-btn bf-btn" onclick="showBlockedChannels()" style="color:#c92a2a;">🚫 차단 관리 (${Object.keys(_blockedCh()).length})</button></div>`;
             html += buildSortBar(containerId, activeSort, true);
             const first = filtered.slice(0, 120);
             html += `<div id="${containerId}_cards">` + first.map(it => _matchCardHtml(it, activeSort)).join('') + `</div>`;
@@ -25274,6 +25334,7 @@ ${titles}`;
                                 ${stBtn('pass', vst === 'pass' ? '✖ 패스 ✓' : '✖ 패스')}
                                 <button onclick="copyPipelineCmd('${item.videoId}',this)" title="유정 대본 파이프라인 명령 복사" class="pipe-btn">📋 대본 명령</button>
                                 <button onclick="copyVideoPack('${item.videoId}',this)" title="URL + 제목 + 인기 댓글 100개 클립보드 복사" class="pipe-btn">💬 URL·제목·댓글</button>
+                                ${_blockBtnHtml(item.channelId, item.channelTitle)}
                             </div>
                         </div>
                     </div>
@@ -25502,13 +25563,17 @@ ${titles}`;
                         </div>
                         <div style="flex-shrink:0;display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
                             ${badge}
-                            <button onclick="copyPipelineCmd('${v.videoId}',this)" class="pipe-btn" style="font-size:0.72rem;padding:4px 9px;">📋 대본</button>
+                            <div style="display:flex;gap:4px;">
+                                <button onclick="copyPipelineCmd('${v.videoId}',this)" class="pipe-btn" style="font-size:0.72rem;padding:4px 9px;">📋 대본</button>
+                                <button onclick="blockChannelFromCard(this)" data-cid="${v.channelId}" data-cname="${escapeHtml(v.channelTitle)}" title="이 채널 다시 안 보기" style="font-size:0.72rem;padding:4px 7px;background:none;border:1px solid #e03131;color:#c92a2a;border-radius:6px;cursor:pointer;">🚫</button>
+                            </div>
                         </div>
                     </div>`;
                 };
+                const _blk = _blockedCh(); // 🚫 차단 채널은 브리핑에서도 숨김
                 const col = (title, list, mode, nShow = 5) => `<div style="flex:1;min-width:300px;">
                     <div style="font-weight:800;font-size:0.92rem;margin-bottom:4px;color:#374151;">${title}</div>
-                    ${(list || []).slice(0, nShow).map(v => row(v, mode)).join('') || '<p style="color:#999;font-size:0.85rem;">없음</p>'}
+                    ${(list || []).filter(v => !_blk[v.channelId]).slice(0, nShow).map(v => row(v, mode)).join('') || '<p style="color:#999;font-size:0.85rem;">없음</p>'}
                 </div>`;
                 // ★평소 대비 폭발(2026-07-19) = 조회수 ÷ 그 채널 평소 중앙값. 효율(구독자 대비)의 함정 보완:
                 //   구독자 많고 평소 조회 낮은 채널의 대박(효율 낮게 나옴)이 우리 진짜 타겟 — 소재의 힘 증명.
@@ -25969,6 +26034,9 @@ ${titles}`;
         // ===========================
         function displayForeignResults(results, isAuto) {
             const el = document.getElementById('foreignResults');
+            window._foreignRaw = { results: results || [], isAuto }; // 차단/해제 시 재렌더용 원본
+            const _blk = _blockedCh();
+            results = (results || []).filter(i => !_blk[i.snippet?.channelId || i.channelId]); // 🚫 차단 채널 숨김
             if (!results || results.length === 0) { el.innerHTML = ''; return; }
 
             // ★isAuto=true면 등록 채널 없이 키워드로 자동 발굴한 결과(미국) — 헤더로 구분해 어떤 모드인지 보여줌
@@ -26023,6 +26091,7 @@ ${titles}`;
                                     <span class="stat-badge highlight">효율 ${eff === 99 ? '-' : eff.toFixed(1) + '배'}</span>
                                 </div>
                                 <div class="card-date">${formatDate(publishedAt)}</div>
+                                <div class="card-actions">${_blockBtnHtml(channelId, channelTitle)}</div>
                             </div>
                         </div>
                     </div>`;
@@ -34621,6 +34690,6 @@ ${commentText.slice(0, 12000)}`;
     }
     </script>
 <script src="preempt_radar.js?v=6"></script>
-<script src="wave_radar.js?v=22"></script>
+<script src="wave_radar.js?v=23"></script>
 </body>
 </html>

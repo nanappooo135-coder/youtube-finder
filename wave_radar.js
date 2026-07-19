@@ -115,7 +115,14 @@
     // ---------- 차단 채널 (2026-07-17 — 세력주분석 같은 결 안 맞는 채널 손수 제거) ----------
     // WR_BLOCK_KEY는 wrApplyGenre()가 장르별로 세팅(경제=..._v1, 역사=..._v1_h)
     function wrBlocked() {
-        try { return JSON.parse(localStorage.getItem(WR_BLOCK_KEY) || '{}'); } catch (e) { return {}; }
+        var out = {};
+        try { out = JSON.parse(localStorage.getItem(WR_BLOCK_KEY) || '{}'); } catch (e) { }
+        // ★전역 차단 합류(2026-07-19): 카드의 🚫 채널 차단(global_blocked_channels_v1)도 레이더에서 숨김
+        try {
+            var g = JSON.parse(localStorage.getItem('global_blocked_channels_v1') || '{}');
+            for (var k in g) out[k] = out[k] || g[k];
+        } catch (e2) { }
+        return out;
     }
     window.wrBlockChannel = function (cid, name) {
         var b = wrBlocked(); b[cid] = name;

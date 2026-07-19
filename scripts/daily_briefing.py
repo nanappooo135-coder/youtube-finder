@@ -123,7 +123,7 @@ def channel_medians(baseline, stats, now):
             if 3 <= age <= 90:
                 matured.append(views)
         src = matured if len(matured) >= 5 else allv
-        if len(src) >= 3:  # 표본 3개 미만이면 중앙값 무의미 — 배수 미계산
+        if len(src) >= 5:  # ★표본 5개 미만이면 미계산(2026-07-19 상향) — 출렁이는 중앙값 = 배수 뻥튀기
             med[cid] = max(1, _median(src))
     return med
 
