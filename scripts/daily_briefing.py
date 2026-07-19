@@ -205,6 +205,7 @@ def carry_over(prev_videos, have_ids, med, now):
         hours = max(1.0, _age_days(v, now) * 24)
         m = med.get(v["channelId"]) or v.get("chMedian") or 0
         sub = v.get("subscriberCount", 0)
+        prev_views = v.get("viewCount", 0)
         out.append({
             **v,
             "viewCount": views,
@@ -212,6 +213,8 @@ def carry_over(prev_videos, have_ids, med, now):
             "velocity": int(views / hours),
             "chMedian": m or None,
             "mult": round(views / m, 1) if m else None,
+            # ★전일 대비 성장률(2026-07-19): 하루 1회 스냅샷 차분 — 파도가 아직 크는 중인지 신호
+            "growth": round((views - prev_views) / prev_views, 3) if prev_views >= 1000 else None,
         })
     return out
 
@@ -226,7 +229,15 @@ def top_lists(vids, now, scanned_24h):
     # ★2026-07-17 파도 레이더 광각 그물용: 상위 20개만 남기고 버리던 하루치 수확 전량을 보존
     #   (업계 표준 = DB 전량에 아웃라이어 점수 — 1of10/TubeLab 방식) + 2026-07-19부터 14일 롤링 전량
     allv = sorted(vids, key=lambda x: -(x["mult"] or x["efficiency"] or 0))
-    return {"rising": rising, "viral": viral, "outlier": outlier,
+    # ★파도(2026-07-19): 소재 클러스터 + 타이밍 판정을 서버에서 계산 — 클라는 그리기만.
+    #   판정 기준은 wave_engine.CONFIG 단일 진실원 (배지≠게이트 자기모순 구조 차단)
+    try:
+        from wave_engine import build_waves
+        waves = build_waves(allv, now)
+    except Exception as e:
+        print("wave_engine 실패(파도 없이 진행): %s" % e, file=sys.stderr)
+        waves = []
+    return {"rising": rising, "viral": viral, "outlier": outlier, "waves": waves,
             "scanned": scanned_24h, "pool": len(allv), "videos": allv}
 
 
