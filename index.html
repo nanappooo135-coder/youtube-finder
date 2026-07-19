@@ -23972,6 +23972,7 @@ Example format:
                 }); break;
                 case 'likes':        sorted.sort((a, b) => (b.likeCount||0) - (a.likeCount||0)); break;
                 case 'velocity':     sorted.sort((a, b) => _velVal(b) - _velVal(a)); break;
+                case 'mult':         sorted.sort((a, b) => (b.mult||0) - (a.mult||0)); break;
             }
             store.currentSort = sortKey;
             store.renderer(containerId, sorted, sortKey);
@@ -24001,6 +24002,9 @@ Example format:
                 { key: 'velocity',   label: '🔥 급상승순' },
                 { key: 'latest',     label: '최신순' },
             ];
+            // ★평소대비순(2026-07-19): 채널 평소 중앙값 배수 데이터가 있을 때만 버튼 노출
+            const store = _resultStore[containerId];
+            if (store && store.results.some(r => r.mult != null)) sorts.splice(2, 0, { key: 'mult', label: '💥 평소대비순' });
             if (hasMatch) sorts.unshift({ key: 'match', label: '매칭도순' });
             return `<div class="sort-bar">
                 <span class="sort-label">정렬</span>
@@ -24009,8 +24013,12 @@ Example format:
         }
 
         function displayResults(containerId, results) {
-            _resultStore[containerId] = { results, currentSort: 'efficiency', renderer: renderResults };
-            renderResults(containerId, results, 'efficiency');
+            // ★기본 정렬(2026-07-19): 평소대비 배수 데이터가 있으면 '평소대비순'이 기본 —
+            //   효율(조회÷구독)은 구독자 많고 평소 조회 낮은 채널의 대박을 놓치는 함정.
+            const defSort = results.some(r => r.mult != null) ? 'mult' : 'efficiency';
+            const sorted = defSort === 'mult' ? [...results].sort((a, b) => (b.mult || 0) - (a.mult || 0)) : results;
+            _resultStore[containerId] = { results: sorted, currentSort: defSort, renderer: renderResults };
+            renderResults(containerId, sorted, defSort);
         }
 
         function renderResults(containerId, results, activeSort) {
@@ -24020,7 +24028,7 @@ Example format:
                 return;
             }
 
-            const sortLabels = { 'views-desc':'조회수 높은순', 'views-asc':'조회수 낮은순', 'efficiency':'효율순', 'latest':'최신순' };
+            const sortLabels = { 'views-desc':'조회수 높은순', 'views-asc':'조회수 낮은순', 'efficiency':'효율순', 'mult':'💥 평소대비순', 'latest':'최신순' };
             let html = `<div class="results-header success">${results.length}개 영상을 찾았어요!</div>`;
             html += buildSortBar(containerId, activeSort, false);
             results.forEach(item => {
@@ -24042,6 +24050,7 @@ Example format:
                                     </a>
                                 </div>
                                 <div class="card-stats">
+                                    ${item.mult != null ? `<span class="stat-badge" style="background:#8b5cf6;color:#fff;font-weight:700;">💥 평소의 ${item.mult >= 10 ? Math.round(item.mult) : item.mult.toFixed(1)}배</span>` : ''}
                                     <span class="stat-badge highlight">효율 ${item.efficiency.toFixed(1)}배</span>
                                     <span class="stat-badge">조회수 ${formatNumber(item.viewCount)}</span>
                                     <span class="stat-badge">구독자 ${formatNumber(item.subscriberCount)}</span>
@@ -24450,6 +24459,23 @@ Example format:
                 }
 
                 // Step 3: 효율 계산 + 필터 + 정렬
+                // ★평소 대비 배수(2026-07-19): 이미 받아온 스캔 데이터로 채널별 평소 중앙값 계산(추가 API 0).
+                //   효율(조회÷구독)의 함정 보완 — 구독자 많고 평소 조회 낮은 채널의 대박이 진짜 타겟.
+                //   3일+ 지난 성숙 영상 우선(어린 영상은 아직 안 자람), 표본 3개 미만 채널은 배수 미계산.
+                const _vByCh = {};
+                allVideos.forEach(v => { (_vByCh[v.channelId] = _vByCh[v.channelId] || []).push(v); });
+                const _chMedian = {};
+                Object.keys(_vByCh).forEach(cid => {
+                    const views = _vByCh[cid].map(v => parseInt((statsMap[v.videoId] || {}).viewCount) || 0);
+                    const matured = _vByCh[cid]
+                        .filter(v => (Date.now() - new Date(v.publishedAt)) / 86400000 >= 3)
+                        .map(v => parseInt((statsMap[v.videoId] || {}).viewCount) || 0);
+                    const src = (matured.length >= 5 ? matured : views).slice().sort((a, b) => a - b);
+                    if (src.length >= 3) {
+                        const mid = src.length % 2 ? src[(src.length - 1) / 2] : (src[src.length / 2 - 1] + src[src.length / 2]) / 2;
+                        _chMedian[cid] = Math.max(1, mid);
+                    }
+                });
                 // 채널별 최신 구독자수 업데이트 (이미 가져온 데이터 활용)
                 let results = allVideos.map(v => {
                     const stats = statsMap[v.videoId] || {};
@@ -24457,7 +24483,8 @@ Example format:
                     const likeCount = parseInt(stats.likeCount) || 0;
                     const commentCount = parseInt(stats.commentCount) || 0;
                     const efficiency = v.subscriberCount > 0 ? viewCount / v.subscriberCount : 0;
-                    return { ...v, viewCount, likeCount, commentCount, efficiency };
+                    const mult = _chMedian[v.channelId] ? viewCount / _chMedian[v.channelId] : null;
+                    return { ...v, viewCount, likeCount, commentCount, efficiency, mult };
                 });
 
                 results = results.filter(v => v.viewCount >= minViews);
@@ -25440,6 +25467,8 @@ ${titles}`;
                 const row = (v, mode) => {
                     const badge = mode === 'rising'
                         ? `<span class="stat-badge" style="background:#ff4444;color:#fff;font-weight:700;">🔥 시간당 ${fmtN(v.velocity)}회</span>`
+                        : mode === 'outlier'
+                        ? `<span class="stat-badge" style="background:#8b5cf6;color:#fff;font-weight:700;">💥 평소의 ${v.mult}배</span>`
                         : `<span class="stat-badge" style="background:#3b82f6;color:#fff;font-weight:700;">효율 ${v.efficiency}배</span>`;
                     return `<div style="display:flex;align-items:center;gap:10px;padding:7px 4px;border-bottom:1px solid #f1f3f5;">
                         <img src="${v.thumbnail}" loading="lazy" style="width:104px;aspect-ratio:16/9;object-fit:cover;border-radius:6px;flex-shrink:0;cursor:pointer;" onclick="window.open('https://youtube.com/watch?v=${v.videoId}','_blank')">
@@ -25457,8 +25486,11 @@ ${titles}`;
                     <div style="font-weight:800;font-size:0.92rem;margin-bottom:4px;color:#374151;">${title}</div>
                     ${(list || []).slice(0, 5).map(v => row(v, mode)).join('') || '<p style="color:#999;font-size:0.85rem;">없음</p>'}
                 </div>`;
+                // ★평소 대비 폭발(2026-07-19) = 조회수 ÷ 그 채널 평소 중앙값. 효율(구독자 대비)의 함정 보완:
+                //   구독자 많고 평소 조회 낮은 채널의 대박(효율 낮게 나옴)이 우리 진짜 타겟 — 소재의 힘 증명.
                 document.getElementById('briefingBody').innerHTML =
                     `<div style="display:flex;gap:22px;flex-wrap:wrap;">
+                        ${(data.outlier && data.outlier.length) ? col('💥 평소 대비 폭발 (채널 평소의 N배)', data.outlier, 'outlier') : ''}
                         ${col('🔥 지금 뜨는 중 (시간당 조회수)', data.rising, 'rising')}
                         ${col('💎 떡상 (구독자 대비)', data.viral, 'viral')}
                     </div>`;
@@ -34523,6 +34555,6 @@ ${commentText.slice(0, 12000)}`;
     }
     </script>
 <script src="preempt_radar.js?v=6"></script>
-<script src="wave_radar.js?v=21"></script>
+<script src="wave_radar.js?v=22"></script>
 </body>
 </html>

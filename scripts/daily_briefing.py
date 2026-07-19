@@ -5,6 +5,9 @@
 지표:
 - 급상승(velocity) = 조회수 ÷ 게시 후 경과시간(시간당 조회수) — "지금 뜨는 중"
 - 떡상(efficiency) = 조회수 ÷ 구독자수 — "채널 체급 대비 터짐" (작은 채널 떡상 = 소재의 힘)
+- ★배수(mult) = 조회수 ÷ 그 채널 평소 중앙값 (2026-07-19) — 효율의 함정 보완:
+  구독자 많은데 평소 조회 낮은 채널의 대박(효율은 낮게 나옴)·유령구독 채널의 진짜 터짐을 잡는다.
+  평소 중앙값 = 최근 20개 중 3~90일 지난 성숙 영상(숏폼 제외) 중앙값. 1of10/ViewStats 업계 표준 방식.
 """
 import json
 import os
@@ -55,8 +58,10 @@ def parse_dur(iso):
 
 
 def scan_category(channels, cutoff):
-    """채널 목록 → 최근 24h 영상 수집 (채널당 playlistItems 1페이지 = 1유닛)"""
+    """채널 목록 → 최근 24h 영상 수집 (채널당 playlistItems 1페이지 = 1유닛)
+    ★2026-07-19: 같은 1페이지(20개)를 채널 '평소 성적' 표본으로도 재활용 — baseline에 전량 보존."""
     items = []
+    baseline = {}  # channelId -> [(videoId, publishedAt)] 최근 20개 (평소 중앙값 계산용)
     for ch in channels:
         cid = ch.get("id")
         if not cid or not cid.startswith("UC"):
@@ -68,16 +73,18 @@ def scan_category(channels, cutoff):
             raise
         except Exception:
             continue  # 재생목록 없음(빈 채널) 등
+        base = []
         for it in r.get("items", []):
             pub = it["contentDetails"].get("videoPublishedAt") or it["snippet"].get("publishedAt")
             if not pub:
                 continue
-            dt = datetime.fromisoformat(pub.replace("Z", "+00:00"))
-            if dt < cutoff:
-                break  # 업로드목록은 최신순 — 창 밖이면 이 채널 끝
             t = it["snippet"]["title"]
             if t in ("Private video", "Deleted video"):
                 continue
+            base.append((it["contentDetails"]["videoId"], pub))
+            dt = datetime.fromisoformat(pub.replace("Z", "+00:00"))
+            if dt < cutoff:
+                continue  # 창 밖 영상도 baseline엔 남긴다 (break 금지)
             items.append({
                 "videoId": it["contentDetails"]["videoId"],
                 "title": t,
@@ -86,12 +93,46 @@ def scan_category(channels, cutoff):
                 "publishedAt": pub,
                 "thumbnail": (it["snippet"].get("thumbnails", {}).get("medium", {}) or {}).get("url", ""),
             })
-    return items
+        if base:
+            baseline[cid] = base
+    return items, baseline
 
 
-def enrich(items):
-    """조회수·길이·구독자 붙이고 필터"""
-    ids = [x["videoId"] for x in items]
+def _median(vals):
+    s = sorted(vals)
+    n = len(s)
+    if n == 0:
+        return 0
+    return s[n // 2] if n % 2 else (s[n // 2 - 1] + s[n // 2]) / 2
+
+
+def channel_medians(baseline, stats, now):
+    """채널별 평소 중앙값 — 3~90일 성숙 영상(숏폼 제외) 중앙값, 5개 미만이면 전체로 폴백"""
+    med = {}
+    for cid, vids in baseline.items():
+        matured, allv = [], []
+        for vid, pub in vids:
+            v = stats.get(vid)
+            if not v:
+                continue
+            if parse_dur(v["contentDetails"].get("duration")) < MIN_DURATION:
+                continue  # 숏폼이 중앙값을 끌어내리는 것 방지
+            views = int(v["statistics"].get("viewCount", 0))
+            allv.append(views)
+            age = (now - datetime.fromisoformat(pub.replace("Z", "+00:00"))).days
+            if 3 <= age <= 90:
+                matured.append(views)
+        src = matured if len(matured) >= 5 else allv
+        if len(src) >= 3:  # 표본 3개 미만이면 중앙값 무의미 — 배수 미계산
+            med[cid] = max(1, _median(src))
+    return med
+
+
+def enrich(items, baseline):
+    """조회수·길이·구독자 붙이고 필터 + ★평소 대비 배수(mult)"""
+    # 24h 영상 + 채널 평소표본(최근 20개) 통계를 한 번에 (50개 배치 = 1유닛)
+    base_ids = [vid for vids in baseline.values() for vid, _ in vids]
+    ids = list(dict.fromkeys([x["videoId"] for x in items] + base_ids))
     stats = {}
     for i in range(0, len(ids), 50):
         r = api("videos", part="statistics,contentDetails", id=",".join(ids[i:i + 50]))
@@ -105,6 +146,7 @@ def enrich(items):
             st = c["statistics"]
             subs[c["id"]] = 0 if st.get("hiddenSubscriberCount") else int(st.get("subscriberCount", 0))
     now = datetime.now(timezone.utc)
+    med = channel_medians(baseline, stats, now)
     out = []
     for x in items:
         v = stats.get(x["videoId"])
@@ -117,12 +159,15 @@ def enrich(items):
             continue
         sub = subs.get(x["channelId"], 0)
         hours = max(1.0, (now - datetime.fromisoformat(x["publishedAt"].replace("Z", "+00:00"))).total_seconds() / 3600)
+        m = med.get(x["channelId"], 0)
         out.append({
             **x,
             "viewCount": views,
             "subscriberCount": sub,
             "efficiency": round(views / sub, 1) if sub > 0 else None,
             "velocity": int(views / hours),
+            "chMedian": m or None,
+            "mult": round(views / m, 1) if m else None,
         })
     return out
 
@@ -130,10 +175,12 @@ def enrich(items):
 def top_lists(vids):
     rising = sorted(vids, key=lambda x: -x["velocity"])[:TOP_N]
     viral = sorted([v for v in vids if v["efficiency"] is not None], key=lambda x: -x["efficiency"])[:TOP_N]
+    # ★배수 Top(2026-07-19): 그 채널 평소 대비 몇 배 터졌나 — 효율(구독자 함정)의 진짜 보정판
+    outlier = sorted([v for v in vids if v["mult"] is not None], key=lambda x: -x["mult"])[:TOP_N]
     # ★2026-07-17 파도 레이더 광각 그물용: 상위 20개만 남기고 버리던 하루치 수확 전량을 보존
     #   (업계 표준 = DB 전량에 아웃라이어 점수 — 1of10/TubeLab 방식. 208개×300B ≈ 60KB라 부담 없음)
-    allv = sorted(vids, key=lambda x: -(x["efficiency"] or 0))
-    return {"rising": rising, "viral": viral, "scanned": len(vids), "videos": allv}
+    allv = sorted(vids, key=lambda x: -(x["mult"] or x["efficiency"] or 0))
+    return {"rising": rising, "viral": viral, "outlier": outlier, "scanned": len(vids), "videos": allv}
 
 
 def main():
@@ -144,8 +191,8 @@ def main():
         chs = (channels.get(cat) or {}).get("kr") or []
         if not chs:
             continue
-        raw = scan_category(chs, cutoff)
-        vids = enrich(raw)
+        raw, baseline = scan_category(chs, cutoff)
+        vids = enrich(raw, baseline)
         result["categories"][cat] = top_lists(vids)
         print("[%s] 채널 %d개 → 24h 영상 %d개 → 필터 후 %d개" % (cat, len(chs), len(raw), len(vids)), file=sys.stderr)
     # ★침묵 실패 방지(2026-07-17): 7/5~7/16 12일간 API 키가 죽어 전 카테고리 0개를

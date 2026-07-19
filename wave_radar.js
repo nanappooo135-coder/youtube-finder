@@ -428,6 +428,11 @@
                 var medCache = {};
                 try { medCache = JSON.parse(localStorage.getItem('wave_ch_median_v1') || '{}'); } catch (e4) {}
                 var histArr = Object.keys(hist).map(function (k) { return hist[k]; });
+                // ★브리핑 서버 중앙값 시드(2026-07-19): daily_briefing.py가 채널 평소 중앙값(chMedian)을
+                //   영상마다 실어 보냄 — 그 채널은 클라에서 2유닛 들여 재계산할 필요 없음(MED_CAP 지출 절감).
+                histArr.forEach(function (b) {
+                    if (b.chMedian > 0) medCache[b.channelId] = { at: Date.now(), med: b.chMedian };
+                });
                 var needMed = [];
                 histArr.forEach(function (b) {
                     var mc = medCache[b.channelId];
