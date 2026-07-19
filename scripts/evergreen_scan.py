@@ -166,12 +166,40 @@ _MARKET_NOISE = re.compile(
     r"|비중\s*확대|줍줍|분할\s*매수|급등주|테마주|수급|기술적\s*분석|차트\s*분석|지지선|저항선"
     r"|내일\s*(장|증시|주가)|이번\s*주\s*증시|월요일|화요일|수요일|목요일|금요일")
 
+# ★뉴스 마커 (2026-07-19 심층 리서치 — QDF 역적용): 시점에 묶인 제목 = 시한부 소재.
+#   에버그린 정의(업계 합의) = "시의성 트리거에 안 묶이고 검색 수요가 장기 지속". 제목에서
+#   시점 표현을 빼면 성립 안 하는 소재는 정의상 탈락. 연도는 2024+(최근·미래 예측물)만 —
+#   "1960년 필리핀"·"1630명" 같은 역사 수치는 무관.
+_NEWS_MARKER = re.compile(
+    r"속보|긴급|오늘|어제|그제|이번\s*주|이번\s*달|올해|방금|현재|실시간|근황|최신|임박|초읽기"
+    r"|벌어지고\s*있|하고\s*있(다|습니다)|진행\s*중|먹통|비상\s*걸|들썩|술렁"
+    r"|20(2[4-9]|[3-9]\d)년?")
+
+
+def attach_weekly_gain(all_videos, prev_videos_map):
+    """★조회수 감쇠 곡선 신호 (리서치 1순위 — PNAS Crane&Sornette·Szabo&Huberman 근거):
+    지난주 스캔의 조회수와 차분 → 90일+ 지난 영상이 아직도 조회수를 벌면 stillEarning=True.
+    '옛 영상이 지금도 벌고 있다' = 소재가 에버그린이라는 가장 직접적인 증거.
+    첫 실행 주엔 prev가 없어 전부 None — 다음 주부터 쌓인다."""
+    for v in all_videos:
+        prev = prev_videos_map.get(v["videoId"])
+        if prev is None:
+            v["weekGain"] = None
+            v["stillEarning"] = False
+            continue
+        gain = v["viewCount"] - prev
+        v["weekGain"] = gain if gain >= 0 else None  # 감소는 집계 오차 — 무시
+        v["stillEarning"] = bool(
+            v["age"] >= 90 and gain is not None
+            and gain >= max(1000, int(v["viewCount"] * 0.01)))
+
 
 def find_evergreen(all_videos, now):
     """①에버그린 히트 목록 ②재탕 검증 소재(60일+ 간격 2히트+) — wave_engine cluster 재사용"""
     def eligible(v):
         return (v["mult"] >= HIT_MULT and v["viewCount"] >= MIN_VIEWS
-                and not _JUNK_TITLE.search(v["title"]) and not _MARKET_NOISE.search(v["title"]))
+                and not _JUNK_TITLE.search(v["title"]) and not _MARKET_NOISE.search(v["title"])
+                and not _NEWS_MARKER.search(v["title"]))
     hits = [v for v in all_videos if v["age"] >= MIN_AGE_DAYS and eligible(v)]
     # 재탕 감지: 최근(30일 미만) 히트도 클러스터 입력에는 포함 — "옛 히트 + 이번 주 재탕" 조합을 잡아야 함
     recent_hits = [v for v in all_videos if v["age"] < MIN_AGE_DAYS and eligible(v)]
@@ -203,24 +231,41 @@ def find_evergreen(all_videos, now):
             "channels": n_ch,
             "strong": n_ch >= STRONG_CHANNELS,     # 채널 3개+ 수렴 = 운이 아니라 패턴 (최상급)
             "saturated": recent_8w >= 2,           # 최근 8주에 2개+ 재탕 = 포화 임박 — 각도 재설계 필수
+            # 🌲 옛(90일+) 히트가 지난주에도 조회수를 벌고 있음 = 수요 지속의 직접 증거 (감쇠곡선 신호)
+            "earning": any(v.get("stillEarning") for v in vs),
             "bestMult": max(v["mult"] for v in vs),
-            "videos": [{k: v[k] for k in ("videoId", "title", "channelId", "channelTitle",
-                                          "publishedAt", "viewCount", "mult", "thumbnail", "age")} for v in vs[:6]],
+            "videos": [{k: v.get(k) for k in ("videoId", "title", "channelId", "channelTitle",
+                                              "publishedAt", "viewCount", "mult", "thumbnail", "age",
+                                              "weekGain", "stillEarning")} for v in vs[:6]],
         })
-    # 정렬: 강한 검증(3채널+) 먼저 → 히트 수 → 배수
-    remakes.sort(key=lambda r: (not r["strong"], -r["hits"], -r["bestMult"]))
+    # 정렬: 🌲지금도 버는 소재 먼저 → 강한 검증(3채널+) → 히트 수 → 배수
+    remakes.sort(key=lambda r: (not r["earning"], not r["strong"], -r["hits"], -r["bestMult"]))
     # 단독(재탕 미검증 — 참고용 강등): 6개월+ 지난 옛 대박만. 최근 한 방은 뉴스일 뿐이라 제외
     remake_ids = {v["videoId"] for r in remakes for v in r["videos"]}
     singles = sorted([v for v in hits if v["videoId"] not in remake_ids and v["age"] >= SINGLE_MIN_AGE],
-                     key=lambda v: -v["mult"])[:TOP_N]
-    singles = [{k: v[k] for k in ("videoId", "title", "channelId", "channelTitle",
-                                  "publishedAt", "viewCount", "mult", "thumbnail", "age")} for v in singles]
+                     key=lambda v: (not v.get("stillEarning"), -v["mult"]))[:TOP_N]
+    singles = [{k: v.get(k) for k in ("videoId", "title", "channelId", "channelTitle",
+                                      "publishedAt", "viewCount", "mult", "thumbnail", "age",
+                                      "weekGain", "stillEarning")} for v in singles]
     return remakes[:TOP_N], singles
 
 
 def main():
     channels = json.load(open(os.path.join(BASE, "channels.json"), encoding="utf-8"))
     now = datetime.now(timezone.utc)
+    # ★지난주 스캔의 조회수 스냅샷 (감쇠곡선 신호용 — 지난 산출물에 실린 영상만이지만
+    #   그게 정확히 '관심 대상'인 히트들이라 충분)
+    prev_map = {}
+    try:
+        prev = json.load(open(os.path.join(BASE, "evergreen.json"), encoding="utf-8"))
+        for c in (prev.get("categories") or {}).values():
+            for r in c.get("remakes", []):
+                for v in r.get("videos", []):
+                    prev_map[v["videoId"]] = v.get("viewCount", 0)
+            for v in c.get("singles", []):
+                prev_map[v["videoId"]] = v.get("viewCount", 0)
+    except Exception:
+        pass
     result = {"generatedAt": now.isoformat(), "perChannel": PER_CHANNEL, "categories": {}}
     for cat in ("경제", "역사"):
         chs = (channels.get(cat) or {}).get("kr") or []
@@ -236,6 +281,7 @@ def main():
                 print("채널 실패 %s: %s" % (ch.get("title"), e), file=sys.stderr)
             if (i + 1) % 50 == 0:
                 print("[%s] %d/%d 채널..." % (cat, i + 1, len(chs)), file=sys.stderr)
+        attach_weekly_gain(all_videos, prev_map)
         remakes, singles = find_evergreen(all_videos, now)
         result["categories"][cat] = {"remakes": remakes, "singles": singles, "scannedVideos": len(all_videos)}
         print("[%s] 채널 %d개 → 영상 %d개 → 재탕검증 %d소재 · 단독 에버그린 %d개" %

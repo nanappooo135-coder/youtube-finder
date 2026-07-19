@@ -112,6 +112,10 @@
             : rm.saturated ? '<span class="stat-badge" style="background:#e03131;color:#fff;font-weight:700;">🚧 최근 2달 재탕 몰림 — 새 각도 필수</span>'
             : rm.lastHitDays < 21 ? '<span class="stat-badge" style="background:#f08c00;color:#fff;font-weight:700;">⚠️ ' + rm.lastHitDays + '일 전 방금 재탕됨</span>'
             : '<span class="stat-badge" style="background:#0ca678;color:#fff;font-weight:700;">✅ 재탕 기회</span>';
+        // 🌲 감쇠곡선 신호: 90일+ 지난 영상이 지난주에도 조회수를 벎 = 수요 지속의 직접 증거
+        var earning = (v.stillEarning || (rm && rm.earning))
+            ? '<span class="stat-badge" style="background:#2f9e44;color:#fff;font-weight:700;">🌲 지금도 조회수 붙는 중' + (v.weekGain ? ' +' + fmtN(v.weekGain) + '/주' : '') + '</span>'
+            : '';
         return '<div class="card" style="margin-bottom:10px;"><div class="card-inner">'
             + '<div style="display:flex;gap:14px;align-items:flex-start;padding:12px;">'
             + '<img src="' + v.thumbnail + '" loading="lazy" onclick="window.open(\'https://youtube.com/watch?v=' + v.videoId + '\',\'_blank\')" style="width:200px;aspect-ratio:16/9;object-fit:cover;border-radius:8px;cursor:pointer;flex-shrink:0;">'
@@ -120,16 +124,38 @@
             + '  <div style="font-size:0.88rem;color:#888;margin-bottom:8px;">' + esc(v.channelTitle) + ' · 조회 ' + fmtN(v.viewCount) + ' · ' + ageTxt2 + '</div>'
             + '  <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px;">'
             + '    <span class="stat-badge" style="background:#8b5cf6;color:#fff;font-weight:800;font-size:0.92rem;">💥 평소의 ' + multTxt + '배</span>'
-            + remakeBadge + hint
+            + remakeBadge + earning + hint
             + '  </div>'
             + '  <div style="display:flex;gap:8px;flex-wrap:wrap;">'
             + '    <button onclick="copyPipelineCmd(\'' + v.videoId + '\',this)" class="pipe-btn">📋 대본 명령</button>'
             + '    <button onclick="copyVideoPack(\'' + v.videoId + '\',this)" class="pipe-btn">💬 URL·제목·댓글</button>'
+            + '    <button onclick="hgLifespanPrompt(this)" data-title="' + esc(v.title) + '" class="pipe-btn">⏳ 수명판정 복사</button>'
             + '    <button onclick="blockChannelFromCard(this)" data-cid="' + v.channelId + '" data-cname="' + esc(v.channelTitle) + '" class="pipe-btn" style="color:#c92a2a;">🚫 채널 차단</button>'
             + '  </div>'
             + (rm ? '<div id="hgEverX_' + x.ri + '_' + v.videoId + '" style="display:none;margin-top:10px;border-top:1px dashed #d0d4da;padding-top:8px;"></div>' : '')
             + '</div></div></div></div>';
     }
+
+    // ⏳ 소재 수명판정 프롬프트 복사 — EverGreenQA(EMNLP 2025) 검증 문항 + 업계 체크리스트 기반.
+    //   웹검색 없이 판정시키는 게 포인트(훈련 지식만으로 안정적으로 답해지면 = 에버그린 프록시)
+    window.hgLifespanPrompt = function (btn) {
+        var title = btn.dataset.title || '';
+        var p = '너는 유튜브 롱폼 소재의 수명을 판정하는 분석가다. 웹검색 없이 판단해라.\n\n'
+            + '소재(레퍼런스 제목): ' + title + '\n\n'
+            + '아래 5문항에 각각 예/아니오 + 근거 1줄로 답한 뒤 최종 판정해라:\n'
+            + '1. 완결성: 이 이야기는 결말이 이미 나왔는가? (진행 중이면 뉴스성)\n'
+            + '2. 답 불변성: 핵심 전말·답이 1년 뒤 바뀔 수 있는가?\n'
+            + '3. 트리거 독립: 특정 날짜·이벤트·시세가 끝나면 존재 이유가 사라지는가?\n'
+            + '4. 수요 지속: 1년 뒤에도 이 질문(왜/어떻게 됐나)을 검색할 사람이 있는가?\n'
+            + '5. 날짜 제거: 제목에서 시점 표현을 빼도 성립하는가?\n\n'
+            + '최종 출력(JSON): {"판정":"evergreen|semi-evergreen|news","확신도":0~1,'
+            + '"에버그린_전환_조건":"news면 어떤 조건 충족 시 에버그린 되는지 1줄","근거":[문항별 1줄]}';
+        navigator.clipboard.writeText(p).then(function () {
+            var t = btn.textContent;
+            btn.textContent = '✓ 복사됨 — 클로드에 붙여넣기';
+            setTimeout(function () { btn.textContent = t; }, 3000);
+        });
+    };
 
     // ♻️ 배지 클릭 → 그 소재의 다른 히트들(재탕 이력) 펼침
     window.hgEverExpand = function (ri, vid) {
