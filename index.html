@@ -25486,7 +25486,7 @@ ${titles}`;
                 if (!data) return;
                 const dt = new Date(b.generatedAt);
                 document.getElementById('briefingTime').textContent =
-                    `(${cat} · ${dt.getMonth() + 1}/${dt.getDate()} ${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')} 스캔 · 24시간 ${data.scanned}개)`;
+                    `(${cat} · ${dt.getMonth() + 1}/${dt.getDate()} ${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')} 스캔 · 24시간 ${data.scanned}개${data.pool ? ` · 14일 풀 ${data.pool}개` : ''})`;
                 const fmtN = v => v >= 10000 ? (v / 10000).toFixed(1) + '만' : v.toLocaleString();
                 const row = (v, mode) => {
                     const badge = mode === 'rising'
@@ -25506,15 +25506,15 @@ ${titles}`;
                         </div>
                     </div>`;
                 };
-                const col = (title, list, mode) => `<div style="flex:1;min-width:300px;">
+                const col = (title, list, mode, nShow = 5) => `<div style="flex:1;min-width:300px;">
                     <div style="font-weight:800;font-size:0.92rem;margin-bottom:4px;color:#374151;">${title}</div>
-                    ${(list || []).slice(0, 5).map(v => row(v, mode)).join('') || '<p style="color:#999;font-size:0.85rem;">없음</p>'}
+                    ${(list || []).slice(0, nShow).map(v => row(v, mode)).join('') || '<p style="color:#999;font-size:0.85rem;">없음</p>'}
                 </div>`;
                 // ★평소 대비 폭발(2026-07-19) = 조회수 ÷ 그 채널 평소 중앙값. 효율(구독자 대비)의 함정 보완:
                 //   구독자 많고 평소 조회 낮은 채널의 대박(효율 낮게 나옴)이 우리 진짜 타겟 — 소재의 힘 증명.
                 document.getElementById('briefingBody').innerHTML =
                     `<div style="display:flex;gap:22px;flex-wrap:wrap;">
-                        ${(data.outlier && data.outlier.length) ? col('💥 평소 대비 폭발 (채널 평소의 N배)', data.outlier, 'outlier') : ''}
+                        ${(data.outlier && data.outlier.length) ? col('💥 평소 대비 폭발 (최근 3일 · 같은 채널 여러 개면 다 표시)', data.outlier, 'outlier', 10) : ''}
                         ${col('🔥 지금 뜨는 중 (시간당 조회수)', data.rising, 'rising')}
                         ${col('💎 떡상 (구독자 대비)', data.viral, 'viral')}
                     </div>`;
@@ -25832,8 +25832,12 @@ ${titles}`;
                     const got = data.items || [];
                     items.push(...got);
                     pageToken = data.nextPageToken;
-                    const oldest = got.length ? new Date(got[got.length - 1].contentDetails?.videoPublishedAt || got[got.length - 1].snippet?.publishedAt || 0) : null;
-                    if (!pageToken || !oldest || oldest < publishedAfterDate) break; // 기간 밖 도달 → 더 안 감
+                    // ★조기중단 수정(2026-07-19): 업로드목록은 완벽한 최신순이 아님(프리미어·공개일 변경).
+                    //   페이지 '마지막' 항목만 보고 끊으면 사이에 낀 옛 영상 하나 때문에 다음 페이지의
+                    //   기간 내 영상을 통째로 놓친다("대박 2~3개 중 1개만 뜸" 구멍 후보). 폴더 스캔과
+                    //   동일하게 '페이지에 기간 내 영상이 하나도 없을 때만' 중단한다.
+                    const anyInWindow = got.some(it => new Date(it.contentDetails?.videoPublishedAt || it.snippet?.publishedAt || 0) >= publishedAfterDate);
+                    if (!pageToken || !got.length || !anyInWindow) break;
                 }
                 return items
                     .filter(item => {
@@ -25852,7 +25856,12 @@ ${titles}`;
                         }
                     }))
                     .filter(i => i.id.videoId && i.snippet.title !== 'Private video' && i.snippet.title !== 'Deleted video');
-            } catch(e) { return []; }
+            } catch(e) {
+                // ★조용한 증발 금지(2026-07-19): 채널 하나가 통째로 빠져도 아무 표시가 없었음
+                console.warn(`[수집] 채널 "${channelTitle}" 영상 목록 실패 — 이 채널 영상 전부 누락:`, e.message);
+                window._fetchDroppedChannels = (window._fetchDroppedChannels || 0) + 1;
+                return [];
+            }
         }
 
         // ===========================
@@ -26084,6 +26093,7 @@ ${titles}`;
             const minViews   = parseInt(document.getElementById('benchMinViews').value)  || 0;
             const maxSubsRaw = parseInt(document.getElementById('benchMaxSubs').value) || 0;
             const maxSubs    = maxSubsRaw === 0 ? Infinity : maxSubsRaw;
+            window._fetchDroppedChannels = 0; // 채널 수집 실패 집계 (스캔마다 리셋)
             const benchBtn   = document.getElementById('benchBtn');
             const resultsEl  = document.getElementById('benchResults');
             const usageEl    = document.getElementById('recommendApiUsage');
@@ -26204,9 +26214,14 @@ ${titles}`;
 
                 // YouTube API는 한 번에 50개까지만 허용 → 50개씩 나눠서 호출
                 const chunk = (arr, size) => Array.from({ length: Math.ceil(arr.length / size) }, (_, i) => arr.slice(i * size, i * size + size));
+                // ★배치 실패 = 영상 50개 조용히 증발(2026-07-19 감사에서 확인) → 1회 재시도 + 실패 집계 표시
+                let _failedBatches = 0;
                 const safeFetchMain = async (endpoint, params) => {
                     try { return await fetchYouTubeAPI(endpoint, params); }
-                    catch(e) { console.warn('[국내] API 에러 무시:', e.message); return { items: [] }; }
+                    catch(e) {
+                        try { return await fetchYouTubeAPI(endpoint, params); }
+                        catch(e2) { _failedBatches++; console.warn('[국내] API 배치 실패(재시도 후) — 최대 50개 영상 누락:', e2.message); return { items: [] }; }
+                    }
                 };
 
                 const [videoResults, channelResults] = await Promise.all([
@@ -26301,7 +26316,11 @@ ${titles}`;
 
                 // 국내 전용 usage 요약
                 const usedQueries = [query1, query2, query3, query4, query5].filter(Boolean);
-                usageEl.textContent = `🇰🇷 국내 추천 완료: ${results.length}개 영상 | API 유닛: 키워드검색 ${usedQueries.length * 100} + 통계 6 + 등록채널 ${krChannels.length} = 총 ${usedQueries.length * 100 + 6 + krChannels.length}유닛 | 6시간 캐시 저장됨`;
+                const _dropWarn = (_failedBatches || window._fetchDroppedChannels)
+                    ? ` | ⚠️ 누락 가능: 통계배치 실패 ${_failedBatches}개, 채널수집 실패 ${window._fetchDroppedChannels || 0}개 — 다시 스캔 권장`
+                    : '';
+                usageEl.textContent = `🇰🇷 국내 추천 완료: ${results.length}개 영상 | API 유닛: 키워드검색 ${usedQueries.length * 100} + 통계 6 + 등록채널 ${krChannels.length} = 총 ${usedQueries.length * 100 + 6 + krChannels.length}유닛 | 6시간 캐시 저장됨${_dropWarn}`;
+                window._fetchDroppedChannels = 0;
                 } // ═══════ 국내 블록 끝 ═══════
 
                 // ═══════ 해외 채널 검색 — 해외 탭일 때만 (국내 탭이면 이 블록 통째로 스킵) ═══════

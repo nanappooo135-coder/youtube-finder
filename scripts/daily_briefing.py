@@ -129,7 +129,7 @@ def channel_medians(baseline, stats, now):
 
 
 def enrich(items, baseline):
-    """조회수·길이·구독자 붙이고 필터 + ★평소 대비 배수(mult)"""
+    """조회수·길이·구독자 붙이고 필터 + ★평소 대비 배수(mult). 반환 = (영상목록, 채널중앙값)"""
     # 24h 영상 + 채널 평소표본(최근 20개) 통계를 한 번에 (50개 배치 = 1유닛)
     base_ids = [vid for vids in baseline.values() for vid, _ in vids]
     ids = list(dict.fromkeys([x["videoId"] for x in items] + base_ids))
@@ -169,32 +169,90 @@ def enrich(items, baseline):
             "chMedian": m or None,
             "mult": round(views / m, 1) if m else None,
         })
+    return out, med
+
+
+def _age_days(v, now):
+    try:
+        return (now - datetime.fromisoformat(v["publishedAt"].replace("Z", "+00:00"))).total_seconds() / 86400
+    except Exception:
+        return 999
+
+
+def carry_over(prev_videos, have_ids, med, now):
+    """★14일 롤링 축적(2026-07-19): 브리핑이 24h 창이라 2~3일 전 터진 영상이 다음날 증발하던
+    구멍을 메운다("채널에 대박 2~3개 있는데 1개만 뜸" 실사용 보고). 어제까지의 briefing.json
+    videos에서 14일 안 지난 것을 승계하고, 통계를 오늘 값으로 재조회(50개=1유닛)해
+    조회수·속도·배수를 갱신한다. 오늘 스캔에 이미 있는 영상은 제외(중복 방지)."""
+    cand = [v for v in prev_videos if v.get("videoId") and v["videoId"] not in have_ids
+            and _age_days(v, now) <= 14]
+    if not cand:
+        return []
+    ids = [v["videoId"] for v in cand]
+    stats = {}
+    for i in range(0, len(ids), 50):
+        try:
+            r = api("videos", part="statistics", id=",".join(ids[i:i + 50]))
+        except Exception:
+            continue  # 재조회 실패분은 어제 통계로라도 유지 (조용한 증발 금지)
+        for it in r.get("items", []):
+            stats[it["id"]] = int(it["statistics"].get("viewCount", 0))
+    out = []
+    for v in cand:
+        views = stats.get(v["videoId"], v.get("viewCount", 0))
+        if views < MIN_VIEWS:
+            continue
+        hours = max(1.0, _age_days(v, now) * 24)
+        m = med.get(v["channelId"]) or v.get("chMedian") or 0
+        sub = v.get("subscriberCount", 0)
+        out.append({
+            **v,
+            "viewCount": views,
+            "efficiency": round(views / sub, 1) if sub > 0 else None,
+            "velocity": int(views / hours),
+            "chMedian": m or None,
+            "mult": round(views / m, 1) if m else None,
+        })
     return out
 
 
-def top_lists(vids):
+def top_lists(vids, now, scanned_24h):
     rising = sorted(vids, key=lambda x: -x["velocity"])[:TOP_N]
     viral = sorted([v for v in vids if v["efficiency"] is not None], key=lambda x: -x["efficiency"])[:TOP_N]
-    # ★배수 Top(2026-07-19): 그 채널 평소 대비 몇 배 터졌나 — 효율(구독자 함정)의 진짜 보정판
-    outlier = sorted([v for v in vids if v["mult"] is not None], key=lambda x: -x["mult"])[:TOP_N]
+    # ★배수 Top(2026-07-19): 그 채널 평소 대비 몇 배 터졌나 — 효율(구독자 함정)의 진짜 보정판.
+    #   창 = 최근 3일(롤링 풀 덕에 어제·그제 터진 것도 안 빠짐), 같은 채널 여러 개면 여러 개 다 나온다.
+    outlier = sorted([v for v in vids if v["mult"] is not None and _age_days(v, now) <= 3],
+                     key=lambda x: -x["mult"])[:TOP_N]
     # ★2026-07-17 파도 레이더 광각 그물용: 상위 20개만 남기고 버리던 하루치 수확 전량을 보존
-    #   (업계 표준 = DB 전량에 아웃라이어 점수 — 1of10/TubeLab 방식. 208개×300B ≈ 60KB라 부담 없음)
+    #   (업계 표준 = DB 전량에 아웃라이어 점수 — 1of10/TubeLab 방식) + 2026-07-19부터 14일 롤링 전량
     allv = sorted(vids, key=lambda x: -(x["mult"] or x["efficiency"] or 0))
-    return {"rising": rising, "viral": viral, "outlier": outlier, "scanned": len(vids), "videos": allv}
+    return {"rising": rising, "viral": viral, "outlier": outlier,
+            "scanned": scanned_24h, "pool": len(allv), "videos": allv}
 
 
 def main():
     channels = json.load(open(os.path.join(BASE, "channels.json"), encoding="utf-8"))
-    cutoff = datetime.now(timezone.utc) - timedelta(hours=HOURS)
-    result = {"generatedAt": datetime.now(timezone.utc).isoformat(), "hours": HOURS, "categories": {}}
+    now = datetime.now(timezone.utc)
+    cutoff = now - timedelta(hours=HOURS)
+    # ★어제까지의 브리핑을 읽어 14일 롤링 풀 승계(2026-07-19) — 24h 창이라 2~3일 전 대박이
+    #   다음날 증발하던 구멍("채널에 대박 2~3개인데 1개만 뜸" 실사용 보고)을 서버에서 메운다.
+    prev = {}
+    try:
+        prev = json.load(open(os.path.join(BASE, "briefing.json"), encoding="utf-8")).get("categories", {})
+    except Exception:
+        pass
+    result = {"generatedAt": now.isoformat(), "hours": HOURS, "windowDays": 14, "categories": {}}
     for cat in ("경제", "역사"):
         chs = (channels.get(cat) or {}).get("kr") or []
         if not chs:
             continue
         raw, baseline = scan_category(chs, cutoff)
-        vids = enrich(raw, baseline)
-        result["categories"][cat] = top_lists(vids)
-        print("[%s] 채널 %d개 → 24h 영상 %d개 → 필터 후 %d개" % (cat, len(chs), len(raw), len(vids)), file=sys.stderr)
+        vids, med = enrich(raw, baseline)
+        prev_videos = (prev.get(cat) or {}).get("videos") or []
+        carried = carry_over(prev_videos, {v["videoId"] for v in vids}, med, now)
+        result["categories"][cat] = top_lists(vids + carried, now, len(vids))
+        print("[%s] 채널 %d개 → 24h %d개(필터 후) + 승계 %d개 = 풀 %d개" %
+              (cat, len(chs), len(vids), len(carried), len(vids) + len(carried)), file=sys.stderr)
     # ★침묵 실패 방지(2026-07-17): 7/5~7/16 12일간 API 키가 죽어 전 카테고리 0개를
     #   저장하면서도 워크플로는 '성공'이었다 — 등록채널 800개+가 24h에 영상 0개일 수는 없으므로
     #   전 카테고리 0개면 키/네트워크 장애로 보고 exit 1 → Actions가 빨간불 → 즉시 발견.
