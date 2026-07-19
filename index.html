@@ -23994,6 +23994,31 @@ Example format:
             const hot = v >= 3000;
             return `<span class="stat-badge" style="background:${hot ? '#ff4444' : '#ff9d3f'};color:white;font-weight:700">${hot ? '🔥' : '📈'} 시간당 ${txt}회</span>`;
         }
+        // ★채널 평소 중앙값(2026-07-19): 스캔에서 이미 받아온 영상들을 채널별로 묶어 평소 조회수
+        //   중앙값을 계산(추가 API 0). 3일+ 지난 성숙 영상 5개+면 그것만, 아니면 전체로 폴백.
+        //   표본 3개 미만 채널은 미계산(중앙값 무의미). getCh/getView/getDate = 항목 접근자.
+        function computeChannelMedians(items, getCh, getView, getDate) {
+            const byCh = {};
+            items.forEach(it => { const c = getCh(it); if (c) (byCh[c] = byCh[c] || []).push(it); });
+            const med = {};
+            Object.keys(byCh).forEach(cid => {
+                const all = byCh[cid].map(getView);
+                const matured = byCh[cid]
+                    .filter(it => (Date.now() - new Date(getDate(it))) / 86400000 >= 3)
+                    .map(getView);
+                const src = (matured.length >= 5 ? matured : all).slice().sort((a, b) => a - b);
+                if (src.length >= 3) {
+                    const mid = src.length % 2 ? src[(src.length - 1) / 2] : (src[src.length / 2 - 1] + src[src.length / 2]) / 2;
+                    med[cid] = Math.max(1, mid);
+                }
+            });
+            return med;
+        }
+        function _multBadge(item) {
+            if (item.mult == null) return '';
+            const txt = item.mult >= 10 ? Math.round(item.mult) : item.mult.toFixed(1);
+            return `<span class="stat-badge" style="background:#8b5cf6;color:#fff;font-weight:700;">💥 평소의 ${txt}배</span>`;
+        }
         function buildSortBar(containerId, activeSort, hasMatch) {
             const sorts = [
                 { key: 'views-desc', label: '조회수 높은순' },
@@ -24462,20 +24487,10 @@ Example format:
                 // ★평소 대비 배수(2026-07-19): 이미 받아온 스캔 데이터로 채널별 평소 중앙값 계산(추가 API 0).
                 //   효율(조회÷구독)의 함정 보완 — 구독자 많고 평소 조회 낮은 채널의 대박이 진짜 타겟.
                 //   3일+ 지난 성숙 영상 우선(어린 영상은 아직 안 자람), 표본 3개 미만 채널은 배수 미계산.
-                const _vByCh = {};
-                allVideos.forEach(v => { (_vByCh[v.channelId] = _vByCh[v.channelId] || []).push(v); });
-                const _chMedian = {};
-                Object.keys(_vByCh).forEach(cid => {
-                    const views = _vByCh[cid].map(v => parseInt((statsMap[v.videoId] || {}).viewCount) || 0);
-                    const matured = _vByCh[cid]
-                        .filter(v => (Date.now() - new Date(v.publishedAt)) / 86400000 >= 3)
-                        .map(v => parseInt((statsMap[v.videoId] || {}).viewCount) || 0);
-                    const src = (matured.length >= 5 ? matured : views).slice().sort((a, b) => a - b);
-                    if (src.length >= 3) {
-                        const mid = src.length % 2 ? src[(src.length - 1) / 2] : (src[src.length / 2 - 1] + src[src.length / 2]) / 2;
-                        _chMedian[cid] = Math.max(1, mid);
-                    }
-                });
+                const _chMedian = computeChannelMedians(allVideos,
+                    v => v.channelId,
+                    v => parseInt((statsMap[v.videoId] || {}).viewCount) || 0,
+                    v => v.publishedAt);
                 // 채널별 최신 구독자수 업데이트 (이미 가져온 데이터 활용)
                 let results = allVideos.map(v => {
                     const stats = statsMap[v.videoId] || {};
@@ -24876,9 +24891,11 @@ Example format:
         }
 
         function displayMatchResults(containerId, results) {
-            // 기본 정렬 = 효율순 (급상승 버튼으로 온 경우 = 시간당 조회수순)
-            const mode = window._benchDefaultSort === 'velocity' ? 'velocity' : 'efficiency';
-            const val = mode === 'velocity' ? _velVal : _effVal;
+            // 기본 정렬(2026-07-19): 급상승 버튼으로 온 경우 = 시간당 조회수순,
+            // 평소대비 배수 데이터가 있으면 평소대비순(효율의 구독자 함정 보완), 없으면 효율순
+            const mode = window._benchDefaultSort === 'velocity' ? 'velocity'
+                : results.some(r => r.mult != null) ? 'mult' : 'efficiency';
+            const val = mode === 'velocity' ? _velVal : mode === 'mult' ? (i => i.mult || 0) : _effVal;
             const sorted = [...results].sort((a, b) => val(b) - val(a));
             _resultStore[containerId] = { results: sorted, currentSort: mode, renderer: renderMatchResults };
             renderMatchResults(containerId, sorted, mode);
@@ -25193,9 +25210,15 @@ ${titles}`;
                 ? `<span class="stat-badge" style="background:#fd7e14;color:white">매칭도 높음</span>`
                 : `<span class="stat-badge">참고용</span>`;
 
-            // 성과 판정 — 정렬 기준에 맞춰 등급 표시 (급상승순=속도 등급, 그 외=효율 등급)
+            // 성과 판정 — 정렬 기준에 맞춰 등급 표시 (급상승순=속도, 평소대비순=배수, 그 외=효율)
             let perfBadge;
-            if (activeSort === 'velocity') {
+            if (activeSort === 'mult' && item.mult != null) {
+                // 배수 기준 = 파도레이더 히트 기준과 동일 (3배+ 대박, 1.5배+ 잘나옴)
+                if (item.mult >= 3)        perfBadge = `<span class="stat-badge" style="background:#ff4444;color:white;font-weight:700">💥 대박</span>`;
+                else if (item.mult >= 1.5) perfBadge = `<span class="stat-badge" style="background:#fd7e14;color:white;font-weight:700">잘나옴</span>`;
+                else if (item.mult >= 0.7) perfBadge = `<span class="stat-badge" style="background:#28a745;color:white">평소 수준</span>`;
+                else                       perfBadge = `<span class="stat-badge" style="background:#adb5bd;color:white">평소 이하</span>`;
+            } else if (activeSort === 'velocity') {
                 const v = _velVal(item);
                 if (v >= 10000)     perfBadge = `<span class="stat-badge" style="background:#ff4444;color:white;font-weight:700">🔥 대박 상승</span>`;
                 else if (v >= 3000) perfBadge = `<span class="stat-badge" style="background:#fd7e14;color:white;font-weight:700">상승 중</span>`;
@@ -25237,6 +25260,7 @@ ${titles}`;
                             <div class="card-stats">
                                 ${newBadge}
                                 ${perfBadge}
+                                ${_multBadge(item)}
                                 ${_velBadge(item)}
                                 ${matchBadge}
                                 <span class="stat-badge">조회수 ${formatNumber(item.viewCount)}</span>
@@ -25984,6 +26008,7 @@ ${titles}`;
                                 </div>
                                 <div class="card-stats">
                                     ${perfBadge}
+                                    ${_multBadge(item)}
                                     <span class="stat-badge">조회수 ${formatNumber(views)}</span>
                                     <span class="stat-badge">구독자 ${subs > 0 ? formatNumber(subs) : '비공개'}</span>
                                     <span class="stat-badge highlight">효율 ${eff === 99 ? '-' : eff.toFixed(1) + '배'}</span>
@@ -26211,6 +26236,14 @@ ${titles}`;
 
                 progBar.style.width = '80%'; loadText.textContent = '필터링 중...';
 
+                // ★평소 대비 배수(2026-07-19): 등록 채널은 기간 내 영상이 전부 있어 채널별 평소
+                //   중앙값 계산 가능(추가 API 0). 키워드 검색 채널은 표본 부족 → mult=null(배지 미표시).
+                const _benchMedians = computeChannelMedians(
+                    validItems.filter(i => videoStats[i.id.videoId] && !shortVideoIds.has(i.id.videoId)),
+                    i => i.snippet.channelId,
+                    i => parseInt(videoStats[i.id.videoId].viewCount) || 0,
+                    i => i.snippet.publishedAt);
+
                 const results = [];
                 validItems.forEach(item => {
                     if (shortVideoIds.has(item.id.videoId)) return; // 숏폼 제외
@@ -26234,6 +26267,7 @@ ${titles}`;
                     if (viewCount < minViews) return;
                     if (!hiddenSubs && subscriberCount > maxSubs) return;
 
+                    const _med = _benchMedians[item.snippet.channelId];
                     results.push({
                         videoId: item.id.videoId,
                         title,
@@ -26242,6 +26276,7 @@ ${titles}`;
                         thumbnail: item.snippet.thumbnails?.medium?.url || '',
                         publishedAt: item.snippet.publishedAt,
                         viewCount, likeCount, commentCount, subscriberCount, efficiency,
+                        mult: _med ? Math.round(viewCount / _med * 10) / 10 : null,
                         matchScore
                     });
                 });
@@ -26368,7 +26403,19 @@ ${titles}`;
                             const v = parseInt(i.vs?.viewCount) || 0;
                             return s > 0 ? v / s : 0;
                         };
-                        foreignWithStats.sort((a, b) => _effOf(b) - _effOf(a));
+                        // ★평소 대비 배수(2026-07-19): 등록 채널 모드는 채널별 표본이 있어 계산 가능(추가 API 0).
+                        //   자동검색 모드는 채널당 1~2개뿐 → mult=null, 효율순 유지.
+                        const _fMedians = computeChannelMedians(
+                            foreignWithStatsAll.filter(i => i.vs && foreignParseDuration(i.dur) >= 480),
+                            i => i.snippet.channelId,
+                            i => parseInt(i.vs.viewCount) || 0,
+                            i => i.snippet.publishedAt);
+                        foreignWithStats.forEach(i => {
+                            const m = _fMedians[i.snippet.channelId];
+                            i.mult = m ? Math.round((parseInt(i.vs?.viewCount) || 0) / m * 10) / 10 : null;
+                        });
+                        const _fHasMult = foreignWithStats.some(i => i.mult != null);
+                        foreignWithStats.sort((a, b) => _fHasMult ? ((b.mult || 0) - (a.mult || 0)) : (_effOf(b) - _effOf(a)));
                         // ★속도 병목 = 무료 번역(MyMemory, 5개씩 순차) — 효율 상위 100개만 번역·표시
                         const foreignTop = foreignWithStats.slice(0, 100);
                         loadText.textContent = `해외 제목 번역 중... (효율 상위 ${foreignTop.length}개)`;
