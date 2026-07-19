@@ -71,69 +71,78 @@
         if (!cat) { listEl.innerHTML = '<p style="color:#888;padding:14px;">이 장르 데이터가 없어요.</p>'; return; }
         var gen = new Date(HG_EVER.generatedAt);
         if (stEl) stEl.innerHTML = '주간 스캔: ' + (gen.getMonth() + 1) + '/' + gen.getDate()
-            + ' · 검사한 영상 ' + (cat.scannedVideos || 0) + '개 — <b>재탕해도 또 터진 검증 소재</b>부터 보여줍니다';
+            + ' · 검사한 영상 ' + (cat.scannedVideos || 0) + '개 · 배수 높은 순 — ♻️ 배지를 누르면 그 소재가 언제 또 터졌는지 펼쳐집니다';
         var blk = blocked();
-        var html = '';
-        var remakes = (cat.remakes || []).map(function (rm) {
-            var vids = (rm.videos || []).filter(function (v) { return !blk[v.channelId]; });
-            return vids.length >= 2 ? { rm: rm, vids: vids } : null;
-        }).filter(Boolean);
-        if (remakes.length) {
-            html += '<div style="font-weight:900;font-size:0.95rem;margin:4px 0 8px;color:#374151;">♻️ 재탕 검증 소재 — 시간 간격을 두고 2번 이상 터짐 (최상급 신호)</div>';
-            html += remakes.map(hgRemakeCard).join('');
-        }
-        var singles = (cat.singles || []).filter(function (v) { return !blk[v.channelId]; }).slice(0, 20);
-        if (singles.length) {
-            html += '<div style="font-weight:900;font-size:0.95rem;margin:16px 0 8px;color:#374151;">💎 단독 에버그린 — 30일+ 지났는데 여전히 검증된 대박 (재탕 후보)</div>';
-            html += singles.map(hgSingleRow).join('');
-        }
-        listEl.innerHTML = html || '<p style="color:#888;padding:14px;">아직 잡힌 에버그린 소재가 없어요.</p>';
+        // ★영상 단위 평탄화(2026-07-19 사용자: "왜 사냥터처럼 묶어놨나") — 기본은 영상 리스트,
+        //   재탕 근거(같은 소재의 다른 히트들)는 ♻️ 배지 클릭 시 펼침
+        var rows = [], seen = {};
+        (cat.remakes || []).forEach(function (rm, ri) {
+            (rm.videos || []).forEach(function (v) {
+                if (blk[v.channelId] || seen[v.videoId]) return;
+                seen[v.videoId] = 1;
+                rows.push({ v: v, rm: rm, ri: ri });
+            });
+        });
+        (cat.singles || []).forEach(function (v) {
+            if (blk[v.channelId] || seen[v.videoId]) return;
+            seen[v.videoId] = 1;
+            rows.push({ v: v });
+        });
+        rows.sort(function (a, b) { return (b.v.mult || 0) - (a.v.mult || 0); });
+        listEl.innerHTML = rows.slice(0, 120).map(hgEverRow).join('')
+            || '<p style="color:#888;padding:14px;">아직 잡힌 에버그린 소재가 없어요.</p>';
     }
 
-    function hgRemakeCard(x) {
-        var rm = x.rm, vids = x.vids;
-        var latest = vids[0]; // 서버가 최신순 정렬
-        // 힌트 우선순위: 포화(최근 8주 재탕 2개+) > 방금 재탕 > 기회
-        var hint = rm.saturated
-            ? '<span class="stat-badge" style="background:#e03131;color:#fff;font-weight:700;">🚧 최근 2달 새 여럿이 재탕 — 포화 임박, 새 각도 없인 위험</span>'
-            : rm.lastHitDays < 21
-            ? '<span class="stat-badge" style="background:#f08c00;color:#fff;font-weight:700;">⚠️ ' + rm.lastHitDays + '일 전 방금 재탕됨 — 한동안 소진, 몇 달 뒤 다시</span>'
-            : '<span class="stat-badge" style="background:#0ca678;color:#fff;font-weight:700;">✅ 마지막 재탕 ' + Math.round(rm.lastHitDays / 30) + '개월 전 — 재탕 기회</span>';
-        var strongBadge = rm.strong
-            ? '<span class="stat-badge" style="background:#1971c2;color:#fff;font-weight:700;">🏆 채널 ' + rm.channels + '개 검증 — 운이 아니라 패턴</span>'
-            : '';
-        return '<div style="border:2px solid ' + (rm.strong ? '#1971c2' : '#0ca678') + ';background:#f0fdf7;border-radius:14px;padding:14px;margin-bottom:12px;">'
-            + '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px;">'
-            + '<span style="font-weight:900;">♻️ ' + esc(rm.label) + '</span>'
-            + '<span style="font-size:0.8rem;color:#888;">' + rm.hits + '번 터짐 · ' + rm.channels + '개 채널 · 첫 히트와 마지막 히트 간격 ' + Math.round(rm.gapDays / 30) + '개월</span>'
-            + '</div>'
-            + '<div style="margin-bottom:8px;display:flex;gap:6px;flex-wrap:wrap;">' + strongBadge + hint + '</div>'
-            + vids.slice(0, 4).map(function (v) {
-                return '<div style="display:flex;gap:8px;align-items:center;padding:4px 0;font-size:0.84rem;">'
-                    + '<img src="' + v.thumbnail + '" loading="lazy" style="width:86px;aspect-ratio:16/9;object-fit:cover;border-radius:5px;flex-shrink:0;">'
-                    + '<a href="https://youtube.com/watch?v=' + v.videoId + '" target="_blank" style="flex:1;min-width:0;color:#333;text-decoration:none;overflow:hidden;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;">' + esc(v.title) + '</a>'
-                    + '<span style="flex-shrink:0;color:#8b5cf6;font-weight:700;">' + (v.mult || 0).toFixed(1) + '배</span>'
-                    + '<span style="flex-shrink:0;color:#666;">' + fmtN(v.viewCount) + '회</span>'
-                    + '<span style="flex-shrink:0;color:#999;">' + (v.age >= 30 ? Math.round(v.age / 30) + '개월 전' : v.age + '일 전') + '</span></div>';
-            }).join('')
-            + '<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">'
-            + '  <button onclick="copyPipelineCmd(\'' + latest.videoId + '\',this)" style="padding:8px 16px;background:#1971c2;color:#fff;border:none;border-radius:8px;font-weight:800;font-size:0.86rem;cursor:pointer;">📋 대본 시작 (최신 히트 기준)</button>'
-            + '  <button onclick="blockChannelFromCard(this)" data-cid="' + latest.channelId + '" data-cname="' + esc(latest.channelTitle) + '" style="padding:8px 12px;background:none;border:1px solid #e03131;color:#c92a2a;border-radius:8px;font-size:0.82rem;cursor:pointer;">🚫 채널 차단</button>'
-            + '</div></div>';
-    }
-
-    function hgSingleRow(v) {
-        return '<div style="display:flex;gap:10px;align-items:center;padding:7px 4px;border-bottom:1px solid #f1f3f5;">'
-            + '<img src="' + v.thumbnail + '" loading="lazy" style="width:104px;aspect-ratio:16/9;object-fit:cover;border-radius:6px;flex-shrink:0;">'
+    function hgEverRow(x) {
+        var v = x.v, rm = x.rm;
+        var multTxt = v.mult >= 10 ? Math.round(v.mult) : (v.mult || 0).toFixed(1);
+        var ageTxt2 = v.age >= 30 ? Math.round(v.age / 30) + '개월 전' : v.age + '일 전';
+        var remakeBadge = rm
+            ? '<button onclick="hgEverExpand(' + x.ri + ',\'' + v.videoId + '\')" style="padding:5px 12px;background:#0ca678;color:#fff;border:none;border-radius:8px;font-size:0.85rem;font-weight:800;cursor:pointer;">♻️ 이 소재 ' + rm.hits + '번 터짐 · ' + rm.channels + '채널 ▾</button>'
+            : '<span class="stat-badge" style="font-size:0.82rem;">💎 단독 검증</span>';
+        var hint = !rm ? ''
+            : rm.saturated ? '<span class="stat-badge" style="background:#e03131;color:#fff;font-weight:700;">🚧 최근 2달 재탕 몰림 — 새 각도 필수</span>'
+            : rm.lastHitDays < 21 ? '<span class="stat-badge" style="background:#f08c00;color:#fff;font-weight:700;">⚠️ ' + rm.lastHitDays + '일 전 방금 재탕됨</span>'
+            : '<span class="stat-badge" style="background:#0ca678;color:#fff;font-weight:700;">✅ 재탕 기회</span>';
+        return '<div class="card" style="margin-bottom:10px;"><div class="card-inner">'
+            + '<div style="display:flex;gap:14px;align-items:flex-start;padding:12px;">'
+            + '<img src="' + v.thumbnail + '" loading="lazy" onclick="window.open(\'https://youtube.com/watch?v=' + v.videoId + '\',\'_blank\')" style="width:200px;aspect-ratio:16/9;object-fit:cover;border-radius:8px;cursor:pointer;flex-shrink:0;">'
             + '<div style="flex:1;min-width:0;">'
-            + '<div style="font-weight:600;font-size:0.9rem;overflow:hidden;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;"><a href="https://youtube.com/watch?v=' + v.videoId + '" target="_blank" style="color:#333;text-decoration:none;">' + esc(v.title) + '</a></div>'
-            + '<div style="font-size:0.78rem;color:#888;">' + esc(v.channelTitle) + ' · ' + fmtN(v.viewCount) + '회 · ' + (v.age >= 30 ? Math.round(v.age / 30) + '개월 전' : v.age + '일 전') + '</div>'
-            + '</div>'
-            + '<span class="stat-badge" style="background:#8b5cf6;color:#fff;font-weight:700;flex-shrink:0;">💥 ' + (v.mult || 0).toFixed(1) + '배</span>'
-            + '<button onclick="copyPipelineCmd(\'' + v.videoId + '\',this)" class="pipe-btn" style="flex-shrink:0;font-size:0.75rem;padding:5px 10px;">📋 대본</button>'
-            + '<button onclick="blockChannelFromCard(this)" data-cid="' + v.channelId + '" data-cname="' + esc(v.channelTitle) + '" title="채널 차단" style="flex-shrink:0;font-size:0.75rem;padding:5px 8px;background:none;border:1px solid #e03131;color:#c92a2a;border-radius:6px;cursor:pointer;">🚫</button>'
-            + '</div>';
+            + '  <div style="font-weight:800;font-size:1.05rem;margin-bottom:4px;"><a href="https://youtube.com/watch?v=' + v.videoId + '" target="_blank" style="color:#222;text-decoration:none;">' + esc(v.title) + '</a></div>'
+            + '  <div style="font-size:0.88rem;color:#888;margin-bottom:8px;">' + esc(v.channelTitle) + ' · 조회 ' + fmtN(v.viewCount) + ' · ' + ageTxt2 + '</div>'
+            + '  <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px;">'
+            + '    <span class="stat-badge" style="background:#8b5cf6;color:#fff;font-weight:800;font-size:0.92rem;">💥 평소의 ' + multTxt + '배</span>'
+            + remakeBadge + hint
+            + '  </div>'
+            + '  <div style="display:flex;gap:8px;flex-wrap:wrap;">'
+            + '    <button onclick="copyPipelineCmd(\'' + v.videoId + '\',this)" class="pipe-btn">📋 대본 명령</button>'
+            + '    <button onclick="copyVideoPack(\'' + v.videoId + '\',this)" class="pipe-btn">💬 URL·제목·댓글</button>'
+            + '    <button onclick="blockChannelFromCard(this)" data-cid="' + v.channelId + '" data-cname="' + esc(v.channelTitle) + '" class="pipe-btn" style="color:#c92a2a;">🚫 채널 차단</button>'
+            + '  </div>'
+            + (rm ? '<div id="hgEverX_' + x.ri + '_' + v.videoId + '" style="display:none;margin-top:10px;border-top:1px dashed #d0d4da;padding-top:8px;"></div>' : '')
+            + '</div></div></div></div>';
     }
+
+    // ♻️ 배지 클릭 → 그 소재의 다른 히트들(재탕 이력) 펼침
+    window.hgEverExpand = function (ri, vid) {
+        var cat = (HG_EVER && HG_EVER.categories) ? ((HG_EVER.categories[HG_GENRE] || HG_EVER.categories['경제'])) : null;
+        if (!cat) return;
+        var rm = (cat.remakes || [])[ri];
+        var box = document.getElementById('hgEverX_' + ri + '_' + vid);
+        if (!rm || !box) return;
+        if (box.style.display !== 'none') { box.style.display = 'none'; return; }
+        box.style.display = '';
+        box.innerHTML = '<div style="font-size:0.85rem;color:#666;font-weight:700;margin-bottom:6px;">♻️ [' + esc(rm.label) + '] 재탕 이력 — 첫 히트와 마지막 히트 간격 ' + Math.round(rm.gapDays / 30) + '개월</div>'
+            + (rm.videos || []).map(function (o) {
+                var me = o.videoId === vid ? 'background:#fff9db;' : '';
+                return '<div style="display:flex;gap:10px;align-items:center;padding:5px 4px;font-size:0.92rem;' + me + 'border-radius:6px;">'
+                    + '<img src="' + o.thumbnail + '" loading="lazy" style="width:120px;aspect-ratio:16/9;object-fit:cover;border-radius:5px;flex-shrink:0;">'
+                    + '<a href="https://youtube.com/watch?v=' + o.videoId + '" target="_blank" style="flex:1;min-width:0;color:#444;text-decoration:none;overflow:hidden;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;">' + esc(o.title) + '</a>'
+                    + '<span style="flex-shrink:0;color:#8b5cf6;font-weight:700;">' + (o.mult || 0).toFixed(1) + '배</span>'
+                    + '<span style="flex-shrink:0;color:#666;">' + fmtN(o.viewCount) + '회</span>'
+                    + '<span style="flex-shrink:0;color:#999;">' + (o.age >= 30 ? Math.round(o.age / 30) + '개월 전' : o.age + '일 전') + '</span></div>';
+            }).join('');
+    };
 
     // ---------- 렌더 ----------
     function hgRender() {
@@ -187,9 +196,9 @@
         if (!rows.length) return '';
         return '<div class="section-content">' + rows.map(function (v) {
             return '<div style="display:flex;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid #f1f3f5;">'
-                + '<img src="' + v.thumbnail + '" loading="lazy" style="width:104px;aspect-ratio:16/9;object-fit:cover;border-radius:6px;">'
+                + '<img src="' + v.thumbnail + '" loading="lazy" style="width:170px;aspect-ratio:16/9;object-fit:cover;border-radius:6px;">'
                 + '<div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:0.9rem;">' + esc(v.title) + '</div>'
-                + '<div style="font-size:0.78rem;color:#888;">' + esc(v.channelTitle) + ' · ' + fmtN(v.viewCount) + '회 · ' + ageTxt(v.publishedAt) + '</div></div>'
+                + '<div style="font-size:0.88rem;color:#888;">' + esc(v.channelTitle) + ' · ' + fmtN(v.viewCount) + '회 · ' + ageTxt(v.publishedAt) + '</div></div>'
                 + '<span class="stat-badge" style="background:#8b5cf6;color:#fff;font-weight:700;">💥 ' + (v.mult || 0).toFixed(1) + '배</span></div>';
         }).join('') + '</div>';
     }
@@ -210,8 +219,8 @@
         var members = vids.length > 1
             ? '<div style="margin-top:8px;border-top:1px dashed #e9ecef;padding-top:6px;">'
                 + vids.filter(function (v) { return v.videoId !== lead.videoId; }).slice(0, 6).map(function (v) {
-                    return '<div style="display:flex;gap:8px;align-items:center;padding:4px 0;font-size:0.82rem;color:#555;">'
-                        + '<img src="' + v.thumbnail + '" loading="lazy" style="width:64px;aspect-ratio:16/9;object-fit:cover;border-radius:4px;flex-shrink:0;">'
+                    return '<div style="display:flex;gap:8px;align-items:center;padding:6px 0;font-size:0.95rem;color:#555;">'
+                        + '<img src="' + v.thumbnail + '" loading="lazy" style="width:130px;aspect-ratio:16/9;object-fit:cover;border-radius:4px;flex-shrink:0;">'
                         + '<a href="https://youtube.com/watch?v=' + v.videoId + '" target="_blank" style="flex:1;min-width:0;color:#555;text-decoration:none;overflow:hidden;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;">' + esc(v.title) + '</a>'
                         + '<span style="flex-shrink:0;color:#8b5cf6;font-weight:700;">' + (v.mult ? v.mult.toFixed(1) + '배' : '') + '</span>'
                         + '<span style="flex-shrink:0;color:#999;">' + ageTxt(v.publishedAt) + '</span></div>';
@@ -219,16 +228,16 @@
             : '';
         return '<div style="border:2px solid ' + s.bd + ';background:' + s.bg + ';border-radius:14px;padding:14px;margin-bottom:12px;">'
             + '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">'
-            + '<span style="font-weight:900;font-size:1.02rem;">' + w.badge + '</span>'
-            + '<span style="font-weight:800;color:#374151;">' + esc(w.label) + '</span>'
+            + '<span style="font-weight:900;font-size:1.15rem;">' + w.badge + '</span>'
+            + '<span style="font-weight:800;font-size:1.05rem;color:#374151;">' + esc(w.label) + '</span>'
             + '<span style="font-size:0.8rem;color:#888;">참전 ' + w.entrants + '개 채널 · 히트 ' + w.hits + '개</span>'
             + '</div>'
-            + '<div style="font-size:0.86rem;color:#555;margin-bottom:10px;">' + esc(w.why) + '</div>'
+            + '<div style="font-size:0.95rem;color:#555;margin-bottom:10px;">' + esc(w.why) + '</div>'
             + '<div style="display:flex;gap:12px;align-items:flex-start;">'
-            + '  <img src="' + lead.thumbnail + '" loading="lazy" onclick="window.open(\'https://youtube.com/watch?v=' + lead.videoId + '\',\'_blank\')" style="width:168px;aspect-ratio:16/9;object-fit:cover;border-radius:8px;cursor:pointer;flex-shrink:0;">'
+            + '  <img src="' + lead.thumbnail + '" loading="lazy" onclick="window.open(\'https://youtube.com/watch?v=' + lead.videoId + '\',\'_blank\')" style="width:260px;aspect-ratio:16/9;object-fit:cover;border-radius:8px;cursor:pointer;flex-shrink:0;">'
             + '  <div style="flex:1;min-width:0;">'
-            + '    <div style="font-weight:700;font-size:0.95rem;margin-bottom:3px;"><a href="https://youtube.com/watch?v=' + lead.videoId + '" target="_blank" style="color:#222;text-decoration:none;">' + esc(lead.title) + '</a></div>'
-            + '    <div style="font-size:0.8rem;color:#888;margin-bottom:6px;">' + esc(lead.channelTitle) + ' · 조회 ' + fmtN(lead.viewCount) + ' · ' + ageTxt(lead.publishedAt) + '</div>'
+            + '    <div style="font-weight:800;font-size:1.08rem;margin-bottom:4px;"><a href="https://youtube.com/watch?v=' + lead.videoId + '" target="_blank" style="color:#222;text-decoration:none;">' + esc(lead.title) + '</a></div>'
+            + '    <div style="font-size:0.9rem;color:#888;margin-bottom:6px;">' + esc(lead.channelTitle) + ' · 조회 ' + fmtN(lead.viewCount) + ' · ' + ageTxt(lead.publishedAt) + '</div>'
             + '    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">'
             + '      <span class="stat-badge" style="background:#8b5cf6;color:#fff;font-weight:800;font-size:0.9rem;">💥 평소의 ' + multTxt + '</span>'
             + (w.growth != null && w.growth > 0.1 ? '<span class="stat-badge" style="background:#0ca678;color:#fff;font-weight:700;">📈 어제보다 +' + Math.round(w.growth * 100) + '%</span>' : '')
