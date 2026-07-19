@@ -401,7 +401,6 @@
             HG_GENRE = cur.indexOf('역사') >= 0 ? '역사' : '경제';
         }
         hgPaintGenre();
-        hgPaintTab();
         if (!HG_DATA) {
             try { await hgLoad(); } catch (e) {
                 var el = document.getElementById('hgList');
