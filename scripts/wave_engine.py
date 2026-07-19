@@ -49,8 +49,11 @@ _STOP_NOUNS = set("""
 월요일 화요일 수요일 목요일 금요일 토요일 일요일 주말 내일 어제 이번주 다음주
 """.split())
 
-# 데일리 방송 재방·라이브 = 소재가 아님 (삼프로 '오전 방송 전체보기' 류 잡파도 차단)
-_JUNK_TITLE = re.compile(r"전체보기|풀버전|다시보기|본방송|라이브|LIVE|생방송|모닝브리핑|마감시황|아침시황", re.I)
+# 데일리 방송 재방·라이브·수면낭독 = 소재가 아니라 형식 (잡파도 차단.
+#  수면/오디오북류는 에버그린 실물검사에서 '오디오' 잡탕 클러스터로 실측 — 구 wave_radar 차단 목록 계승)
+_JUNK_TITLE = re.compile(
+    r"전체보기|풀버전|다시보기|본방송|라이브|LIVE|생방송|모닝브리핑|마감시황|아침시황"
+    r"|수면|자장가|잠들기|잠잘 때|잘 때 듣|꿀잠|숙면|백색소음|asmr|오디오북|낭독|읽어드리|읽어주는|몰아보기", re.I)
 
 try:
     from kiwipiepy import Kiwi
@@ -88,9 +91,13 @@ def is_hit(v):
         (v.get("viewCount") or 0) >= CONFIG["hit_views_alt"] and m >= CONFIG["hit_mult_alt"])
 
 
-def cluster(videos):
+def cluster(videos, anchor_pct=None):
     """영상 목록 → 파도 목록. 각 파도 = {label, video_idx:[...], seed_nouns}.
-    방식: 명사 2개+ 공유 그리디(리드=조회수 최다 영상이 멤버를 선점). IDF컷으로 범용어 배제."""
+    방식: 명사 2개+ 공유 그리디(리드=조회수 최다 영상이 멤버를 선점). IDF컷으로 범용어 배제.
+    anchor_pct(★2026-07-19 에버그린 실물검사에서 추가): 공유 명사 중 최소 1개는
+    전체의 anchor_pct 이하로 드문 '닻' 단어여야 함 — '삼성'·'세종' 같은 니치 초고빈도
+    단어 2개만으로 다른 소재가 한 덩어리로 붙던 오묶임 차단. None이면 미적용(브리핑
+    14일 풀은 시간·소재가 좁아 불필요, 장기 에버그린 풀에서만 필요)."""
     n = len(videos)
     if n == 0:
         return []
@@ -103,6 +110,15 @@ def cluster(videos):
     # 하한 5: 풀이 작을 때 진짜 씨앗(파도 전체가 공유하는 단어)까지 잘라내는 것 방지
     cut = max(5, math.ceil(n * CONFIG["idf_cut"]))
     sig_sets = [set(w for w in s if freq.get(w, 0) <= cut) for s in noun_sets]
+    anchor_cut = max(3, math.ceil(n * anchor_pct)) if anchor_pct else None
+
+    def same_wave(a, b):
+        shared = sig_sets[a] & sig_sets[b]
+        if len(shared) < CONFIG["min_shared_nouns"]:
+            return False
+        if anchor_cut is not None and min(freq.get(w, 0) for w in shared) > anchor_cut:
+            return False  # 흔한 단어들끼리만 겹침 = 접착제 오묶임
+        return True
 
     order = sorted(range(n), key=lambda i: -(videos[i].get("viewCount") or 0))
     assigned = [False] * n
@@ -115,7 +131,7 @@ def cluster(videos):
         for j in order:
             if assigned[j]:
                 continue
-            if len(sig_sets[li] & sig_sets[j]) >= CONFIG["min_shared_nouns"]:
+            if same_wave(li, j):
                 members.append(j)
                 assigned[j] = True
         if len(members) >= 2:

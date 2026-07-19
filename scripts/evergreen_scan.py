@@ -164,7 +164,8 @@ def find_evergreen(all_videos, now):
                    if v["age"] < MIN_AGE_DAYS and v["mult"] >= HIT_MULT and v["viewCount"] >= MIN_VIEWS
                    and not _JUNK_TITLE.search(v["title"])]
     pool = hits + recent_hits
-    waves = cluster(pool)
+    # anchor_pct=0.03: 공유 명사 중 1개+는 풀의 3% 이하 희귀어여야 — '삼성'류 접착제 오묶임 차단
+    waves = cluster(pool, anchor_pct=0.03)
     remakes = []
     for w in waves:
         vs = [pool[i] for i in w["video_idx"]]
