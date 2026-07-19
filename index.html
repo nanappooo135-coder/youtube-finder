@@ -24053,6 +24053,7 @@ Example format:
             });
             if (window._foreignRaw) displayForeignResults(window._foreignRaw.results, window._foreignRaw.isAuto);
             if (typeof loadBriefing === 'function') loadBriefing();
+            if (typeof window.hgRerender === 'function') window.hgRerender(); // 🌊 오늘의 사냥터도 즉시 갱신
         }
         function showBlockedChannels() {
             const old = document.getElementById('blockChOverlay');
@@ -25549,7 +25550,7 @@ ${titles}`;
                 if (!data) return;
                 const dt = new Date(b.generatedAt);
                 document.getElementById('briefingTime').textContent =
-                    `(${cat} · ${dt.getMonth() + 1}/${dt.getDate()} ${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')} 스캔 · 24시간 ${data.scanned}개${data.pool ? ` · 14일 풀 ${data.pool}개` : ''})`;
+                    `(${cat} · ${dt.getMonth() + 1}/${dt.getDate()} ${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')} 스캔 · 최근3일 ${data.scanned}개${data.pool ? ` · 14일 풀 ${data.pool}개` : ''})`;
                 const fmtN = v => v >= 10000 ? (v / 10000).toFixed(1) + '만' : v.toLocaleString();
                 const row = (v, mode) => {
                     const badge = mode === 'rising'
@@ -34692,6 +34693,6 @@ ${commentText.slice(0, 12000)}`;
     }
     </script>
 <script src="preempt_radar.js?v=6"></script>
-<script src="hunting_ground.js?v=1"></script>
+<script src="hunting_ground.js?v=2"></script>
 </body>
 </html>

@@ -184,6 +184,11 @@
 
     window.hgToggleDead = function () { HG_SHOW_DEAD = !HG_SHOW_DEAD; hgRender(); };
 
+    // 채널 차단/해제 직후 index.html의 _rerenderAllLists()가 호출 — 사냥터도 즉시 갱신
+    window.hgRerender = function () {
+        if (HG_DATA && document.getElementById('hgList')) hgRender();
+    };
+
     window.hgSetGenre = function (g) {
         HG_GENRE = g;
         hgPaintGenre();

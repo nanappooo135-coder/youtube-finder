@@ -21,7 +21,10 @@ BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 KEYS = [k.strip() for k in (os.environ.get("YOUTUBE_API_KEY", "")).replace("\n", ",").split(",") if k.strip()]
 _ki = 0
 
-HOURS = 24                 # 스캔 창: 최근 24시간
+HOURS = 72                 # 스캔 창: 최근 3일 (★2026-07-19 24h→72h 확장)
+#   이유 ①새로 등록한 채널의 어제·그제 대박이 24h 창엔 영영 안 들어옴(롤링 풀은 앞으로만 쌓임)
+#       ②Actions가 하루 죽으면 그날 영상이 풀에서 영구 누락 — 72h면 2일 복구 버퍼
+#   비용 0에 가까움: 통계는 어차피 채널당 최근 20개(baseline)를 통째로 받고 있음
 MIN_VIEWS = 1000           # 최소 조회수 (잡음 컷)
 MIN_DURATION = 480         # 8분 미만(숏폼) 제외 — 파인더와 동일
 TOP_N = 10
