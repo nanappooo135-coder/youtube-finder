@@ -25277,27 +25277,37 @@ ${titles}`;
                 : `<span class="stat-badge">참고용</span>`;
 
             // 성과 판정 — 정렬 기준에 맞춰 등급 표시 (급상승순=속도, 평소대비순=배수, 그 외=효율)
+            // ★같은 '대박'이 세 공식(배수·속도·효율)에서 나오므로 근거를 배지에 함께 적는다.
+            //   (2026-07-20: 효율 0.86배짜리를 배수 대박으로 보고 오판한 사고 → 근거 표기 신설)
+            const _perf = (bg, label, basis, tip) =>
+                `<span class="stat-badge" style="background:${bg};color:white;font-weight:700" title="${tip}">${label} <span style="opacity:.85;font-weight:500">(${basis})</span></span>`;
             let perfBadge;
             if (activeSort === 'mult' && item.mult != null) {
                 // 배수 기준 = 파도레이더 히트 기준과 동일 (3배+ 대박, 1.5배+ 잘나옴)
-                if (item.mult >= 3)        perfBadge = `<span class="stat-badge" style="background:#ff4444;color:white;font-weight:700">💥 대박</span>`;
-                else if (item.mult >= 1.5) perfBadge = `<span class="stat-badge" style="background:#fd7e14;color:white;font-weight:700">잘나옴</span>`;
-                else if (item.mult >= 0.7) perfBadge = `<span class="stat-badge" style="background:#28a745;color:white">평소 수준</span>`;
-                else                       perfBadge = `<span class="stat-badge" style="background:#adb5bd;color:white">평소 이하</span>`;
+                const t = `평소(채널 중앙값) 대비 ${item.mult.toFixed(1)}배 · 절대 조회수와 무관`;
+                // 배수만 높고 절대 조회수가 작으면 '소재의 힘'이 아직 검증 안 된 것 —
+                // 파도엔진 히트 기준(3배+ 또는 3만+&1.5배+)의 절대 조회 문턱을 배지로 알린다.
+                if (item.mult >= 1.5 && (item.viewCount || 0) < 30000)
+                    perfBadge = _perf('#845ef7', '작은 대박', '배수',
+                        `${t} — 다만 조회 ${Number(item.viewCount||0).toLocaleString()}회로 3만 미만이라 소재 힘은 미검증`);
+                else if (item.mult >= 3)   perfBadge = _perf('#ff4444', '💥 대박', '배수', t);
+                else if (item.mult >= 1.5) perfBadge = _perf('#fd7e14', '잘나옴', '배수', t);
+                else if (item.mult >= 0.7) perfBadge = _perf('#28a745', '평소 수준', '배수', t);
+                else                       perfBadge = _perf('#adb5bd', '평소 이하', '배수', t);
             } else if (activeSort === 'velocity') {
                 const v = _velVal(item);
-                if (v >= 10000)     perfBadge = `<span class="stat-badge" style="background:#ff4444;color:white;font-weight:700">🔥 대박 상승</span>`;
-                else if (v >= 3000) perfBadge = `<span class="stat-badge" style="background:#fd7e14;color:white;font-weight:700">상승 중</span>`;
-                else if (v >= 500)  perfBadge = `<span class="stat-badge" style="background:#28a745;color:white">보통</span>`;
-                else                perfBadge = `<span class="stat-badge" style="background:#adb5bd;color:white">잠잠</span>`;
+                const t = `시간당 ${v.toLocaleString()}회`;
+                if (v >= 10000)     perfBadge = _perf('#ff4444', '🔥 대박 상승', '속도', t);
+                else if (v >= 3000) perfBadge = _perf('#fd7e14', '상승 중', '속도', t);
+                else if (v >= 500)  perfBadge = _perf('#28a745', '보통', '속도', t);
+                else                perfBadge = _perf('#adb5bd', '잠잠', '속도', t);
             } else if (item.efficiency === 99 || item.subscriberCount === 0) {
                 perfBadge = `<span class="stat-badge" style="background:#6c757d;color:white">구독자 비공개</span>`;
-            } else if (item.efficiency >= 2.0) {
-                perfBadge = `<span class="stat-badge" style="background:#ff4444;color:white;font-weight:700">대박</span>`;
-            } else if (item.efficiency >= 0.5) {
-                perfBadge = `<span class="stat-badge" style="background:#28a745;color:white">보통</span>`;
             } else {
-                perfBadge = `<span class="stat-badge" style="background:#adb5bd;color:white">실패</span>`;
+                const t = `조회수 ÷ 구독자 = ${Number(item.efficiency).toFixed(2)}배`;
+                if (item.efficiency >= 2.0)      perfBadge = _perf('#ff4444', '대박', '효율', t);
+                else if (item.efficiency >= 0.5) perfBadge = _perf('#28a745', '보통', '효율', t);
+                else                             perfBadge = _perf('#adb5bd', '실패', '효율', t);
             }
 
             const isBookmarked = _isBookmarked(item.videoId);
