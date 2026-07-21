@@ -9,3 +9,10 @@ scripts/*/dataset_summary.md
 
 # overlay 테스트·스크래치 산출물 (소스만 커밋: overlay.html / generate_overlays.py / validate_overlays.py / MATCHING_PROMPT.md)
 scripts/overlay/_*
+
+# API 키 포함 — 절대 커밋 금지 (Kie 유출사고 재발 방지)
+fb_settings.json
+# 로컬 테스트 잔재
+deployed.html
+tmp_js/
+_test_overlay.js
