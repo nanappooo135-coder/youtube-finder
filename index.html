@@ -3229,6 +3229,12 @@ https://www.youtube.com/channel/UCSBmgy71iroES5MtvpSgADQ</textarea>
                         <div style="border:1.5px dashed #d9dde4;border-radius:10px;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;color:#9aa3b2;font-size:0.85rem;text-align:center;line-height:1.6;">아직 생성 전이에요<br>왼쪽에서 설정하고 [AI 썸네일 생성]</div>
                     </div>
                 </div>
+                <!-- ★생성 히스토리 (2026-07-21) — 새로 생성해도 이전 생성본이 사라지지 않게 보관 -->
+                <div id="tbHistCard" class="tbx-card" style="display:none;margin-top:12px;">
+                    <div class="tbx-head"><div class="tbx-t">🕘 생성 히스토리</div></div>
+                    <div class="tbx-hint" style="margin-left:0;">이전에 생성한 썸네일이에요. 이미지 링크는 며칠 뒤 만료될 수 있으니 필요한 건 ⬇로 저장해 두세요.</div>
+                    <div id="tbHistContent" style="display:flex;flex-direction:column;gap:16px;margin-top:8px;"></div>
+                </div>
                 </div>
                 <div class="tbx-right" style="width:400px;">
                     <div class="tbx-card" data-step="5">
@@ -7911,6 +7917,7 @@ JSON 출력만, 다른 설명 금지:
 
         // 페이지 로드 시 속보 상태 표시
         document.addEventListener('DOMContentLoaded', () => { setTimeout(renderBreakingStatus, 500); });
+        document.addEventListener('DOMContentLoaded', () => { setTimeout(() => { try { tbHistRender(); } catch (e) {} }, 800); }); // 🕘 썸네일 생성 히스토리 복원
 
         window._formulaExcludeTitles = [];
 
@@ -21719,6 +21726,80 @@ Example format:
             tbAttachDrag(); // 미리보기 글자 드래그 이동
             tbAttachInlineEdit(); // 더블클릭 직접 수정 + 크기 핸들
         }
+        // ═══ 🕘 생성 히스토리 (2026-07-21) — 새로 생성해도 이전 생성본 보관·복원·다운로드 ═══
+        //  localStorage 'tb_history' = [{ts, topic, urls[]}] 최신순, 최대 12회분. 이미지 자체가 아니라
+        //  Kie 결과 URL을 보관(용량 한계) — 링크는 만료될 수 있으니 UI에서 다운로드를 권장.
+        function tbHistPush(urls, topic) {
+            if (!urls || !urls.length) return;
+            try {
+                const h = JSON.parse(localStorage.getItem('tb_history') || '[]');
+                h.unshift({ts: Date.now(), topic: (topic || '').slice(0, 60), urls: urls.slice()});
+                localStorage.setItem('tb_history', JSON.stringify(h.slice(0, 12)));
+            } catch (e) {}
+            tbHistRender();
+        }
+        function tbHistRender() {
+            const card = document.getElementById('tbHistCard');
+            const box = document.getElementById('tbHistContent');
+            if (!card || !box) return;
+            let h = [];
+            try { h = JSON.parse(localStorage.getItem('tb_history') || '[]'); } catch (e) {}
+            if (!h.length) { card.style.display = 'none'; return; }
+            card.style.display = '';
+            const fmt = (ts) => { const d = new Date(ts); const p = (n) => String(n).padStart(2, '0'); return (d.getMonth() + 1) + '/' + d.getDate() + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()); };
+            box.innerHTML = h.map((e, gi) =>
+                '<div style="border:1px solid #e5e7eb;border-radius:10px;padding:10px;">' +
+                '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">' +
+                '<span style="font-size:0.8rem;font-weight:800;color:#374151;">' + fmt(e.ts) + '</span>' +
+                (e.topic ? '<span style="font-size:0.78rem;color:#6b7280;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:280px;">' + escapeHtml(e.topic) + '</span>' : '') +
+                '<span style="font-size:0.75rem;color:#9ca3af;">' + e.urls.length + '장</span>' +
+                '<button onclick="tbHistLoad(' + gi + ')" title="이 생성본을 편집 영역으로 불러와 글자 입히기·다운로드" style="margin-left:auto;font-size:0.75rem;font-weight:700;padding:4px 10px;border-radius:7px;border:1.5px solid #3b82f6;background:white;color:#3b82f6;cursor:pointer;">↩ 불러오기</button>' +
+                '<button onclick="tbHistDel(' + gi + ')" title="히스토리에서 삭제" style="font-size:0.75rem;padding:4px 8px;border-radius:7px;border:1.5px solid #d1d5db;background:white;color:#6b7280;cursor:pointer;">✕</button>' +
+                '</div>' +
+                '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;">' +
+                e.urls.map((u, i) =>
+                    '<div style="position:relative;border-radius:8px;overflow:hidden;border:1px solid #e5e7eb;">' +
+                    '<img src="' + u + '" loading="lazy" style="width:100%;display:block;aspect-ratio:16/9;object-fit:cover;cursor:pointer;" onclick="window.open(this.src, \'_blank\')" title="클릭하면 크게 보기" onerror="this.style.opacity=0.25;this.title=\'링크 만료됨\';">' +
+                    '<button onclick="tbHistDl(' + gi + ',' + i + ')" title="다운로드" style="position:absolute;right:5px;bottom:5px;font-size:0.72rem;font-weight:800;padding:3px 8px;border-radius:6px;border:none;background:rgba(17,24,39,0.75);color:#fff;cursor:pointer;">⬇</button>' +
+                    '</div>').join('') +
+                '</div></div>').join('');
+        }
+        async function tbHistDl(gi, i) {
+            try {
+                const h = JSON.parse(localStorage.getItem('tb_history') || '[]');
+                const u = h[gi] && h[gi].urls[i];
+                if (!u) return;
+                const d = new Date(h[gi].ts); const p = (n) => String(n).padStart(2, '0');
+                const name = '썸네일_' + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '_' + p(d.getHours()) + p(d.getMinutes()) + '_' + (i + 1) + '.png';
+                const blob = await (await fetch(u)).blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob); a.download = name;
+                document.body.appendChild(a); a.click(); a.remove();
+                setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+            } catch (e) { // CORS·만료 등으로 fetch 실패 → 새 탭으로라도 열어 우클릭 저장
+                try { const h = JSON.parse(localStorage.getItem('tb_history') || '[]'); window.open(h[gi].urls[i], '_blank'); } catch (e2) {}
+            }
+        }
+        function tbHistLoad(gi) {
+            try {
+                const h = JSON.parse(localStorage.getItem('tb_history') || '[]');
+                if (!h[gi]) return;
+                window._tbBgs = h[gi].urls.slice();
+                window._tbStyles = []; window._tbSel = 0; window._tbComposeKey = []; window._tbComposed = [];
+                localStorage.setItem('tb_last_bgs', JSON.stringify(window._tbBgs));
+                renderThumbResults(null);
+                const el = document.getElementById('tbResult');
+                if (el) el.scrollIntoView({behavior: 'smooth'});
+            } catch (e) {}
+        }
+        function tbHistDel(gi) {
+            try {
+                const h = JSON.parse(localStorage.getItem('tb_history') || '[]');
+                h.splice(gi, 1);
+                localStorage.setItem('tb_history', JSON.stringify(h));
+            } catch (e) {}
+            tbHistRender();
+        }
         // ═══ 미리캔버스식 인라인 편집 — 더블클릭=그 자리 수정, 핸들 드래그=크기 ═══
         function tbAttachInlineEdit() {
             const wrap = document.getElementById('tbEditWrap');
@@ -22249,6 +22330,7 @@ Example format:
                 window._tbBgs = ok; // ★배경 보관 — 글자만 다시 입히기(무료 재작업)용
                 window._tbStyles = []; window._tbSel = 0; window._tbComposeKey = []; // 장별 스타일 새로 시작
                 try { localStorage.setItem('tb_last_bgs', JSON.stringify(ok)); } catch (e) {} // 새로고침 생존
+                tbHistPush(ok, (document.getElementById('tbTopic') || {}).value || ''); // ★히스토리 보관 — 새로 생성해도 이전 것 안 사라짐
                 await renderThumbResults(msg);
                 msg.textContent = (fails.length ? ('⚠ ' + ok.length + '장 성공 · ' + fails.length + '장 실패: ' + fails[0].error) : ('✅ ' + ok.length + '장 완성!')) + (simNote || '') + ' · ' + TB_VER;
                 if (ok.length) tbSwitchSub('edit'); // 이미지가 나왔으면 후작업 탭으로 자동 이동
