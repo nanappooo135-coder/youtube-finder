@@ -18,6 +18,10 @@
     var HG_GENRE = null;  // '경제' | '역사' — 탭 열 때 current_channel에서 파생 (별도 저장 안 함: 상태 분열 방지)
     var HG_TAB = 'waves'; // 'waves' | 'evergreen'
     var HG_SHOW_DEAD = false;
+    // ♻️ 에버그린 페이지네이션 (2026-07-22 사용자: "200에서 잘림 → 더 보기로 쭉쭉")
+    var HG_EVER_PAGE = 60;    // 첫 화면 개수
+    var HG_EVER_STEP = 100;   // '더 보기' 한 번에 추가
+    var HG_EVER_SHOWN = 60;   // 현재까지 보여준 개수
 
     function esc(s) { return (typeof escapeHtml === 'function') ? escapeHtml(s || '') : String(s || ''); }
     function fmtN(v) { v = v || 0; return v >= 10000 ? (v / 10000).toFixed(1) + '만' : v.toLocaleString(); }
@@ -63,6 +67,7 @@
                 if (r.ok) HG_EVER = await r.json();
             } catch (e) { }
         }
+        HG_EVER_SHOWN = HG_EVER_PAGE;   // 탭 열 때 첫 페이지부터
         hgRenderEvergreen();
     }
 
@@ -90,11 +95,28 @@
         });
         var nHidden = Object.keys(hid).length;
         if (stEl) stEl.innerHTML = '주간 스캔: ' + (gen.getMonth() + 1) + '/' + gen.getDate()
-            + ' · 검사 ' + (cat.scannedVideos || 0) + '개 → 2개월~1년 전 · 구독 대비 조회(효율) 2배+ · 잘 터진 순 ' + all.length + '편'
+            + ' · 검사 ' + (cat.scannedVideos || 0) + '개 → 2개월~1년 전 · 구독 대비 조회(효율) 2배+ · 잘 터진 순 <b>' + all.length + '편</b>'
             + (nHidden ? ' · <a href="#" onclick="hgEverManageHidden(event)" style="color:#c92a2a;font-weight:700;">❌ 숨긴 ' + nHidden + '개 관리</a>' : '');
-        listEl.innerHTML = all.slice(0, 200).map(hgEverRow).join('')
-            || '<p style="color:#888;padding:14px;">조건(2개월~1년·효율 2배+)에 맞는 영상이 없어요.</p>';
+        if (!all.length) {
+            listEl.innerHTML = '<p style="color:#888;padding:14px;">조건(2개월~1년·효율 2배+)에 맞는 영상이 없어요.</p>';
+            return;
+        }
+        var shown = Math.min(HG_EVER_SHOWN, all.length);
+        var html = all.slice(0, shown).map(hgEverRow).join('');
+        if (all.length > shown) {
+            // ▼ 더 보기 — 남은 만큼 쭉쭉 (한 번에 HG_EVER_STEP개씩)
+            html += '<button onclick="hgEverMore()" style="width:100%;padding:16px;margin:4px 0 10px;background:#e8590c;color:#fff;border:none;border-radius:12px;font-size:1.02rem;font-weight:800;cursor:pointer;box-shadow:0 2px 6px rgba(232,89,12,0.25);">▼ 더 보기 <span style="opacity:.85;font-weight:700;">(' + shown + ' / ' + all.length + '편 · 남은 ' + (all.length - shown) + ')</span></button>';
+        } else if (shown > HG_EVER_PAGE) {
+            html += '<button onclick="hgEverCollapse()" style="width:100%;padding:13px;margin:4px 0 10px;background:#f1f3f5;border:1.5px solid #d0d4da;border-radius:12px;font-size:0.92rem;font-weight:700;color:#666;cursor:pointer;">▲ 접기 · 맨 위로 (' + all.length + '편 다 봤어요)</button>';
+        }
+        listEl.innerHTML = html;
     }
+    window.hgEverMore = function () { HG_EVER_SHOWN += HG_EVER_STEP; hgRenderEvergreen(); };
+    window.hgEverCollapse = function () {
+        HG_EVER_SHOWN = HG_EVER_PAGE; hgRenderEvergreen();
+        var el = document.getElementById('hgEverList');
+        if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
 
     // ❌ 이 영상 숨김 — 안 만들 영상을 이 브라우저에서 영구 숨김 (채널 차단과 같은 localStorage 방식)
     var EVER_HIDE_KEY = 'evergreen_hidden_videos_v1';
@@ -137,25 +159,27 @@
         var earning = v.stillEarning
             ? '<span class="stat-badge" style="background:#2f9e44;color:#fff;font-weight:700;">🌲 지금도 조회수 붙는 중' + (v.weekGain ? ' +' + fmtN(v.weekGain) + '/주' : '') + '</span>'
             : '';
-        return '<div class="card" style="margin-bottom:10px;"><div class="card-inner">'
-            + '<div style="display:flex;gap:14px;align-items:flex-start;padding:12px;">'
-            + '<img src="' + v.thumbnail + '" loading="lazy" onclick="window.open(\'https://youtube.com/watch?v=' + v.videoId + '\',\'_blank\')" style="width:200px;aspect-ratio:16/9;object-fit:cover;border-radius:8px;cursor:pointer;flex-shrink:0;">'
+        var url = 'https://youtube.com/watch?v=' + v.videoId;
+        // ★앱의 반응형 카드 클래스 재사용(card-inner→모바일 세로스택·card-thumbnail→폰 풀폭·pipe-btn→터치 42px).
+        //   폰에서 썸네일이 찌그러지던 인라인 200px 레이아웃을 걷어냄. 데스크톱·모바일 자동 대응.
+        return '<div class="card"><div class="card-inner">'
+            + '<div class="card-thumbnail"><img src="' + v.thumbnail + '" loading="lazy" onclick="window.open(\'' + url + '\',\'_blank\')" style="aspect-ratio:16/9;object-fit:cover;"></div>'
             + '<div style="flex:1;min-width:0;">'
-            + '  <div class="card-title" style="font-weight:800;font-size:1.05rem;margin-bottom:4px;"><a href="https://youtube.com/watch?v=' + v.videoId + '" target="_blank" style="color:#222;text-decoration:none;">' + esc(v.title) + '</a></div>'
-            + '  <div style="font-size:0.88rem;color:#888;margin-bottom:8px;">' + esc(v.channelTitle) + ' · 조회 ' + fmtN(v.viewCount) + ' · 구독 ' + fmtN(v.subscriberCount) + ' · ' + ageTxt2 + '</div>'
-            + '  <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px;">'
-            + '    <span class="stat-badge" style="background:#e8590c;color:#fff;font-weight:800;font-size:0.95rem;">🔥 구독 대비 ' + effTxt + '배</span>'
-            + (multTxt ? '<span class="stat-badge" style="background:#8b5cf6;color:#fff;font-weight:700;font-size:0.85rem;">💥 평소의 ' + multTxt + '배</span>' : '')
+            + '  <div class="card-title"><a href="' + url + '" target="_blank">' + esc(v.title) + '</a></div>'
+            + '  <div style="font-size:0.86rem;color:#888;margin-bottom:8px;">' + esc(v.channelTitle) + ' · 조회 ' + fmtN(v.viewCount) + ' · 구독 ' + fmtN(v.subscriberCount) + ' · ' + ageTxt2 + '</div>'
+            + '  <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px;">'
+            + '    <span class="stat-badge" style="background:#e8590c;color:#fff;font-weight:800;">🔥 구독 대비 ' + effTxt + '배</span>'
+            + (multTxt ? '<span class="stat-badge" style="background:#8b5cf6;color:#fff;font-weight:700;">💥 평소의 ' + multTxt + '배</span>' : '')
             + earning
             + '  </div>'
-            + '  <div style="display:flex;gap:8px;flex-wrap:wrap;">'
+            + '  <div class="card-actions">'
             + '    <button onclick="copyPipelineCmd(\'' + v.videoId + '\',this)" class="pipe-btn">📋 대본 명령</button>'
-            + '    <button onclick="copyVideoPack(\'' + v.videoId + '\',this)" class="pipe-btn">💬 URL·제목·댓글</button>'
-            + '    <button onclick="hgLifespanPrompt(this)" data-title="' + esc(v.title) + '" class="pipe-btn">⏳ 수명판정 복사</button>'
-            + '    <button onclick="hgEverHide(this)" data-vid="' + v.videoId + '" data-title="' + esc(v.title) + '" class="pipe-btn" style="color:#c92a2a;" title="이 영상 안 만들래 — 목록에서 숨김">❌ 이 영상 숨김</button>'
-            + '    <button onclick="blockChannelFromCard(this)" data-cid="' + v.channelId + '" data-cname="' + esc(v.channelTitle) + '" class="pipe-btn" style="color:#c92a2a;">🚫 채널 차단</button>'
+            + '    <button onclick="copyVideoPack(\'' + v.videoId + '\',this)" class="pipe-btn">💬 URL·댓글</button>'
+            + '    <button onclick="hgLifespanPrompt(this)" data-title="' + esc(v.title) + '" class="pipe-btn">⏳ 수명판정</button>'
+            + '    <button onclick="hgEverHide(this)" data-vid="' + v.videoId + '" data-title="' + esc(v.title) + '" class="pipe-btn" style="color:#c92a2a;" title="이 영상 안 만들래 — 목록에서 숨김">❌ 숨김</button>'
+            + '    <button onclick="blockChannelFromCard(this)" data-cid="' + v.channelId + '" data-cname="' + esc(v.channelTitle) + '" class="pipe-btn" style="color:#c92a2a;">🚫 차단</button>'
             + '  </div>'
-            + '</div></div></div></div>';
+            + '</div></div></div>';
     }
 
     // ⏳ 소재 수명판정 프롬프트 복사 — EverGreenQA(EMNLP 2025) 검증 문항 + 업계 체크리스트 기반.
@@ -337,6 +361,7 @@
         hgPaintGenre();
         // ★두 탭 리스트 모두 재렌더(2026-07-19 버그: 에버그린 탭에서 역사 눌러도 사냥터만 다시 그려 화면 불변)
         hgRender();
+        HG_EVER_SHOWN = HG_EVER_PAGE;   // 장르 바꾸면 첫 페이지부터
         hgRenderEvergreen();
     };
 
