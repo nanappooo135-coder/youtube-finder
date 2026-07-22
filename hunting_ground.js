@@ -21,6 +21,13 @@
 
     function esc(s) { return (typeof escapeHtml === 'function') ? escapeHtml(s || '') : String(s || ''); }
     function fmtN(v) { v = v || 0; return v >= 10000 ? (v / 10000).toFixed(1) + '만' : v.toLocaleString(); }
+    // 배수 표기: 10+ 는 정수 반올림, 그 외 소수1자리(단 .0 은 떼서 "6.0배"→"6배")
+    function fmtMult(n) {
+        if (n == null) return null;
+        if (n >= 10) return String(Math.round(n));
+        var s = n.toFixed(1);
+        return s.slice(-2) === '.0' ? s.slice(0, -2) : s;
+    }
     function blocked() { try { return (typeof _blockedCh === 'function') ? _blockedCh() : {}; } catch (e) { return {}; } }
     function ageDays(iso) { return (Date.now() - new Date(iso)) / 86400000; }
     function ageTxt(iso) {
@@ -74,8 +81,13 @@
         var hid = everHidden();
         // 신 구조: cat.videos (효율 내림차순 flat 리스트). 차단 채널·숨긴 영상 제거.
         var all = (cat.videos || []).filter(function (v) { return !blk[v.channelId] && !hid[v.videoId]; });
-        // 클라에서도 효율 내림차순 재정렬(안전) — 동률이면 참고 배수(mult)
-        all.sort(function (a, b) { return (b.efficiency || 0) - (a.efficiency || 0) || (b.mult || 0) - (a.mult || 0); });
+        // 표시 순서 = 서버와 동일 기준(반올림 전 원본 조회÷구독)으로 재정렬(안전망).
+        //   반올림된 efficiency로 정렬하면 상위 동률이 원본순으로 밀림 → 원본 비율로. 동률이면 참고 배수.
+        all.sort(function (a, b) {
+            var ea = a.subscriberCount > 0 ? a.viewCount / a.subscriberCount : (a.efficiency || 0);
+            var eb = b.subscriberCount > 0 ? b.viewCount / b.subscriberCount : (b.efficiency || 0);
+            return eb - ea || (b.mult || 0) - (a.mult || 0);
+        });
         var nHidden = Object.keys(hid).length;
         if (stEl) stEl.innerHTML = '주간 스캔: ' + (gen.getMonth() + 1) + '/' + gen.getDate()
             + ' · 검사 ' + (cat.scannedVideos || 0) + '개 → 2개월~1년 전 · 구독 대비 조회(효율) 2배+ · 잘 터진 순 ' + all.length + '편'
@@ -93,7 +105,7 @@
         var o = everHidden(); o[vid] = btn.dataset.title || vid; everSaveHidden(o);
         hgRenderEvergreen();
     };
-    window.hgEverUnhide = function (vid) { var o = everHidden(); delete o[vid]; everSaveHidden(o); hgEverManageHidden(); hgRenderEvergreen(); };
+    window.hgEverUnhide = function (vid) { var o = everHidden(); delete o[vid]; everSaveHidden(o); window.hgEverManageHidden(); hgRenderEvergreen(); };
     window.hgEverUnhideAll = function () { everSaveHidden({}); var ov = document.getElementById('everHideOverlay'); if (ov) ov.remove(); hgRenderEvergreen(); };
     window.hgEverManageHidden = function (ev) {
         if (ev) ev.preventDefault();
@@ -118,8 +130,8 @@
     };
 
     function hgEverRow(v) {
-        var effTxt = v.efficiency != null ? (v.efficiency >= 10 ? Math.round(v.efficiency) : v.efficiency.toFixed(1)) : '-';
-        var multTxt = v.mult != null ? (v.mult >= 10 ? Math.round(v.mult) : v.mult.toFixed(1)) : null;
+        var effTxt = fmtMult(v.efficiency) || '-';
+        var multTxt = fmtMult(v.mult);
         var ageTxt2 = v.age >= 30 ? Math.round(v.age / 30) + '개월 전' : v.age + '일 전';
         // 🌲 감쇠곡선 신호: 90일+ 지난 영상이 지난주에도 조회수를 벎 = 수요 지속의 직접 증거
         var earning = v.stillEarning

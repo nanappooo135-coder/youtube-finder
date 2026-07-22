@@ -223,7 +223,9 @@ def pick(all_videos):
                 and not _MARKET_NOISE.search(v["title"])
                 and not _NEWS_MARKER.search(v["title"]))
     picked = [v for v in all_videos if ok(v)]
-    picked.sort(key=lambda v: (-(v["efficiency"] or 0), -(v["mult"] or 0)))
+    # ★정렬은 반올림 전 원본 비율(조회÷구독)로 — 표시용 efficiency(소수1자리)로 정렬하면
+    #   상위에서 반올림 동률이 생겨 순서가 원본순으로 밀린다. 동률이면 참고 배수(mult).
+    picked.sort(key=lambda v: (-(v["viewCount"] / v["subscriberCount"]), -(v["mult"] or 0)))
     return [{k: v.get(k) for k in _FIELDS} for v in picked[:TOP_N]]
 
 
