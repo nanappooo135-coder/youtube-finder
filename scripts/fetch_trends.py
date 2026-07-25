@@ -30,18 +30,19 @@ MAX_HISTORY_POINTS = 300
 NAVER_ENRICH_CAP = 20      # high 등급 네이버 보강 상한 (호출량 보호)
 ARTICLE_TIERS = ("high", "mid")  # 구글 기사(w4opAf)를 붙일 등급
 
-# ── 구글 공식 카테고리 (2026-07-26 KR 실측으로 역추적 검증) ──────────
-# 3=비즈니스(투자·브로드컴·현대·택배기사·일용직), 17=스포츠(베헨 비스바덴 대 바이에른),
-# 4=연예(고윤정·소지섭), 14=정치(조국혁신당), 20=날씨(météo) 확인됨
+# ── 구글 공식 카테고리 ──────────────────────────────────────────
+# 출처: trendspy 라이브러리 TREND_TOPICS (github.com/sdil87/trendspy constants.py)
+# — 이 내부 API 전용 구현체의 공식 매핑. KR 실측(3=투자·브로드컴, 17=베헨 비스바덴,
+#   4=고윤정·소지섭, 14=조국혁신당)과도 일치 확인(2026-07-26).
 TOPIC_NAMES = {
-    1: "자동차", 2: "뷰티", 3: "비즈니스", 4: "연예", 5: "푸드",
-    6: "게임", 7: "건강", 8: "취미", 9: "교육", 10: "법·행정",
-    11: "기타", 12: "동물", 13: "여행?", 14: "정치", 15: "과학",
-    16: "교통", 17: "스포츠", 18: "테크", 19: "쇼핑?", 20: "날씨",
+    1: "자동차", 2: "뷰티·패션", 3: "비즈니스·금융", 4: "연예", 5: "푸드",
+    6: "게임", 7: "건강", 8: "취미·레저", 9: "교육·직업", 10: "법·행정",
+    11: "기타", 13: "동물", 14: "정치", 15: "과학",
+    16: "쇼핑", 17: "스포츠", 18: "테크", 19: "여행·교통", 20: "기후",
 }
-TOPIC_ECON_HIGH = {3}            # 구글이 비즈니스/금융으로 태그 → 💰직결
-TOPIC_ECON_MID = {18, 15, 5}     # 테크·과학·푸드(원자재) → 💡연관 후보
-TOPIC_NOISE = {17, 4, 20, 6}     # 스포츠·연예·날씨·게임 → 강한 경제 신호 없으면 low
+TOPIC_ECON_HIGH = {3}                # Business and Finance → 💰직결
+TOPIC_ECON_MID = {18, 15, 5, 16}     # 테크·과학·푸드(원자재)·쇼핑(리테일) → 💡연관 후보
+TOPIC_NOISE = {17, 4, 20, 6}         # 스포츠·연예·기후·게임 → 강한 경제 신호 없으면 low
 
 # ── 경제성 판정 어휘 (휴리스틱 — 구글 카테고리 보조) ──────────────────
 ECON_TERMS = [
@@ -136,6 +137,7 @@ def batchexec(rpcid: str, inner_args, timeout: int = 20):
 
 def fetch_trends_api():
     """i0OFE → 지난 24h 급상승 전체.
+    요청 규격(trendspy 원본): [None, None, geo, num_news, language, hours, 1]
     항목 구조(실측): [0]키워드 [3][0]시작ts(초) [6]검색량 [8]증가율% [10]토픽ID목록 [11]뉴스토큰"""
     payload = batchexec("i0OFE", [None, None, "KR", 0, "ko", 24, 1])
     items = []
@@ -179,7 +181,8 @@ def fetch_articles(trends, prev_gnews):
         if calls >= 40:  # 안전 상한 (구글 비공식 API 부담 최소화)
             continue
         try:
-            res = batchexec("w4opAf", [t["_newsTokens"][:4]])
+            # 규격(trendspy 원본): [news_ids, max_news] — 두 번째 인자 생략 시 기본 3
+            res = batchexec("w4opAf", [t["_newsTokens"][:4], 4])
             calls += 1
         except Exception as e:
             print(f"  ⚠ 기사 조회 실패({t['keyword']}): {e}", file=sys.stderr)
@@ -320,7 +323,10 @@ def classify(t):
     has_strong = any(h not in ECON_WEAK for h in hits)
 
     if topic_set & TOPIC_ECON_HIGH:
-        return "high", max(score, 3), hits           # 구글: 비즈니스/금융
+        if topic_set & TOPIC_NOISE:
+            # 연예인·스포츠발 커머스 기사(굿즈 판매 폭증 등) — 경제 태그여도 소재론 주변부
+            return "mid", max(score, 1), hits
+        return "high", max(score, 3), hits           # 구글: 비즈니스/금융 (순수)
     if score >= 3 and has_strong:
         return "high", score, hits                    # 휴리스틱 강한 신호 (예: 록히드=기타 태그)
     if topic_set and not (topic_set - TOPIC_NOISE):
