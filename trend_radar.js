@@ -17,6 +17,8 @@
     var TR_ANGLE_TTL = 6 * 3600 * 1000;    // Gemini 앵글 분석 캐시 6시간
     var TR_ANGLE_KEY = 'tr_angle_cache_v1';
     var TR_FILTER_KEY = 'tr_filter_econ_v1';
+    var TR_MINVOL_KEY = 'tr_filter_minvol_v1';
+    var TR_MAX_CARDS = 80;                 // 렌더 상한 (전체 모드 성능 보호)
 
     var _data = null;
     var _fetchedAt = 0;
@@ -65,6 +67,12 @@
         + '  <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">'
         + '    🚀 트렌드 레이더 — 지금 대한민국이 검색하는 것'
         + '    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">'
+        + '      <select id="trMinVol" onchange="trApplyFilter()" style="padding:5px 8px;border:1px solid #dee2e6;border-radius:8px;font-size:0.8rem;">'
+        + '        <option value="1000" selected>검색량 1천+</option>'
+        + '        <option value="5000">검색량 5천+</option>'
+        + '        <option value="10000">검색량 1만+</option>'
+        + '        <option value="0">전체 검색량</option>'
+        + '      </select>'
         + '      <label style="font-size:0.82rem;font-weight:400;display:flex;align-items:center;gap:4px;cursor:pointer;">'
         + '        <input type="checkbox" id="trEconOnly" onchange="trApplyFilter()"> 💰 경제 관련만'
         + '      </label>'
@@ -73,8 +81,8 @@
         + '  </div>'
         + '  <div class="section-content">'
         + '    <p style="font-size:0.82rem;color:#888;margin-bottom:10px;">'
-        + '      구글 급상승 검색어(KR) × 경제성 자동 판별 · <b>10분마다 서버 자동 갱신</b> · 그래프는 스냅샷 누적(48h) ·'
-        + '      <b>키워드 클릭</b>=유튜브 최신순 검색 · 🎬 <b>앵글 분석</b>=Gemini가 뜨는 이유·대본 앵글 3개·타이밍 판정'
+        + '      구글 급상승 검색어(KR) <b>전체 ~200개</b> × <b>구글 공식 카테고리</b>(비즈니스/금융)로 경제 판별 · <b>10분마다 서버 자동 갱신</b> ·'
+        + '      그래프=검색량 스냅샷 누적(48h) · <b>키워드 클릭</b>=유튜브 최신순 검색 · 🎬 <b>앵글 분석</b>=Gemini가 뜨는 이유·대본 앵글 3개·타이밍 판정'
         + '    </p>'
         + '    <div id="trLoading" style="display:none;text-align:center;padding:20px;color:#888;"><div class="trend-spinner"></div>불러오는 중...</div>'
         + '    <div id="trError" style="display:none;padding:14px;background:#fff5f5;border:1px solid #ffe0e0;border-radius:10px;color:#dc3545;font-size:0.9rem;"></div>'
@@ -130,17 +138,26 @@
         var timeEl = document.getElementById('trTime');
         if (!listEl || !_data) return;
 
-        var econOnly = false;
-        try { econOnly = localStorage.getItem(TR_FILTER_KEY) !== '0'; } catch (e) {}
+        var econOnly = false, minVol = 1000;
+        try {
+            econOnly = localStorage.getItem(TR_FILTER_KEY) !== '0';
+            var mv = localStorage.getItem(TR_MINVOL_KEY);
+            if (mv !== null) minVol = parseInt(mv) || 0;
+        } catch (e) {}
         var cb = document.getElementById('trEconOnly');
         if (cb) cb.checked = econOnly;
+        var mvEl = document.getElementById('trMinVol');
+        if (mvEl) mvEl.value = String(minVol);
 
-        var trends = (_data.trends || []).slice();
+        var all = (_data.trends || []);
+        var trends = all.filter(function (t) { return t.trafficNum >= minVol; });
         if (econOnly) trends = trends.filter(function (t) { return t.econLevel !== 'low'; });
+        var totalMatched = trends.length;
+        trends = trends.slice(0, TR_MAX_CARDS);
 
         if (!trends.length) {
             listEl.innerHTML = '<p style="color:#888;text-align:center;padding:20px;">'
-                + (econOnly ? '지금 급상승 검색어 중 경제 관련이 없어요. "경제 관련만"을 해제하면 전체가 보여요.' : '트렌드 데이터가 없어요.')
+                + (econOnly ? '조건에 맞는 경제 키워드가 없어요. 검색량 하한을 낮추거나 "경제 관련만"을 해제해보세요.' : '트렌드 데이터가 없어요.')
                 + '</p>';
         } else {
             listEl.innerHTML = trends.map(function (t, i) {
@@ -151,9 +168,11 @@
                 var newsHtml = news.length
                     ? '<div class="tr-news">' + news.map(function (n) {
                         var nyt = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(n.title) + '&sp=CAISAhAB';
+                        var timeStr = (n.pubTimestamp && typeof formatRelativeTime === 'function') ? formatRelativeTime(n.pubTimestamp) : '';
                         return '<div class="tr-news-item">'
                             + '<span class="tr-news-src">' + esc((n.sourceName || '뉴스').substring(0, 7)) + '</span>'
                             + '<span class="tr-news-title" onclick="window.open(\'' + nyt.replace(/'/g, "\\'") + '\',\'_blank\')" title="클릭: 유튜브에서 이 제목 검색">' + esc(n.title) + '</span>'
+                            + (timeStr ? '<span style="flex-shrink:0;font-size:0.72rem;color:#adb5bd;">' + timeStr + '</span>' : '')
                             + '<a href="' + esc(n.link) + '" target="_blank" style="flex-shrink:0;font-size:0.78rem;color:#868e96;text-decoration:none;">🔗</a>'
                             + '</div>';
                     }).join('') + '</div>'
@@ -165,6 +184,7 @@
                     + '<span class="tr-kw" onclick="window.open(\'' + ytUrl.replace(/'/g, "\\'") + '\',\'_blank\')" title="유튜브 최신순 검색 (선점 확인)">' + esc(t.keyword) + '</span>'
                     + '<span class="tr-traffic">🔍 ' + fmtTraffic(t.trafficNum, t.traffic) + '</span>'
                     + '<span class="tr-econ tr-econ-' + t.econLevel + '">' + ECON_LABEL[t.econLevel] + '</span>'
+                    + (t.topics && t.topics.length ? '<span style="font-size:0.75rem;color:#adb5bd;">' + esc(t.topics.join('·')) + '</span>' : '')
                     + '<span class="tr-time">' + fmtAgo(t.startedMs) + '</span>'
                     + '<span class="tr-spark">' + sparkline(t.history) + '</span>'
                     + '</div>'
@@ -183,13 +203,21 @@
 
         if (timeEl && _data.generated_at) {
             var d = new Date(_data.generated_at);
-            timeEl.textContent = '서버 자동 갱신: ' + d.getHours() + '시 ' + String(d.getMinutes()).padStart(2, '0') + '분 · 10분마다 갱신 · 경제성순 정렬';
+            var nHigh = all.filter(function (t) { return t.econLevel === 'high'; }).length;
+            var nMid = all.filter(function (t) { return t.econLevel === 'mid'; }).length;
+            timeEl.textContent = '표시 ' + trends.length + '개' + (totalMatched > trends.length ? ' (조건일치 ' + totalMatched + '개 중)' : '')
+                + ' · 전체 ' + all.length + '개 — 💰' + nHigh + ' 💡' + nMid
+                + ' · 서버 갱신: ' + d.getHours() + '시 ' + String(d.getMinutes()).padStart(2, '0') + '분 (10분마다)';
         }
     }
 
     window.trApplyFilter = function () {
         var cb = document.getElementById('trEconOnly');
-        try { localStorage.setItem(TR_FILTER_KEY, cb && cb.checked ? '1' : '0'); } catch (e) {}
+        var mvEl = document.getElementById('trMinVol');
+        try {
+            localStorage.setItem(TR_FILTER_KEY, cb && cb.checked ? '1' : '0');
+            if (mvEl) localStorage.setItem(TR_MINVOL_KEY, mvEl.value);
+        } catch (e) {}
         render();
     };
 
