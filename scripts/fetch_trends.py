@@ -31,7 +31,7 @@ ECON_TERMS = [
     "주가", "주식", "증시", "코스피", "코스닥", "나스닥", "다우", "S&P",
     "금리", "환율", "달러", "엔화", "위안", "원화", "국채", "채권",
     "물가", "인플레이션", "GDP", "경기", "경제", "무역", "수출", "수입",
-    "관세", "유가", "원자재", "반도체", "배터리", "이차전지",
+    "관세", "유가", "국제유가", "고유가", "목표주가", "원자재", "반도체", "배터리", "이차전지",
     # 기업 행위
     "실적", "어닝", "매출", "영업이익", "적자", "흑자", "파산", "부도",
     "인수", "합병", "M&A", "상장", "IPO", "공모", "배당", "투자",
@@ -164,6 +164,13 @@ FALSE_FRIENDS = {
     "경기": ["경기도", "경기장", "경기북부", "경기남부"],
     "투자": ["투자자문 사칭"],
     "코인": ["코인노래"],
+    "공모": ["공모전", "공모혐의", "범행 공모", "공모한", "공모자"],
+}
+
+# 약한 어휘: 비경제 문맥에도 흔함(축구 "계약", 감독 "경질"...) — 이것만으로는 high 불가
+ECON_WEAK = {
+    "계약", "인상", "인하", "가격", "투자", "경기", "협약", "공급", "출시",
+    "생산", "공장", "고용", "임금", "규제", "AI", "인공지능", "로봇", "공모",
 }
 
 
@@ -173,7 +180,9 @@ def _term_in(term: str, text: str) -> bool:
     if re.fullmatch(r"[0-9A-Za-z&\s]+", term):
         # 영문·약어(AI, GDP, S&P...)는 단어 경계 + 대소문자 구분 (demain≠AI 오탐 방지)
         return re.search(r"(?<![0-9A-Za-z])" + re.escape(term) + r"(?![0-9A-Za-z])", text) is not None
-    return term in text
+    # 한글 어휘는 앞 경계 검사: "이유가/자유가"의 "유가", "산유국"류 합성 오탐 차단
+    # (뒤는 조사가 붙으므로 검사 안 함: "금리를" OK)
+    return re.search(r"(?<![가-힣])" + re.escape(term), text) is not None
 
 
 # 스포츠·연예 문맥 기사는 스코어링에서 제외 (축구 이적 "계약" 등 오탐 방지)
@@ -252,11 +261,13 @@ def main():
         else:
             t["news"] = []
 
-        # 경제성 점수
+        # 경제성 점수 (high는 강한 어휘 1개+ 필수 — 축구 "계약"만으로 high 방지)
         titles = [n["title"] for n in t["news"]] + [g["title"] for g in t["gnews"]]
         score, hits = econ_score(t["keyword"], titles)
+        has_strong = any(h not in ECON_WEAK for h in hits)
         t["econScore"] = score
-        t["econLevel"] = "high" if score >= 3 else ("mid" if score >= 1 else "low")
+        t["econLevel"] = ("high" if score >= 3 and has_strong
+                          else ("mid" if score >= 1 else "low"))
         t["econHits"] = hits
 
         # 검색량 이력 (스파크라인용)
