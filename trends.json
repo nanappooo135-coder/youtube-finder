@@ -1,6 +1,6 @@
 {
- "generated_at": "2026-07-28T06:21:43.604803+09:00",
- "generated_at_ms": 1785187288757,
+ "generated_at": "2026-07-28T07:33:52.963015+09:00",
+ "generated_at_ms": 1785191614768,
  "geo": "KR",
  "source": "api",
  "artSchema": 2,
@@ -105,21 +105,25 @@
     {
      "t": 1785187288757,
      "v": 50000
+    },
+    {
+     "t": 1785191614768,
+     "v": 50000
     }
    ]
   },
   {
    "keyword": "관광",
-   "traffic": "20,000+",
-   "trafficNum": 20000,
+   "traffic": "10,000+",
+   "trafficNum": 10000,
    "startedMs": 1785111000000,
    "topicIds": [
-    19,
-    3
+    3,
+    19
    ],
    "topics": [
-    "여행·교통",
-    "비즈니스·금융"
+    "비즈니스·금융",
+    "여행·교통"
    ],
    "gnews": [
     {
@@ -214,6 +218,10 @@
     {
      "t": 1785187288757,
      "v": 20000
+    },
+    {
+     "t": 1785191614768,
+     "v": 10000
     }
    ]
   },
@@ -262,38 +270,7 @@
     "반도체",
     "규제"
    ],
-   "news": [
-    {
-     "title": "장마 끝, 이젠 가뭄 걱정 경북…일부 댐은 바닥 드러냈다",
-     "link": "https://www.newsis.com/view/NISX20260727_0003725351",
-     "pubTimestamp": 1785143040000,
-     "sourceName": "NEWSIS"
-    },
-    {
-     "title": "춘천시, 의암댐 방류 대응 하천변 안전관리 점검",
-     "link": "https://www.nocutnews.co.kr/news/6554023?utm_source=naver&utm_medium=article&utm_campaign=20260727055648",
-     "pubTimestamp": 1785142620000,
-     "sourceName": "NOCUTNEWS"
-    },
-    {
-     "title": "의암댐 방류로 하류 수위 상승…육동한 춘천시장, 하천변 점검",
-     "link": "https://www.yna.co.kr/view/AKR20260727121300062?input=1195m",
-     "pubTimestamp": 1785134940000,
-     "sourceName": "YNA"
-    },
-    {
-     "title": "댐 수문 개방에 춘천시 하천변 안전관리 강화",
-     "link": "https://www.kado.net/news/articleView.html?idxno=2063318",
-     "pubTimestamp": 1785134160000,
-     "sourceName": "KADO"
-    },
-    {
-     "title": "수자원공사, 장마 후 녹조 대응 강화…대청댐 등 조류경보 집중 관리",
-     "link": "https://www.news1.kr/local/daejeon-chungnam/6239857",
-     "pubTimestamp": 1785115800000,
-     "sourceName": "NEWS1"
-    }
-   ],
+   "news": [],
    "history": [
     {
      "t": 1785109501390,
@@ -333,6 +310,10 @@
     },
     {
      "t": 1785187288757,
+     "v": 10000
+    },
+    {
+     "t": 1785191614768,
      "v": 10000
     }
    ]
@@ -421,6 +402,99 @@
     {
      "t": 1785187288757,
      "v": 5000
+    },
+    {
+     "t": 1785191614768,
+     "v": 5000
+    }
+   ]
+  },
+  {
+   "keyword": "k9 자주포",
+   "traffic": "5,000+",
+   "trafficNum": 5000,
+   "startedMs": 1785181800000,
+   "topicIds": [
+    3
+   ],
+   "topics": [
+    "비즈니스·금융"
+   ],
+   "gnews": [
+    {
+     "title": "한화에어로, 6600억 규모 상품공급 계약 체결…스페인 K9 자주포 추정",
+     "link": "https://v.daum.net/v/tiVmL0FYNS?f=p",
+     "sourceName": "Daum",
+     "pubTimestamp": 1785117217000
+    },
+    {
+     "title": "한화에어로, 매출 2.5% 규모 공급계약…스페인 자주포 사업 수주 추정",
+     "link": "https://www.newsis.com/view/NISX20260727_0003724704",
+     "sourceName": "뉴시스",
+     "pubTimestamp": 1785127792000
+    },
+    {
+     "title": "한화에어로, 6600억 '잭팟' 터졌다…K9 자주포 스페인 사업 추정되는 이유 [밀리터리+]",
+     "link": "https://news.nate.com/view/20260727n22680",
+     "sourceName": "네이트",
+     "pubTimestamp": 1785133680000
+    },
+    {
+     "title": "'나토' 장벽에도…스페인 \"한화와 K9 자주포 사업 불화설 없다\"",
+     "link": "https://www.hankyung.com/article/202607266557i",
+     "sourceName": "한국경제",
+     "pubTimestamp": 1785114021000
+    }
+   ],
+   "econLevel": "high",
+   "econScore": 4,
+   "econHits": [
+    "계약",
+    "한화",
+    "매출",
+    "수주",
+    "공급"
+   ],
+   "news": [
+    {
+     "title": "K9 자주포, 스페인 7조원대 사업 발판 되나",
+     "link": "https://www.bntnews.co.kr/article/view/bnt202607280031",
+     "pubTimestamp": 1785191040000,
+     "sourceName": "BNTNEWS"
+    },
+    {
+     "title": "“한국 K9 자주포, 그대로는 안사요”…‘6600억 비밀계약’ 진짜 승부...",
+     "link": "https://www.seoul.co.kr/news/international/2026/07/27/20260727500250?wlog_tag3=naver",
+     "pubTimestamp": 1785156960000,
+     "sourceName": "SEOUL"
+    },
+    {
+     "title": "한화에어로, 매출 2.5% 규모 공급계약…스페인 자주포 사업 수주 추정",
+     "link": "https://www.newsis.com/view/NISX20260727_0003724704",
+     "pubTimestamp": 1785127740000,
+     "sourceName": "NEWSIS"
+    },
+    {
+     "title": "한화에어로, 6600억 규모 공급 계약 체결… 스페인 자주포 사업 추정",
+     "link": "https://biz.chosun.com/industry/company/2026/07/27/HFRM6KFGGBFQJJ6CHTKMHRLWSA/?utm_source=naver&utm_medium=original&utm_campaign=biz",
+     "pubTimestamp": 1785124440000,
+     "sourceName": "BIZ"
+    },
+    {
+     "title": "한화에어로, 6600억 규모 상품공급 계약 체결…스페인 K9 자주포 추정",
+     "link": "https://news.tf.co.kr/read/economy/2347252.htm",
+     "pubTimestamp": 1785117120000,
+     "sourceName": "NEWS"
+    }
+   ],
+   "history": [
+    {
+     "t": 1785187288757,
+     "v": 2000
+    },
+    {
+     "t": 1785191614768,
+     "v": 5000
     }
    ]
   },
@@ -471,16 +545,16 @@
    ],
    "news": [
     {
+     "title": "'中삼전닉스' 창신메모리 상장에 긴장…증권가 \"HBM에선 아직 추격자\"",
+     "link": "https://www.newsis.com/view/NISX20260727_0003725377",
+     "pubTimestamp": 1785187800000,
+     "sourceName": "NEWSIS"
+    },
+    {
      "title": "‘대어’ 中 창신메모리, 상장 첫날 인텔 시총 넘었다",
      "link": "https://www.kmib.co.kr/article/view.asp?arcid=0030168968&code=61131811&cp=nv",
      "pubTimestamp": 1785142200000,
      "sourceName": "KMIB"
-    },
-    {
-     "title": "80년대 삼전 닮은 CXMT, 상장하자마자 中 시총 1위",
-     "link": "https://www.hankyung.com/article/2026072789731",
-     "pubTimestamp": 1785142020000,
-     "sourceName": "HANKYUNG"
     },
     {
      "title": "‘중국 반도체 첨병’ 창신메모리 상장 첫날 466% 폭등…삼성 시총의 절...",
@@ -520,6 +594,10 @@
     },
     {
      "t": 1785187288757,
+     "v": 5000
+    },
+    {
+     "t": 1785191614768,
      "v": 5000
     }
    ]
@@ -599,6 +677,10 @@
     {
      "t": 1785187288757,
      "v": 5000
+    },
+    {
+     "t": 1785191614768,
+     "v": 5000
     }
    ]
   },
@@ -668,6 +750,109 @@
     },
     {
      "t": 1785187288757,
+     "v": 5000
+    },
+    {
+     "t": 1785191614768,
+     "v": 5000
+    }
+   ]
+  },
+  {
+   "keyword": "은행",
+   "traffic": "5,000+",
+   "trafficNum": 5000,
+   "startedMs": 1785166800000,
+   "topicIds": [
+    3
+   ],
+   "topics": [
+    "비즈니스·금융"
+   ],
+   "gnews": [
+    {
+     "title": "기업은행 2분기 순이익 6천895억원…전년 대비 0.7%↓(종합)",
+     "link": "https://www.yna.co.kr/view/AKR20260727134651527",
+     "sourceName": "연합뉴스",
+     "pubTimestamp": 1785138185000
+    },
+    {
+     "title": "‘해외 800억대 금융사고’ IBK기업은행, 상반기 수익성 악화…매출 16% 증가에도 영업益 감소",
+     "link": "https://v.daum.net/v/20260727193548935",
+     "sourceName": "Daum",
+     "pubTimestamp": 1785148548000
+    },
+    {
+     "title": "환율 급등에 발목…IBK기업은행, 상반기 순익 4.4% 감소",
+     "link": "https://www.sedaily.com/article/20072418",
+     "sourceName": "서울경제",
+     "pubTimestamp": 1785139814000
+    },
+    {
+     "title": "IBK기업은행, 중소기업대출 잔액 270조원 달성…순익은 소폭 감소",
+     "link": "https://biz.heraldcorp.com/article/10821818",
+     "sourceName": "헤럴드경제",
+     "pubTimestamp": 1785138477000
+    }
+   ],
+   "econLevel": "high",
+   "econScore": 3,
+   "econHits": [
+    "매출",
+    "환율",
+    "급등"
+   ],
+   "news": [
+    {
+     "title": "주택가격전망 4년10개월 만에 최고…소비심리 석달째 개선",
+     "link": "https://www.yna.co.kr/view/AKR20260727086900002?input=1195m",
+     "pubTimestamp": 1785186000000,
+     "sourceName": "YNA"
+    },
+    {
+     "title": "우리은행 손잡은 쿠팡, 원화코인 시장 도전장",
+     "link": "https://www.hankyung.com/article/2026072789111",
+     "pubTimestamp": 1785141840000,
+     "sourceName": "HANKYUNG"
+    },
+    {
+     "title": "BNK부산은행, 지방은행 최초 ‘AI 보이스봇’ 도입… 24시간 금융상담 제...",
+     "link": "https://www.busan.com/view/busan/view.php?code=2026072716471835256",
+     "pubTimestamp": 1785138540000,
+     "sourceName": "BUSAN"
+    },
+    {
+     "title": "BNK부산은행, 지방은행 최초 AI보이스봇 상담 서비스 도입",
+     "link": "https://www.nocutnews.co.kr/news/6553629?utm_source=naver&utm_medium=article&utm_campaign=20260727110844",
+     "pubTimestamp": 1785118140000,
+     "sourceName": "NOCUTNEWS"
+    },
+    {
+     "title": "“이 정도 인기였나?” 청년미래적금 가입 첫날, 일부 은행 거래 지연",
+     "link": "https://economist.co.kr/article/view/ecn202607270007",
+     "pubTimestamp": 1785115560000,
+     "sourceName": "ECONOMIST"
+    }
+   ],
+   "history": [
+    {
+     "t": 1785171358853,
+     "v": 2000
+    },
+    {
+     "t": 1785176561253,
+     "v": 2000
+    },
+    {
+     "t": 1785182636769,
+     "v": 2000
+    },
+    {
+     "t": 1785187288757,
+     "v": 5000
+    },
+    {
+     "t": 1785191614768,
      "v": 5000
     }
    ]
@@ -766,186 +951,10 @@
     {
      "t": 1785187288757,
      "v": 5000
-    }
-   ]
-  },
-  {
-   "keyword": "은행",
-   "traffic": "5,000+",
-   "trafficNum": 5000,
-   "startedMs": 1785166800000,
-   "topicIds": [
-    3
-   ],
-   "topics": [
-    "비즈니스·금융"
-   ],
-   "gnews": [
-    {
-     "title": "기업은행 2분기 순이익 6천895억원…전년 대비 0.7%↓(종합)",
-     "link": "https://www.yna.co.kr/view/AKR20260727134651527",
-     "sourceName": "연합뉴스",
-     "pubTimestamp": 1785138185000
     },
     {
-     "title": "‘해외 800억대 금융사고’ IBK기업은행, 상반기 수익성 악화…매출 16% 증가에도 영업益 감소",
-     "link": "https://v.daum.net/v/20260727193548935",
-     "sourceName": "Daum",
-     "pubTimestamp": 1785148548000
-    },
-    {
-     "title": "환율 급등에 발목…IBK기업은행, 상반기 순익 4.4% 감소",
-     "link": "https://www.sedaily.com/article/20072418",
-     "sourceName": "서울경제",
-     "pubTimestamp": 1785139814000
-    },
-    {
-     "title": "IBK기업은행, 중소기업대출 잔액 270조원 달성…순익은 소폭 감소",
-     "link": "https://biz.heraldcorp.com/article/10821818",
-     "sourceName": "헤럴드경제",
-     "pubTimestamp": 1785138477000
-    }
-   ],
-   "econLevel": "high",
-   "econScore": 3,
-   "econHits": [
-    "매출",
-    "환율",
-    "급등"
-   ],
-   "news": [
-    {
-     "title": "우리은행 손잡은 쿠팡, 원화코인 시장 도전장",
-     "link": "https://www.hankyung.com/article/2026072789111",
-     "pubTimestamp": 1785141840000,
-     "sourceName": "HANKYUNG"
-    },
-    {
-     "title": "BNK부산은행, 지방은행 최초 ‘AI 보이스봇’ 도입… 24시간 금융상담 제...",
-     "link": "https://www.busan.com/view/busan/view.php?code=2026072716471835256",
-     "pubTimestamp": 1785138540000,
-     "sourceName": "BUSAN"
-    },
-    {
-     "title": "신한은행, 시니어 특화 'SOL메이트 정기예금' 특판",
-     "link": "https://www.yna.co.kr/view/AKR20260727113000002?input=1195m",
-     "pubTimestamp": 1785132300000,
-     "sourceName": "YNA"
-    },
-    {
-     "title": "BNK부산은행, 지방은행 최초 AI보이스봇 상담 서비스 도입",
-     "link": "https://www.nocutnews.co.kr/news/6553629?utm_source=naver&utm_medium=article&utm_campaign=20260727110844",
-     "pubTimestamp": 1785118140000,
-     "sourceName": "NOCUTNEWS"
-    },
-    {
-     "title": "“이 정도 인기였나?” 청년미래적금 가입 첫날, 일부 은행 거래 지연",
-     "link": "https://economist.co.kr/article/view/ecn202607270007",
-     "pubTimestamp": 1785115560000,
-     "sourceName": "ECONOMIST"
-    }
-   ],
-   "history": [
-    {
-     "t": 1785171358853,
-     "v": 2000
-    },
-    {
-     "t": 1785176561253,
-     "v": 2000
-    },
-    {
-     "t": 1785182636769,
-     "v": 2000
-    },
-    {
-     "t": 1785187288757,
+     "t": 1785191614768,
      "v": 5000
-    }
-   ]
-  },
-  {
-   "keyword": "k9 자주포",
-   "traffic": "2,000+",
-   "trafficNum": 2000,
-   "startedMs": 1785181800000,
-   "topicIds": [
-    3
-   ],
-   "topics": [
-    "비즈니스·금융"
-   ],
-   "gnews": [
-    {
-     "title": "한화에어로, 6600억 규모 상품공급 계약 체결…스페인 K9 자주포 추정",
-     "link": "https://v.daum.net/v/tiVmL0FYNS?f=p",
-     "sourceName": "Daum",
-     "pubTimestamp": 1785117217000
-    },
-    {
-     "title": "한화에어로, 매출 2.5% 규모 공급계약…스페인 자주포 사업 수주 추정",
-     "link": "https://www.newsis.com/view/NISX20260727_0003724704",
-     "sourceName": "뉴시스",
-     "pubTimestamp": 1785127792000
-    },
-    {
-     "title": "한화에어로, 6600억 '잭팟' 터졌다…K9 자주포 스페인 사업 추정되는 이유 [밀리터리+]",
-     "link": "https://news.nate.com/view/20260727n22680",
-     "sourceName": "네이트",
-     "pubTimestamp": 1785133680000
-    },
-    {
-     "title": "'나토' 장벽에도…스페인 \"한화와 K9 자주포 사업 불화설 없다\"",
-     "link": "https://www.hankyung.com/article/202607266557i",
-     "sourceName": "한국경제",
-     "pubTimestamp": 1785114021000
-    }
-   ],
-   "econLevel": "high",
-   "econScore": 4,
-   "econHits": [
-    "계약",
-    "한화",
-    "매출",
-    "수주",
-    "공급"
-   ],
-   "news": [
-    {
-     "title": "“한국 K9 자주포, 그대로는 안사요”…‘6600억 비밀계약’ 진짜 승부...",
-     "link": "https://www.seoul.co.kr/news/international/2026/07/27/20260727500250?wlog_tag3=naver",
-     "pubTimestamp": 1785156960000,
-     "sourceName": "SEOUL"
-    },
-    {
-     "title": "매출 86% 폭증한 '알짜' K9·K2 주포 사업 매각 추진에…현대위아 노조 ...",
-     "link": "https://magazine.hankyung.com/business/article/202607278524b",
-     "pubTimestamp": 1785135180000,
-     "sourceName": "MAGAZINE"
-    },
-    {
-     "title": "한화에어로, 매출 2.5% 규모 공급계약…스페인 자주포 사업 수주 추정",
-     "link": "https://www.newsis.com/view/NISX20260727_0003724704",
-     "pubTimestamp": 1785127740000,
-     "sourceName": "NEWSIS"
-    },
-    {
-     "title": "한화에어로, 6600억 규모 공급 계약 체결… 스페인 자주포 사업 추정",
-     "link": "https://biz.chosun.com/industry/company/2026/07/27/HFRM6KFGGBFQJJ6CHTKMHRLWSA/?utm_source=naver&utm_medium=original&utm_campaign=biz",
-     "pubTimestamp": 1785124440000,
-     "sourceName": "BIZ"
-    },
-    {
-     "title": "한화에어로, 6600억 규모 상품공급 계약 체결…스페인 K9 자주포 추정",
-     "link": "https://news.tf.co.kr/read/economy/2347252.htm",
-     "pubTimestamp": 1785117120000,
-     "sourceName": "NEWS"
-    }
-   ],
-   "history": [
-    {
-     "t": 1785187288757,
-     "v": 2000
     }
    ]
   },
@@ -1047,6 +1056,112 @@
     {
      "t": 1785187288757,
      "v": 2000
+    },
+    {
+     "t": 1785191614768,
+     "v": 2000
+    }
+   ]
+  },
+  {
+   "keyword": "외환시장",
+   "traffic": "2,000+",
+   "trafficNum": 2000,
+   "startedMs": 1785161400000,
+   "topicIds": [
+    3
+   ],
+   "topics": [
+    "비즈니스·금융"
+   ],
+   "gnews": [
+    {
+     "title": "엔화 추락·원화 강세…뚜렷해진 디커플링",
+     "link": "https://www.hankyung.com/article/2026072666311",
+     "sourceName": "한국경제",
+     "pubTimestamp": 1785056405000
+    },
+    {
+     "title": "환율 안정 찾나… 54거래일만에 1450원대 개장",
+     "link": "https://www.donga.com/news/Economy/article/all/20260727/134374737/2",
+     "sourceName": "동아일보",
+     "pubTimestamp": 1785166200000
+    },
+    {
+     "title": "고유가·강달러에도 원화 '나홀로 강세'…FOMC가 분수령",
+     "link": "https://v.daum.net/v/20260727164627472",
+     "sourceName": "Daum",
+     "pubTimestamp": 1785138386000
+    },
+    {
+     "title": "[외환-마감] 결제수요·외인 주식 매도에 상승…1.90원↑",
+     "link": "https://news.einfomax.co.kr/news/articleView.html?idxno=4427102",
+     "sourceName": "연합인포맥스",
+     "pubTimestamp": 1785144371000
+    }
+   ],
+   "econLevel": "high",
+   "econScore": 4,
+   "econHits": [
+    "엔화",
+    "원화",
+    "환율",
+    "고유가",
+    "FOMC",
+    "주식"
+   ],
+   "news": [
+    {
+     "title": "[채권/외환] 유가 급락에 미 국채 수익률 하락…FOMC 대기",
+     "link": "https://www.newspim.com/news/view/20260728000024",
+     "pubTimestamp": 1785182280000,
+     "sourceName": "NEWSPIM"
+    },
+    {
+     "title": "불법 외환거래 7兆 적발... 재산도피·환치기 등 덜미",
+     "link": "http://www.fnnews.com/news/202607271806210934",
+     "pubTimestamp": 1785143280000,
+     "sourceName": "FNNEWS"
+    },
+    {
+     "title": "韓, 환율 방어에 280억弗 풀어…美재무부 \"개입 규모 세계 3위\"",
+     "link": "https://www.mk.co.kr/article/12108688",
+     "pubTimestamp": 1785142500000,
+     "sourceName": "MK"
+    },
+    {
+     "title": "‘고환율 틈탄 불법 외환거래 7조2천억’… 관세청, 가상자산·환치기 ...",
+     "link": "https://www.kukinews.com/article/view/kuk202607270081",
+     "pubTimestamp": 1785122880000,
+     "sourceName": "KUKINEWS"
+    },
+    {
+     "title": "관세청, 7조2000억 불법외환거래 적발…외환시장 교란 엄단",
+     "link": "https://www.ccdailynews.com/news/articleView.html?idxno=2430359",
+     "pubTimestamp": 1785118440000,
+     "sourceName": "CCDAILYNEWS"
+    }
+   ],
+   "history": [
+    {
+     "t": 1785171358853,
+     "v": 500
+    },
+    {
+     "t": 1785176561253,
+     "v": 1000
+    },
+    {
+     "t": 1785182636769,
+     "v": 1000
+    },
+    {
+     "t": 1785187288757,
+     "v": 1000
+    },
+    {
+     "t": 1785191614768,
+     "v": 2000
     }
    ]
   },
@@ -1099,6 +1214,10 @@
    "history": [
     {
      "t": 1785187288757,
+     "v": 2000
+    },
+    {
+     "t": 1785191614768,
      "v": 2000
     }
    ]
@@ -1202,6 +1321,105 @@
     {
      "t": 1785187288757,
      "v": 2000
+    },
+    {
+     "t": 1785191614768,
+     "v": 2000
+    }
+   ]
+  },
+  {
+   "keyword": "강남구",
+   "traffic": "2,000+",
+   "trafficNum": 2000,
+   "startedMs": 1785160800000,
+   "topicIds": [
+    3
+   ],
+   "topics": [
+    "비즈니스·금융"
+   ],
+   "gnews": [
+    {
+     "title": "강남구, 재건축 추진위 승인 30일→10일…초기 절차부터 속도",
+     "link": "https://www.kns.tv/news/articleView.html?idxno=1010807",
+     "sourceName": "KNS뉴스통신",
+     "pubTimestamp": 1785036480000
+    },
+    {
+     "title": "김현기 강남구청장 출발이 좋다...직원들 평가도 ‘최고’",
+     "link": "https://v.daum.net/v/20260725115140043",
+     "sourceName": "Daum",
+     "pubTimestamp": 1784947900000
+    },
+    {
+     "title": "강남 재건축 시계 빨라지나…강남구, 초기 행정절차 ‘속도’",
+     "link": "https://daily.hankooki.com/news/articleView.html?idxno=1389288",
+     "sourceName": "데일리한국",
+     "pubTimestamp": 1784944800000
+    },
+    {
+     "title": "김현기 강남구청장, 압구정 2·3·4·5구역 조합장과 간담회",
+     "link": "https://www.newsis.com/view/NISX20260722_0003719024",
+     "sourceName": "뉴시스",
+     "pubTimestamp": 1784704359000
+    }
+   ],
+   "econLevel": "high",
+   "econScore": 3,
+   "econHits": [],
+   "news": [
+    {
+     "title": "[포토] 강남구, '옥스브리지 진로·문화 국제교류' 개강식",
+     "link": "https://www.edaily.co.kr/news/newspath.asp?newsid=04483766645518784",
+     "pubTimestamp": 1785145500000,
+     "sourceName": "EDAILY"
+    },
+    {
+     "title": "반려견과 환경 지킨다…강남구, 댕댕플로깅 봉사단 출범",
+     "link": "https://www.newsis.com/view/NISX20260727_0003724843",
+     "pubTimestamp": 1785130500000,
+     "sourceName": "NEWSIS"
+    },
+    {
+     "title": "반려견 산책하며 쓰레기 줍고…강남구, '댕댕플로깅 자원봉사단' 출범",
+     "link": "https://www.mt.co.kr/policy/2026/07/27/2026072708205315767",
+     "pubTimestamp": 1785111420000,
+     "sourceName": "MT"
+    },
+    {
+     "title": "강남구 등록 반려견 4.7만마리 최다…'댕댕플로깅 자원봉사단' 출범",
+     "link": "https://www.yna.co.kr/view/AKR20260727009900004?input=1195m",
+     "pubTimestamp": 1785104340000,
+     "sourceName": "YNA"
+    },
+    {
+     "title": "국세청장 “강남구서 주택 1채 양도하고 장특공제 200억 넘기도…역진성...",
+     "link": "https://www.segye.com/newsView/20260726503608?OutUrl=naver",
+     "pubTimestamp": 1785031140000,
+     "sourceName": "SEGYE"
+    }
+   ],
+   "history": [
+    {
+     "t": 1785171358853,
+     "v": 1000
+    },
+    {
+     "t": 1785176561253,
+     "v": 1000
+    },
+    {
+     "t": 1785182636769,
+     "v": 1000
+    },
+    {
+     "t": 1785187288757,
+     "v": 1000
+    },
+    {
+     "t": 1785191614768,
+     "v": 2000
     }
    ]
   },
@@ -1250,6 +1468,24 @@
    ],
    "news": [
     {
+     "title": "中전문가들, CXMT IPO 흥행에 “삼전닉스에 도전”",
+     "link": "https://biz.heraldcorp.com/article/10822092?ref=naver",
+     "pubTimestamp": 1785187980000,
+     "sourceName": "BIZ"
+    },
+    {
+     "title": "CXMT의 공습…\"K메모리 살 길은 한미 AI동맹\"",
+     "link": "https://www.edaily.co.kr/news/newspath.asp?newsid=01682646645519112",
+     "pubTimestamp": 1785182520000,
+     "sourceName": "EDAILY"
+    },
+    {
+     "title": "14조원 실탄 확보한 中 CXMT… 메모리 수급난 틈타 韓 추격",
+     "link": "https://www.donga.com/news/Economy/article/all/20260728/134375550/2",
+     "pubTimestamp": 1785180780000,
+     "sourceName": "DONGA"
+    },
+    {
      "title": "\"1등 시간 문제\" 파격 전망까지…삼전닉스 위협하는 中 CXMT [분석+]",
      "link": "https://www.hankyung.com/article/2026072786316",
      "pubTimestamp": 1785157260000,
@@ -1260,24 +1496,6 @@
      "link": "https://www.dt.co.kr/article/12075065?ref=naver",
      "pubTimestamp": 1785146340000,
      "sourceName": "DT"
-    },
-    {
-     "title": "'中 반도체첨병' CXMT 첫날 466% 급등…시총 712조, 美인텔 넘어(종합2보...",
-     "link": "https://www.yna.co.kr/view/AKR20260727064752089?input=1195m",
-     "pubTimestamp": 1785144360000,
-     "sourceName": "YNA"
-    },
-    {
-     "title": "노무라 \"CXMT, 공모가 1200%↑\"…삼전·하닉 위협 전망도",
-     "link": "https://www.edaily.co.kr/news/newspath.asp?newsid=04142646645518784",
-     "pubTimestamp": 1785140160000,
-     "sourceName": "EDAILY"
-    },
-    {
-     "title": "中 CXMT, 상하이 상장 첫날 500% 폭등 대박…본토 시총 1위",
-     "link": "https://www.donga.com/news/Economy/article/all/20260727/134371659/1",
-     "pubTimestamp": 1785132300000,
-     "sourceName": "DONGA"
     }
    ],
    "history": [
@@ -1311,6 +1529,10 @@
     },
     {
      "t": 1785187288757,
+     "v": 2000
+    },
+    {
+     "t": 1785191614768,
      "v": 2000
     }
    ]
@@ -1417,6 +1639,10 @@
     {
      "t": 1785187288757,
      "v": 2000
+    },
+    {
+     "t": 1785191614768,
+     "v": 2000
     }
    ]
   },
@@ -1492,6 +1718,10 @@
     },
     {
      "t": 1785187288757,
+     "v": 2000
+    },
+    {
+     "t": 1785191614768,
      "v": 2000
     }
    ]
@@ -1572,6 +1802,10 @@
     {
      "t": 1785187288757,
      "v": 2000
+    },
+    {
+     "t": 1785191614768,
+     "v": 2000
     }
    ]
   },
@@ -1620,38 +1854,7 @@
     "노조",
     "실적"
    ],
-   "news": [
-    {
-     "title": "카카오뱅크 노사 갈등 인터넷은행 첫 파업 가나",
-     "link": "https://www.busan.com/view/busan/view.php?code=2026072718051529522",
-     "pubTimestamp": 1785143340000,
-     "sourceName": "BUSAN"
-    },
-    {
-     "title": "카카오뱅크 노조, 임직원 과반 가입…오는 31일 파업",
-     "link": "https://www.newsis.com/view/NISX20260727_0003724860",
-     "pubTimestamp": 1785130740000,
-     "sourceName": "NEWSIS"
-    },
-    {
-     "title": "카카오뱅크 노조, 과반 노조 달성…\"성과 공정하게 배분돼야\"",
-     "link": "https://view.asiae.co.kr/article/2026072714101554838",
-     "pubTimestamp": 1785129000000,
-     "sourceName": "VIEW"
-    },
-    {
-     "title": "카카오뱅크 첫 전일 파업…성과 보상 갈등 끝내 충돌",
-     "link": "https://www.ddaily.co.kr/page/view/2026072713540518207",
-     "pubTimestamp": 1785128100000,
-     "sourceName": "DDAILY"
-    },
-    {
-     "title": "카카오뱅크 노조, 조합원 과반 확보…\"성과 보상 불만 누적\"",
-     "link": "https://www.dailian.co.kr/news/view/1671077/?sc=Naver",
-     "pubTimestamp": 1785112440000,
-     "sourceName": "DAILIAN"
-    }
-   ],
+   "news": [],
    "history": [
     {
      "t": 1785153613267,
@@ -1676,203 +1879,9 @@
     {
      "t": 1785187288757,
      "v": 1000
-    }
-   ]
-  },
-  {
-   "keyword": "외환시장",
-   "traffic": "1,000+",
-   "trafficNum": 1000,
-   "startedMs": 1785161400000,
-   "topicIds": [
-    3
-   ],
-   "topics": [
-    "비즈니스·금융"
-   ],
-   "gnews": [
-    {
-     "title": "엔화 추락·원화 강세…뚜렷해진 디커플링",
-     "link": "https://www.hankyung.com/article/2026072666311",
-     "sourceName": "한국경제",
-     "pubTimestamp": 1785056405000
     },
     {
-     "title": "환율 안정 찾나… 54거래일만에 1450원대 개장",
-     "link": "https://www.donga.com/news/Economy/article/all/20260727/134374737/2",
-     "sourceName": "동아일보",
-     "pubTimestamp": 1785166200000
-    },
-    {
-     "title": "고유가·강달러에도 원화 '나홀로 강세'…FOMC가 분수령",
-     "link": "https://v.daum.net/v/20260727164627472",
-     "sourceName": "Daum",
-     "pubTimestamp": 1785138386000
-    },
-    {
-     "title": "[외환-마감] 결제수요·외인 주식 매도에 상승…1.90원↑",
-     "link": "https://news.einfomax.co.kr/news/articleView.html?idxno=4427102",
-     "sourceName": "연합인포맥스",
-     "pubTimestamp": 1785144371000
-    }
-   ],
-   "econLevel": "high",
-   "econScore": 4,
-   "econHits": [
-    "엔화",
-    "원화",
-    "환율",
-    "고유가",
-    "FOMC",
-    "주식"
-   ],
-   "news": [
-    {
-     "title": "[채권/외환] 유가 급락에 미 국채 수익률 하락…FOMC 대기",
-     "link": "https://www.newspim.com/news/view/20260728000024",
-     "pubTimestamp": 1785182280000,
-     "sourceName": "NEWSPIM"
-    },
-    {
-     "title": "불법 외환거래 7兆 적발... 재산도피·환치기 등 덜미",
-     "link": "http://www.fnnews.com/news/202607271806210934",
-     "pubTimestamp": 1785143280000,
-     "sourceName": "FNNEWS"
-    },
-    {
-     "title": "韓, 환율 방어에 280억弗 풀어…美재무부 \"개입 규모 세계 3위\"",
-     "link": "https://www.mk.co.kr/article/12108688",
-     "pubTimestamp": 1785142500000,
-     "sourceName": "MK"
-    },
-    {
-     "title": "‘고환율 틈탄 불법 외환거래 7조2천억’… 관세청, 가상자산·환치기 ...",
-     "link": "https://www.kukinews.com/article/view/kuk202607270081",
-     "pubTimestamp": 1785122880000,
-     "sourceName": "KUKINEWS"
-    },
-    {
-     "title": "관세청, 7조2000억 불법외환거래 적발…외환시장 교란 엄단",
-     "link": "https://www.ccdailynews.com/news/articleView.html?idxno=2430359",
-     "pubTimestamp": 1785118440000,
-     "sourceName": "CCDAILYNEWS"
-    }
-   ],
-   "history": [
-    {
-     "t": 1785171358853,
-     "v": 500
-    },
-    {
-     "t": 1785176561253,
-     "v": 1000
-    },
-    {
-     "t": 1785182636769,
-     "v": 1000
-    },
-    {
-     "t": 1785187288757,
-     "v": 1000
-    }
-   ]
-  },
-  {
-   "keyword": "hd현대",
-   "traffic": "1,000+",
-   "trafficNum": 1000,
-   "startedMs": 1785157800000,
-   "topicIds": [
-    3
-   ],
-   "topics": [
-    "비즈니스·금융"
-   ],
-   "gnews": [
-    {
-     "title": "HD현대마린솔루션, 2분기 영업익 976억원…전년비 17.6%↑",
-     "link": "https://v.daum.net/v/20260727153136641",
-     "sourceName": "Daum",
-     "pubTimestamp": 1785133896000
-    },
-    {
-     "title": "분기 최대 실적 HD현대마린솔루션, 선박 정비서 데이터센터로 성장축 확장",
-     "link": "https://zdnet.co.kr/view/?no=20260727161537",
-     "sourceName": "지디넷코리아",
-     "pubTimestamp": 1785141991000
-    },
-    {
-     "title": "HD현대마린솔루션, 2Q 사상 최대 실적 달성…全영역 성장",
-     "link": "https://news.einfomax.co.kr/news/articleView.html?idxno=4427062",
-     "sourceName": "연합인포맥스",
-     "pubTimestamp": 1785133708000
-    },
-    {
-     "title": "HD현대마린솔루션, 2분기 영업이익 976억원…작년보다 17.6％↑(종합)",
-     "link": "https://www.yna.co.kr/amp/view/AKR20260727111751527",
-     "sourceName": "연합뉴스",
-     "pubTimestamp": 1785134489000
-    }
-   ],
-   "econLevel": "high",
-   "econScore": 4,
-   "econHits": [
-    "HD현대",
-    "실적",
-    "데이터센터",
-    "영업이익"
-   ],
-   "news": [
-    {
-     "title": "HD현대重, 중대재해 잇따르자 전 사업장 생산 중단",
-     "link": "https://www.chosun.com/economy/industry-company/2026/07/27/YHGDVYFWUBHM7EIQK5CCWKGWQY/?utm_source=naver&utm_medium=referral&utm_campaign=naver-news",
-     "pubTimestamp": 1785139260000,
-     "sourceName": "CHOSUN"
-    },
-    {
-     "title": "사망사고에 '안전셧다운'…HD현대重, 29~31일 가동중단",
-     "link": "https://www.newsis.com/view/NISX20260727_0003725095",
-     "pubTimestamp": 1785136260000,
-     "sourceName": "NEWSIS"
-    },
-    {
-     "title": "HD현대삼호, 초대형 암모니아 운반선 첫 인도",
-     "link": "https://www.sidae.com/article/2026072714214662598",
-     "pubTimestamp": 1785130080000,
-     "sourceName": "SIDAE"
-    },
-    {
-     "title": "HD현대삼호, 초대형 암모니아 운반선 첫 인도",
-     "link": "https://www.nocutnews.co.kr/news/6553652?utm_source=naver&utm_medium=article&utm_campaign=20260727112144",
-     "pubTimestamp": 1785118920000,
-     "sourceName": "NOCUTNEWS"
-    },
-    {
-     "title": "HD현대삼호, 초대형 암모니아 운반선 첫 인도",
-     "link": "https://www.yna.co.kr/view/AKR20260727060800054?input=1195m",
-     "pubTimestamp": 1785115980000,
-     "sourceName": "YNA"
-    }
-   ],
-   "history": [
-    {
-     "t": 1785164110221,
-     "v": 2000
-    },
-    {
-     "t": 1785171358853,
-     "v": 2000
-    },
-    {
-     "t": 1785176561253,
-     "v": 2000
-    },
-    {
-     "t": 1785182636769,
-     "v": 2000
-    },
-    {
-     "t": 1785187288757,
+     "t": 1785191614768,
      "v": 1000
     }
    ]
@@ -1924,10 +1933,10 @@
    ],
    "news": [
     {
-     "title": "의왕 현대로템 배터리연구시설서 화재",
-     "link": "https://www.yna.co.kr/view/PYH20260728012400061?input=1196m",
-     "pubTimestamp": 1785184500000,
-     "sourceName": "YNA"
+     "title": "현대로템 화재…2시간 만에 진화, 인명피해 無",
+     "link": "https://www.bntnews.co.kr/article/view/bnt202607280010",
+     "pubTimestamp": 1785188040000,
+     "sourceName": "BNTNEWS"
     },
     {
      "title": "의왕 현대로템 배터리연구시설서 화재…2시간여만에 완진",
@@ -1936,22 +1945,22 @@
      "sourceName": "BIZ"
     },
     {
-     "title": "의왕 현대로템 배터리연구시설서 화재…2시간여만에 완진",
-     "link": "https://www.yna.co.kr/view/AKR20260728003400061?input=1195m",
-     "pubTimestamp": 1785177720000,
-     "sourceName": "YNA"
-    },
-    {
-     "title": "의왕 현대로템 차세대 배터리 개발동서 화재...한때 대응 1단계",
-     "link": "https://www.kyeonggi.com/article/20260728580001",
-     "pubTimestamp": 1785172320000,
-     "sourceName": "KYEONGGI"
-    },
-    {
      "title": "'어닝쇼크' 현대로템 16%↓ 신저가…방산주 약세[핫종목](종합)",
      "link": "https://www.news1.kr/finance/general-stock/6240421",
      "pubTimestamp": 1785136140000,
      "sourceName": "NEWS1"
+    },
+    {
+     "title": "[특징주] 현대로템, 기대치 밑돈 2분기 실적에 급락…52주 신저가(종합...",
+     "link": "https://www.yna.co.kr/view/AKR20260727040351008?input=1195m",
+     "pubTimestamp": 1785135120000,
+     "sourceName": "YNA"
+    },
+    {
+     "title": "현대로템 16% 급락...실적 쇼크에 목표가 ‘줄하향’ [오늘, 이 종목]",
+     "link": "https://www.mk.co.kr/article/12108408",
+     "pubTimestamp": 1785133200000,
+     "sourceName": "MK"
     }
    ],
    "history": [
@@ -1985,6 +1994,10 @@
     },
     {
      "t": 1785187288757,
+     "v": 1000
+    },
+    {
+     "t": 1785191614768,
      "v": 1000
     }
    ]
@@ -2093,6 +2106,110 @@
     {
      "t": 1785187288757,
      "v": 1000
+    },
+    {
+     "t": 1785191614768,
+     "v": 1000
+    }
+   ]
+  },
+  {
+   "keyword": "중국 duv",
+   "traffic": "1,000+",
+   "trafficNum": 1000,
+   "startedMs": 1785164400000,
+   "topicIds": [
+    3
+   ],
+   "topics": [
+    "비즈니스·금융"
+   ],
+   "gnews": [
+    {
+     "title": "ASML과 미국 반도체 주식, 중국의 DUV 기술 돌파 보도에 급락",
+     "link": "https://kr.investing.com/news/stock-market-news/article-2030385",
+     "sourceName": "Investing.com 한국어",
+     "pubTimestamp": 1785158640000
+    },
+    {
+     "title": "\"中, DUV 노광장비 올해 양산 개시\"…ASML 주가 6% 급락",
+     "link": "https://news.einfomax.co.kr/news/articleView.html?idxno=4427124",
+     "sourceName": "연합인포맥스",
+     "pubTimestamp": 1785166297000
+    },
+    {
+     "title": "[미국 특징주] ASML, 중국發 경쟁 위협 보도에 7%대 급락",
+     "link": "https://www.newspim.com/news/view/20260727001367",
+     "sourceName": "뉴스핌",
+     "pubTimestamp": 1785163920000
+    },
+    {
+     "title": "中, 국산 DUV 양산 돌입…EUV 없이 HBM3E 길 열리나",
+     "link": "https://www.economytribune.co.kr/news/articleView.html?idxno=3903454",
+     "sourceName": "이코노미트리뷴",
+     "pubTimestamp": 1785163259000
+    }
+   ],
+   "econLevel": "high",
+   "econScore": 3,
+   "econHits": [
+    "주식",
+    "반도체",
+    "급락",
+    "주가"
+   ],
+   "news": [
+    {
+     "title": "중국, 국산 DUV 노광장비 생산 돌입…ASML 독점 구도 흔드나",
+     "link": "https://www.newspim.com/news/view/20260728000031",
+     "pubTimestamp": 1785189600000,
+     "sourceName": "NEWSPIM"
+    },
+    {
+     "title": "中, 이머전 DUV 노광장비 자체 생산 본격화…\"반도체 자립 전환점\"(종합...",
+     "link": "https://www.edaily.co.kr/news/newspath.asp?newsid=02463286645519112",
+     "pubTimestamp": 1785189240000,
+     "sourceName": "EDAILY"
+    },
+    {
+     "title": "中, 첫 국산 DUV 노광장비 생산 착수…ASML 주가 6% 급락",
+     "link": "https://www.news1.kr/world/international-economy/6240752",
+     "pubTimestamp": 1785185340000,
+     "sourceName": "NEWS1"
+    },
+    {
+     "title": "ASML, 中 DUV 노광장비 자체 생산 소식에 주가 급락",
+     "link": "https://www.bloter.net/news/articleView.html?idxno=669114",
+     "pubTimestamp": 1785181080000,
+     "sourceName": "BLOTER"
+    },
+    {
+     "title": "中, DUV 노광장비도 직접 만든다…반도체 홀로서기 가속",
+     "link": "https://biz.sbs.co.kr/article_hub/20000324948?division=NAVER",
+     "pubTimestamp": 1785180300000,
+     "sourceName": "BIZ"
+    }
+   ],
+   "history": [
+    {
+     "t": 1785171358853,
+     "v": 200
+    },
+    {
+     "t": 1785176561253,
+     "v": 200
+    },
+    {
+     "t": 1785182636769,
+     "v": 200
+    },
+    {
+     "t": 1785187288757,
+     "v": 500
+    },
+    {
+     "t": 1785191614768,
+     "v": 1000
     }
    ]
   },
@@ -2188,6 +2305,10 @@
     {
      "t": 1785187288757,
      "v": 1000
+    },
+    {
+     "t": 1785191614768,
+     "v": 1000
     }
    ]
   },
@@ -2261,6 +2382,10 @@
     },
     {
      "t": 1785187288757,
+     "v": 1000
+    },
+    {
+     "t": 1785191614768,
      "v": 1000
     }
    ]
@@ -2339,81 +2464,82 @@
     {
      "t": 1785187288757,
      "v": 500
+    },
+    {
+     "t": 1785191614768,
+     "v": 500
     }
    ]
   },
   {
-   "keyword": "이더리움",
+   "keyword": "롯데 자이언츠",
    "traffic": "500+",
    "trafficNum": 500,
-   "startedMs": 1785153600000,
+   "startedMs": 1785184800000,
    "topicIds": [
-    3
+    17
    ],
    "topics": [
-    "비즈니스·금융"
+    "스포츠"
    ],
    "gnews": [
     {
-     "title": "리도(Lido), 이더리움 성능 최적화를 위한 역사적인 160억 달러 규모 마이그레이션 시작",
-     "link": "https://www.coindesk.com/ko/tech/2026/07/27/lido-begins-moving-usd16-5-billion-in-staked-ether-to-cut-validator-count-by-a-third",
-     "sourceName": "CoinDesk",
-     "pubTimestamp": 1785103200000
+     "title": "가슴 쓸어내린 롯데…김진욱, 허벅지 검진 결과 '이상 무'",
+     "link": "https://www.yna.co.kr/view/AKR20260727119900007",
+     "sourceName": "연합뉴스",
+     "pubTimestamp": 1785133848000
     },
     {
-     "title": "내 이더리움 이자가 사라졌다…리도(Lido) 회계 오류에 디파이(DeFi) 패닉",
-     "link": "https://www.pinpointnews.co.kr/news/articleView.html?idxno=471634",
-     "sourceName": "핀포인트뉴스",
-     "pubTimestamp": 1785105687000
+     "title": "김진욱 햄스트링 미스터리? → 완전히 깨끗한데 '반복 경련' 도대체 무슨 일일까",
+     "link": "https://www.chosun.com/sports/baseball/2026/07/28/HE3TKZDDGNRDCYLFGYYTGM3CHE/",
+     "sourceName": "조선일보",
+     "pubTimestamp": 1785187140000
     },
     {
-     "title": "리도, 24조원대 stETH 통합 업그레이드… 검증자 3분의 1 줄인다",
-     "link": "https://www.tokenpost.kr/news/blockchain/381804",
-     "sourceName": "토큰포스트",
-     "pubTimestamp": 1785161554000
+     "title": "[오피셜] 롯데 안도의 한숨! AG 국대 좌완, 햄스트링 검진→이상 없음 소견 \"정상적 훈련 소화\"",
+     "link": "https://v.daum.net/v/20260727144107382",
+     "sourceName": "Daum",
+     "pubTimestamp": 1785130867000
     },
     {
-     "title": "리도, stETH APR에 영향을 미친 리바싱 계산 오류 발생",
-     "link": "https://coinfomania.com/ko/lido-reports-rebasing-miscalculation-incident-affecting-steth-apr-ko/",
-     "sourceName": "Coinfomania",
-     "pubTimestamp": 1785006553000
+     "title": "롯데 김진욱, 2경기 연속 햄스트링 통증에도 병원 검사 결과 '이상 無'",
+     "link": "https://www.newsis.com/view/NISX20260727_0003724846",
+     "sourceName": "뉴시스",
+     "pubTimestamp": 1785132060000
     }
    ],
    "econLevel": "high",
-   "econScore": 5,
+   "econScore": 6,
    "econHits": [
-    "이더리움",
-    "달러"
+    "롯데",
+    "경기"
    ],
-   "news": [],
+   "news": [
+    {
+     "title": "롯데 자이언츠 김진욱, 허벅지 정밀 검진서 '이상 무' 판정",
+     "link": "https://www.mdtoday.co.kr/news/articleView.html?idxno=606332",
+     "pubTimestamp": 1785139680000,
+     "sourceName": "MDTODAY"
+    },
+    {
+     "title": "롯데자이언츠, KT에 15대1 완승",
+     "link": "https://busanmbc.co.kr/01_new/new01_view.asp?idx=287436",
+     "pubTimestamp": 1785108720000,
+     "sourceName": "BUSANMBC"
+    }
+   ],
    "history": [
     {
-     "t": 1785164110221,
-     "v": 500
-    },
-    {
-     "t": 1785171358853,
-     "v": 500
-    },
-    {
-     "t": 1785176561253,
-     "v": 500
-    },
-    {
-     "t": 1785182636769,
-     "v": 500
-    },
-    {
-     "t": 1785187288757,
+     "t": 1785191614768,
      "v": 500
     }
    ]
   },
   {
-   "keyword": "딥시크",
+   "keyword": "이더 리움",
    "traffic": "500+",
    "trafficNum": 500,
-   "startedMs": 1785104400000,
+   "startedMs": 1785163200000,
    "topicIds": [
     3
    ],
@@ -2422,170 +2548,44 @@
    ],
    "gnews": [
     {
-     "title": "딥시크, 2차 투자 유치 돌연 중단...\"IPO 준비하며 AI 연구 집중\"",
-     "link": "https://www.aitimes.com/news/articleView.html?idxno=213180",
-     "sourceName": "AI타임스",
-     "pubTimestamp": 1785047283000
+     "title": "美 비트코인·이더리움 현물 ETF, 3주 연속 순유입…HYPE만 자금 이탈",
+     "link": "https://www.news1.kr/finance/blockchain-fintech/6240298",
+     "sourceName": "뉴스1",
+     "pubTimestamp": 1785137571000
     },
     {
-     "title": "중국 '딥시크' 투자 유치 중단...\"은둔형 창업자, 발언 유출 영향\" - 머니투데이",
-     "link": "https://www.mt.co.kr/world/2026/07/27/2026072709191520999",
-     "sourceName": "머니투데이",
-     "pubTimestamp": 1785112183000
-    },
-    {
-     "title": "\"딥시크, 2차 투자금 모집 중단…'량원펑 발언 유출' 여파\"",
-     "link": "https://www.yna.co.kr/view/AKR20260726023100089",
-     "sourceName": "연합뉴스",
-     "pubTimestamp": 1785031981000
-    },
-    {
-     "title": "[중국 특징주] '엔비디아 의존' 량원펑 발언 새자 딥시크 자금 조달 중단",
-     "link": "https://www.newspim.com/news/view/20260727000070",
+     "title": "[ETF 특징주] 비트코인 ETF, 연준 금리 인상 우려에 자금 썰물",
+     "link": "https://www.newspim.com/news/view/20260727001127",
      "sourceName": "뉴스핌",
-     "pubTimestamp": 1785107820000
+     "pubTimestamp": 1785134820000
+    },
+    {
+     "title": "중동 긴장에도 버틴 비트코인…ETF가 시장 떠받쳤다",
+     "link": "https://zdnet.co.kr/view/?no=20260726105014",
+     "sourceName": "지디넷코리아",
+     "pubTimestamp": 1785033195000
+    },
+    {
+     "title": "블랙록 비트코인 ETF서 이틀간 4억 1,470만 달러 유출…왜?",
+     "link": "https://www.coinreaders.com/249759",
+     "sourceName": "코인리더스",
+     "pubTimestamp": 1785155160000
     }
    ],
    "econLevel": "high",
    "econScore": 4,
    "econHits": [
-    "IPO",
-    "투자",
-    "AI",
-    "엔비디아"
+    "비트코인",
+    "이더리움",
+    "금리",
+    "인상",
+    "연준",
+    "달러"
    ],
    "news": [],
    "history": [
     {
-     "t": 1785115269443,
-     "v": 100
-    },
-    {
-     "t": 1785128941105,
-     "v": 200
-    },
-    {
-     "t": 1785141945855,
-     "v": 500
-    },
-    {
-     "t": 1785153613267,
-     "v": 500
-    },
-    {
-     "t": 1785164110221,
-     "v": 500
-    },
-    {
-     "t": 1785171358853,
-     "v": 500
-    },
-    {
-     "t": 1785176561253,
-     "v": 500
-    },
-    {
-     "t": 1785182636769,
-     "v": 500
-    },
-    {
-     "t": 1785187288757,
-     "v": 500
-    }
-   ]
-  },
-  {
-   "keyword": "중국 duv",
-   "traffic": "500+",
-   "trafficNum": 500,
-   "startedMs": 1785164400000,
-   "topicIds": [
-    3
-   ],
-   "topics": [
-    "비즈니스·금융"
-   ],
-   "gnews": [
-    {
-     "title": "ASML과 미국 반도체 주식, 중국의 DUV 기술 돌파 보도에 급락",
-     "link": "https://kr.investing.com/news/stock-market-news/article-2030385",
-     "sourceName": "Investing.com 한국어",
-     "pubTimestamp": 1785158640000
-    },
-    {
-     "title": "\"中, DUV 노광장비 올해 양산 개시\"…ASML 주가 6% 급락",
-     "link": "https://news.einfomax.co.kr/news/articleView.html?idxno=4427124",
-     "sourceName": "연합인포맥스",
-     "pubTimestamp": 1785166297000
-    },
-    {
-     "title": "[미국 특징주] ASML, 중국發 경쟁 위협 보도에 7%대 급락",
-     "link": "https://www.newspim.com/news/view/20260727001367",
-     "sourceName": "뉴스핌",
-     "pubTimestamp": 1785163920000
-    },
-    {
-     "title": "中, 국산 DUV 양산 돌입…EUV 없이 HBM3E 길 열리나",
-     "link": "https://www.economytribune.co.kr/news/articleView.html?idxno=3903454",
-     "sourceName": "이코노미트리뷴",
-     "pubTimestamp": 1785163259000
-    }
-   ],
-   "econLevel": "high",
-   "econScore": 3,
-   "econHits": [
-    "주식",
-    "반도체",
-    "급락",
-    "주가"
-   ],
-   "news": [
-    {
-     "title": "中, 첫 국산 DUV 노광장비 생산 착수…ASML 주가 6% 급락",
-     "link": "https://www.news1.kr/world/international-economy/6240752",
-     "pubTimestamp": 1785185340000,
-     "sourceName": "NEWS1"
-    },
-    {
-     "title": "ASML, 中 DUV 노광장비 자체 생산 소식에 주가 급락",
-     "link": "https://www.bloter.net/news/articleView.html?idxno=669114",
-     "pubTimestamp": 1785181080000,
-     "sourceName": "BLOTER"
-    },
-    {
-     "title": "中, DUV 노광장비도 직접 만든다...반도체 홀로서기 가속",
-     "link": "https://biz.sbs.co.kr/article_hub/20000324948?division=NAVER",
-     "pubTimestamp": 1785180300000,
-     "sourceName": "BIZ"
-    },
-    {
-     "title": "中 DUV 노광장비 자체 생산설에 ASML 8%대 급락",
-     "link": "https://www.edaily.co.kr/news/newspath.asp?newsid=01289046645519112",
-     "pubTimestamp": 1785171480000,
-     "sourceName": "EDAILY"
-    },
-    {
-     "title": "중국, 첫 국산 액침형 DUV 장비 생산설 …반도체 기술주 충격",
-     "link": "http://www.4th.kr/news/articleView.html?idxno=2115349",
-     "pubTimestamp": 1785169560000,
-     "sourceName": "4TH"
-    }
-   ],
-   "history": [
-    {
-     "t": 1785171358853,
-     "v": 200
-    },
-    {
-     "t": 1785176561253,
-     "v": 200
-    },
-    {
-     "t": 1785182636769,
-     "v": 200
-    },
-    {
-     "t": 1785187288757,
+     "t": 1785191614768,
      "v": 500
     }
    ]
@@ -2635,6 +2635,12 @@
    ],
    "news": [
     {
+     "title": "[인사이드 스토리]'현금 부자' 호반그룹의 M&A 역사",
+     "link": "https://news.bizwatch.co.kr/article/real_estate/2026/07/27/0014",
+     "pubTimestamp": 1785188520000,
+     "sourceName": "NEWS"
+    },
+    {
      "title": "호반 맹공에 배수진 친 한진…한진칼 경영권 분쟁 '시계제로'",
      "link": "https://www.sisajournal.com/news/articleView.html?idxno=381272",
      "pubTimestamp": 1785138720000,
@@ -2675,14 +2681,18 @@
     {
      "t": 1785187288757,
      "v": 500
+    },
+    {
+     "t": 1785191614768,
+     "v": 500
     }
    ]
   },
   {
-   "keyword": "현미경",
+   "keyword": "skhy",
    "traffic": "500+",
    "trafficNum": 500,
-   "startedMs": 1785103200000,
+   "startedMs": 1785186000000,
    "topicIds": [
     3
    ],
@@ -2691,28 +2701,95 @@
    ],
    "gnews": [
     {
-     "title": "1조 들이는 ‘한국새빛가속기’ 첫삽…2029년 구축 목표",
-     "link": "https://www.chosun.com/economy/science/2026/07/27/I4KQG7AKZVBAFMM23UIC6GG2HU/",
-     "sourceName": "조선일보",
-     "pubTimestamp": 1785114595000
+     "title": "MU, SNDK, SKHY, DRAM: Memory Chip Stocks Surge In Relief Rally As U.S.-Iran Reportedly Halt Strikes",
+     "link": "https://finance.yahoo.com/markets/stocks/articles/mu-sndk-skhy-dram-memory-092936168.html",
+     "sourceName": "Yahoo Finance",
+     "pubTimestamp": 1785144576000
     },
     {
-     "title": "충북도, 새빛가속기 착공서 ‘K-바이오 스퀘어’ 조속 추진 건의",
-     "link": "https://www.newscj.com/news/articleView.html?idxno=3420269",
-     "sourceName": "천지일보",
-     "pubTimestamp": 1785139856000
+     "title": "Micron, Western Digital, and Sandisk Just Jumped 12% to 14%. Here's the Forecast That Did It.",
+     "link": "https://www.fool.com/investing/2026/07/22/micron-western-digital-and-sandisk-jumped-12-to-14/",
+     "sourceName": "The Motley Fool",
+     "pubTimestamp": 1784704320000
     },
     {
-     "title": "‘신의 현미경’ 만든다…정부·과학계 인사 청주 오창에 운집",
-     "link": "https://v.daum.net/v/20260727151928117",
+     "title": "QUICK SPARK: Intel And Micron Lead Semi Stock Rebound — Expert Blames Hegde Funds For Sell Off",
+     "link": "https://www.benzinga.com/analyst-stock-ratings/analyst-color/26/07/60590744/quick-spark-intel-and-micron-lead-semi-stock-rebound-expert-blames-hegde-funds-for-sell-off",
+     "sourceName": "Benzinga",
+     "pubTimestamp": 1784658590000
+    },
+    {
+     "title": "Intel, KLA Corporation, Lam Research, Marvell Technology, and Micron Shares Skyrocket, What You Need To Know",
+     "link": "https://stockstory.org/us/stocks/nasdaq/intc/news/why-up-down/intel-kla-corporation-lam-research-marvell-technology-and-micron-shares-skyrocket-what-you-need-to-know",
+     "sourceName": "StockStory",
+     "pubTimestamp": 1784652376000
+    }
+   ],
+   "econLevel": "high",
+   "econScore": 3,
+   "econHits": [],
+   "news": [
+    {
+     "title": "[출근길 브리핑-7월 28일] 尹 '허위사실 공표' 1심서 당선무효형·'마스...",
+     "link": "https://www.newsworks.co.kr/news/articleView.html?idxno=848499",
+     "pubTimestamp": 1785186000000,
+     "sourceName": "NEWSWORKS"
+    },
+    {
+     "title": "SK하이닉스 ADR 주가 7.5% 급락…엔비디아 우려에 결국 공모가 밑으로(종...",
+     "link": "https://news.einfomax.co.kr/news/articleView.html?idxno=4427136",
+     "pubTimestamp": 1785185520000,
+     "sourceName": "NEWS"
+    },
+    {
+     "title": "미국증시, 이란 공습 중단·유가 급락에 상승…엔비디아는 약세",
+     "link": "https://www.topstarnews.net/news/articleView.html?idxno=16147218",
+     "pubTimestamp": 1785160680000,
+     "sourceName": "TOPSTARNEWS"
+    }
+   ],
+   "history": [
+    {
+     "t": 1785191614768,
+     "v": 500
+    }
+   ]
+  },
+  {
+   "keyword": "건설근로자공제회",
+   "traffic": "500+",
+   "trafficNum": 500,
+   "startedMs": 1785159000000,
+   "topicIds": [
+    3
+   ],
+   "topics": [
+    "비즈니스·금융"
+   ],
+   "gnews": [
+    {
+     "title": "건설근로자공제회, 건설노동자 휴가지원 대상자 추가 모집 실시",
+     "link": "https://go.seoul.co.kr/news/prnewsView.php?id=439305",
+     "sourceName": "서울Pn",
+     "pubTimestamp": 1785128845000
+    },
+    {
+     "title": "[줌] “건설노동자 삶의 질 개선 최선”",
+     "link": "https://v.daum.net/v/20260726152340801",
      "sourceName": "Daum",
-     "pubTimestamp": 1785133168000
+     "pubTimestamp": 1785047020000
     },
     {
-     "title": "미시세계 정밀 분석 4세대 원형 방사광 가속기 착공",
-     "link": "https://science.ytn.co.kr/program/view.php?mcd=0082&key=202607271559581330",
-     "sourceName": "YTN 사이언스",
-     "pubTimestamp": 1785110400000
+     "title": "건설근로자공제회, 휴가지원 1천명 추가 모집…국내 40만원 이용",
+     "link": "https://stock.mk.co.kr/news/view/1127146",
+     "sourceName": "매일경제 마켓",
+     "pubTimestamp": 1785099608000
+    },
+    {
+     "title": "건설노동자 휴가지원 1000명 추가 모집…40만원 포인트 지급",
+     "link": "https://www.news1.kr/society/labor/6238615",
+     "sourceName": "뉴스1",
+     "pubTimestamp": 1785099600000
     }
    ],
    "econLevel": "high",
@@ -2721,31 +2798,27 @@
    "news": [],
    "history": [
     {
-     "t": 1785141945855,
-     "v": 500
-    },
-    {
-     "t": 1785153613267,
-     "v": 500
-    },
-    {
      "t": 1785164110221,
-     "v": 500
+     "v": 100
     },
     {
      "t": 1785171358853,
-     "v": 500
+     "v": 100
     },
     {
      "t": 1785176561253,
-     "v": 500
+     "v": 100
     },
     {
      "t": 1785182636769,
-     "v": 500
+     "v": 200
     },
     {
      "t": 1785187288757,
+     "v": 200
+    },
+    {
+     "t": 1785191614768,
      "v": 500
     }
    ]
@@ -2818,6 +2891,10 @@
     },
     {
      "t": 1785187288757,
+     "v": 500
+    },
+    {
+     "t": 1785191614768,
      "v": 500
     }
    ]
@@ -2897,6 +2974,117 @@
     {
      "t": 1785187288757,
      "v": 500
+    },
+    {
+     "t": 1785191614768,
+     "v": 500
+    }
+   ]
+  },
+  {
+   "keyword": "다우 존스 산업평균지수",
+   "traffic": "200+",
+   "trafficNum": 200,
+   "startedMs": 1785187800000,
+   "topicIds": [
+    3
+   ],
+   "topics": [
+    "비즈니스·금융"
+   ],
+   "gnews": [
+    {
+     "title": "뉴욕증시, 유가 급락 속 혼조 마감…반도체주 하락(종합)",
+     "link": "https://v.daum.net/v/20260728054750680",
+     "sourceName": "Daum",
+     "pubTimestamp": 1785185270000
+    },
+    {
+     "title": "뉴욕증시, 유가 급락 속 혼조 마감…반도체주 하락",
+     "link": "http://m.tbs.seoul.kr/news/newsView.do?typ_800=1&idx_800=3537491&seq_800=20530366",
+     "sourceName": "서울특별시 미디어재단 TBS",
+     "pubTimestamp": 1785190980000
+    },
+    {
+     "title": "美증시, 반도체주식 급락에 나스닥 하락 전환",
+     "link": "https://www.hankyung.com/article/202607289204i",
+     "sourceName": "한국경제",
+     "pubTimestamp": 1785165536000
+    },
+    {
+     "title": "중동 긴장 완화에 큰 폭으로 반등",
+     "link": "https://imnews.imbc.com/replay/2026/nw1700/article/6840394_36981.html",
+     "sourceName": "MBC 뉴스",
+     "pubTimestamp": 1785139485000
+    }
+   ],
+   "econLevel": "high",
+   "econScore": 6,
+   "econHits": [
+    "다우",
+    "유가",
+    "반도체",
+    "급락",
+    "증시",
+    "나스닥"
+   ],
+   "news": [],
+   "history": [
+    {
+     "t": 1785191614768,
+     "v": 200
+    }
+   ]
+  },
+  {
+   "keyword": "현대무벡스",
+   "traffic": "200+",
+   "trafficNum": 200,
+   "startedMs": 1785183000000,
+   "topicIds": [
+    3
+   ],
+   "topics": [
+    "비즈니스·금융"
+   ],
+   "gnews": [
+    {
+     "title": "현대무벡스 주가, 웃음꽃... 무슨 회사길래?",
+     "link": "https://www.ggilbo.com/news/articleView.html?idxno=1171460",
+     "sourceName": "금강일보",
+     "pubTimestamp": 1785114583000
+    },
+    {
+     "title": "현대무벡스, 장중 15% 가까이 급등…2만2천원대서 상승세 이어가",
+     "link": "https://www.job-post.co.kr/news/articleView.html?idxno=222273",
+     "sourceName": "잡포스트",
+     "pubTimestamp": 1785130126000
+    },
+    {
+     "title": "현대무벡스 주가, 7월 27일 장중 23,050원 19.93% 상승",
+     "link": "https://www.topstarnews.net/news/articleView.html?idxno=16146567",
+     "sourceName": "톱스타뉴스",
+     "pubTimestamp": 1785113802000
+    },
+    {
+     "title": "[속보] 현대무벡스 VI 발동, 주가 23%대 급등…일부 로봇주도 동반 강세",
+     "link": "https://www.cbci.co.kr/news/articleView.html?idxno=592073",
+     "sourceName": "CBC뉴스",
+     "pubTimestamp": 1785114954000
+    }
+   ],
+   "econLevel": "high",
+   "econScore": 4,
+   "econHits": [
+    "주가",
+    "급등",
+    "로봇"
+   ],
+   "news": [],
+   "history": [
+    {
+     "t": 1785191614768,
+     "v": 200
     }
    ]
   },
@@ -2968,6 +3156,10 @@
     {
      "t": 1785187288757,
      "v": 200
+    },
+    {
+     "t": 1785191614768,
+     "v": 200
     }
    ]
   },
@@ -3030,6 +3222,10 @@
     },
     {
      "t": 1785187288757,
+     "v": 200
+    },
+    {
+     "t": 1785191614768,
      "v": 200
     }
    ]
@@ -3110,6 +3306,10 @@
     {
      "t": 1785187288757,
      "v": 200
+    },
+    {
+     "t": 1785191614768,
+     "v": 200
     }
    ]
   },
@@ -3188,14 +3388,18 @@
     {
      "t": 1785187288757,
      "v": 200
+    },
+    {
+     "t": 1785191614768,
+     "v": 200
     }
    ]
   },
   {
-   "keyword": "건설근로자공제회",
+   "keyword": "ionq",
    "traffic": "200+",
    "trafficNum": 200,
-   "startedMs": 1785159000000,
+   "startedMs": 1785187800000,
    "topicIds": [
     3
    ],
@@ -3204,28 +3408,28 @@
    ],
    "gnews": [
     {
-     "title": "건설근로자공제회, 건설노동자 휴가지원 대상자 추가 모집 실시",
-     "link": "https://go.seoul.co.kr/news/prnewsView.php?id=439305",
-     "sourceName": "서울Pn",
-     "pubTimestamp": 1785128845000
+     "title": "AT&T expands quantum computing partnership with D-Wave",
+     "link": "https://www.investing.com/news/company-news/att-expands-quantum-computing-partnership-with-dwave-93CH-4813564",
+     "sourceName": "Investing.com",
+     "pubTimestamp": 1785151408000
     },
     {
-     "title": "[줌] “건설노동자 삶의 질 개선 최선”",
-     "link": "https://v.daum.net/v/20260726152340801",
-     "sourceName": "Daum",
-     "pubTimestamp": 1785047020000
+     "title": "Stock Market Today, July 27: D-Wave Surges on Nasdaq Debut and Expanded AT&T Deal",
+     "link": "https://www.fool.com/coverage/stock-market-today/2026/07/27/stock-market-today-july-27-d-wave-surges-on-nasdaq-debut-and-expanded-att-deal/",
+     "sourceName": "The Motley Fool",
+     "pubTimestamp": 1785187071000
     },
     {
-     "title": "건설근로자공제회, 휴가지원 1천명 추가 모집…국내 40만원 이용",
-     "link": "https://stock.mk.co.kr/news/view/1127146",
-     "sourceName": "매일경제 마켓",
-     "pubTimestamp": 1785099608000
+     "title": "D-Wave Quantum (NYSE:QBTS) Shares Up 20.4% - Time to Buy?",
+     "link": "https://www.marketbeat.com/instant-alerts/d-wave-quantum-nyseqbts-shares-up-204-time-to-buy-2026-07-27/",
+     "sourceName": "MarketBeat",
+     "pubTimestamp": 1785188132000
     },
     {
-     "title": "건설노동자 휴가지원 1000명 추가 모집…40만원 포인트 지급",
-     "link": "https://www.news1.kr/society/labor/6238615",
-     "sourceName": "뉴스1",
-     "pubTimestamp": 1785099600000
+     "title": "D-Wave Quantum Stock (QBTS) Opinions on AT&T Quantum Computing Agreement",
+     "link": "https://www.quiverquant.com/news/D-Wave+Quantum+Stock+%28QBTS%29+Opinions+on+AT%26T+Quantum+Computing+Agreement",
+     "sourceName": "Quiver Quantitative",
+     "pubTimestamp": 1785161100000
     }
    ],
    "econLevel": "high",
@@ -3234,23 +3438,155 @@
    "news": [],
    "history": [
     {
-     "t": 1785164110221,
-     "v": 100
-    },
-    {
-     "t": 1785171358853,
-     "v": 100
-    },
-    {
-     "t": 1785176561253,
-     "v": 100
-    },
-    {
-     "t": 1785182636769,
+     "t": 1785191614768,
      "v": 200
+    }
+   ]
+  },
+  {
+   "keyword": "nvda",
+   "traffic": "200+",
+   "trafficNum": 200,
+   "startedMs": 1785186600000,
+   "topicIds": [
+    3
+   ],
+   "topics": [
+    "비즈니스·금융"
+   ],
+   "gnews": [
+    {
+     "title": "NVIDIA Corp (NVDA) Shares Fall 5.0% -- What GF Score of 95 Tells Investors",
+     "link": "https://www.gurufocus.com/news/8981370/nvidia-corp-nvda-shares-fall-50-what-gf-score-of-95-tells-investors",
+     "sourceName": "GuruFocus",
+     "pubTimestamp": 1785186969000
     },
     {
-     "t": 1785187288757,
+     "title": "Nvidia drops nearly 5%, leading chip stocks lower amid renewed worries of circular financing",
+     "link": "https://finance.yahoo.com/markets/article/nvidia-drops-nearly-5-leading-chip-stocks-lower-amid-renewed-worries-of-circular-financing-193309793.html",
+     "sourceName": "Yahoo Finance",
+     "pubTimestamp": 1785182755000
+    },
+    {
+     "title": "Why is NVIDIA stock sliding today?",
+     "link": "https://www.investing.com/news/stock-market-news/why-is-nvidia-stock-sliding-today-93CH-4814453",
+     "sourceName": "Investing.com",
+     "pubTimestamp": 1785160886000
+    },
+    {
+     "title": "Nvidia’s Margins are Safe This Decade So I Keep Loading Up as Fear Resonates",
+     "link": "https://247wallst.com/investing/2026/07/27/nvidias-margins-are-safe-this-decade-so-i-keep-loading-up-as-fear-resonates/",
+     "sourceName": "24/7 Wall St.",
+     "pubTimestamp": 1785167456000
+    }
+   ],
+   "econLevel": "high",
+   "econScore": 3,
+   "econHits": [],
+   "news": [],
+   "history": [
+    {
+     "t": 1785191614768,
+     "v": 200
+    }
+   ]
+  },
+  {
+   "keyword": "전지",
+   "traffic": "200+",
+   "trafficNum": 200,
+   "startedMs": 1785184200000,
+   "topicIds": [
+    3,
+    18
+   ],
+   "topics": [
+    "비즈니스·금융",
+    "테크"
+   ],
+   "gnews": [
+    {
+     "title": "50년 쓰는 ‘원자력 전지’ 현실로",
+     "link": "https://dbr.donga.com/kfocus/view/article_no/3258",
+     "sourceName": "동아비즈니스리뷰 | DBR",
+     "pubTimestamp": 1785079800000
+    },
+    {
+     "title": "충전 없이 50년 이상 쓰는 탄화규소 베타전지 개발",
+     "link": "https://m.science.ytn.co.kr/program/view_today.php?s_mcd=0082&key=202607271102361839",
+     "sourceName": "YTN 사이언스",
+     "pubTimestamp": 1785110400000
+    },
+    {
+     "title": "햇빛도 충전도 필요 없다…KERI, 50년 이상 전기 만드는 SiC 베타전지 국내 첫 실증",
+     "link": "https://www.electimes.com/news/articleView.html?idxno=370576",
+     "sourceName": "전기신문",
+     "pubTimestamp": 1785035400000
+    },
+    {
+     "title": "‘우주·심해서 50년 작동’ 초장수명 베타전지 국내 첫 실증",
+     "link": "https://v.daum.net/v/20260727084144097",
+     "sourceName": "Daum",
+     "pubTimestamp": 1785109304000
+    }
+   ],
+   "econLevel": "high",
+   "econScore": 3,
+   "econHits": [],
+   "news": [],
+   "history": [
+    {
+     "t": 1785191614768,
+     "v": 200
+    }
+   ]
+  },
+  {
+   "keyword": "schd",
+   "traffic": "200+",
+   "trafficNum": 200,
+   "startedMs": 1785187800000,
+   "topicIds": [
+    3
+   ],
+   "topics": [
+    "비즈니스·금융"
+   ],
+   "gnews": [
+    {
+     "title": "Here’s Why SCHD is Beating the S&P 500 in 2026 YTD",
+     "link": "https://finance.yahoo.com/markets/stocks/articles/why-schd-beating-p-500-220743617.html",
+     "sourceName": "Yahoo Finance",
+     "pubTimestamp": 1785103663000
+    },
+    {
+     "title": "If I Were Starting My Portfolio From Scratch Today, This Is the First ETF I'd Buy",
+     "link": "https://www.fool.com/investing/2026/07/26/if-i-were-starting-my-portfolio-from-scratch-today/",
+     "sourceName": "The Motley Fool",
+     "pubTimestamp": 1785072600000
+    },
+    {
+     "title": "What Is SCHD’s New High Really Made Of?",
+     "link": "https://www.trefis.com/stock/schd/articles/608763/what-is-schds-new-high-really-made-of/2026-07-24",
+     "sourceName": "Trefis",
+     "pubTimestamp": 1784911889000
+    },
+    {
+     "title": "SCHD: How Its Dividend Raises Fit Into A 4% Traditional Distribution Portfolio",
+     "link": "https://seekingalpha.com/article/4923942-schd-how-its-dividend-raises-fit-into-a-4-percent-traditional-distribution-portfolio",
+     "sourceName": "Seeking Alpha",
+     "pubTimestamp": 1784670535000
+    }
+   ],
+   "econLevel": "high",
+   "econScore": 3,
+   "econHits": [
+    "S&P"
+   ],
+   "news": [],
+   "history": [
+    {
+     "t": 1785191614768,
      "v": 200
     }
    ]
@@ -3311,6 +3647,10 @@
     },
     {
      "t": 1785187288757,
+     "v": 200
+    },
+    {
+     "t": 1785191614768,
      "v": 200
     }
    ]
@@ -3389,213 +3729,9 @@
     {
      "t": 1785187288757,
      "v": 200
-    }
-   ]
-  },
-  {
-   "keyword": "금융감독원",
-   "traffic": "200+",
-   "trafficNum": 200,
-   "startedMs": 1785144600000,
-   "topicIds": [
-    3
-   ],
-   "topics": [
-    "비즈니스·금융"
-   ],
-   "gnews": [
-    {
-     "title": "금감원 분조위 \"추적검사·임상시험입원 계약 전 고지대상 아냐\"",
-     "link": "https://v.daum.net/v/20260727104655277",
-     "sourceName": "Daum",
-     "pubTimestamp": 1785116815000
     },
     {
-     "title": "금융분쟁조정위원회, 유병자보험 계약 전 '알릴 의무' 명확화",
-     "link": "https://www.etnews.com/20260727000129",
-     "sourceName": "전자신문",
-     "pubTimestamp": 1785114643000
-    },
-    {
-     "title": "'추적관찰·임상 입원' 고지 위반?…금감원 \"보험금 지급\"",
-     "link": "https://www.newsis.com/view/NISX20260727_0003724388",
-     "sourceName": "뉴시스",
-     "pubTimestamp": 1785117548000
-    },
-    {
-     "title": "\"추적관찰·임상시험, 간편심사보험 계약 전 알릴 의무 없다\"",
-     "link": "https://news.einfomax.co.kr/news/articleView.html?idxno=4427004",
-     "sourceName": "연합인포맥스",
-     "pubTimestamp": 1785117158000
-    }
-   ],
-   "econLevel": "high",
-   "econScore": 3,
-   "econHits": [
-    "계약"
-   ],
-   "news": [],
-   "history": [
-    {
-     "t": 1785187288757,
-     "v": 200
-    }
-   ]
-  },
-  {
-   "keyword": "경상남도",
-   "traffic": "200+",
-   "trafficNum": 200,
-   "startedMs": 1785126600000,
-   "topicIds": [
-    3,
-    10
-   ],
-   "topics": [
-    "비즈니스·금융",
-    "법·행정"
-   ],
-   "gnews": [
-    {
-     "title": "경상남도의회 진상락 의원, “창원시 제안 ‘진해문화센터 활용안’으로 경남 체육회관 건립 속도 내야”",
-     "link": "http://dkitnews.com/493186",
-     "sourceName": "다경뉴스",
-     "pubTimestamp": 1785134280000
-    },
-    {
-     "title": "진상락 경남도의원, 경남 체육회관 건립 촉구",
-     "link": "http://breaknews.com/1224637",
-     "sourceName": "브레이크뉴스",
-     "pubTimestamp": 1785137520000
-    },
-    {
-     "title": "경남도의회 예결위, 15조5천억 규모 도청 2회 추경안 수정 의결",
-     "link": "https://v.daum.net/v/20260727175750566",
-     "sourceName": "Daum",
-     "pubTimestamp": 1785142670000
-    },
-    {
-     "title": "\"도 법정전출금 편성 등 재정의무 소홀\"",
-     "link": "https://www.gnmaeil.com/news/articleView.html?idxno=591493",
-     "sourceName": "경남매일",
-     "pubTimestamp": 1785155293000
-    }
-   ],
-   "econLevel": "high",
-   "econScore": 3,
-   "econHits": [],
-   "news": [],
-   "history": [
-    {
-     "t": 1785141945855,
-     "v": 200
-    },
-    {
-     "t": 1785153613267,
-     "v": 200
-    },
-    {
-     "t": 1785164110221,
-     "v": 200
-    },
-    {
-     "t": 1785171358853,
-     "v": 200
-    },
-    {
-     "t": 1785176561253,
-     "v": 200
-    },
-    {
-     "t": 1785182636769,
-     "v": 200
-    },
-    {
-     "t": 1785187288757,
-     "v": 200
-    }
-   ]
-  },
-  {
-   "keyword": "가덕도신공항",
-   "traffic": "200+",
-   "trafficNum": 200,
-   "startedMs": 1785103200000,
-   "topicIds": [
-    3
-   ],
-   "topics": [
-    "비즈니스·금융"
-   ],
-   "gnews": [
-    {
-     "title": "가덕 공사비 현실화·조기개항, 부산시가 정부 설득 나서야",
-     "link": "https://www.kookje.co.kr/news2011/asp/newsbody.asp?code=0300&key=20260727.22008007675",
-     "sourceName": "국제신문",
-     "pubTimestamp": 1785060120000
-    },
-    {
-     "title": "“가덕신공항 명칭, 부산국제공항으로” 시의회·시민단체 한목소리",
-     "link": "https://m.seoul.co.kr/news/society/2026/07/27/20260727500141?cp=seoul",
-     "sourceName": "서울신문",
-     "pubTimestamp": 1785128343000
-    },
-    {
-     "title": "\"가덕도 아닌 부산이어야\"… '부산국제공항' 명칭 변경 촉구",
-     "link": "http://www.ikld.kr/news/articleView.html?idxno=338142",
-     "sourceName": "국토일보",
-     "pubTimestamp": 1785126286000
-    },
-    {
-     "title": "박봉휘 도의원, \"가덕도 신공항, 제2활주로 추진해야”",
-     "link": "http://www.geojeoneul.com/news/articleView.html?idxno=34104",
-     "sourceName": "거제통영오늘신문",
-     "pubTimestamp": 1784954517000
-    }
-   ],
-   "econLevel": "high",
-   "econScore": 3,
-   "econHits": [],
-   "news": [],
-   "history": [
-    {
-     "t": 1785109501390,
-     "v": 200
-    },
-    {
-     "t": 1785115269443,
-     "v": 200
-    },
-    {
-     "t": 1785128941105,
-     "v": 200
-    },
-    {
-     "t": 1785141945855,
-     "v": 200
-    },
-    {
-     "t": 1785153613267,
-     "v": 200
-    },
-    {
-     "t": 1785164110221,
-     "v": 200
-    },
-    {
-     "t": 1785171358853,
-     "v": 200
-    },
-    {
-     "t": 1785176561253,
-     "v": 200
-    },
-    {
-     "t": 1785182636769,
-     "v": 200
-    },
-    {
-     "t": 1785187288757,
+     "t": 1785191614768,
      "v": 200
     }
    ]
@@ -3680,6 +3816,10 @@
     {
      "t": 1785187288757,
      "v": 200
+    },
+    {
+     "t": 1785191614768,
+     "v": 200
     }
    ]
   },
@@ -3758,6 +3898,10 @@
     {
      "t": 1785187288757,
      "v": 200
+    },
+    {
+     "t": 1785191614768,
+     "v": 200
     }
    ]
   },
@@ -3834,6 +3978,66 @@
     {
      "t": 1785187288757,
      "v": 200
+    },
+    {
+     "t": 1785191614768,
+     "v": 200
+    }
+   ]
+  },
+  {
+   "keyword": "엔비디아 주가",
+   "traffic": "100+",
+   "trafficNum": 100,
+   "startedMs": 1785184800000,
+   "topicIds": [
+    3
+   ],
+   "topics": [
+    "비즈니스·금융"
+   ],
+   "gnews": [
+    {
+     "title": "엔비디아 주가, 오늘 하락하는 이유는?",
+     "link": "https://kr.investing.com/news/stock-market-news/article-93CH-2030497",
+     "sourceName": "Investing.com 한국어",
+     "pubTimestamp": 1785160620000
+    },
+    {
+     "title": "엔비디아, 수츠케버의 '베일 속' AI에 50억달러 베팅",
+     "link": "https://v.daum.net/v/20260728034510751",
+     "sourceName": "Daum",
+     "pubTimestamp": 1785177910000
+    },
+    {
+     "title": "엔비디아 \"보증 설테니 우리 제품 사라\"…유가 하락에도 반도체주 약세[박신영의 개장전 요것만]",
+     "link": "https://www.hankyung.com/article/202607289209i",
+     "sourceName": "한국경제",
+     "pubTimestamp": 1785171685000
+    },
+    {
+     "title": "엔비디아 5% 급락…'순환금융' 우려에 SK하닉 ADR 7% 넘게 후퇴",
+     "link": "https://www.news1.kr/world/international-economy/6240749",
+     "sourceName": "뉴스1",
+     "pubTimestamp": 1785183672000
+    }
+   ],
+   "econLevel": "high",
+   "econScore": 10,
+   "econHits": [
+    "주가",
+    "엔비디아",
+    "AI",
+    "유가",
+    "반도체",
+    "급락",
+    "SK"
+   ],
+   "news": [],
+   "history": [
+    {
+     "t": 1785191614768,
+     "v": 100
     }
    ]
   },
@@ -3891,6 +4095,10 @@
     },
     {
      "t": 1785187288757,
+     "v": 100
+    },
+    {
+     "t": 1785191614768,
      "v": 100
     }
    ]
@@ -3960,130 +4168,9 @@
     {
      "t": 1785187288757,
      "v": 100
-    }
-   ]
-  },
-  {
-   "keyword": "호반건설",
-   "traffic": "100+",
-   "trafficNum": 100,
-   "startedMs": 1785102600000,
-   "topicIds": [
-    3
-   ],
-   "topics": [
-    "비즈니스·금융"
-   ],
-   "gnews": [
-    {
-     "title": "호반건설, 군포 금정3구역 재개발 수주…공사비 2천300억원",
-     "link": "https://www.yna.co.kr/view/AKR20260726021900003",
-     "sourceName": "연합뉴스",
-     "pubTimestamp": 1785029439000
     },
     {
-     "title": "호반건설, 2300억 규모 금정3구역 재개발 수주…수도권 정비사업 확대 - 머니투데이",
-     "link": "https://www.mt.co.kr/estate/2026/07/26/2026072609281997241",
-     "sourceName": "머니투데이",
-     "pubTimestamp": 1785027287000
-    },
-    {
-     "title": "호반건설, 2300억원 군포 금정3구역 재개발 시공권 확보",
-     "link": "https://www.newsis.com/view/NISX20260726_0003723452",
-     "sourceName": "뉴시스",
-     "pubTimestamp": 1785029468000
-    },
-    {
-     "title": "호반건설, 2300억 규모 군포 금정3구역 재개발 수주",
-     "link": "https://v.daum.net/v/WvrrJeMVyG",
-     "sourceName": "Daum",
-     "pubTimestamp": 1785025564000
-    }
-   ],
-   "econLevel": "high",
-   "econScore": 3,
-   "econHits": [
-    "수주"
-   ],
-   "news": [],
-   "history": [
-    {
-     "t": 1785109501390,
-     "v": 100
-    },
-    {
-     "t": 1785115269443,
-     "v": 100
-    },
-    {
-     "t": 1785128941105,
-     "v": 100
-    },
-    {
-     "t": 1785141945855,
-     "v": 100
-    },
-    {
-     "t": 1785153613267,
-     "v": 100
-    },
-    {
-     "t": 1785164110221,
-     "v": 100
-    },
-    {
-     "t": 1785171358853,
-     "v": 100
-    },
-    {
-     "t": 1785176561253,
-     "v": 100
-    },
-    {
-     "t": 1785182636769,
-     "v": 100
-    },
-    {
-     "t": 1785187288757,
-     "v": 100
-    }
-   ]
-  },
-  {
-   "keyword": "베이비붐",
-   "traffic": "100+",
-   "trafficNum": 100,
-   "startedMs": 1785103200000,
-   "topicIds": [
-    3
-   ],
-   "topics": [
-    "비즈니스·금융"
-   ],
-   "gnews": [],
-   "econLevel": "high",
-   "econScore": 3,
-   "econHits": [],
-   "news": [],
-   "history": [
-    {
-     "t": 1785164110221,
-     "v": 100
-    },
-    {
-     "t": 1785171358853,
-     "v": 100
-    },
-    {
-     "t": 1785176561253,
-     "v": 100
-    },
-    {
-     "t": 1785182636769,
-     "v": 100
-    },
-    {
-     "t": 1785187288757,
+     "t": 1785191614768,
      "v": 100
     }
    ]
@@ -4138,6 +4225,10 @@
     },
     {
      "t": 1785187288757,
+     "v": 2000
+    },
+    {
+     "t": 1785191614768,
      "v": 2000
     }
    ]
@@ -4203,6 +4294,58 @@
     {
      "t": 1785187288757,
      "v": 2000
+    },
+    {
+     "t": 1785191614768,
+     "v": 2000
+    }
+   ]
+  },
+  {
+   "keyword": "조국",
+   "traffic": "1,000+",
+   "trafficNum": 1000,
+   "startedMs": 1785138600000,
+   "topicIds": [
+    5
+   ],
+   "topics": [
+    "푸드"
+   ],
+   "gnews": [
+    {
+     "title": "조국 \"'와인만 마시고 소주 인증' 아니다…소주도 와인도 모두 마셨다\" 해명",
+     "link": "https://v.daum.net/v/fEbVFYyOak",
+     "sourceName": "Daum",
+     "pubTimestamp": 1785097290000
+    },
+    {
+     "title": "'서민 코스프레' 해명한 조국 \"와인은 이미 대중적 술\"",
+     "link": "http://weekly.chosun.com/news/articleView.html?idxno=53803",
+     "sourceName": "주간조선",
+     "pubTimestamp": 1785114348000
+    },
+    {
+     "title": "조국, ’소주 인증샷’ 연출 논란에 “한심하고 같잖다“",
+     "link": "https://www.yonhapnewstv.co.kr/news/AKR20260727101309XT8",
+     "sourceName": "연합뉴스TV",
+     "pubTimestamp": 1785114780000
+    },
+    {
+     "title": "조국 \"이 또 희한한 기사…이번에도 고기와 '된찌' 둘다 먹었다\"",
+     "link": "https://www.pressian.com/pages/articles/2026072707070805279",
+     "sourceName": "프레시안",
+     "pubTimestamp": 1785103628000
+    }
+   ],
+   "econLevel": "mid",
+   "econScore": 1,
+   "econHits": [],
+   "news": [],
+   "history": [
+    {
+     "t": 1785191614768,
+     "v": 1000
     }
    ]
   },
@@ -4261,6 +4404,10 @@
     {
      "t": 1785187288757,
      "v": 100
+    },
+    {
+     "t": 1785191614768,
+     "v": 100
     }
    ]
   },
@@ -4312,6 +4459,10 @@
     {
      "t": 1785187288757,
      "v": 50000
+    },
+    {
+     "t": 1785191614768,
+     "v": 50000
     }
    ]
   },
@@ -4358,6 +4509,53 @@
     },
     {
      "t": 1785187288757,
+     "v": 20000
+    },
+    {
+     "t": 1785191614768,
+     "v": 20000
+    }
+   ]
+  },
+  {
+   "keyword": "이루 네",
+   "traffic": "20,000+",
+   "trafficNum": 20000,
+   "startedMs": 1785151800000,
+   "topicIds": [
+    4
+   ],
+   "topics": [
+    "연예"
+   ],
+   "gnews": [],
+   "econLevel": "low",
+   "econScore": 0,
+   "econHits": [],
+   "news": [],
+   "history": [
+    {
+     "t": 1785164110221,
+     "v": 20000
+    },
+    {
+     "t": 1785171358853,
+     "v": 20000
+    },
+    {
+     "t": 1785176561253,
+     "v": 20000
+    },
+    {
+     "t": 1785182636769,
+     "v": 20000
+    },
+    {
+     "t": 1785187288757,
+     "v": 20000
+    },
+    {
+     "t": 1785191614768,
      "v": 20000
     }
    ]
@@ -4406,19 +4604,23 @@
     {
      "t": 1785187288757,
      "v": 20000
+    },
+    {
+     "t": 1785191614768,
+     "v": 20000
     }
    ]
   },
   {
-   "keyword": "이루 네",
+   "keyword": "상륙함",
    "traffic": "20,000+",
    "trafficNum": 20000,
-   "startedMs": 1785151800000,
+   "startedMs": 1785121800000,
    "topicIds": [
-    4
+    10
    ],
    "topics": [
-    "연예"
+    "법·행정"
    ],
    "gnews": [],
    "econLevel": "low",
@@ -4427,37 +4629,45 @@
    "news": [],
    "history": [
     {
+     "t": 1785153613267,
+     "v": 10000
+    },
+    {
      "t": 1785164110221,
-     "v": 20000
+     "v": 10000
     },
     {
      "t": 1785171358853,
-     "v": 20000
+     "v": 10000
     },
     {
      "t": 1785176561253,
-     "v": 20000
+     "v": 10000
     },
     {
      "t": 1785182636769,
-     "v": 20000
+     "v": 10000
     },
     {
      "t": 1785187288757,
+     "v": 10000
+    },
+    {
+     "t": 1785191614768,
      "v": 20000
     }
    ]
   },
   {
-   "keyword": "박정수",
+   "keyword": "주차",
    "traffic": "20,000+",
    "trafficNum": 20000,
-   "startedMs": 1785132600000,
+   "startedMs": 1785125400000,
    "topicIds": [
-    4
+    11
    ],
    "topics": [
-    "연예"
+    "기타"
    ],
    "gnews": [],
    "econLevel": "low",
@@ -4467,7 +4677,7 @@
    "history": [
     {
      "t": 1785141945855,
-     "v": 5000
+     "v": 10000
     },
     {
      "t": 1785153613267,
@@ -4491,6 +4701,10 @@
     },
     {
      "t": 1785187288757,
+     "v": 10000
+    },
+    {
+     "t": 1785191614768,
      "v": 20000
     }
    ]
@@ -4539,19 +4753,23 @@
     {
      "t": 1785187288757,
      "v": 20000
+    },
+    {
+     "t": 1785191614768,
+     "v": 20000
     }
    ]
   },
   {
-   "keyword": "상륙함",
-   "traffic": "10,000+",
-   "trafficNum": 10000,
-   "startedMs": 1785121800000,
+   "keyword": "박정수",
+   "traffic": "20,000+",
+   "trafficNum": 20000,
+   "startedMs": 1785132600000,
    "topicIds": [
-    10
+    4
    ],
    "topics": [
-    "법·행정"
+    "연예"
    ],
    "gnews": [],
    "econLevel": "low",
@@ -4559,6 +4777,10 @@
    "econHits": [],
    "news": [],
    "history": [
+    {
+     "t": 1785141945855,
+     "v": 5000
+    },
     {
      "t": 1785153613267,
      "v": 10000
@@ -4581,15 +4803,91 @@
     },
     {
      "t": 1785187288757,
-     "v": 10000
+     "v": 20000
+    },
+    {
+     "t": 1785191614768,
+     "v": 20000
     }
    ]
   },
   {
-   "keyword": "주차",
+   "keyword": "악어",
+   "traffic": "20,000+",
+   "trafficNum": 20000,
+   "startedMs": 1785152400000,
+   "topicIds": [
+    8,
+    13
+   ],
+   "topics": [
+    "취미·레저",
+    "동물"
+   ],
+   "gnews": [],
+   "econLevel": "low",
+   "econScore": 0,
+   "econHits": [],
+   "news": [],
+   "history": [
+    {
+     "t": 1785164110221,
+     "v": 10000
+    },
+    {
+     "t": 1785171358853,
+     "v": 10000
+    },
+    {
+     "t": 1785176561253,
+     "v": 10000
+    },
+    {
+     "t": 1785182636769,
+     "v": 10000
+    },
+    {
+     "t": 1785187288757,
+     "v": 10000
+    },
+    {
+     "t": 1785191614768,
+     "v": 20000
+    }
+   ]
+  },
+  {
+   "keyword": "태풍",
+   "traffic": "20,000+",
+   "trafficNum": 20000,
+   "startedMs": 1785182400000,
+   "topicIds": [
+    20
+   ],
+   "topics": [
+    "기후"
+   ],
+   "gnews": [],
+   "econLevel": "low",
+   "econScore": 0,
+   "econHits": [],
+   "news": [],
+   "history": [
+    {
+     "t": 1785187288757,
+     "v": 10000
+    },
+    {
+     "t": 1785191614768,
+     "v": 20000
+    }
+   ]
+  },
+  {
+   "keyword": "교통량",
    "traffic": "10,000+",
    "trafficNum": 10000,
-   "startedMs": 1785125400000,
+   "startedMs": 1785145800000,
    "topicIds": [
     11
    ],
@@ -4603,8 +4901,55 @@
    "news": [],
    "history": [
     {
-     "t": 1785141945855,
+     "t": 1785153613267,
+     "v": 2000
+    },
+    {
+     "t": 1785164110221,
+     "v": 5000
+    },
+    {
+     "t": 1785171358853,
+     "v": 5000
+    },
+    {
+     "t": 1785176561253,
+     "v": 5000
+    },
+    {
+     "t": 1785182636769,
+     "v": 5000
+    },
+    {
+     "t": 1785187288757,
+     "v": 5000
+    },
+    {
+     "t": 1785191614768,
      "v": 10000
+    }
+   ]
+  },
+  {
+   "keyword": "진선 규",
+   "traffic": "10,000+",
+   "trafficNum": 10000,
+   "startedMs": 1785137400000,
+   "topicIds": [
+    4
+   ],
+   "topics": [
+    "연예"
+   ],
+   "gnews": [],
+   "econLevel": "low",
+   "econScore": 0,
+   "econHits": [],
+   "news": [],
+   "history": [
+    {
+     "t": 1785141945855,
+     "v": 2000
     },
     {
      "t": 1785153613267,
@@ -4628,6 +4973,10 @@
     },
     {
      "t": 1785187288757,
+     "v": 10000
+    },
+    {
+     "t": 1785191614768,
      "v": 10000
     }
    ]
@@ -4684,175 +5033,9 @@
     {
      "t": 1785187288757,
      "v": 10000
-    }
-   ]
-  },
-  {
-   "keyword": "진선 규",
-   "traffic": "10,000+",
-   "trafficNum": 10000,
-   "startedMs": 1785137400000,
-   "topicIds": [
-    4
-   ],
-   "topics": [
-    "연예"
-   ],
-   "gnews": [],
-   "econLevel": "low",
-   "econScore": 0,
-   "econHits": [],
-   "news": [],
-   "history": [
-    {
-     "t": 1785141945855,
-     "v": 2000
     },
     {
-     "t": 1785153613267,
-     "v": 10000
-    },
-    {
-     "t": 1785164110221,
-     "v": 10000
-    },
-    {
-     "t": 1785171358853,
-     "v": 10000
-    },
-    {
-     "t": 1785176561253,
-     "v": 10000
-    },
-    {
-     "t": 1785182636769,
-     "v": 10000
-    },
-    {
-     "t": 1785187288757,
-     "v": 10000
-    }
-   ]
-  },
-  {
-   "keyword": "악어",
-   "traffic": "10,000+",
-   "trafficNum": 10000,
-   "startedMs": 1785152400000,
-   "topicIds": [
-    8,
-    13
-   ],
-   "topics": [
-    "취미·레저",
-    "동물"
-   ],
-   "gnews": [],
-   "econLevel": "low",
-   "econScore": 0,
-   "econHits": [],
-   "news": [],
-   "history": [
-    {
-     "t": 1785164110221,
-     "v": 10000
-    },
-    {
-     "t": 1785171358853,
-     "v": 10000
-    },
-    {
-     "t": 1785176561253,
-     "v": 10000
-    },
-    {
-     "t": 1785182636769,
-     "v": 10000
-    },
-    {
-     "t": 1785187288757,
-     "v": 10000
-    }
-   ]
-  },
-  {
-   "keyword": "태풍",
-   "traffic": "10,000+",
-   "trafficNum": 10000,
-   "startedMs": 1785182400000,
-   "topicIds": [
-    20
-   ],
-   "topics": [
-    "기후"
-   ],
-   "gnews": [],
-   "econLevel": "low",
-   "econScore": 0,
-   "econHits": [],
-   "news": [],
-   "history": [
-    {
-     "t": 1785187288757,
-     "v": 10000
-    }
-   ]
-  },
-  {
-   "keyword": "샘 해밍턴",
-   "traffic": "10,000+",
-   "trafficNum": 10000,
-   "startedMs": 1785102600000,
-   "topicIds": [
-    4
-   ],
-   "topics": [
-    "연예"
-   ],
-   "gnews": [],
-   "econLevel": "low",
-   "econScore": 0,
-   "econHits": [],
-   "news": [],
-   "history": [
-    {
-     "t": 1785109501390,
-     "v": 1000
-    },
-    {
-     "t": 1785115269443,
-     "v": 2000
-    },
-    {
-     "t": 1785128941105,
-     "v": 5000
-    },
-    {
-     "t": 1785141945855,
-     "v": 5000
-    },
-    {
-     "t": 1785153613267,
-     "v": 10000
-    },
-    {
-     "t": 1785164110221,
-     "v": 10000
-    },
-    {
-     "t": 1785171358853,
-     "v": 10000
-    },
-    {
-     "t": 1785176561253,
-     "v": 10000
-    },
-    {
-     "t": 1785182636769,
-     "v": 10000
-    },
-    {
-     "t": 1785187288757,
+     "t": 1785191614768,
      "v": 10000
     }
    ]
@@ -4895,14 +5078,45 @@
     {
      "t": 1785187288757,
      "v": 10000
+    },
+    {
+     "t": 1785191614768,
+     "v": 10000
     }
    ]
   },
   {
-   "keyword": "진 아름",
-   "traffic": "10,000+",
-   "trafficNum": 10000,
-   "startedMs": 1785118800000,
+   "keyword": "간",
+   "traffic": "5,000+",
+   "trafficNum": 5000,
+   "startedMs": 1785175200000,
+   "topicIds": [
+    7
+   ],
+   "topics": [
+    "건강"
+   ],
+   "gnews": [],
+   "econLevel": "low",
+   "econScore": 0,
+   "econHits": [],
+   "news": [],
+   "history": [
+    {
+     "t": 1785187288757,
+     "v": 2000
+    },
+    {
+     "t": 1785191614768,
+     "v": 5000
+    }
+   ]
+  },
+  {
+   "keyword": "사랑이 온다",
+   "traffic": "5,000+",
+   "trafficNum": 5000,
+   "startedMs": 1785160800000,
    "topicIds": [
     4
    ],
@@ -4916,69 +5130,10 @@
    "news": [],
    "history": [
     {
-     "t": 1785128941105,
-     "v": 5000
-    },
-    {
-     "t": 1785141945855,
-     "v": 5000
-    },
-    {
-     "t": 1785153613267,
-     "v": 10000
-    },
-    {
-     "t": 1785164110221,
-     "v": 10000
-    },
-    {
      "t": 1785171358853,
-     "v": 10000
-    },
-    {
-     "t": 1785176561253,
-     "v": 10000
-    },
-    {
-     "t": 1785182636769,
-     "v": 10000
-    },
-    {
-     "t": 1785187288757,
-     "v": 10000
-    }
-   ]
-  },
-  {
-   "keyword": "교통량",
-   "traffic": "5,000+",
-   "trafficNum": 5000,
-   "startedMs": 1785145800000,
-   "topicIds": [
-    11
-   ],
-   "topics": [
-    "기타"
-   ],
-   "gnews": [],
-   "econLevel": "low",
-   "econScore": 0,
-   "econHits": [],
-   "news": [],
-   "history": [
-    {
-     "t": 1785153613267,
      "v": 2000
     },
     {
-     "t": 1785164110221,
-     "v": 5000
-    },
-    {
-     "t": 1785171358853,
-     "v": 5000
-    },
-    {
      "t": 1785176561253,
      "v": 5000
     },
@@ -4988,6 +5143,10 @@
     },
     {
      "t": 1785187288757,
+     "v": 5000
+    },
+    {
+     "t": 1785191614768,
      "v": 5000
     }
    ]
@@ -5036,19 +5195,23 @@
     {
      "t": 1785187288757,
      "v": 5000
+    },
+    {
+     "t": 1785191614768,
+     "v": 5000
     }
    ]
   },
   {
-   "keyword": "사랑이 온다",
+   "keyword": "박수홍",
    "traffic": "5,000+",
    "trafficNum": 5000,
-   "startedMs": 1785160800000,
+   "startedMs": 1785181800000,
    "topicIds": [
-    4
+    10
    ],
    "topics": [
-    "연예"
+    "법·행정"
    ],
    "gnews": [],
    "econLevel": "low",
@@ -5057,19 +5220,11 @@
    "news": [],
    "history": [
     {
-     "t": 1785171358853,
+     "t": 1785187288757,
      "v": 2000
     },
     {
-     "t": 1785176561253,
-     "v": 5000
-    },
-    {
-     "t": 1785182636769,
-     "v": 5000
-    },
-    {
-     "t": 1785187288757,
+     "t": 1785191614768,
      "v": 5000
     }
    ]
@@ -5122,6 +5277,53 @@
     {
      "t": 1785187288757,
      "v": 5000
+    },
+    {
+     "t": 1785191614768,
+     "v": 5000
+    }
+   ]
+  },
+  {
+   "keyword": "hd현대",
+   "traffic": "5,000+",
+   "trafficNum": 5000,
+   "startedMs": 1785157800000,
+   "topicIds": [
+    11
+   ],
+   "topics": [
+    "기타"
+   ],
+   "gnews": [],
+   "econLevel": "low",
+   "econScore": 0,
+   "econHits": [],
+   "news": [],
+   "history": [
+    {
+     "t": 1785164110221,
+     "v": 2000
+    },
+    {
+     "t": 1785171358853,
+     "v": 2000
+    },
+    {
+     "t": 1785176561253,
+     "v": 2000
+    },
+    {
+     "t": 1785182636769,
+     "v": 2000
+    },
+    {
+     "t": 1785187288757,
+     "v": 1000
+    },
+    {
+     "t": 1785191614768,
+     "v": 5000
     }
    ]
   },
@@ -5164,6 +5366,10 @@
     },
     {
      "t": 1785187288757,
+     "v": 5000
+    },
+    {
+     "t": 1785191614768,
      "v": 5000
     }
    ]
@@ -5220,6 +5426,65 @@
     {
      "t": 1785187288757,
      "v": 5000
+    },
+    {
+     "t": 1785191614768,
+     "v": 5000
+    }
+   ]
+  },
+  {
+   "keyword": "진 아름",
+   "traffic": "5,000+",
+   "trafficNum": 5000,
+   "startedMs": 1785118800000,
+   "topicIds": [
+    4
+   ],
+   "topics": [
+    "연예"
+   ],
+   "gnews": [],
+   "econLevel": "low",
+   "econScore": 0,
+   "econHits": [],
+   "news": [],
+   "history": [
+    {
+     "t": 1785128941105,
+     "v": 5000
+    },
+    {
+     "t": 1785141945855,
+     "v": 5000
+    },
+    {
+     "t": 1785153613267,
+     "v": 10000
+    },
+    {
+     "t": 1785164110221,
+     "v": 10000
+    },
+    {
+     "t": 1785171358853,
+     "v": 10000
+    },
+    {
+     "t": 1785176561253,
+     "v": 10000
+    },
+    {
+     "t": 1785182636769,
+     "v": 10000
+    },
+    {
+     "t": 1785187288757,
+     "v": 10000
+    },
+    {
+     "t": 1785191614768,
+     "v": 5000
     }
    ]
   },
@@ -5267,6 +5532,10 @@
     {
      "t": 1785187288757,
      "v": 5000
+    },
+    {
+     "t": 1785191614768,
+     "v": 5000
     }
    ]
   },
@@ -5306,70 +5575,10 @@
     {
      "t": 1785187288757,
      "v": 5000
-    }
-   ]
-  },
-  {
-   "keyword": "간",
-   "traffic": "2,000+",
-   "trafficNum": 2000,
-   "startedMs": 1785175200000,
-   "topicIds": [
-    7
-   ],
-   "topics": [
-    "건강"
-   ],
-   "gnews": [],
-   "econLevel": "low",
-   "econScore": 0,
-   "econHits": [],
-   "news": [],
-   "history": [
-    {
-     "t": 1785187288757,
-     "v": 2000
-    }
-   ]
-  },
-  {
-   "keyword": "고발",
-   "traffic": "2,000+",
-   "trafficNum": 2000,
-   "startedMs": 1785152400000,
-   "topicIds": [
-    14,
-    10
-   ],
-   "topics": [
-    "정치",
-    "법·행정"
-   ],
-   "gnews": [],
-   "econLevel": "low",
-   "econScore": 0,
-   "econHits": [],
-   "news": [],
-   "history": [
-    {
-     "t": 1785164110221,
-     "v": 2000
     },
     {
-     "t": 1785171358853,
-     "v": 2000
-    },
-    {
-     "t": 1785176561253,
-     "v": 2000
-    },
-    {
-     "t": 1785182636769,
-     "v": 2000
-    },
-    {
-     "t": 1785187288757,
-     "v": 2000
+     "t": 1785191614768,
+     "v": 5000
     }
    ]
   },
@@ -5413,18 +5622,24 @@
     {
      "t": 1785187288757,
      "v": 2000
+    },
+    {
+     "t": 1785191614768,
+     "v": 2000
     }
    ]
   },
   {
-   "keyword": "박수홍",
+   "keyword": "고발",
    "traffic": "2,000+",
    "trafficNum": 2000,
-   "startedMs": 1785181800000,
+   "startedMs": 1785152400000,
    "topicIds": [
+    14,
     10
    ],
    "topics": [
+    "정치",
     "법·행정"
    ],
    "gnews": [],
@@ -5434,7 +5649,66 @@
    "news": [],
    "history": [
     {
+     "t": 1785164110221,
+     "v": 2000
+    },
+    {
+     "t": 1785171358853,
+     "v": 2000
+    },
+    {
+     "t": 1785176561253,
+     "v": 2000
+    },
+    {
+     "t": 1785182636769,
+     "v": 2000
+    },
+    {
      "t": 1785187288757,
+     "v": 2000
+    },
+    {
+     "t": 1785191614768,
+     "v": 2000
+    }
+   ]
+  },
+  {
+   "keyword": "국가기술자격",
+   "traffic": "2,000+",
+   "trafficNum": 2000,
+   "startedMs": 1785161400000,
+   "topicIds": [
+    9
+   ],
+   "topics": [
+    "교육·직업"
+   ],
+   "gnews": [],
+   "econLevel": "low",
+   "econScore": 0,
+   "econHits": [],
+   "news": [],
+   "history": [
+    {
+     "t": 1785171358853,
+     "v": 500
+    },
+    {
+     "t": 1785176561253,
+     "v": 1000
+    },
+    {
+     "t": 1785182636769,
+     "v": 1000
+    },
+    {
+     "t": 1785187288757,
+     "v": 1000
+    },
+    {
+     "t": 1785191614768,
      "v": 2000
     }
    ]
@@ -5463,19 +5737,23 @@
     {
      "t": 1785187288757,
      "v": 2000
+    },
+    {
+     "t": 1785191614768,
+     "v": 2000
     }
    ]
   },
   {
-   "keyword": "김서현",
+   "keyword": "선거",
    "traffic": "2,000+",
    "trafficNum": 2000,
-   "startedMs": 1785135600000,
+   "startedMs": 1785180000000,
    "topicIds": [
-    17
+    14
    ],
    "topics": [
-    "스포츠"
+    "정치"
    ],
    "gnews": [],
    "econLevel": "low",
@@ -5484,78 +5762,7 @@
    "news": [],
    "history": [
     {
-     "t": 1785141945855,
-     "v": 1000
-    },
-    {
-     "t": 1785153613267,
-     "v": 2000
-    },
-    {
-     "t": 1785164110221,
-     "v": 2000
-    },
-    {
-     "t": 1785171358853,
-     "v": 2000
-    },
-    {
-     "t": 1785176561253,
-     "v": 2000
-    },
-    {
-     "t": 1785182636769,
-     "v": 2000
-    },
-    {
-     "t": 1785187288757,
-     "v": 2000
-    }
-   ]
-  },
-  {
-   "keyword": "통영시장",
-   "traffic": "2,000+",
-   "trafficNum": 2000,
-   "startedMs": 1785129000000,
-   "topicIds": [
-    11
-   ],
-   "topics": [
-    "기타"
-   ],
-   "gnews": [],
-   "econLevel": "low",
-   "econScore": 0,
-   "econHits": [],
-   "news": [],
-   "history": [
-    {
-     "t": 1785141945855,
-     "v": 200
-    },
-    {
-     "t": 1785153613267,
-     "v": 500
-    },
-    {
-     "t": 1785164110221,
-     "v": 1000
-    },
-    {
-     "t": 1785171358853,
-     "v": 1000
-    },
-    {
-     "t": 1785176561253,
-     "v": 2000
-    },
-    {
-     "t": 1785182636769,
-     "v": 2000
-    },
-    {
-     "t": 1785187288757,
+     "t": 1785191614768,
      "v": 2000
     }
    ]
@@ -5607,6 +5814,106 @@
     },
     {
      "t": 1785187288757,
+     "v": 2000
+    },
+    {
+     "t": 1785191614768,
+     "v": 2000
+    }
+   ]
+  },
+  {
+   "keyword": "김서현",
+   "traffic": "2,000+",
+   "trafficNum": 2000,
+   "startedMs": 1785135600000,
+   "topicIds": [
+    17
+   ],
+   "topics": [
+    "스포츠"
+   ],
+   "gnews": [],
+   "econLevel": "low",
+   "econScore": 0,
+   "econHits": [],
+   "news": [],
+   "history": [
+    {
+     "t": 1785141945855,
+     "v": 1000
+    },
+    {
+     "t": 1785153613267,
+     "v": 2000
+    },
+    {
+     "t": 1785164110221,
+     "v": 2000
+    },
+    {
+     "t": 1785171358853,
+     "v": 2000
+    },
+    {
+     "t": 1785176561253,
+     "v": 2000
+    },
+    {
+     "t": 1785182636769,
+     "v": 2000
+    },
+    {
+     "t": 1785187288757,
+     "v": 2000
+    },
+    {
+     "t": 1785191614768,
+     "v": 2000
+    }
+   ]
+  },
+  {
+   "keyword": "파크 골프",
+   "traffic": "2,000+",
+   "trafficNum": 2000,
+   "startedMs": 1785154200000,
+   "topicIds": [
+    10,
+    14
+   ],
+   "topics": [
+    "법·행정",
+    "정치"
+   ],
+   "gnews": [],
+   "econLevel": "low",
+   "econScore": 0,
+   "econHits": [],
+   "news": [],
+   "history": [
+    {
+     "t": 1785164110221,
+     "v": 1000
+    },
+    {
+     "t": 1785171358853,
+     "v": 1000
+    },
+    {
+     "t": 1785176561253,
+     "v": 1000
+    },
+    {
+     "t": 1785182636769,
+     "v": 1000
+    },
+    {
+     "t": 1785187288757,
+     "v": 1000
+    },
+    {
+     "t": 1785191614768,
      "v": 2000
     }
    ]
@@ -5663,19 +5970,23 @@
     {
      "t": 1785187288757,
      "v": 2000
+    },
+    {
+     "t": 1785191614768,
+     "v": 2000
     }
    ]
   },
   {
-   "keyword": "hd현대중공업",
+   "keyword": "구준엽",
    "traffic": "2,000+",
    "trafficNum": 2000,
-   "startedMs": 1785150600000,
+   "startedMs": 1785182400000,
    "topicIds": [
-    11
+    4
    ],
    "topics": [
-    "기타"
+    "연예"
    ],
    "gnews": [],
    "econLevel": "low",
@@ -5685,53 +5996,10 @@
    "history": [
     {
      "t": 1785187288757,
-     "v": 2000
-    }
-   ]
-  },
-  {
-   "keyword": "안철수",
-   "traffic": "2,000+",
-   "trafficNum": 2000,
-   "startedMs": 1785133200000,
-   "topicIds": [
-    11
-   ],
-   "topics": [
-    "기타"
-   ],
-   "gnews": [],
-   "econLevel": "low",
-   "econScore": 0,
-   "econHits": [],
-   "news": [],
-   "history": [
-    {
-     "t": 1785141945855,
-     "v": 2000
+     "v": 1000
     },
     {
-     "t": 1785153613267,
-     "v": 2000
-    },
-    {
-     "t": 1785164110221,
-     "v": 2000
-    },
-    {
-     "t": 1785171358853,
-     "v": 2000
-    },
-    {
-     "t": 1785176561253,
-     "v": 2000
-    },
-    {
-     "t": 1785182636769,
-     "v": 2000
-    },
-    {
-     "t": 1785187288757,
+     "t": 1785191614768,
      "v": 2000
     }
    ]
@@ -5780,19 +6048,23 @@
     {
      "t": 1785187288757,
      "v": 2000
+    },
+    {
+     "t": 1785191614768,
+     "v": 2000
     }
    ]
   },
   {
-   "keyword": "오현규",
+   "keyword": "안철수",
    "traffic": "2,000+",
    "trafficNum": 2000,
-   "startedMs": 1785149400000,
+   "startedMs": 1785133200000,
    "topicIds": [
-    17
+    11
    ],
    "topics": [
-    "스포츠"
+    "기타"
    ],
    "gnews": [],
    "econLevel": "low",
@@ -5800,51 +6072,14 @@
    "econHits": [],
    "news": [],
    "history": [
+    {
+     "t": 1785141945855,
+     "v": 2000
+    },
     {
      "t": 1785153613267,
-     "v": 1000
-    },
-    {
-     "t": 1785164110221,
-     "v": 1000
-    },
-    {
-     "t": 1785171358853,
-     "v": 1000
-    },
-    {
-     "t": 1785176561253,
-     "v": 1000
-    },
-    {
-     "t": 1785182636769,
-     "v": 1000
-    },
-    {
-     "t": 1785187288757,
      "v": 2000
-    }
-   ]
-  },
-  {
-   "keyword": "안규백",
-   "traffic": "2,000+",
-   "trafficNum": 2000,
-   "startedMs": 1785151800000,
-   "topicIds": [
-    10,
-    14
-   ],
-   "topics": [
-    "법·행정",
-    "정치"
-   ],
-   "gnews": [],
-   "econLevel": "low",
-   "econScore": 0,
-   "econHits": [],
-   "news": [],
-   "history": [
+    },
     {
      "t": 1785164110221,
      "v": 2000
@@ -5863,6 +6098,10 @@
     },
     {
      "t": 1785187288757,
+     "v": 2000
+    },
+    {
+     "t": 1785191614768,
      "v": 2000
     }
    ]
@@ -5915,19 +6154,23 @@
     {
      "t": 1785187288757,
      "v": 2000
+    },
+    {
+     "t": 1785191614768,
+     "v": 2000
     }
    ]
   },
   {
-   "keyword": "케스파컵",
+   "keyword": "오현규",
    "traffic": "2,000+",
    "trafficNum": 2000,
-   "startedMs": 1785141600000,
+   "startedMs": 1785149400000,
    "topicIds": [
-    11
+    17
    ],
    "topics": [
-    "기타"
+    "스포츠"
    ],
    "gnews": [],
    "econLevel": "low",
@@ -5937,26 +6180,30 @@
    "history": [
     {
      "t": 1785153613267,
-     "v": 2000
+     "v": 1000
     },
     {
      "t": 1785164110221,
-     "v": 2000
+     "v": 1000
     },
     {
      "t": 1785171358853,
-     "v": 2000
+     "v": 1000
     },
     {
      "t": 1785176561253,
-     "v": 2000
+     "v": 1000
     },
     {
      "t": 1785182636769,
-     "v": 2000
+     "v": 1000
     },
     {
      "t": 1785187288757,
+     "v": 2000
+    },
+    {
+     "t": 1785191614768,
      "v": 2000
     }
    ]
@@ -6000,6 +6247,100 @@
     },
     {
      "t": 1785187288757,
+     "v": 2000
+    },
+    {
+     "t": 1785191614768,
+     "v": 2000
+    }
+   ]
+  },
+  {
+   "keyword": "안규백",
+   "traffic": "2,000+",
+   "trafficNum": 2000,
+   "startedMs": 1785151800000,
+   "topicIds": [
+    10
+   ],
+   "topics": [
+    "법·행정"
+   ],
+   "gnews": [],
+   "econLevel": "low",
+   "econScore": 0,
+   "econHits": [],
+   "news": [],
+   "history": [
+    {
+     "t": 1785164110221,
+     "v": 2000
+    },
+    {
+     "t": 1785171358853,
+     "v": 2000
+    },
+    {
+     "t": 1785176561253,
+     "v": 2000
+    },
+    {
+     "t": 1785182636769,
+     "v": 2000
+    },
+    {
+     "t": 1785187288757,
+     "v": 2000
+    },
+    {
+     "t": 1785191614768,
+     "v": 2000
+    }
+   ]
+  },
+  {
+   "keyword": "케스파컵",
+   "traffic": "2,000+",
+   "trafficNum": 2000,
+   "startedMs": 1785141600000,
+   "topicIds": [
+    11
+   ],
+   "topics": [
+    "기타"
+   ],
+   "gnews": [],
+   "econLevel": "low",
+   "econScore": 0,
+   "econHits": [],
+   "news": [],
+   "history": [
+    {
+     "t": 1785153613267,
+     "v": 2000
+    },
+    {
+     "t": 1785164110221,
+     "v": 2000
+    },
+    {
+     "t": 1785171358853,
+     "v": 2000
+    },
+    {
+     "t": 1785176561253,
+     "v": 2000
+    },
+    {
+     "t": 1785182636769,
+     "v": 2000
+    },
+    {
+     "t": 1785187288757,
+     "v": 2000
+    },
+    {
+     "t": 1785191614768,
      "v": 2000
     }
    ]
@@ -6052,6 +6393,10 @@
     {
      "t": 1785187288757,
      "v": 2000
+    },
+    {
+     "t": 1785191614768,
+     "v": 2000
     }
    ]
   },
@@ -6103,6 +6448,10 @@
     {
      "t": 1785187288757,
      "v": 2000
+    },
+    {
+     "t": 1785191614768,
+     "v": 2000
     }
    ]
   },
@@ -6149,6 +6498,10 @@
     },
     {
      "t": 1785187288757,
+     "v": 2000
+    },
+    {
+     "t": 1785191614768,
      "v": 2000
     }
    ]
@@ -6201,14 +6554,18 @@
     {
      "t": 1785187288757,
      "v": 2000
+    },
+    {
+     "t": 1785191614768,
+     "v": 2000
     }
    ]
   },
   {
-   "keyword": "결혼식",
-   "traffic": "2,000+",
-   "trafficNum": 2000,
-   "startedMs": 1785103800000,
+   "keyword": "철구",
+   "traffic": "1,000+",
+   "trafficNum": 1000,
+   "startedMs": 1785179400000,
    "topicIds": [
     4
    ],
@@ -6222,113 +6579,11 @@
    "news": [],
    "history": [
     {
-     "t": 1785109501390,
-     "v": 2000
-    },
-    {
-     "t": 1785115269443,
-     "v": 2000
-    },
-    {
-     "t": 1785128941105,
-     "v": 2000
-    },
-    {
-     "t": 1785141945855,
-     "v": 2000
-    },
-    {
-     "t": 1785153613267,
-     "v": 2000
-    },
-    {
-     "t": 1785164110221,
-     "v": 2000
-    },
-    {
-     "t": 1785171358853,
-     "v": 2000
-    },
-    {
-     "t": 1785176561253,
-     "v": 2000
-    },
-    {
-     "t": 1785182636769,
-     "v": 2000
-    },
-    {
      "t": 1785187288757,
-     "v": 2000
-    }
-   ]
-  },
-  {
-   "keyword": "국가기술자격",
-   "traffic": "1,000+",
-   "trafficNum": 1000,
-   "startedMs": 1785161400000,
-   "topicIds": [
-    9
-   ],
-   "topics": [
-    "교육·직업"
-   ],
-   "gnews": [],
-   "econLevel": "low",
-   "econScore": 0,
-   "econHits": [],
-   "news": [],
-   "history": [
-    {
-     "t": 1785171358853,
      "v": 500
     },
     {
-     "t": 1785176561253,
-     "v": 1000
-    },
-    {
-     "t": 1785182636769,
-     "v": 1000
-    },
-    {
-     "t": 1785187288757,
-     "v": 1000
-    }
-   ]
-  },
-  {
-   "keyword": "강남구",
-   "traffic": "1,000+",
-   "trafficNum": 1000,
-   "startedMs": 1785160800000,
-   "topicIds": [
-    9
-   ],
-   "topics": [
-    "교육·직업"
-   ],
-   "gnews": [],
-   "econLevel": "low",
-   "econScore": 0,
-   "econHits": [],
-   "news": [],
-   "history": [
-    {
-     "t": 1785171358853,
-     "v": 1000
-    },
-    {
-     "t": 1785176561253,
-     "v": 1000
-    },
-    {
-     "t": 1785182636769,
-     "v": 1000
-    },
-    {
-     "t": 1785187288757,
+     "t": 1785191614768,
      "v": 1000
     }
    ]
@@ -6371,6 +6626,10 @@
     {
      "t": 1785187288757,
      "v": 1000
+    },
+    {
+     "t": 1785191614768,
+     "v": 1000
     }
    ]
   },
@@ -6406,21 +6665,23 @@
     {
      "t": 1785187288757,
      "v": 1000
+    },
+    {
+     "t": 1785191614768,
+     "v": 1000
     }
    ]
   },
   {
-   "keyword": "파크 골프",
+   "keyword": "고은아",
    "traffic": "1,000+",
    "trafficNum": 1000,
-   "startedMs": 1785154200000,
+   "startedMs": 1785184800000,
    "topicIds": [
-    10,
-    14
+    4
    ],
    "topics": [
-    "법·행정",
-    "정치"
+    "연예"
    ],
    "gnews": [],
    "econLevel": "low",
@@ -6429,23 +6690,7 @@
    "news": [],
    "history": [
     {
-     "t": 1785164110221,
-     "v": 1000
-    },
-    {
-     "t": 1785171358853,
-     "v": 1000
-    },
-    {
-     "t": 1785176561253,
-     "v": 1000
-    },
-    {
-     "t": 1785182636769,
-     "v": 1000
-    },
-    {
-     "t": 1785187288757,
+     "t": 1785191614768,
      "v": 1000
     }
    ]
@@ -6490,71 +6735,9 @@
     {
      "t": 1785187288757,
      "v": 1000
-    }
-   ]
-  },
-  {
-   "keyword": "양산 무지개폭포",
-   "traffic": "1,000+",
-   "trafficNum": 1000,
-   "startedMs": 1785138600000,
-   "topicIds": [
-    11
-   ],
-   "topics": [
-    "기타"
-   ],
-   "gnews": [],
-   "econLevel": "low",
-   "econScore": 0,
-   "econHits": [],
-   "news": [],
-   "history": [
-    {
-     "t": 1785153613267,
-     "v": 500
     },
     {
-     "t": 1785164110221,
-     "v": 1000
-    },
-    {
-     "t": 1785171358853,
-     "v": 1000
-    },
-    {
-     "t": 1785176561253,
-     "v": 1000
-    },
-    {
-     "t": 1785182636769,
-     "v": 1000
-    },
-    {
-     "t": 1785187288757,
-     "v": 1000
-    }
-   ]
-  },
-  {
-   "keyword": "구준엽",
-   "traffic": "1,000+",
-   "trafficNum": 1000,
-   "startedMs": 1785182400000,
-   "topicIds": [
-    4
-   ],
-   "topics": [
-    "연예"
-   ],
-   "gnews": [],
-   "econLevel": "low",
-   "econScore": 0,
-   "econHits": [],
-   "news": [],
-   "history": [
-    {
-     "t": 1785187288757,
+     "t": 1785191614768,
      "v": 1000
     }
    ]
@@ -6599,6 +6782,80 @@
     {
      "t": 1785187288757,
      "v": 1000
+    },
+    {
+     "t": 1785191614768,
+     "v": 1000
+    }
+   ]
+  },
+  {
+   "keyword": "이동하",
+   "traffic": "1,000+",
+   "trafficNum": 1000,
+   "startedMs": 1785183600000,
+   "topicIds": [
+    4
+   ],
+   "topics": [
+    "연예"
+   ],
+   "gnews": [],
+   "econLevel": "low",
+   "econScore": 0,
+   "econHits": [],
+   "news": [],
+   "history": [
+    {
+     "t": 1785191614768,
+     "v": 1000
+    }
+   ]
+  },
+  {
+   "keyword": "양산 무지개폭포",
+   "traffic": "1,000+",
+   "trafficNum": 1000,
+   "startedMs": 1785138600000,
+   "topicIds": [
+    11
+   ],
+   "topics": [
+    "기타"
+   ],
+   "gnews": [],
+   "econLevel": "low",
+   "econScore": 0,
+   "econHits": [],
+   "news": [],
+   "history": [
+    {
+     "t": 1785153613267,
+     "v": 500
+    },
+    {
+     "t": 1785164110221,
+     "v": 1000
+    },
+    {
+     "t": 1785171358853,
+     "v": 1000
+    },
+    {
+     "t": 1785176561253,
+     "v": 1000
+    },
+    {
+     "t": 1785182636769,
+     "v": 1000
+    },
+    {
+     "t": 1785187288757,
+     "v": 1000
+    },
+    {
+     "t": 1785191614768,
+     "v": 1000
     }
    ]
   },
@@ -6642,44 +6899,9 @@
     {
      "t": 1785187288757,
      "v": 1000
-    }
-   ]
-  },
-  {
-   "keyword": "연애 전쟁",
-   "traffic": "1,000+",
-   "trafficNum": 1000,
-   "startedMs": 1785154200000,
-   "topicIds": [
-    4
-   ],
-   "topics": [
-    "연예"
-   ],
-   "gnews": [],
-   "econLevel": "low",
-   "econScore": 0,
-   "econHits": [],
-   "news": [],
-   "history": [
-    {
-     "t": 1785164110221,
-     "v": 1000
     },
     {
-     "t": 1785171358853,
-     "v": 1000
-    },
-    {
-     "t": 1785176561253,
-     "v": 1000
-    },
-    {
-     "t": 1785182636769,
-     "v": 1000
-    },
-    {
-     "t": 1785187288757,
+     "t": 1785191614768,
      "v": 1000
     }
    ]
@@ -6736,6 +6958,76 @@
     {
      "t": 1785187288757,
      "v": 1000
+    },
+    {
+     "t": 1785191614768,
+     "v": 1000
+    }
+   ]
+  },
+  {
+   "keyword": "종합부동산세",
+   "traffic": "1,000+",
+   "trafficNum": 1000,
+   "startedMs": 1785186600000,
+   "topicIds": [
+    11
+   ],
+   "topics": [
+    "기타"
+   ],
+   "gnews": [],
+   "econLevel": "low",
+   "econScore": 0,
+   "econHits": [],
+   "news": [],
+   "history": [
+    {
+     "t": 1785191614768,
+     "v": 1000
+    }
+   ]
+  },
+  {
+   "keyword": "연애 전쟁",
+   "traffic": "1,000+",
+   "trafficNum": 1000,
+   "startedMs": 1785154200000,
+   "topicIds": [
+    4
+   ],
+   "topics": [
+    "연예"
+   ],
+   "gnews": [],
+   "econLevel": "low",
+   "econScore": 0,
+   "econHits": [],
+   "news": [],
+   "history": [
+    {
+     "t": 1785164110221,
+     "v": 1000
+    },
+    {
+     "t": 1785171358853,
+     "v": 1000
+    },
+    {
+     "t": 1785176561253,
+     "v": 1000
+    },
+    {
+     "t": 1785182636769,
+     "v": 1000
+    },
+    {
+     "t": 1785187288757,
+     "v": 1000
+    },
+    {
+     "t": 1785191614768,
+     "v": 1000
     }
    ]
   },
@@ -6782,6 +7074,10 @@
     },
     {
      "t": 1785187288757,
+     "v": 1000
+    },
+    {
+     "t": 1785191614768,
      "v": 1000
     }
    ]
@@ -6834,6 +7130,10 @@
     {
      "t": 1785187288757,
      "v": 1000
+    },
+    {
+     "t": 1785191614768,
+     "v": 1000
     }
    ]
   },
@@ -6877,6 +7177,10 @@
     {
      "t": 1785187288757,
      "v": 1000
+    },
+    {
+     "t": 1785191614768,
+     "v": 1000
     }
    ]
   },
@@ -6919,6 +7223,33 @@
     },
     {
      "t": 1785187288757,
+     "v": 1000
+    },
+    {
+     "t": 1785191614768,
+     "v": 1000
+    }
+   ]
+  },
+  {
+   "keyword": "롤렉스",
+   "traffic": "1,000+",
+   "trafficNum": 1000,
+   "startedMs": 1785114600000,
+   "topicIds": [
+    10
+   ],
+   "topics": [
+    "법·행정"
+   ],
+   "gnews": [],
+   "econLevel": "low",
+   "econScore": 0,
+   "econHits": [],
+   "news": [],
+   "history": [
+    {
+     "t": 1785191614768,
      "v": 1000
     }
    ]
@@ -6975,64 +7306,9 @@
     {
      "t": 1785187288757,
      "v": 1000
-    }
-   ]
-  },
-  {
-   "keyword": "퇴장",
-   "traffic": "1,000+",
-   "trafficNum": 1000,
-   "startedMs": 1785103200000,
-   "topicIds": [
-    17
-   ],
-   "topics": [
-    "스포츠"
-   ],
-   "gnews": [],
-   "econLevel": "low",
-   "econScore": 0,
-   "econHits": [],
-   "news": [],
-   "history": [
-    {
-     "t": 1785109501390,
-     "v": 500
     },
     {
-     "t": 1785115269443,
-     "v": 5000
-    },
-    {
-     "t": 1785128941105,
-     "v": 5000
-    },
-    {
-     "t": 1785141945855,
-     "v": 1000
-    },
-    {
-     "t": 1785153613267,
-     "v": 1000
-    },
-    {
-     "t": 1785164110221,
-     "v": 1000
-    },
-    {
-     "t": 1785171358853,
-     "v": 1000
-    },
-    {
-     "t": 1785176561253,
-     "v": 1000
-    },
-    {
-     "t": 1785182636769,
-     "v": 1000
-    },
-    {
-     "t": 1785187288757,
+     "t": 1785191614768,
      "v": 1000
     }
    ]
@@ -7089,6 +7365,10 @@
     {
      "t": 1785187288757,
      "v": 1000
+    },
+    {
+     "t": 1785191614768,
+     "v": 1000
     }
    ]
   },
@@ -7135,6 +7415,10 @@
     },
     {
      "t": 1785187288757,
+     "v": 1000
+    },
+    {
+     "t": 1785191614768,
      "v": 1000
     }
    ]
@@ -7183,14 +7467,91 @@
     {
      "t": 1785187288757,
      "v": 1000
+    },
+    {
+     "t": 1785191614768,
+     "v": 1000
     }
    ]
   },
   {
-   "keyword": "철구",
+   "keyword": "온도",
    "traffic": "500+",
    "trafficNum": 500,
-   "startedMs": 1785179400000,
+   "startedMs": 1785183000000,
+   "topicIds": [
+    11
+   ],
+   "topics": [
+    "기타"
+   ],
+   "gnews": [],
+   "econLevel": "low",
+   "econScore": 0,
+   "econHits": [],
+   "news": [],
+   "history": [
+    {
+     "t": 1785187288757,
+     "v": 200
+    },
+    {
+     "t": 1785191614768,
+     "v": 500
+    }
+   ]
+  },
+  {
+   "keyword": "선수",
+   "traffic": "500+",
+   "trafficNum": 500,
+   "startedMs": 1785186000000,
+   "topicIds": [
+    17
+   ],
+   "topics": [
+    "스포츠"
+   ],
+   "gnews": [],
+   "econLevel": "low",
+   "econScore": 0,
+   "econHits": [],
+   "news": [],
+   "history": [
+    {
+     "t": 1785191614768,
+     "v": 500
+    }
+   ]
+  },
+  {
+   "keyword": "풍자",
+   "traffic": "500+",
+   "trafficNum": 500,
+   "startedMs": 1785183600000,
+   "topicIds": [
+    2
+   ],
+   "topics": [
+    "뷰티·패션"
+   ],
+   "gnews": [],
+   "econLevel": "low",
+   "econScore": 0,
+   "econHits": [],
+   "news": [],
+   "history": [
+    {
+     "t": 1785191614768,
+     "v": 500
+    }
+   ]
+  },
+  {
+   "keyword": "성리",
+   "traffic": "500+",
+   "trafficNum": 500,
+   "startedMs": 1785172200000,
    "topicIds": [
     4
    ],
@@ -7204,7 +7565,15 @@
    "news": [],
    "history": [
     {
+     "t": 1785182636769,
+     "v": 100
+    },
+    {
      "t": 1785187288757,
+     "v": 200
+    },
+    {
+     "t": 1785191614768,
      "v": 500
     }
    ]
@@ -7245,14 +7614,18 @@
     {
      "t": 1785187288757,
      "v": 500
+    },
+    {
+     "t": 1785191614768,
+     "v": 500
     }
    ]
   },
   {
-   "keyword": "인도네시아 대 캄보디아",
+   "keyword": "klasemen timnas indonesia vs tim nasional sepak bola kamboja",
    "traffic": "500+",
    "trafficNum": 500,
-   "startedMs": 1785158400000,
+   "startedMs": 1785174600000,
    "topicIds": [
     17
    ],
@@ -7266,23 +7639,15 @@
    "news": [],
    "history": [
     {
-     "t": 1785164110221,
-     "v": 200
-    },
-    {
-     "t": 1785171358853,
-     "v": 500
-    },
-    {
-     "t": 1785176561253,
-     "v": 500
-    },
-    {
      "t": 1785182636769,
      "v": 500
     },
     {
      "t": 1785187288757,
+     "v": 500
+    },
+    {
+     "t": 1785191614768,
      "v": 500
     }
    ]
@@ -7323,14 +7688,18 @@
     {
      "t": 1785187288757,
      "v": 500
+    },
+    {
+     "t": 1785191614768,
+     "v": 500
     }
    ]
   },
   {
-   "keyword": "klasemen timnas indonesia vs tim nasional sepak bola kamboja",
+   "keyword": "인도네시아 대 캄보디아",
    "traffic": "500+",
    "trafficNum": 500,
-   "startedMs": 1785174600000,
+   "startedMs": 1785158400000,
    "topicIds": [
     17
    ],
@@ -7344,11 +7713,27 @@
    "news": [],
    "history": [
     {
+     "t": 1785164110221,
+     "v": 200
+    },
+    {
+     "t": 1785171358853,
+     "v": 500
+    },
+    {
+     "t": 1785176561253,
+     "v": 500
+    },
+    {
      "t": 1785182636769,
      "v": 500
     },
     {
      "t": 1785187288757,
+     "v": 500
+    },
+    {
+     "t": 1785191614768,
      "v": 500
     }
    ]
@@ -7392,6 +7777,10 @@
     },
     {
      "t": 1785187288757,
+     "v": 500
+    },
+    {
+     "t": 1785191614768,
      "v": 500
     }
    ]
@@ -7492,6 +7881,10 @@
     {
      "t": 1785187288757,
      "v": 500
+    },
+    {
+     "t": 1785191614768,
+     "v": 500
     }
    ]
   },
@@ -7530,6 +7923,10 @@
     },
     {
      "t": 1785187288757,
+     "v": 500
+    },
+    {
+     "t": 1785191614768,
      "v": 500
     }
    ]
@@ -7574,64 +7971,9 @@
     {
      "t": 1785187288757,
      "v": 500
-    }
-   ]
-  },
-  {
-   "keyword": "옥택연",
-   "traffic": "500+",
-   "trafficNum": 500,
-   "startedMs": 1785105000000,
-   "topicIds": [
-    4
-   ],
-   "topics": [
-    "연예"
-   ],
-   "gnews": [],
-   "econLevel": "low",
-   "econScore": 0,
-   "econHits": [],
-   "news": [],
-   "history": [
-    {
-     "t": 1785109501390,
-     "v": 500
     },
     {
-     "t": 1785115269443,
-     "v": 500
-    },
-    {
-     "t": 1785128941105,
-     "v": 500
-    },
-    {
-     "t": 1785141945855,
-     "v": 500
-    },
-    {
-     "t": 1785153613267,
-     "v": 500
-    },
-    {
-     "t": 1785164110221,
-     "v": 500
-    },
-    {
-     "t": 1785171358853,
-     "v": 500
-    },
-    {
-     "t": 1785176561253,
-     "v": 500
-    },
-    {
-     "t": 1785182636769,
-     "v": 500
-    },
-    {
-     "t": 1785187288757,
+     "t": 1785191614768,
      "v": 500
     }
    ]
@@ -7690,6 +8032,37 @@
     {
      "t": 1785187288757,
      "v": 500
+    },
+    {
+     "t": 1785191614768,
+     "v": 500
+    }
+   ]
+  },
+  {
+   "keyword": "권순우",
+   "traffic": "500+",
+   "trafficNum": 500,
+   "startedMs": 1785114600000,
+   "topicIds": [
+    17
+   ],
+   "topics": [
+    "스포츠"
+   ],
+   "gnews": [],
+   "econLevel": "low",
+   "econScore": 0,
+   "econHits": [],
+   "news": [],
+   "history": [
+    {
+     "t": 1785187288757,
+     "v": 500
+    },
+    {
+     "t": 1785191614768,
+     "v": 500
     }
    ]
   },
@@ -7729,14 +8102,68 @@
     {
      "t": 1785187288757,
      "v": 500
+    },
+    {
+     "t": 1785191614768,
+     "v": 500
     }
    ]
   },
   {
-   "keyword": "권순우",
-   "traffic": "500+",
-   "trafficNum": 500,
-   "startedMs": 1785114600000,
+   "keyword": "송혜교",
+   "traffic": "200+",
+   "trafficNum": 200,
+   "startedMs": 1785182400000,
+   "topicIds": [
+    4
+   ],
+   "topics": [
+    "연예"
+   ],
+   "gnews": [],
+   "econLevel": "low",
+   "econScore": 0,
+   "econHits": [],
+   "news": [],
+   "history": [
+    {
+     "t": 1785187288757,
+     "v": 100
+    },
+    {
+     "t": 1785191614768,
+     "v": 200
+    }
+   ]
+  },
+  {
+   "keyword": "선유봉",
+   "traffic": "200+",
+   "trafficNum": 200,
+   "startedMs": 1785181800000,
+   "topicIds": [
+    10
+   ],
+   "topics": [
+    "법·행정"
+   ],
+   "gnews": [],
+   "econLevel": "low",
+   "econScore": 0,
+   "econHits": [],
+   "news": [],
+   "history": [
+    {
+     "t": 1785191614768,
+     "v": 200
+    }
+   ]
+  },
+  {
+   "keyword": "베트남 축구 국가대표팀",
+   "traffic": "200+",
+   "trafficNum": 200,
+   "startedMs": 1785186600000,
    "topicIds": [
     17
    ],
@@ -7750,21 +8177,21 @@
    "news": [],
    "history": [
     {
-     "t": 1785187288757,
-     "v": 500
+     "t": 1785191614768,
+     "v": 200
     }
    ]
   },
   {
-   "keyword": "온도",
+   "keyword": "맨체스터 유나이티드 fc",
    "traffic": "200+",
    "trafficNum": 200,
-   "startedMs": 1785183000000,
+   "startedMs": 1785183600000,
    "topicIds": [
-    11
+    17
    ],
    "topics": [
-    "기타"
+    "스포츠"
    ],
    "gnews": [],
    "econLevel": "low",
@@ -7773,7 +8200,30 @@
    "news": [],
    "history": [
     {
-     "t": 1785187288757,
+     "t": 1785191614768,
+     "v": 200
+    }
+   ]
+  },
+  {
+   "keyword": "테일러 프리츠",
+   "traffic": "200+",
+   "trafficNum": 200,
+   "startedMs": 1785186600000,
+   "topicIds": [
+    17
+   ],
+   "topics": [
+    "스포츠"
+   ],
+   "gnews": [],
+   "econLevel": "low",
+   "econScore": 0,
+   "econHits": [],
+   "news": [],
+   "history": [
+    {
+     "t": 1785191614768,
      "v": 200
     }
    ]
@@ -7802,32 +8252,9 @@
     {
      "t": 1785187288757,
      "v": 200
-    }
-   ]
-  },
-  {
-   "keyword": "성리",
-   "traffic": "200+",
-   "trafficNum": 200,
-   "startedMs": 1785172200000,
-   "topicIds": [
-    4
-   ],
-   "topics": [
-    "연예"
-   ],
-   "gnews": [],
-   "econLevel": "low",
-   "econScore": 0,
-   "econHits": [],
-   "news": [],
-   "history": [
-    {
-     "t": 1785182636769,
-     "v": 100
     },
     {
-     "t": 1785187288757,
+     "t": 1785191614768,
      "v": 200
     }
    ]
@@ -7867,6 +8294,10 @@
     },
     {
      "t": 1785187288757,
+     "v": 200
+    },
+    {
+     "t": 1785191614768,
      "v": 200
     }
    ]
@@ -7911,19 +8342,25 @@
     {
      "t": 1785187288757,
      "v": 200
+    },
+    {
+     "t": 1785191614768,
+     "v": 200
     }
    ]
   },
   {
-   "keyword": "고준희",
+   "keyword": "경상남도",
    "traffic": "200+",
    "trafficNum": 200,
-   "startedMs": 1785161400000,
+   "startedMs": 1785126600000,
    "topicIds": [
-    4
+    9,
+    10
    ],
    "topics": [
-    "연예"
+    "교육·직업",
+    "법·행정"
    ],
    "gnews": [],
    "econLevel": "low",
@@ -7931,6 +8368,18 @@
    "econHits": [],
    "news": [],
    "history": [
+    {
+     "t": 1785141945855,
+     "v": 200
+    },
+    {
+     "t": 1785153613267,
+     "v": 200
+    },
+    {
+     "t": 1785164110221,
+     "v": 200
+    },
     {
      "t": 1785171358853,
      "v": 200
@@ -7945,6 +8394,10 @@
     },
     {
      "t": 1785187288757,
+     "v": 200
+    },
+    {
+     "t": 1785191614768,
      "v": 200
     }
    ]
@@ -7984,6 +8437,49 @@
     },
     {
      "t": 1785187288757,
+     "v": 200
+    },
+    {
+     "t": 1785191614768,
+     "v": 200
+    }
+   ]
+  },
+  {
+   "keyword": "고준희",
+   "traffic": "200+",
+   "trafficNum": 200,
+   "startedMs": 1785161400000,
+   "topicIds": [
+    4
+   ],
+   "topics": [
+    "연예"
+   ],
+   "gnews": [],
+   "econLevel": "low",
+   "econScore": 0,
+   "econHits": [],
+   "news": [],
+   "history": [
+    {
+     "t": 1785171358853,
+     "v": 200
+    },
+    {
+     "t": 1785176561253,
+     "v": 200
+    },
+    {
+     "t": 1785182636769,
+     "v": 200
+    },
+    {
+     "t": 1785187288757,
+     "v": 200
+    },
+    {
+     "t": 1785191614768,
      "v": 200
     }
    ]
@@ -8028,48 +8524,9 @@
     {
      "t": 1785187288757,
      "v": 200
-    }
-   ]
-  },
-  {
-   "keyword": "헌법",
-   "traffic": "200+",
-   "trafficNum": 200,
-   "startedMs": 1785143400000,
-   "topicIds": [
-    14
-   ],
-   "topics": [
-    "정치"
-   ],
-   "gnews": [],
-   "econLevel": "low",
-   "econScore": 0,
-   "econHits": [],
-   "news": [],
-   "history": [
-    {
-     "t": 1785153613267,
-     "v": 200
     },
     {
-     "t": 1785164110221,
-     "v": 200
-    },
-    {
-     "t": 1785171358853,
-     "v": 200
-    },
-    {
-     "t": 1785176561253,
-     "v": 200
-    },
-    {
-     "t": 1785182636769,
-     "v": 200
-    },
-    {
-     "t": 1785187288757,
+     "t": 1785191614768,
      "v": 200
     }
    ]
@@ -8118,19 +8575,23 @@
     {
      "t": 1785187288757,
      "v": 200
+    },
+    {
+     "t": 1785191614768,
+     "v": 200
     }
    ]
   },
   {
-   "keyword": "보험모집인",
+   "keyword": "헌법",
    "traffic": "200+",
    "trafficNum": 200,
-   "startedMs": 1785104400000,
+   "startedMs": 1785143400000,
    "topicIds": [
-    11
+    14
    ],
    "topics": [
-    "기타"
+    "정치"
    ],
    "gnews": [],
    "econLevel": "low",
@@ -8138,18 +8599,6 @@
    "econHits": [],
    "news": [],
    "history": [
-    {
-     "t": 1785115269443,
-     "v": 200
-    },
-    {
-     "t": 1785128941105,
-     "v": 200
-    },
-    {
-     "t": 1785141945855,
-     "v": 200
-    },
     {
      "t": 1785153613267,
      "v": 200
@@ -8172,6 +8621,10 @@
     },
     {
      "t": 1785187288757,
+     "v": 200
+    },
+    {
+     "t": 1785191614768,
      "v": 200
     }
    ]
@@ -8224,56 +8677,9 @@
     {
      "t": 1785187288757,
      "v": 200
-    }
-   ]
-  },
-  {
-   "keyword": "로베르토 데 제르비",
-   "traffic": "200+",
-   "trafficNum": 200,
-   "startedMs": 1785104400000,
-   "topicIds": [
-    17
-   ],
-   "topics": [
-    "스포츠"
-   ],
-   "gnews": [],
-   "econLevel": "low",
-   "econScore": 0,
-   "econHits": [],
-   "news": [],
-   "history": [
-    {
-     "t": 1785128941105,
-     "v": 200
     },
     {
-     "t": 1785141945855,
-     "v": 200
-    },
-    {
-     "t": 1785153613267,
-     "v": 200
-    },
-    {
-     "t": 1785164110221,
-     "v": 200
-    },
-    {
-     "t": 1785171358853,
-     "v": 200
-    },
-    {
-     "t": 1785176561253,
-     "v": 200
-    },
-    {
-     "t": 1785182636769,
-     "v": 200
-    },
-    {
-     "t": 1785187288757,
+     "t": 1785191614768,
      "v": 200
     }
    ]
@@ -8326,6 +8732,10 @@
     {
      "t": 1785187288757,
      "v": 200
+    },
+    {
+     "t": 1785191614768,
+     "v": 200
     }
    ]
   },
@@ -8372,6 +8782,10 @@
     },
     {
      "t": 1785187288757,
+     "v": 200
+    },
+    {
+     "t": 1785191614768,
      "v": 200
     }
    ]
@@ -8428,6 +8842,10 @@
     {
      "t": 1785187288757,
      "v": 200
+    },
+    {
+     "t": 1785191614768,
+     "v": 200
     }
    ]
   },
@@ -8467,78 +8885,23 @@
     {
      "t": 1785187288757,
      "v": 200
-    }
-   ]
-  },
-  {
-   "keyword": "이정효",
-   "traffic": "200+",
-   "trafficNum": 200,
-   "startedMs": 1785103800000,
-   "topicIds": [
-    17
-   ],
-   "topics": [
-    "스포츠"
-   ],
-   "gnews": [],
-   "econLevel": "low",
-   "econScore": 0,
-   "econHits": [],
-   "news": [],
-   "history": [
-    {
-     "t": 1785109501390,
-     "v": 200
     },
     {
-     "t": 1785115269443,
-     "v": 200
-    },
-    {
-     "t": 1785128941105,
-     "v": 200
-    },
-    {
-     "t": 1785141945855,
-     "v": 200
-    },
-    {
-     "t": 1785153613267,
-     "v": 200
-    },
-    {
-     "t": 1785164110221,
-     "v": 200
-    },
-    {
-     "t": 1785171358853,
-     "v": 200
-    },
-    {
-     "t": 1785176561253,
-     "v": 200
-    },
-    {
-     "t": 1785182636769,
-     "v": 200
-    },
-    {
-     "t": 1785187288757,
+     "t": 1785191614768,
      "v": 200
     }
    ]
   },
   {
-   "keyword": "송혜교",
+   "keyword": "중동신도시",
    "traffic": "100+",
    "trafficNum": 100,
-   "startedMs": 1785182400000,
+   "startedMs": 1785184800000,
    "topicIds": [
-    4
+    11
    ],
    "topics": [
-    "연예"
+    "기타"
    ],
    "gnews": [],
    "econLevel": "low",
@@ -8547,21 +8910,21 @@
    "news": [],
    "history": [
     {
-     "t": 1785187288757,
+     "t": 1785191614768,
      "v": 100
     }
    ]
   },
   {
-   "keyword": "일류첸코",
+   "keyword": "트레이더 조",
    "traffic": "100+",
    "trafficNum": 100,
-   "startedMs": 1785159600000,
+   "startedMs": 1785180000000,
    "topicIds": [
-    17
+    11
    ],
    "topics": [
-    "스포츠"
+    "기타"
    ],
    "gnews": [],
    "econLevel": "low",
@@ -8570,29 +8933,21 @@
    "news": [],
    "history": [
     {
-     "t": 1785176561253,
-     "v": 100
-    },
-    {
-     "t": 1785182636769,
-     "v": 100
-    },
-    {
-     "t": 1785187288757,
+     "t": 1785191614768,
      "v": 100
     }
    ]
   },
   {
-   "keyword": "샌프란시스코 자이언츠",
+   "keyword": "대구광역시",
    "traffic": "100+",
    "trafficNum": 100,
-   "startedMs": 1785101400000,
+   "startedMs": 1785178800000,
    "topicIds": [
-    17
+    11
    ],
    "topics": [
-    "스포츠"
+    "기타"
    ],
    "gnews": [],
    "econLevel": "low",
@@ -8601,31 +8956,7 @@
    "news": [],
    "history": [
     {
-     "t": 1785141945855,
-     "v": 200
-    },
-    {
-     "t": 1785153613267,
-     "v": 200
-    },
-    {
-     "t": 1785164110221,
-     "v": 100
-    },
-    {
-     "t": 1785171358853,
-     "v": 100
-    },
-    {
-     "t": 1785176561253,
-     "v": 100
-    },
-    {
-     "t": 1785182636769,
-     "v": 100
-    },
-    {
-     "t": 1785187288757,
+     "t": 1785191614768,
      "v": 100
     }
    ]
@@ -8662,6 +8993,45 @@
     {
      "t": 1785187288757,
      "v": 100
+    },
+    {
+     "t": 1785191614768,
+     "v": 100
+    }
+   ]
+  },
+  {
+   "keyword": "일류첸코",
+   "traffic": "100+",
+   "trafficNum": 100,
+   "startedMs": 1785159600000,
+   "topicIds": [
+    17
+   ],
+   "topics": [
+    "스포츠"
+   ],
+   "gnews": [],
+   "econLevel": "low",
+   "econScore": 0,
+   "econHits": [],
+   "news": [],
+   "history": [
+    {
+     "t": 1785176561253,
+     "v": 100
+    },
+    {
+     "t": 1785182636769,
+     "v": 100
+    },
+    {
+     "t": 1785187288757,
+     "v": 100
+    },
+    {
+     "t": 1785191614768,
+     "v": 100
     }
    ]
   },
@@ -8685,64 +9055,9 @@
     {
      "t": 1785187288757,
      "v": 100
-    }
-   ]
-  },
-  {
-   "keyword": "녹색경제신문",
-   "traffic": "100+",
-   "trafficNum": 100,
-   "startedMs": 1785103200000,
-   "topicIds": [
-    11
-   ],
-   "topics": [
-    "기타"
-   ],
-   "gnews": [],
-   "econLevel": "low",
-   "econScore": 0,
-   "econHits": [],
-   "news": [],
-   "history": [
-    {
-     "t": 1785109501390,
-     "v": 100
     },
     {
-     "t": 1785115269443,
-     "v": 100
-    },
-    {
-     "t": 1785128941105,
-     "v": 100
-    },
-    {
-     "t": 1785141945855,
-     "v": 100
-    },
-    {
-     "t": 1785153613267,
-     "v": 100
-    },
-    {
-     "t": 1785164110221,
-     "v": 100
-    },
-    {
-     "t": 1785171358853,
-     "v": 100
-    },
-    {
-     "t": 1785176561253,
-     "v": 100
-    },
-    {
-     "t": 1785182636769,
-     "v": 100
-    },
-    {
-     "t": 1785187288757,
+     "t": 1785191614768,
      "v": 100
     }
    ]
@@ -8770,6 +9085,10 @@
     },
     {
      "t": 1785187288757,
+     "v": 100
+    },
+    {
+     "t": 1785191614768,
      "v": 100
     }
    ]
@@ -8818,52 +9137,9 @@
     {
      "t": 1785187288757,
      "v": 100
-    }
-   ]
-  },
-  {
-   "keyword": "오타니 쇼헤이",
-   "traffic": "100+",
-   "trafficNum": 100,
-   "startedMs": 1785100800000,
-   "topicIds": [
-    17
-   ],
-   "topics": [
-    "스포츠"
-   ],
-   "gnews": [],
-   "econLevel": "low",
-   "econScore": 0,
-   "econHits": [],
-   "news": [],
-   "history": [
-    {
-     "t": 1785141945855,
-     "v": 100
     },
     {
-     "t": 1785153613267,
-     "v": 100
-    },
-    {
-     "t": 1785164110221,
-     "v": 100
-    },
-    {
-     "t": 1785171358853,
-     "v": 100
-    },
-    {
-     "t": 1785176561253,
-     "v": 100
-    },
-    {
-     "t": 1785182636769,
-     "v": 100
-    },
-    {
-     "t": 1785187288757,
+     "t": 1785191614768,
      "v": 100
     }
    ]
@@ -8915,6 +9191,10 @@
     },
     {
      "t": 1785187288757,
+     "v": 100
+    },
+    {
+     "t": 1785191614768,
      "v": 100
     }
    ]
