@@ -24027,15 +24027,37 @@ Example format:
                 }); break;
                 case 'likes':        sorted.sort((a, b) => (b.likeCount||0) - (a.likeCount||0)); break;
                 case 'velocity':     sorted.sort((a, b) => _velVal(b) - _velVal(a)); break;
-                case 'mult':         sorted.sort((a, b) => (b.mult||0) - (a.mult||0)); break;
+                case 'mult':         sorted.sort((a, b) => _multVal(b) - _multVal(a)); break;
             }
             store.currentSort = sortKey;
-            store.renderer(containerId, sorted, sortKey);
+            // 성과 정렬은 채널당 3개 상한(도배 방지) — 시간순·조회 오름차순은 순서 그대로
+            const _capped = (sortKey === 'latest' || sortKey === 'views-asc') ? sorted : _capPerChannel(sorted, 3);
+            store.renderer(containerId, _capped, sortKey);
         }
 
         // 효율 99 = '구독자 비공개' 센티널 — 효율순에서 맨 아래로 (진짜 떡상만 위로)
         function _effVal(item) {
             return (item.efficiency === 99 || !item.subscriberCount) ? -1 : item.efficiency;
+        }
+        // ★방송성 노이즈 컷(2026-07-29): 생중계·풀버전·다시보기류는 소재가 아니라 방송 재방영 —
+        //   매불쇼 풀버전·삼프로 방송 전체보기·긴급LIVE가 rising·스캔 상위를 도배하던 원인.
+        const NOISE_TITLE_RE = /풀버전|생중계|다시보기|전체보기|풀영상|\bLIVE\b/i;
+        function _isNoiseTitle(t) { return NOISE_TITLE_RE.test(t || ''); }
+        // ★배수 정렬값(2026-07-29): 조회 1만+ '검증된 대박'을 먼저, 1만 미만(배수만 큰 소형 노이즈)은 그 뒤.
+        //   두 그룹 안에서는 각각 배수순 — 파도엔진 히트 기준(절대 조회 문턱)과 같은 철학.
+        function _multVal(item) {
+            return (item.mult || 0) + (((item.viewCount || 0) >= 10000 && (item.mult || 0) > 0) ? 1e9 : 0);
+        }
+        // ★같은 채널 도배 방지(2026-07-29): 다작 채널(신사임당 22개·1분재테크 27개가 상위 120 도배 실측)이
+        //   물량으로 상위를 덮지 못하게, 정렬 순서를 유지한 채 채널당 cap개 초과분은 목록 뒤로 미룬다(숨기지 않음).
+        function _capPerChannel(sorted, cap) {
+            const cnt = {}, head = [], tail = [];
+            sorted.forEach(it => {
+                const c = it.channelId || it.channelTitle || '';
+                cnt[c] = (cnt[c] || 0) + 1;
+                (cnt[c] <= cap ? head : tail).push(it);
+            });
+            return head.concat(tail);
         }
         // 급상승 속도 = 시간당 조회수 — 올라온 지 얼마 안 됐는데 조회수가 붕 뜨는 영상 감지
         function _velVal(item) {
@@ -24833,12 +24855,22 @@ Example format:
 
         // 🔥 오늘 급상승 — 기간 1일·조회수 1천으로 검색 후 시간당 조회수순 자동 정렬
         async function findHotToday() {
-            document.getElementById('benchPeriod').value = '1';
-            document.getElementById('benchMinViews').value = 1000;
+            // ★스캔 뒤 기간·최소조회 원복(2026-07-29): 원복 안 하면 이후 일반 스캔이 '최근 1일' 창으로
+            //   돌아서 주 1~3회 올리는 AI 채널이 통째로 빠짐("나와야 할 채널이 안 나옴"의 원인 중 하나).
+            const periodEl = document.getElementById('benchPeriod');
+            const minViewsEl = document.getElementById('benchMinViews');
+            const prevPeriod = periodEl.value, prevMinViews = minViewsEl.value;
+            periodEl.value = '1';
+            minViewsEl.value = 1000;
             window._benchDefaultSort = 'velocity';
             clearBenchCache();
-            await findBenchmarkChannels(true);
-            window._benchDefaultSort = null;
+            try {
+                await findBenchmarkChannels(true);
+            } finally {
+                window._benchDefaultSort = null;
+                periodEl.value = prevPeriod;
+                minViewsEl.value = prevMinViews;
+            }
         }
 
         // ═══ 🆕 신규 마킹 — 스캔 스냅샷(본 videoId 집합)과 대조 ═══
@@ -25006,12 +25038,14 @@ Example format:
         }
 
         function displayMatchResults(containerId, results) {
+            // ★방송성 노이즈 컷(2026-07-29): 풀버전·생중계·다시보기류는 결과에서 제외
+            results = results.filter(r => !_isNoiseTitle(r.title));
             // 기본 정렬(2026-07-19): 급상승 버튼으로 온 경우 = 시간당 조회수순,
             // 평소대비 배수 데이터가 있으면 평소대비순(효율의 구독자 함정 보완), 없으면 효율순
             const mode = window._benchDefaultSort === 'velocity' ? 'velocity'
                 : results.some(r => r.mult != null) ? 'mult' : 'efficiency';
-            const val = mode === 'velocity' ? _velVal : mode === 'mult' ? (i => i.mult || 0) : _effVal;
-            const sorted = [...results].sort((a, b) => val(b) - val(a));
+            const val = mode === 'velocity' ? _velVal : mode === 'mult' ? _multVal : _effVal;
+            const sorted = _capPerChannel([...results].sort((a, b) => val(b) - val(a)), 3);
             _resultStore[containerId] = { results: sorted, currentSort: mode, renderer: renderMatchResults };
             renderMatchResults(containerId, sorted, mode);
             // 트렌드 키워드 섹션 자동 노출 (검색 결과 있을 때)
@@ -25640,9 +25674,10 @@ ${titles}`;
                     </div>`;
                 };
                 const _blk = _blockedCh(); // 🚫 차단 채널은 브리핑에서도 숨김
+                // ★방송성 노이즈 컷(2026-07-29): 풀버전·생중계·전체보기류가 rising을 항상 점령하던 문제
                 const col = (title, list, mode, nShow = 5) => `<div style="flex:1;min-width:300px;">
                     <div style="font-weight:800;font-size:0.92rem;margin-bottom:4px;color:#374151;">${title}</div>
-                    ${(list || []).filter(v => !_blk[v.channelId]).slice(0, nShow).map(v => row(v, mode)).join('') || '<p style="color:#999;font-size:0.85rem;">없음</p>'}
+                    ${(list || []).filter(v => !_blk[v.channelId] && !_isNoiseTitle(v.title)).slice(0, nShow).map(v => row(v, mode)).join('') || '<p style="color:#999;font-size:0.85rem;">없음</p>'}
                 </div>`;
                 // ★평소 대비 폭발(2026-07-19) = 조회수 ÷ 그 채널 평소 중앙값. 효율(구독자 대비)의 함정 보완:
                 //   구독자 많고 평소 조회 낮은 채널의 대박(효율 낮게 나옴)이 우리 진짜 타겟 — 소재의 힘 증명.

@@ -28,6 +28,9 @@ HOURS = 72                 # 스캔 창: 최근 3일 (★2026-07-19 24h→72h �
 MIN_VIEWS = 1000           # 최소 조회수 (잡음 컷)
 MIN_DURATION = 480         # 8분 미만(숏폼) 제외 — 파인더와 동일
 TOP_N = 10
+# ★방송성 노이즈 컷(2026-07-29): 생중계·풀버전·다시보기류는 소재가 아니라 방송 재방영 —
+#   매불쇼 풀버전·삼프로 '방송 전체보기'·긴급LIVE가 rising을 항상 점령하던 원인. 풀에서 원천 제외.
+NOISE_TITLE = re.compile(r"풀버전|생중계|다시보기|전체보기|풀영상|(?<![0-9A-Za-z])LIVE(?![0-9A-Za-z])", re.I)
 
 
 def api(endpoint, **params):
@@ -155,6 +158,8 @@ def enrich(items, baseline):
         v = stats.get(x["videoId"])
         if not v:
             continue
+        if NOISE_TITLE.search(x["title"]):
+            continue  # 방송 재방영류 — 먹잇감 아님
         if parse_dur(v["contentDetails"].get("duration")) < MIN_DURATION:
             continue
         views = int(v["statistics"].get("viewCount", 0))
@@ -188,7 +193,8 @@ def carry_over(prev_videos, have_ids, med, now):
     videos에서 14일 안 지난 것을 승계하고, 통계를 오늘 값으로 재조회(50개=1유닛)해
     조회수·속도·배수를 갱신한다. 오늘 스캔에 이미 있는 영상은 제외(중복 방지)."""
     cand = [v for v in prev_videos if v.get("videoId") and v["videoId"] not in have_ids
-            and _age_days(v, now) <= 14]
+            and _age_days(v, now) <= 14
+            and not NOISE_TITLE.search(v.get("title", ""))]
     if not cand:
         return []
     ids = [v["videoId"] for v in cand]
@@ -262,7 +268,11 @@ def main():
             continue
         raw, baseline = scan_category(chs, cutoff)
         vids, med = enrich(raw, baseline)
-        prev_videos = (prev.get(cat) or {}).get("videos") or []
+        # ★등록 해제된 채널의 영상은 승계 안 함(2026-07-29) — channels.json에서 채널을 지워도
+        #   14일 롤링 승계가 옛 영상을 계속 되살리던 구멍(역사 예능 오염 청소가 안 먹히는 원인) 차단
+        allowed = {c.get("id") for c in chs}
+        prev_videos = [v for v in ((prev.get(cat) or {}).get("videos") or [])
+                       if v.get("channelId") in allowed]
         carried = carry_over(prev_videos, {v["videoId"] for v in vids}, med, now)
         result["categories"][cat] = top_lists(vids + carried, now, len(vids))
         print("[%s] 채널 %d개 → 24h %d개(필터 후) + 승계 %d개 = 풀 %d개" %

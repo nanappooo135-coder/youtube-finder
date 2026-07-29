@@ -37,15 +37,23 @@ KEYWORDS = [
 ]
 
 # 정체성 판별용 역사 시그널 단어 (제목 매칭)
+# ★2026-07-29: 범용 시대·연도 토큰(시대·년대·세기·1XXX년·BC·서기) 제거 — 옛날 방송 아카이브·예능
+#   채널(JTBC Voyage·엠뚜루마뚜루 등)이 "그 시절·1990년대" 류 제목으로 30% 문턱을 통과해
+#   역사 등록부를 오염시킨 실측 사고(07-19 스윕, 예능·뉴스 10개 유입). 고유 역사 명사만 남김.
 _HIST_WORDS = re.compile(
     r"역사|한국사|세계사|조선|고려|신라|백제|고구려|삼국|왕조|왕비|왕자|세종|세조|영조|정조|고종"
-    r"|실록|야사|사대부|양반|노비|궁궐|궁녀|황제|황후|제국|왕국|중세|근대|근현대|일제|광복|전쟁사"
-    r"|전투|장군|병사|기사단|로마|몽골|오스만|바이킹|십자군|파라오|문명|유적|고대|BC|서기"
-    r"|세기|년대|시대|founding|dynasty|1[0-9]{3}년")
+    r"|실록|야사|사대부|양반|노비|궁궐|궁녀|황제|황후|제국|왕국|중세|일제|광복|전쟁사"
+    r"|전투|장군|병사|기사단|로마|몽골|오스만|바이킹|십자군|파라오|문명|유적|고대"
+    r"|founding|dynasty")
 # 제외: 수면·낭독·게임·요약 채널 (소재 신호 낮음 — wave_engine 잡음 목록과 동일 계열)
 _EXCLUDE = re.compile(
     r"수면|자장가|잠들기|잘 때|꿀잠|숙면|asmr|낭독|오디오북|읽어주|책읽|게임|롤플레이"
     r"|모드|공략|스팀|삼국지\s*게임|토탈워", re.I)
+# ★채널명 차단(2026-07-29): 방송사·뉴스·종교 공식 채널은 정체성 비율과 무관하게 등록 금지 —
+#   다작 물량으로 브리핑·파도를 도배하고, 예능·뉴스 클립이 역사 소재인 척 섞여 들어옴
+_BROADCASTER = re.compile(
+    r"MBC|KBS|SBS|JTBC|tvN|EBS|MBN|채널A|TV조선|YTN|연합뉴스|뉴스|NEWS"
+    r"|디글|일사에프|엠뚜루마뚜루|Voyage|극동방송|CBS|국방TV", re.I)
 
 
 def api(endpoint, **params):
@@ -145,7 +153,8 @@ def main():
     print("기존 역사 채널 %d개" % len(existing), file=sys.stderr)
 
     cand = discover_candidates(after_iso)
-    fresh = [c for c in cand.values() if c["id"] not in existing and c["id"].startswith("UC")]
+    fresh = [c for c in cand.values() if c["id"] not in existing and c["id"].startswith("UC")
+             and not _BROADCASTER.search(c["title"])]
     # 검색 다중 히트 채널 우선 검증 (역사 정체성 확률 높음)
     fresh.sort(key=lambda c: -c["hits"])
     fresh = fresh[:CAND_CAP]

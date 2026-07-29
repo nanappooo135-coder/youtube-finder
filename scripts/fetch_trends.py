@@ -327,10 +327,13 @@ def classify(t):
             # 연예인·스포츠발 커머스 기사(굿즈 판매 폭증 등) — 경제 태그여도 소재론 주변부
             return "mid", max(score, 1), hits
         return "high", max(score, 3), hits           # 구글: 비즈니스/금융 (순수)
+    if topic_set and not (topic_set - TOPIC_NOISE):
+        # 스포츠·연예·날씨·게임뿐 → 무조건 low. ★휴리스틱보다 먼저(2026-07-29):
+        # KBO 팀명이 전부 대기업(삼성·롯데·한화·두산·기아)이라 "kia 대 삼성" 같은 경기가
+        # 기업명 사전에 걸려 high로 빠져나가던 순서 버그 수정 — 주석의 '무조건'을 코드로 지킴
+        return "low", score, hits
     if score >= 3 and has_strong:
         return "high", score, hits                    # 휴리스틱 강한 신호 (예: 록히드=기타 태그)
-    if topic_set and not (topic_set - TOPIC_NOISE):
-        return "low", score, hits                     # 스포츠·연예·날씨·게임뿐 → 무조건 low
     if topic_set & TOPIC_ECON_MID:
         return "mid", max(score, 1), hits             # 테크·과학·푸드
     if score >= 1 and has_strong:
