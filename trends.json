@@ -1,20 +1,104 @@
 {
- "generated_at": "2026-09-22T10:51:58.560381+09:00",
- "generated_at_ms": 1790041914889,
+ "generated_at": "2026-09-22T16:16:33.256128+09:00",
+ "generated_at_ms": 1790061386365,
  "geo": "KR",
  "source": "api",
  "artSchema": 2,
  "trends": [
+  {
+   "keyword": "제미나이",
+   "traffic": "10,000+",
+   "trafficNum": 10000,
+   "startedMs": 1790039400000,
+   "topicIds": [
+    18
+   ],
+   "topics": [
+    "테크"
+   ],
+   "gnews": [
+    {
+     "title": "퀄컴·구글 AI 동맹…제미나이 품은 PC '구글북' 전격 공개",
+     "link": "https://zdnet.co.kr/view/?no=20260921155254",
+     "sourceName": "지디넷코리아",
+     "pubTimestamp": 1789995603000
+    },
+    {
+     "title": "퀄컴 스냅드래곤 X 엘리트, '구글북' 탑재…제미나이 인텔리전스 최적화",
+     "link": "https://www.etnews.com/20260921000071",
+     "sourceName": "전자신문",
+     "pubTimestamp": 1789995600000
+    },
+    {
+     "title": "델, Gemini AI 탑재 XPS Googlebook 출시",
+     "link": "https://kr.investing.com/news/company-news/article-93CH-2101262",
+     "sourceName": "Investing.com 한국어",
+     "pubTimestamp": 1789997580000
+    },
+    {
+     "title": "구글 AI 노트북 '구글북'에 퀄컴 스냅드래곤 X 엘리트 탑재 - 머니투데이",
+     "link": "https://www.mt.co.kr/tech/2026/09/22/2026092209123125671",
+     "sourceName": "머니투데이",
+     "pubTimestamp": 1790036191000
+    }
+   ],
+   "econLevel": "high",
+   "econScore": 4,
+   "econHits": [
+    "AI",
+    "구글",
+    "인텔",
+    "출시"
+   ],
+   "news": [
+    {
+     "title": "구글, '제미나이 노트북' 내놓는다…첫 구글북 두뇌는 퀄컴 스냅드래곤",
+     "link": "https://www.wolyo.co.kr/news/articleView.html?idxno=318181",
+     "pubTimestamp": 1790058120000,
+     "sourceName": "WOLYO"
+    },
+    {
+     "title": "퀄컴, '제미나이' 품은 '구글북'에 스냅드래곤 X 엘리트 탑재",
+     "link": "https://www.edaily.co.kr/News/Read?newsId=03050406645582744&mediaCodeNo=257&utm_source=naver&utm_medium=referral&utm_campaign=news_syndication&utm_content=original_article",
+     "pubTimestamp": 1790038500000,
+     "sourceName": "EDAILY"
+    },
+    {
+     "title": "퀄컴, 구글북에 ‘스냅드래곤 X 엘리트’ 공급… 제미나이 AI 지원",
+     "link": "https://biz.chosun.com/it-science/ict/2026/09/22/AC2ELJCMHNASXIAHC5FPDX7H4I/?utm_source=naver&utm_medium=original&utm_campaign=biz",
+     "pubTimestamp": 1790038200000,
+     "sourceName": "BIZ"
+    },
+    {
+     "title": "구글, 제미나이 품은 '구글북' 출시",
+     "link": "https://biz.sbs.co.kr/article_hub/20000336056?division=NAVER",
+     "pubTimestamp": 1790019960000,
+     "sourceName": "BIZ"
+    },
+    {
+     "title": "퀄컴·구글 AI 동맹…제미나이 품은 PC '구글북' 전격 공개",
+     "link": "https://zdnet.co.kr/view/?no=20260921155254",
+     "pubTimestamp": 1789995600000,
+     "sourceName": "ZDNET"
+    }
+   ],
+   "history": [
+    {
+     "t": 1790061386365,
+     "v": 10000
+    }
+   ]
+  },
   {
    "keyword": "구글",
    "traffic": "500+",
    "trafficNum": 500,
    "startedMs": 1790008800000,
    "topicIds": [
-    18
+    11
    ],
    "topics": [
-    "테크"
+    "기타"
    ],
    "gnews": [
     {
@@ -52,6 +136,12 @@
    ],
    "news": [
     {
+     "title": "메타 독주하는 AI 글래스…구글·삼성·애플 추격 예고",
+     "link": "https://www.yna.co.kr/view/AKR20260922086000017?input=1195m",
+     "pubTimestamp": 1790043480000,
+     "sourceName": "YNA"
+    },
+    {
      "title": "퀄컴, '제미나이' 품은 '구글북'에 스냅드래곤 X 엘리트 탑재",
      "link": "https://www.edaily.co.kr/News/Read?newsId=03050406645582744&mediaCodeNo=257&utm_source=naver&utm_medium=referral&utm_campaign=news_syndication&utm_content=original_article",
      "pubTimestamp": 1790038500000,
@@ -74,12 +164,6 @@
      "link": "http://www.inews24.com/view/2007832",
      "pubTimestamp": 1789995660000,
      "sourceName": "INEWS24"
-    },
-    {
-     "title": "퀄컴·구글 AI 동맹…제미나이 품은 PC '구글북' 전격 공개",
-     "link": "https://zdnet.co.kr/view/?no=20260921155254",
-     "pubTimestamp": 1789995600000,
-     "sourceName": "ZDNET"
     }
    ],
    "history": [
@@ -93,6 +177,10 @@
     },
     {
      "t": 1790041914889,
+     "v": 500
+    },
+    {
+     "t": 1790061386365,
      "v": 500
     }
    ]
@@ -143,6 +231,18 @@
    ],
    "news": [
     {
+     "title": "“삼성전자, 내년 HBM 시장 점유율 1위 달성” 전망",
+     "link": "https://weekly.donga.com/3/all/11/6395830/1",
+     "pubTimestamp": 1790044200000,
+     "sourceName": "WEEKLY"
+    },
+    {
+     "title": "삼성전자 배당 막차 D-7...이틀째 상승, 30조원 배당 기대",
+     "link": "https://www.fnnews.com/news/202609221001069026",
+     "pubTimestamp": 1790040300000,
+     "sourceName": "FNNEWS"
+    },
+    {
      "title": "\"땡큐 메타!\"…나스닥 사상 최고치에 삼전닉스 등 반도체株 질주",
      "link": "https://www.hankyung.com/article/2026092299686",
      "pubTimestamp": 1790036520000,
@@ -159,18 +259,6 @@
      "link": "https://www.mk.co.kr/article/12158596",
      "pubTimestamp": 1789983060000,
      "sourceName": "MK"
-    },
-    {
-     "title": "삼성전자, 5% 급등 '27만전자' 회복…SK하이닉스 0.6%↑",
-     "link": "https://news.sbs.co.kr/news/endPage.do?news_id=N1008764234&plink=ORI&cooper=NAVER",
-     "pubTimestamp": 1789977300000,
-     "sourceName": "NEWS"
-    },
-    {
-     "title": "\"반도체, 다시 훈풍\"…삼성전자 5%·SK하이닉스 0.6% 상승[핫스탁](종합...",
-     "link": "https://www.newsis.com/view/NISX20260921_0003798733",
-     "pubTimestamp": 1789973640000,
-     "sourceName": "NEWSIS"
     }
    ],
    "history": [
@@ -181,6 +269,96 @@
     {
      "t": 1790041914889,
      "v": 200
+    },
+    {
+     "t": 1790061386365,
+     "v": 200
+    }
+   ]
+  },
+  {
+   "keyword": "메타 뮤즈",
+   "traffic": "100+",
+   "trafficNum": 100,
+   "startedMs": 1790043000000,
+   "topicIds": [
+    3
+   ],
+   "topics": [
+    "비즈니스·금융"
+   ],
+   "gnews": [
+    {
+     "title": "AMD, AI 훈풍 타고 사상 첫 시총 1조달러 돌파",
+     "link": "https://www.chosun.com/economy/tech_it/2026/09/22/IVXHOJWUAVHPTHN6LW5Q7JDQN4/",
+     "sourceName": "조선일보",
+     "pubTimestamp": 1790051280000
+    },
+    {
+     "title": "Meta, AI 어시스턴트 Muse 전용 Mac 앱 출시",
+     "link": "https://hypebeast.kr/2026/9/meta-muse-ai-mac-app-turns-desktop-into-smart-agent",
+     "sourceName": "Hypebeast.KR",
+     "pubTimestamp": 1790060454000
+    },
+    {
+     "title": "아마존, 'AI 에이전트' 뮤즈 온라인몰서 접근 차단",
+     "link": "https://v.daum.net/v/HlqCxUZvHl",
+     "sourceName": "Daum",
+     "pubTimestamp": 1790036040000
+    },
+    {
+     "title": "메타, 웰스파고 목표가 상향 등으로 11% 급등",
+     "link": "https://news.einfomax.co.kr/news/articleView.html?idxno=4436001",
+     "sourceName": "연합인포맥스",
+     "pubTimestamp": 1790032385000
+    }
+   ],
+   "econLevel": "high",
+   "econScore": 7,
+   "econHits": [
+    "메타",
+    "AI",
+    "AMD",
+    "출시",
+    "아마존",
+    "급등"
+   ],
+   "news": [
+    {
+     "title": "메타 '뮤즈', 챗GPT도 제쳤다…일하는 AI로 반격",
+     "link": "https://www.wowtv.co.kr/NewsCenter/News/Read?articleId=A202609220101&t=NNv",
+     "pubTimestamp": 1790054940000,
+     "sourceName": "WOWTV"
+    },
+    {
+     "title": "메타 ‘뮤즈’ 흥행에 AI 기대감…삼성전자·SK하이닉스 나란히 상승",
+     "link": "https://www.mk.co.kr/article/12159234",
+     "pubTimestamp": 1790051880000,
+     "sourceName": "MK"
+    },
+    {
+     "title": "앱 닫아도 알아서 일한다…챗GPT 제친 메타 '뮤즈'의 비결",
+     "link": "https://www.newsis.com/view/NISX20260922_0003799972",
+     "pubTimestamp": 1790044920000,
+     "sourceName": "NEWSIS"
+    },
+    {
+     "title": "아마존, 외부 AI 에이전트에 빗장…메타 '뮤즈' 상품 구매 차단",
+     "link": "https://zdnet.co.kr/view/?no=20260922082149",
+     "pubTimestamp": 1790038140000,
+     "sourceName": "ZDNET"
+    },
+    {
+     "title": "메타 AI 에이전트 돌풍에…AMD '시총 1조달러' 첫 돌파",
+     "link": "https://www.hankyung.com/article/2026092294857",
+     "pubTimestamp": 1790027760000,
+     "sourceName": "HANKYUNG"
+    }
+   ],
+   "history": [
+    {
+     "t": 1790061386365,
+     "v": 100
     }
    ]
   },
@@ -233,10 +411,10 @@
    ],
    "news": [
     {
-     "title": "SK하이닉스 주가, 9월 22일 장중 1,928,000원 3.21% 상승",
-     "link": "https://www.joongangenews.com/news/articleView.html?idxno=549950",
-     "pubTimestamp": 1790038920000,
-     "sourceName": "JOONGANGENEWS"
+     "title": "SK하이닉스 주가 약보합…186만1000원",
+     "link": "https://www.job-post.co.kr/news/articleView.html?idxno=228789",
+     "pubTimestamp": 1790054520000,
+     "sourceName": "JOB-POST"
     },
     {
      "title": "SK하이닉스 ADR 주가, 188.86달러 0.73% 상승 마감",
@@ -260,6 +438,10 @@
    "history": [
     {
      "t": 1790041914889,
+     "v": 100
+    },
+    {
+     "t": 1790061386365,
      "v": 100
     }
    ]
@@ -327,23 +509,15 @@
      "link": "https://www.mediatoday.co.kr/news/articleView.html?idxno=337223",
      "pubTimestamp": 1789815900000,
      "sourceName": "MEDIATODAY"
-    },
-    {
-     "title": "[부고] 송윤혜 씨(조선일보 차장) 부친상",
-     "link": "https://www.news1.kr/life-culture/press/6296102",
-     "pubTimestamp": 1789794000000,
-     "sourceName": "NEWS1"
-    },
-    {
-     "title": "[부고] 송윤혜(조선일보 차장)씨 부친상",
-     "link": "https://www.yna.co.kr/view/AKR20260919028600034?input=1195m",
-     "pubTimestamp": 1789783200000,
-     "sourceName": "YNA"
     }
    ],
    "history": [
     {
      "t": 1790041914889,
+     "v": 100
+    },
+    {
+     "t": 1790061386365,
      "v": 100
     }
    ]
@@ -390,16 +564,22 @@
    "econHits": [],
    "news": [
     {
-     "title": "하나은행, 업비트 글로벌과 '트래블룰' 협력...디지털 자산 인프라 강화",
-     "link": "http://www.ftoday.co.kr/news/articleView.html?idxno=365933",
-     "pubTimestamp": 1790040960000,
-     "sourceName": "FTODAY"
+     "title": "두나무, 오는 29일 '업비트 인스티튜셔널 서밋' 개최",
+     "link": "https://weekly.hankooki.com/news/articleView.html?idxno=7185559",
+     "pubTimestamp": 1790047560000,
+     "sourceName": "WEEKLY"
     },
     {
-     "title": "두나무, 29일 '업비트 인스티튜셔널 서밋' 개최…글로벌 디지털 금융 논...",
-     "link": "https://www.newsis.com/view/NISX20260922_0003799786",
-     "pubTimestamp": 1790039700000,
+     "title": "하나은행, 업비트 글로벌과 맞손…\"트래블룰 협력\"",
+     "link": "https://www.newsis.com/view/NISX20260922_0003800090",
+     "pubTimestamp": 1790044860000,
      "sourceName": "NEWSIS"
+    },
+    {
+     "title": "두나무, 기관 대상 '업비트 인스티튜셔널 서밋' 개최",
+     "link": "https://www.yna.co.kr/view/AKR20260922079800002?input=1195m",
+     "pubTimestamp": 1790042220000,
+     "sourceName": "YNA"
     },
     {
      "title": "글로벌 정책·금융 리더 한자리에…29일 '업비트 인스티튜셔널 서밋' 개...",
@@ -412,12 +592,6 @@
      "link": "http://www.joseilbo.com/news/news_read.php?uid=576178&class=51&grp=",
      "pubTimestamp": 1790037660000,
      "sourceName": "JOSEILBO"
-    },
-    {
-     "title": "업비트, 서울시와 '금융골든벨' 개최…청년 160여명 참여",
-     "link": "https://news.tf.co.kr/read/economy/2368439.htm",
-     "pubTimestamp": 1789973340000,
-     "sourceName": "NEWS"
     }
    ],
    "history": [
@@ -435,6 +609,93 @@
     },
     {
      "t": 1790041914889,
+     "v": 100
+    },
+    {
+     "t": 1790061386365,
+     "v": 100
+    }
+   ]
+  },
+  {
+   "keyword": "x",
+   "traffic": "100+",
+   "trafficNum": 100,
+   "startedMs": 1790010600000,
+   "topicIds": [
+    3
+   ],
+   "topics": [
+    "비즈니스·금융"
+   ],
+   "gnews": [
+    {
+     "title": "Elon Musk's X brings bitcoin and stock trading closer to the timeline",
+     "link": "https://www.coindesk.com/markets/2026/09/22/elon-musk-s-x-brings-bitcoin-and-stock-trading-closer-to-the-timeline",
+     "sourceName": "CoinDesk",
+     "pubTimestamp": 1790054760000
+    },
+    {
+     "title": "Moomoo Named to X’s U.S. Cashtag Partner Program",
+     "link": "https://www.globenewswire.com/news-release/2026/09/15/3362516/0/en/moomoo-named-to-x-s-u-s-cashtag-partner-program.html",
+     "sourceName": "GlobeNewswire",
+     "pubTimestamp": 1789488000000
+    },
+    {
+     "title": "X Adds Trade Button to Crypto and Stock Cashtags on Timeline",
+     "link": "https://www.altcoinbuzz.io/x-adds-trade-button-to-crypto-and-stock-cashtags",
+     "sourceName": "Altcoin Buzz",
+     "pubTimestamp": 1790057657000
+    },
+    {
+     "title": "X: Partners With Coinbase Gemini Kraken for Trading",
+     "link": "https://blockchain.news/flashnews/x-partners-coinbase-gemini-kraken-trading",
+     "sourceName": "Blockchain News",
+     "pubTimestamp": 1790040752000
+    }
+   ],
+   "econLevel": "high",
+   "econScore": 3,
+   "econHits": [],
+   "news": [
+    {
+     "title": "카카오 \"카카오X·카카오인베 합병 반대 비율 2%\"",
+     "link": "https://www.news1.kr/it-science/internet-platform/6299114",
+     "pubTimestamp": 1790058600000,
+     "sourceName": "NEWS1"
+    },
+    {
+     "title": "주주 반대 2%에 그쳐…카카오, '카카오AI·카카오X' 분할 가속도",
+     "link": "https://www.newsis.com/view/NISX20260922_0003800419",
+     "pubTimestamp": 1790056440000,
+     "sourceName": "NEWSIS"
+    },
+    {
+     "title": "이승철X우즈, 역대급 컬래버 음원 나온다",
+     "link": "https://sports.khan.co.kr/article/202609221425003?pt=nv",
+     "pubTimestamp": 1790054760000,
+     "sourceName": "SPORTS"
+    },
+    {
+     "title": "미사일 든 ‘가짜 김정은’ 떴다…AG 남북전 뒤집은 이 남자 정체",
+     "link": "https://www.joongang.co.kr/article/25464006",
+     "pubTimestamp": 1790043840000,
+     "sourceName": "JOONGANG"
+    },
+    {
+     "title": "성수동 전체가 테마파크로…내달 5∼11일 '크리에이티브X성수'",
+     "link": "https://www.yna.co.kr/view/AKR20260922067700004?input=1195m",
+     "pubTimestamp": 1790039820000,
+     "sourceName": "YNA"
+    }
+   ],
+   "history": [
+    {
+     "t": 1790041914889,
+     "v": 100
+    },
+    {
+     "t": 1790061386365,
      "v": 100
     }
    ]
@@ -473,321 +734,17 @@
     {
      "t": 1790041914889,
      "v": 500
-    }
-   ]
-  },
-  {
-   "keyword": "25사단",
-   "traffic": "2,000+",
-   "trafficNum": 2000,
-   "startedMs": 1789962000000,
-   "topicIds": [
-    10
-   ],
-   "topics": [
-    "법·행정"
-   ],
-   "gnews": [],
-   "econLevel": "low",
-   "econScore": 0,
-   "econHits": [],
-   "news": [],
-   "history": [
+    },
     {
-     "t": 1789967972058,
+     "t": 1790061386365,
      "v": 500
-    },
-    {
-     "t": 1789987852075,
-     "v": 2000
-    },
-    {
-     "t": 1790009205318,
-     "v": 2000
-    },
-    {
-     "t": 1790023183590,
-     "v": 2000
-    },
-    {
-     "t": 1790033896456,
-     "v": 2000
-    },
-    {
-     "t": 1790041914889,
-     "v": 2000
-    }
-   ]
-  },
-  {
-   "keyword": "발로란트 추석 이벤트",
-   "traffic": "2,000+",
-   "trafficNum": 2000,
-   "startedMs": 1789973400000,
-   "topicIds": [
-    8,
-    6
-   ],
-   "topics": [
-    "취미·레저",
-    "게임"
-   ],
-   "gnews": [],
-   "econLevel": "low",
-   "econScore": 0,
-   "econHits": [],
-   "news": [],
-   "history": [
-    {
-     "t": 1789987852075,
-     "v": 1000
-    },
-    {
-     "t": 1790009205318,
-     "v": 2000
-    },
-    {
-     "t": 1790023183590,
-     "v": 2000
-    },
-    {
-     "t": 1790033896456,
-     "v": 2000
-    },
-    {
-     "t": 1790041914889,
-     "v": 2000
-    }
-   ]
-  },
-  {
-   "keyword": "드래프트",
-   "traffic": "2,000+",
-   "trafficNum": 2000,
-   "startedMs": 1789969200000,
-   "topicIds": [
-    17
-   ],
-   "topics": [
-    "스포츠"
-   ],
-   "gnews": [],
-   "econLevel": "low",
-   "econScore": 0,
-   "econHits": [],
-   "news": [],
-   "history": [
-    {
-     "t": 1789987852075,
-     "v": 2000
-    },
-    {
-     "t": 1790009205318,
-     "v": 1000
-    },
-    {
-     "t": 1790023183590,
-     "v": 2000
-    },
-    {
-     "t": 1790033896456,
-     "v": 2000
-    },
-    {
-     "t": 1790041914889,
-     "v": 2000
-    }
-   ]
-  },
-  {
-   "keyword": "김다현",
-   "traffic": "1,000+",
-   "trafficNum": 1000,
-   "startedMs": 1789965600000,
-   "topicIds": [
-    4
-   ],
-   "topics": [
-    "연예"
-   ],
-   "gnews": [],
-   "econLevel": "low",
-   "econScore": 0,
-   "econHits": [],
-   "news": [],
-   "history": [
-    {
-     "t": 1789987852075,
-     "v": 500
-    },
-    {
-     "t": 1790009205318,
-     "v": 1000
-    },
-    {
-     "t": 1790023183590,
-     "v": 1000
-    },
-    {
-     "t": 1790033896456,
-     "v": 1000
-    },
-    {
-     "t": 1790041914889,
-     "v": 1000
-    }
-   ]
-  },
-  {
-   "keyword": "최지만",
-   "traffic": "1,000+",
-   "trafficNum": 1000,
-   "startedMs": 1789969200000,
-   "topicIds": [
-    17
-   ],
-   "topics": [
-    "스포츠"
-   ],
-   "gnews": [],
-   "econLevel": "low",
-   "econScore": 0,
-   "econHits": [],
-   "news": [],
-   "history": [
-    {
-     "t": 1789987852075,
-     "v": 1000
-    },
-    {
-     "t": 1790009205318,
-     "v": 1000
-    },
-    {
-     "t": 1790023183590,
-     "v": 1000
-    },
-    {
-     "t": 1790033896456,
-     "v": 1000
-    },
-    {
-     "t": 1790041914889,
-     "v": 1000
-    }
-   ]
-  },
-  {
-   "keyword": "강훈식",
-   "traffic": "1,000+",
-   "trafficNum": 1000,
-   "startedMs": 1789964400000,
-   "topicIds": [
-    14,
-    10
-   ],
-   "topics": [
-    "정치",
-    "법·행정"
-   ],
-   "gnews": [],
-   "econLevel": "low",
-   "econScore": 0,
-   "econHits": [],
-   "news": [],
-   "history": [
-    {
-     "t": 1789987852075,
-     "v": 1000
-    },
-    {
-     "t": 1790009205318,
-     "v": 1000
-    },
-    {
-     "t": 1790023183590,
-     "v": 1000
-    },
-    {
-     "t": 1790033896456,
-     "v": 1000
-    },
-    {
-     "t": 1790041914889,
-     "v": 1000
-    }
-   ]
-  },
-  {
-   "keyword": "아시안게임",
-   "traffic": "1,000+",
-   "trafficNum": 1000,
-   "startedMs": 1789982400000,
-   "topicIds": [
-    17
-   ],
-   "topics": [
-    "스포츠"
-   ],
-   "gnews": [],
-   "econLevel": "low",
-   "econScore": 0,
-   "econHits": [],
-   "news": [],
-   "history": [
-    {
-     "t": 1790041914889,
-     "v": 1000
-    }
-   ]
-  },
-  {
-   "keyword": "부산국제영화제",
-   "traffic": "1,000+",
-   "trafficNum": 1000,
-   "startedMs": 1789962600000,
-   "topicIds": [
-    4
-   ],
-   "topics": [
-    "연예"
-   ],
-   "gnews": [],
-   "econLevel": "low",
-   "econScore": 0,
-   "econHits": [],
-   "news": [],
-   "history": [
-    {
-     "t": 1789967972058,
-     "v": 500
-    },
-    {
-     "t": 1789987852075,
-     "v": 1000
-    },
-    {
-     "t": 1790009205318,
-     "v": 500
-    },
-    {
-     "t": 1790023183590,
-     "v": 1000
-    },
-    {
-     "t": 1790033896456,
-     "v": 1000
-    },
-    {
-     "t": 1790041914889,
-     "v": 1000
     }
    ]
   },
   {
    "keyword": "게임",
-   "traffic": "500+",
-   "trafficNum": 500,
+   "traffic": "2,000+",
+   "trafficNum": 2000,
    "startedMs": 1790037000000,
    "topicIds": [
     11
@@ -824,56 +781,17 @@
     {
      "t": 1790041914889,
      "v": 500
-    }
-   ]
-  },
-  {
-   "keyword": "ai",
-   "traffic": "500+",
-   "trafficNum": 500,
-   "startedMs": 1789959600000,
-   "topicIds": [
-    11
-   ],
-   "topics": [
-    "기타"
-   ],
-   "gnews": [],
-   "econLevel": "low",
-   "econScore": 0,
-   "econHits": [],
-   "news": [],
-   "history": [
-    {
-     "t": 1789967972058,
-     "v": 200
     },
     {
-     "t": 1789987852075,
-     "v": 200
-    },
-    {
-     "t": 1790009205318,
-     "v": 200
-    },
-    {
-     "t": 1790023183590,
-     "v": 200
-    },
-    {
-     "t": 1790033896456,
-     "v": 200
-    },
-    {
-     "t": 1790041914889,
-     "v": 500
+     "t": 1790061386365,
+     "v": 2000
     }
    ]
   },
   {
    "keyword": "청약홈",
-   "traffic": "200+",
-   "trafficNum": 200,
+   "traffic": "1,000+",
+   "trafficNum": 1000,
    "startedMs": 1790031000000,
    "topicIds": [
     11
@@ -890,13 +808,17 @@
     {
      "t": 1790041914889,
      "v": 200
+    },
+    {
+     "t": 1790061386365,
+     "v": 1000
     }
    ]
   },
   {
    "keyword": "기상청 날씨누리",
-   "traffic": "200+",
-   "trafficNum": 200,
+   "traffic": "1,000+",
+   "trafficNum": 1000,
    "startedMs": 1790035800000,
    "topicIds": [
     20
@@ -913,13 +835,44 @@
     {
      "t": 1790041914889,
      "v": 200
+    },
+    {
+     "t": 1790061386365,
+     "v": 1000
+    }
+   ]
+  },
+  {
+   "keyword": "아시안게임",
+   "traffic": "1,000+",
+   "trafficNum": 1000,
+   "startedMs": 1789982400000,
+   "topicIds": [
+    17
+   ],
+   "topics": [
+    "스포츠"
+   ],
+   "gnews": [],
+   "econLevel": "low",
+   "econScore": 0,
+   "econHits": [],
+   "news": [],
+   "history": [
+    {
+     "t": 1790041914889,
+     "v": 1000
+    },
+    {
+     "t": 1790061386365,
+     "v": 1000
     }
    ]
   },
   {
    "keyword": "사유리",
-   "traffic": "200+",
-   "trafficNum": 200,
+   "traffic": "500+",
+   "trafficNum": 500,
    "startedMs": 1789987800000,
    "topicIds": [
     4
@@ -936,88 +889,18 @@
     {
      "t": 1790041914889,
      "v": 200
+    },
+    {
+     "t": 1790061386365,
+     "v": 500
     }
    ]
   },
   {
-   "keyword": "지도",
-   "traffic": "200+",
-   "trafficNum": 200,
-   "startedMs": 1790037600000,
-   "topicIds": [
-    4
-   ],
-   "topics": [
-    "연예"
-   ],
-   "gnews": [],
-   "econLevel": "low",
-   "econScore": 0,
-   "econHits": [],
-   "news": [],
-   "history": [
-    {
-     "t": 1790009205318,
-     "v": 500
-    },
-    {
-     "t": 1790023183590,
-     "v": 500
-    },
-    {
-     "t": 1790033896456,
-     "v": 500
-    },
-    {
-     "t": 1790041914889,
-     "v": 200
-    }
-   ]
-  },
-  {
-   "keyword": "dmz",
-   "traffic": "200+",
-   "trafficNum": 200,
-   "startedMs": 1789974000000,
-   "topicIds": [
-    10
-   ],
-   "topics": [
-    "법·행정"
-   ],
-   "gnews": [],
-   "econLevel": "low",
-   "econScore": 0,
-   "econHits": [],
-   "news": [],
-   "history": [
-    {
-     "t": 1789987852075,
-     "v": 100
-    },
-    {
-     "t": 1790009205318,
-     "v": 200
-    },
-    {
-     "t": 1790023183590,
-     "v": 200
-    },
-    {
-     "t": 1790033896456,
-     "v": 200
-    },
-    {
-     "t": 1790041914889,
-     "v": 200
-    }
-   ]
-  },
-  {
-   "keyword": "양승혜",
-   "traffic": "200+",
-   "trafficNum": 200,
-   "startedMs": 1789972200000,
+   "keyword": "타자",
+   "traffic": "500+",
+   "trafficNum": 500,
+   "startedMs": 1790048400000,
    "topicIds": [
     17
    ],
@@ -1031,23 +914,30 @@
    "news": [],
    "history": [
     {
-     "t": 1789987852075,
-     "v": 200
-    },
+     "t": 1790061386365,
+     "v": 500
+    }
+   ]
+  },
+  {
+   "keyword": "달력",
+   "traffic": "200+",
+   "trafficNum": 200,
+   "startedMs": 1790029200000,
+   "topicIds": [
+    11
+   ],
+   "topics": [
+    "기타"
+   ],
+   "gnews": [],
+   "econLevel": "low",
+   "econScore": 0,
+   "econHits": [],
+   "news": [],
+   "history": [
     {
-     "t": 1790009205318,
-     "v": 200
-    },
-    {
-     "t": 1790023183590,
-     "v": 200
-    },
-    {
-     "t": 1790033896456,
-     "v": 200
-    },
-    {
-     "t": 1790041914889,
+     "t": 1790061386365,
      "v": 200
     }
    ]
@@ -1084,6 +974,10 @@
     {
      "t": 1790041914889,
      "v": 200
+    },
+    {
+     "t": 1790061386365,
+     "v": 200
     }
    ]
   },
@@ -1119,72 +1013,10 @@
     {
      "t": 1790041914889,
      "v": 200
-    }
-   ]
-  },
-  {
-   "keyword": "기상청",
-   "traffic": "100+",
-   "trafficNum": 100,
-   "startedMs": 1790029800000,
-   "topicIds": [
-    20
-   ],
-   "topics": [
-    "기후"
-   ],
-   "gnews": [],
-   "econLevel": "low",
-   "econScore": 0,
-   "econHits": [],
-   "news": [],
-   "history": [
-    {
-     "t": 1789967972058,
-     "v": 200
     },
     {
-     "t": 1789987852075,
+     "t": 1790061386365,
      "v": 200
-    },
-    {
-     "t": 1790009205318,
-     "v": 200
-    },
-    {
-     "t": 1790023183590,
-     "v": 200
-    },
-    {
-     "t": 1790033896456,
-     "v": 200
-    },
-    {
-     "t": 1790041914889,
-     "v": 100
-    }
-   ]
-  },
-  {
-   "keyword": "x",
-   "traffic": "100+",
-   "trafficNum": 100,
-   "startedMs": 1790010600000,
-   "topicIds": [
-    17
-   ],
-   "topics": [
-    "스포츠"
-   ],
-   "gnews": [],
-   "econLevel": "low",
-   "econScore": 0,
-   "econHits": [],
-   "news": [],
-   "history": [
-    {
-     "t": 1790041914889,
-     "v": 100
     }
    ]
   }
